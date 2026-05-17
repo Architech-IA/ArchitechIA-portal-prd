@@ -22,139 +22,139 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  leads         Lead[]
-  proposals     Proposal[]
-  projects      ProjectUser[]
-  activities    Activity[]
-  meetings      Meeting[]
-  prospectos    Prospecto[]
-  nicheMarkets  NicheMarket[]
-  comments      Comment[]
+  leads        Lead[]
+  proposals    Proposal[]
+  projects     ProjectUser[]
+  activities   Activity[]
+  meetings     Meeting[]
+  prospectos   Prospecto[]
+  nicheMarkets NicheMarket[]
+  comments     Comment[]
 }
 
 model Lead {
-  id            String    @id @default(cuid())
-  companyName   String
-  contactName   String
-  email         String
-  phone         String?
-  status        LeadStatus @default(NEW)
-  source        String    // LinkedIn, Web, Referido, etc.
-  estimatedValue Float    @default(0)
-  tipo          String?
-  scope         String?
-  repository    String?
-  notes         String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  proposals     Proposal[]
-  activities    Activity[]
+  id             String     @id @default(cuid())
+  companyName    String
+  contactName    String
+  email          String
+  phone          String?
+  status         LeadStatus @default(NEW)
+  source         String // LinkedIn, Web, Referido, etc.
+  estimatedValue Float      @default(0)
+  tipo           String?
+  scope          String?
+  repository     String?
+  notes          String?
+  userId         String
+  user           User       @relation(fields: [userId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  proposals  Proposal[]
+  activities Activity[]
 }
 
 model Proposal {
-  id            String    @id @default(cuid())
-  title         String
-  description   String
-  status        ProposalStatus @default(DRAFT)
-  amount        Float
-  leadId        String?
-  lead          Lead?     @relation(fields: [leadId], references: [id])
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  sentDate      DateTime?
-  acceptedDate  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  activities    Activity[]
-  tasks         ProposalTask[]
-  documents     ProposalDocument[]
+  id           String         @id @default(cuid())
+  title        String
+  description  String
+  status       ProposalStatus @default(DRAFT)
+  amount       Float
+  leadId       String?
+  lead         Lead?          @relation(fields: [leadId], references: [id])
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  sentDate     DateTime?
+  acceptedDate DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  activities Activity[]
+  tasks      ProposalTask[]
+  documents  ProposalDocument[]
 }
 
 model ProposalTask {
-  id          String   @id @default(cuid())
-  title       String
-  completed   Boolean  @default(false)
-  proposalId  String
-  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  completed  Boolean  @default(false)
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model ProposalDocument {
-  id          String   @id @default(cuid())
-  name        String
-  url         String
-  type        String   @default("file")
-  stage       String?  // fase del pipeline: NEW, CONTACTED, QUALIFIED, etc.
-  proposalId  String
-  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  url        String
+  type       String   @default("file")
+  stage      String? // fase del pipeline: NEW, CONTACTED, QUALIFIED, etc.
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 }
 
 model Project {
-  id            String    @id @default(cuid())
-  name          String
-  description   String
-  status        ProjectStatus @default(PLANNING)
-  priority      Priority  @default(MEDIUM)
-  progress      Int       @default(0)
-  repository    String?
-  startDate     DateTime?
-  endDate       DateTime?
-  proposalId    String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          String        @id @default(cuid())
+  name        String
+  description String
+  status      ProjectStatus @default(PLANNING)
+  priority    Priority      @default(MEDIUM)
+  progress    Int           @default(0)
+  repository  String?
+  startDate   DateTime?
+  endDate     DateTime?
+  proposalId  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  users         ProjectUser[]
-  milestones    Milestone[]
-  activities    Activity[]
-  backlogItems  BacklogItem[]
+  users        ProjectUser[]
+  milestones   Milestone[]
+  activities   Activity[]
+  backlogItems BacklogItem[]
 }
 
 model ProjectUser {
-  projectId    String
-  userId       String
-  role         ProjectRole @default(VIEWER)
-  assignedAt   DateTime    @default(now())
+  projectId  String
+  userId     String
+  role       ProjectRole @default(VIEWER)
+  assignedAt DateTime    @default(now())
 
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([projectId, userId])
 }
 
 model Milestone {
-  id            String    @id @default(cuid())
+  id            String          @id @default(cuid())
   name          String
   description   String?
   status        MilestoneStatus @default(PENDING)
   dueDate       DateTime?
   completedDate DateTime?
   projectId     String
-  project       Project   @relation(fields: [projectId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  project       Project         @relation(fields: [projectId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
 
 model Activity {
-  id            String    @id @default(cuid())
-  type          ActivityType
-  description   String
-  entityType    String    // lead, proposal, project
-  entityId      String
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  lead          Lead?     @relation(fields: [leadId], references: [id])
-  leadId        String?
-  proposal      Proposal? @relation(fields: [proposalId], references: [id])
-  proposalId    String?
-  project       Project?  @relation(fields: [projectId], references: [id])
-  projectId     String?
-  createdAt     DateTime  @default(now())
+  id          String       @id @default(cuid())
+  type        ActivityType
+  description String
+  entityType  String // lead, proposal, project
+  entityId    String
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  lead        Lead?        @relation(fields: [leadId], references: [id])
+  leadId      String?
+  proposal    Proposal?    @relation(fields: [proposalId], references: [id])
+  proposalId  String?
+  project     Project?     @relation(fields: [projectId], references: [id])
+  projectId   String?
+  createdAt   DateTime     @default(now())
 }
 
 enum Role {
@@ -280,94 +280,94 @@ model SessionLog {
 }
 
 model Meeting {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   title         String
   description   String?
-  type        String   @default("INTERNAL_DAILY")
+  type          String    @default("INTERNAL_DAILY")
   date          DateTime
   endDate       DateTime?
   location      String?
   link          String?
   attendees     String?
-  status        String   @default("SCHEDULED")
+  status        String    @default("SCHEDULED")
   notes         String?
   actaFile      String?
   actaFileName  String?
   googleEventId String?
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model Prospecto {
-  id          String   @id @default(cuid())
-  empresa     String
-  industria   String
-  nicho       String?
-  contacto    String?
-  email       String?
-  telefono    String?
-  pais        String?
-  fuente      String   @default("LinkedIn")
-  estado      String   @default("Identificado")
-  prioridad   String   @default("Media")
-  notas       String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model NicheMarket {
-  id            String    @id @default(cuid())
-  name          String
-  color         String    @default("#f97316")
-  size          Float     @default(30)
-  x             Float     @default(0)
-  y             Float     @default(0)
-  description   String?
-  industry      String
-  potential     Float     @default(0)
-  competitors   Int       @default(0)
-  trend         String    @default("stable")
   userId        String
   user          User      @relation(fields: [userId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
 
-model NicheConnection {
+model Prospecto {
+  id        String   @id @default(cuid())
+  empresa   String
+  industria String
+  nicho     String?
+  contacto  String?
+  email     String?
+  telefono  String?
+  pais      String?
+  fuente    String   @default("LinkedIn")
+  estado    String   @default("Identificado")
+  prioridad String   @default("Media")
+  notas     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NicheMarket {
   id          String   @id @default(cuid())
-  fromId      String
-  toId        String
-  label       String?
-  strength    Float    @default(1)
+  name        String
+  color       String   @default("#f97316")
+  size        Float    @default(30)
+  x           Float    @default(0)
+  y           Float    @default(0)
+  description String?
+  industry    String
+  potential   Float    @default(0)
+  competitors Int      @default(0)
+  trend       String   @default("stable")
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model NicheConnection {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  label     String?
+  strength  Float    @default(1)
+  createdAt DateTime @default(now())
 }
 
 model Comment {
-  id          String   @id @default(cuid())
-  text        String
-  entityType  String
-  entityId    String
-  parentId    String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  parent      Comment? @relation("CommentReplies", fields: [parentId], references: [id])
-  replies     Comment[] @relation("CommentReplies")
-  createdAt   DateTime @default(now())
+  id         String    @id @default(cuid())
+  text       String
+  entityType String
+  entityId   String
+  parentId   String?
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    Comment[] @relation("CommentReplies")
+  createdAt  DateTime  @default(now())
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  type        String
-  title       String
-  message     String
-  link        String?
-  read        Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model LeadHub {
@@ -379,7 +379,7 @@ model LeadHub {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  files     LeadHubFile[]
+  files LeadHubFile[]
 
   @@unique([leadId, phase])
 }
@@ -437,24 +437,24 @@ model BacklogItem {
 }
 
 model ProspectorResult {
-  id           String   @id @default(cuid())
-  placeId      String   @unique
-  name         String
-  address      String?
-  phone        String?
-  website      String?
-  rating       Float?
-  totalRatings Int      @default(0)
-  types        String?
-  city         String
-  category     String
-  lat          Float?
-  lng          Float?
-  convertedToLead Boolean @default(false)
-  savedById    String
-  savedByName  String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  placeId         String   @unique
+  name            String
+  address         String?
+  phone           String?
+  website         String?
+  rating          Float?
+  totalRatings    Int      @default(0)
+  types           String?
+  city            String
+  category        String
+  lat             Float?
+  lng             Float?
+  convertedToLead Boolean  @default(false)
+  savedById       String
+  savedByName     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model ProspectingLog {
@@ -468,4 +468,26 @@ model ProspectingLog {
   leadsCreated Int      @default(0)
   fromMap      Boolean  @default(false)
   createdAt    DateTime @default(now())
+}
+
+model obsidian_nodes {
+  id          Int              @id @default(autoincrement())
+  path        String           @unique
+  title       String
+  folder      String           @default("")
+  has_content Boolean          @default(true)
+  updated_at  String           @default("")
+  links_from  obsidian_links[] @relation("source")
+  links_to    obsidian_links[] @relation("target")
+}
+
+model obsidian_links {
+  id           Int             @id @default(autoincrement())
+  source_path  String
+  target_title String
+  target_path  String?
+  source       obsidian_nodes  @relation("source", fields: [source_path], references: [path])
+  target       obsidian_nodes? @relation("target", fields: [target_path], references: [path])
+
+  @@unique([source_path, target_title])
 }
