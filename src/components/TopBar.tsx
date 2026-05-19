@@ -42,6 +42,7 @@ const SEARCH_INDEX = [
   { label: 'Prospector',         url: '/leads/prospector', tipo: 'Página' },
   { label: 'Mercado',            url: '/leads/mercado', tipo: 'Página'    },
   { label: 'Propuestas',         url: '/proposals',    tipo: 'Página'    },
+  { label: 'Lista de Propuestas', url: '/proposals',   tipo: 'Página'    },
   { label: 'Proyectos',          url: '/projects',     tipo: 'Página'    },
   { label: 'Trazabilidad',       url: '/traceability', tipo: 'Página'    },
   { label: 'HUB',                url: '/hub',          tipo: 'Página'    },
