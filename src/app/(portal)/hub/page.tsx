@@ -9,6 +9,12 @@ interface HubCard {
   icon: string;
 }
 
+interface ServiceStatus {
+  name: string;
+  status: 'ok' | 'degraded' | 'down';
+  latency: number;
+}
+
 const HUB_CARDS: HubCard[] = [
   {
     title: 'BUSINESS',
@@ -42,16 +48,40 @@ const HUB_CARDS: HubCard[] = [
   },
 ];
 
+function StatusDot({ status }: { status: ServiceStatus['status'] }) {
+  const cls = status === 'ok' ? 'bg-green-400' : status === 'degraded' ? 'bg-yellow-400' : 'bg-red-400';
+  return <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cls} ${status !== 'ok' ? 'animate-pulse' : ''}`} />;
+}
+
 export default function HubPage() {
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted]   = useState(false);
+  const [services, setServices] = useState<ServiceStatus[]>([]);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+  const [lastCheck, setLastCheck] = useState<Date | null>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const fetchStatus = () => {
+    setLoadingStatus(true);
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(d => { setServices(d); setLastCheck(new Date()); })
+      .catch(() => {})
+      .finally(() => setLoadingStatus(false));
+  };
 
   useEffect(() => {
-    setMounted(true);
+    fetchStatus();
+    const id = setInterval(fetchStatus, 60000);
+    return () => clearInterval(id);
   }, []);
 
+  const allOk = services.length > 0 && services.every(s => s.status === 'ok');
+  const hasIssues = services.some(s => s.status !== 'ok');
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="p-8 space-y-8">
+      <div>
         <h1 className="text-3xl font-bold text-white">HUB</h1>
         <p className="text-gray-400 mt-1">Centro de operaciones y gestión organizacional de ArchiTechIA</p>
       </div>
@@ -70,32 +100,86 @@ export default function HubPage() {
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-6 h-6 text-orange-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={card.icon} />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-white group-hover:text-orange-400 transition-colors">
-                  {card.title}
-                </h3>
+                <h3 className="text-lg font-semibold text-white group-hover:text-orange-400 transition-colors">{card.title}</h3>
                 <p className="text-sm text-gray-400 mt-1 leading-relaxed">{card.description}</p>
               </div>
-              <svg
-                className="w-5 h-5 text-gray-600 group-hover:text-orange-400 transition-colors flex-shrink-0 mt-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-5 h-5 text-gray-600 group-hover:text-orange-400 transition-colors flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
           </a>
         ))}
+      </div>
+
+      {/* Widget de estado del sistema */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-2.5 h-2.5 rounded-full ${loadingStatus ? 'bg-gray-600' : allOk ? 'bg-green-400' : hasIssues ? 'bg-yellow-400 animate-pulse' : 'bg-gray-600'}`} />
+            <h3 className="text-sm font-semibold text-white">Estado del Sistema</h3>
+            {!loadingStatus && (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${allOk ? 'bg-green-900/30 text-green-400' : hasIssues ? 'bg-yellow-900/30 text-yellow-400' : 'bg-gray-800 text-gray-500'}`}>
+                {allOk ? 'Todos operativos' : hasIssues ? 'Incidencia detectada' : 'Verificando...'}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {lastCheck && (
+              <span className="text-xs text-gray-600">
+                Actualizado {lastCheck.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <button
+              onClick={fetchStatus}
+              disabled={loadingStatus}
+              className="p-1.5 text-gray-500 hover:text-white transition-colors disabled:opacity-40"
+              title="Refrescar"
+            >
+              <svg className={`w-4 h-4 ${loadingStatus ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {loadingStatus && services.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-gray-800 rounded-lg p-3 animate-pulse">
+                <div className="h-3 bg-gray-700 rounded w-16 mb-2" />
+                <div className="h-2 bg-gray-700 rounded w-10" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {services.map(s => (
+              <div key={s.name} className={`rounded-lg p-3 border transition-colors ${
+                s.status === 'ok'       ? 'bg-green-900/10 border-green-800/30' :
+                s.status === 'degraded' ? 'bg-yellow-900/10 border-yellow-800/30' :
+                                          'bg-red-900/10 border-red-800/30'
+              }`}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <StatusDot status={s.status} />
+                  <span className="text-sm font-medium text-white">{s.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs ${
+                    s.status === 'ok' ? 'text-green-400' : s.status === 'degraded' ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    {s.status === 'ok' ? 'Operativo' : s.status === 'degraded' ? 'Degradado' : 'Sin servicio'}
+                  </span>
+                  <span className="text-xs text-gray-600">{s.latency}ms</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -80,7 +80,8 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'calendario' | 'lista'>('calendario');
+  const [tab, setTab] = useState<'calendario' | 'semana' | 'lista'>('calendario');
+  const [weekOffset, setWeekOffset] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [editMeeting, setEditMeeting] = useState<Meeting | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -254,8 +255,9 @@ export default function MeetingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-gray-800 rounded-lg p-1 w-fit">
-        <button onClick={() => setTab('calendario')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'calendario' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Calendario</button>
-        <button onClick={() => setTab('lista')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'lista' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Lista</button>
+        <button onClick={() => setTab('calendario')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'calendario' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Mes</button>
+        <button onClick={() => setTab('semana')}     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'semana'     ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Semana</button>
+        <button onClick={() => setTab('lista')}      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'lista'      ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Lista</button>
       </div>
 
       {/* KPIs */}
@@ -427,7 +429,143 @@ export default function MeetingsPage() {
             )}
           </div>
         </div>
-      ) : (
+      ) : tab === 'semana' ? (() => {
+        // Calcular inicio de semana (lunes) según weekOffset
+        const now = new Date();
+        const day = now.getDay(); // 0=dom
+        const diffToMon = (day === 0 ? -6 : 1 - day);
+        const monday = new Date(now);
+        monday.setHours(0, 0, 0, 0);
+        monday.setDate(now.getDate() + diffToMon + weekOffset * 7);
+
+        const WEEK_DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+        const weekDates = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(monday); d.setDate(monday.getDate() + i); return d;
+        });
+
+        const HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 7–21
+        const PX_PER_MIN = 56 / 60; // 56px por hora
+
+        const getMins = (dateStr: string) => {
+          const d = new Date(dateStr);
+          return (d.getHours() - 5) * 60 + d.getMinutes(); // UTC-5
+        };
+
+        const todayStr = new Date().toDateString();
+
+        const weekLabel = (() => {
+          const end = weekDates[6];
+          const opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short' };
+          return `${monday.toLocaleDateString('es-ES', opts)} – ${end.toLocaleDateString('es-ES', opts)}, ${monday.getFullYear()}`;
+        })();
+
+        return (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            {/* Navegación semana */}
+            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-800">
+              <button onClick={() => setWeekOffset(w => w - 1)} className="p-1.5 text-gray-400 hover:text-white transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-white">{weekLabel}</span>
+                {weekOffset !== 0 && (
+                  <button onClick={() => setWeekOffset(0)} className="text-xs text-orange-400 hover:text-orange-300">Hoy</button>
+                )}
+              </div>
+              <button onClick={() => setWeekOffset(w => w + 1)} className="p-1.5 text-gray-400 hover:text-white transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <div className="flex" style={{ minWidth: '640px' }}>
+                {/* Columna de horas */}
+                <div className="w-14 flex-shrink-0 border-r border-gray-800">
+                  <div className="h-10 border-b border-gray-800" />
+                  {HOURS.map(h => (
+                    <div key={h} style={{ height: '56px' }} className="relative flex items-start justify-end pr-2 pt-1">
+                      <span className="text-[10px] text-gray-600 tabular-nums">{String(h).padStart(2,'0')}:00</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Columnas de días */}
+                {weekDates.map((date, di) => {
+                  const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                  const isToday = date.toDateString() === todayStr;
+                  const dayMeetings = meetings.filter(m => {
+                    const d = new Date(m.date);
+                    const mStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    return mStr === dateStr;
+                  });
+
+                  return (
+                    <div key={di} className="flex-1 border-r border-gray-800 last:border-r-0 min-w-0">
+                      {/* Header día */}
+                      <div className={`h-10 border-b border-gray-800 flex flex-col items-center justify-center ${isToday ? 'bg-orange-500/10' : ''}`}>
+                        <span className="text-[10px] text-gray-500">{WEEK_DAYS[di]}</span>
+                        <span className={`text-sm font-semibold ${isToday ? 'text-orange-400' : 'text-gray-300'}`}>{date.getDate()}</span>
+                      </div>
+
+                      {/* Grid horas + meetings */}
+                      <div className="relative" style={{ height: `${HOURS.length * 56}px` }}>
+                        {/* Líneas de hora */}
+                        {HOURS.map((_, hi) => (
+                          <div key={hi} style={{ top: `${hi * 56}px` }} className="absolute inset-x-0 border-t border-gray-800/50 pointer-events-none" />
+                        ))}
+                        {/* Línea de "ahora" */}
+                        {isToday && (() => {
+                          const now = new Date();
+                          const mins = (now.getHours() - 5) * 60 + now.getMinutes();
+                          const top = (mins - 7 * 60) * PX_PER_MIN;
+                          if (top < 0 || top > HOURS.length * 56) return null;
+                          return (
+                            <div style={{ top: `${top}px` }} className="absolute inset-x-0 h-px bg-orange-500 z-10 pointer-events-none">
+                              <div className="w-2 h-2 bg-orange-500 rounded-full -mt-0.5 -ml-1" />
+                            </div>
+                          );
+                        })()}
+
+                        {/* Eventos */}
+                        {dayMeetings.map(m => {
+                          const startMins = getMins(m.date) - 7 * 60;
+                          const endMins = m.endDate ? getMins(m.endDate) - 7 * 60 : startMins + 60;
+                          const top = Math.max(startMins * PX_PER_MIN, 0);
+                          const height = Math.max((endMins - startMins) * PX_PER_MIN, 22);
+                          const colorMap: Record<string, string> = {
+                            INTERNAL_DAILY: 'bg-blue-600/80 border-blue-500',
+                            INTERNAL_WORKSHOP: 'bg-cyan-600/80 border-cyan-500',
+                            COMMERCIAL: 'bg-orange-600/80 border-orange-500',
+                            ADVISORY: 'bg-purple-600/80 border-purple-500',
+                            PROVIDER: 'bg-emerald-600/80 border-emerald-500',
+                          };
+                          const cls = colorMap[m.type] ?? 'bg-gray-600/80 border-gray-500';
+                          return (
+                            <div
+                              key={m.id}
+                              onClick={() => openEdit(m)}
+                              style={{ top: `${top}px`, height: `${height}px` }}
+                              className={`absolute inset-x-0.5 rounded px-1.5 py-0.5 border-l-2 cursor-pointer overflow-hidden ${cls} ${m.status === 'COMPLETED' ? 'opacity-50' : ''} hover:brightness-110 transition-all`}
+                              title={m.title}
+                            >
+                              <p className="text-[10px] text-white font-medium leading-tight truncate">{m.title}</p>
+                              {height > 30 && (
+                                <p className="text-[9px] text-white/70 leading-tight">
+                                  {getTimeStrUTC5(m.date)}{m.endDate ? `–${getTimeStrUTC5(m.endDate)}` : ''}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })() : (
         <>
           {/* Filtros lista */}
           <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 mb-6 flex gap-3 flex-wrap items-center">
