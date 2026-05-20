@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useSession, signOut } from 'next-auth/react';
 
@@ -23,8 +23,8 @@ async function logLogout(userId: string, email: string) {
 }
 
 const avatarStyle = {
-  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-  boxShadow:  '0 0 12px rgba(99,102,241,0.4)',
+  background: 'linear-gradient(135deg, #FF5A00 0%, #FF5A00 100%)',
+  boxShadow:  '0 0 12px rgba(255,90,0,0.4)',
 } as const;
 
 export default function SidebarUser({ collapsed = false }: { collapsed?: boolean }) {
@@ -72,7 +72,7 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
         style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
       >
         <div
-          title={`${name} — ${ROLE_LABELS[role] ?? role}`}
+          title={`${name} â€” ${ROLE_LABELS[role] ?? role}`}
           className="w-9 h-9 rounded-xl"
           style={avatarStyle}
         >
@@ -80,7 +80,7 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
         </div>
         <button
           onClick={handleLogout}
-          title="Cerrar sesión"
+          title="Cerrar sesiÃ³n"
           className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
           style={{
             color:       '#475569',
@@ -125,7 +125,7 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
           <p className="font-semibold text-sm truncate" style={{ color: '#e2e8f0' }}>{name}</p>
           <p className="text-xs truncate" style={{ color: '#475569' }}>{email}</p>
           {role && (
-            <p className="text-xs truncate" style={{ color: '#818cf8' }}>
+            <p className="text-xs truncate" style={{ color: '#FF7A2F' }}>
               {ROLE_LABELS[role] ?? role}
             </p>
           )}
@@ -154,7 +154,7 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
         }}
       >
         <LogoutIcon />
-        Cerrar sesión
+        Cerrar sesiÃ³n
       </button>
     </div>
   );

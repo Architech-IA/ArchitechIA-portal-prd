@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from './ThemeProvider';
@@ -27,10 +27,10 @@ function mapNotif(n: ApiNotif): Notif {
 }
 
 const TIPO_COLORS: Record<string, { bg: string; text: string }> = {
-  lead:      { bg: 'rgba(99,102,241,0.15)',  text: '#818cf8' },
-  propuesta: { bg: 'rgba(139,92,246,0.15)',  text: '#a78bfa' },
-  proyecto:  { bg: 'rgba(6,182,212,0.15)',   text: '#22d3ee' },
-  finanza:   { bg: 'rgba(249,115,22,0.15)',  text: '#fb923c' },
+  lead:      { bg: 'rgba(255,90,0,0.15)',   text: '#FF5A00' },
+  propuesta: { bg: 'rgba(255,140,0,0.15)',  text: '#FF8C00' },
+  proyecto:  { bg: 'rgba(6,182,212,0.15)',  text: '#22d3ee' },
+  finanza:   { bg: 'rgba(16,185,129,0.15)', text: '#10b981' },
 };
 
 function NotifIcon({ tipo }: { tipo: string }) {
@@ -78,9 +78,9 @@ const SEARCH_INDEX = [
 ];
 
 const TIPO_TAG_COLORS: Record<string, { bg: string; text: string }> = {
-  Página:   { bg: 'rgba(99,102,241,0.15)',  text: '#818cf8' },
-  Producto: { bg: 'rgba(6,182,212,0.15)',   text: '#22d3ee' },
-  Cuenta:   { bg: 'rgba(249,115,22,0.15)',  text: '#fb923c' },
+  Página:   { bg: 'rgba(255,90,0,0.12)',  text: '#FF5A00' },
+  Producto: { bg: 'rgba(6,182,212,0.15)', text: '#22d3ee' },
+  Cuenta:   { bg: 'rgba(255,140,0,0.15)', text: '#FF8C00' },
 };
 
 const glassBtn = {
@@ -98,8 +98,8 @@ const glassBtn = {
 } as const;
 
 const btnHoverIn  = (el: HTMLElement) => {
-  el.style.background    = 'rgba(99,102,241,0.12)';
-  el.style.borderColor   = 'rgba(99,102,241,0.3)';
+  el.style.background    = 'rgba(255,90,0,0.12)';
+  el.style.borderColor   = 'rgba(255,90,0,0.35)';
 };
 const btnHoverOut = (el: HTMLElement) => {
   el.style.background    = 'rgba(255,255,255,0.04)';
@@ -180,7 +180,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
     background:    'rgba(9,9,24,0.97)',
     border:        '1px solid rgba(255,255,255,0.09)',
     borderRadius:  '14px',
-    boxShadow:     '0 24px 64px rgba(0,0,0,0.65), 0 0 0 1px rgba(99,102,241,0.08)',
+    boxShadow:     '0 24px 64px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,90,0,0.08)',
     backdropFilter:'blur(24px)',
   };
 
@@ -194,7 +194,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
         borderBottom:        '1px solid rgba(255,255,255,0.06)',
       }}
     >
-      {/* Hamburger — móvil */}
+      {/* Hamburger â€” mÃ³vil */}
       {isMobile && (
         <button
           onClick={onMenuClick}
@@ -208,7 +208,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
         </button>
       )}
 
-      {/* Búsqueda global */}
+      {/* BÃºsqueda global */}
       <div className="flex-1 relative" ref={searchRef}>
         <div className="relative max-w-md">
           <svg
@@ -220,13 +220,13 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
           </svg>
           <input
             type="text"
-            placeholder="Buscar páginas, clientes, productos..."
+            placeholder="Buscar pÃ¡ginas, clientes, productos..."
             value={query}
             onChange={e => { setQuery(e.target.value); setShowSearch(true); }}
             onFocus={e => {
               setShowSearch(true);
-              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)';
-              e.currentTarget.style.boxShadow   = '0 0 0 3px rgba(99,102,241,0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255,90,0,0.5)';
+              e.currentTarget.style.boxShadow   = '0 0 0 3px rgba(255,90,0,0.1)';
             }}
             style={{
               width: '100%',
@@ -260,7 +260,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
                   onClick={() => irA(r.url)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.08)'}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.08)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                 >
                   <span
@@ -312,7 +312,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
               className="absolute -top-1 -right-1 w-4 h-4 text-white font-bold rounded-full flex items-center justify-center"
               style={{
                 background:  'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                boxShadow:   '0 0 8px rgba(99,102,241,0.8)',
+                boxShadow:   '0 0 8px rgba(255,90,0,0.8)',
                 fontSize:    '10px',
               }}
             >
@@ -335,11 +335,11 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
                 <button
                   onClick={marcarTodasLeidas}
                   className="text-xs transition-colors"
-                  style={{ color: '#818cf8' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#a78bfa'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#818cf8'}
+                  style={{ color: '#FF7A2F' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#FF7A2F'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#FF7A2F'}
                 >
-                  Marcar todas leídas
+                  Marcar todas leÃ­das
                 </button>
               )}
             </div>
@@ -353,7 +353,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
                 </div>
               )}
               {notifs.map(n => {
-                const tc = TIPO_COLORS[n.tipo] ?? { bg: 'rgba(99,102,241,0.15)', text: '#818cf8' };
+                const tc = TIPO_COLORS[n.tipo] ?? { bg: 'rgba(255,90,0,0.12)', text: '#FF7A2F' };
                 return (
                   <button
                     key={n.id}
@@ -361,10 +361,10 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
                     className="w-full flex gap-3 px-4 py-3 text-left transition-all"
                     style={{
                       borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      background:   !n.leida ? 'rgba(99,102,241,0.05)' : 'transparent',
+                      background:   !n.leida ? 'rgba(255,90,0,0.05)' : 'transparent',
                     }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.08)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = !n.leida ? 'rgba(99,102,241,0.05)' : 'transparent'}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.08)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = !n.leida ? 'rgba(255,90,0,0.05)' : 'transparent'}
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -384,7 +384,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
                     {!n.leida && (
                       <span
                         className="w-2 h-2 rounded-full flex-shrink-0 mt-2"
-                        style={{ background: '#6366f1', boxShadow: '0 0 6px rgba(99,102,241,0.8)' }}
+                        style={{ background: '#FF5A00', boxShadow: '0 0 6px rgba(255,90,0,0.8)' }}
                       />
                     )}
                   </button>

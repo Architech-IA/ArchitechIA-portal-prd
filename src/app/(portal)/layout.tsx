@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import TopBar from "@/components/TopBar";
 import SidebarUser from "@/components/SidebarUser";
@@ -69,8 +69,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                  boxShadow: '0 0 16px rgba(99,102,241,0.5)',
+                  background: 'linear-gradient(135deg, #FF5A00 0%, #FF5A00 100%)',
+                  boxShadow: '0 0 16px rgba(255,90,0,0.5)',
                 }}
               >
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <span
                 className="text-base font-bold tracking-tight truncate"
                 style={{
-                  background: 'linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #fb923c 100%)',
+                  background: 'linear-gradient(135deg, #FF7A2F 0%, #FF7A2F 50%, #fb923c 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -93,8 +93,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center mx-auto"
               style={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                boxShadow: '0 0 16px rgba(99,102,241,0.5)',
+                background: 'linear-gradient(135deg, #FF5A00 0%, #FF5A00 100%)',
+                boxShadow: '0 0 16px rgba(255,90,0,0.5)',
               }}
             >
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,8 +110,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
               style={{ color: '#475569' }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.color = '#818cf8';
-                (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.1)';
+                (e.currentTarget as HTMLElement).style.color = '#FF7A2F';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.1)';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.color = '#475569';
@@ -146,8 +146,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               className="w-full flex items-center justify-center py-2 mb-3 rounded-lg transition-all"
               style={{ color: '#475569' }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.color = '#818cf8';
-                (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.1)';
+                (e.currentTarget as HTMLElement).style.color = '#FF7A2F';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.1)';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.color = '#475569';
@@ -179,9 +179,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                       gap:            isCollapsed ? '0' : '10px',
                       padding:        isCollapsed ? '10px 0' : '9px 12px',
                       justifyContent: isCollapsed ? 'center' : 'flex-start',
-                      color:          active ? '#a78bfa' : '#64748b',
-                      background:     active ? 'rgba(99,102,241,0.1)' : 'transparent',
-                      border:         active ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent',
+                      color:          active ? '#FF7A2F' : '#64748b',
+                      background:     active ? 'rgba(255,90,0,0.1)' : 'transparent',
+                      border:         active ? '1px solid rgba(255,90,0,0.2)' : '1px solid transparent',
                       textDecoration: 'none',
                       whiteSpace:     'nowrap',
                     }}
@@ -204,11 +204,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     {active && !isCollapsed && (
                       <span
                         className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full"
-                        style={{ background: 'linear-gradient(180deg, #6366f1, #8b5cf6)' }}
+                        style={{ background: 'linear-gradient(180deg, #FF5A00, #FF5A00)' }}
                       />
                     )}
                     <svg
-                      style={{ color: active ? '#818cf8' : '#475569', flexShrink: 0 }}
+                      style={{ color: active ? '#FF7A2F' : '#475569', flexShrink: 0 }}
                       className="w-[18px] h-[18px]"
                       fill="none"
                       stroke="currentColor"
@@ -221,8 +221,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                       <span
                         className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
                         style={{
-                          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                          boxShadow: '0 0 6px rgba(99,102,241,0.8)',
+                          background: 'linear-gradient(135deg, #FF5A00, #FF5A00)',
+                          boxShadow: '0 0 6px rgba(255,90,0,0.8)',
                         }}
                       />
                     )}
@@ -248,7 +248,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             width:       collapsed ? '64px' : '256px',
             minWidth:    collapsed ? '64px' : '256px',
             background:  'linear-gradient(180deg, #08081a 0%, #0b0b1f 100%)',
-            borderRight: '1px solid rgba(139,92,246,0.12)',
+            borderRight: '1px solid rgba(255,90,0,0.12)',
             transition:  'width 0.25s ease, min-width 0.25s ease',
             overflow:    'hidden',
           }}
@@ -274,7 +274,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           style={{
             width:       '260px',
             background:  'linear-gradient(180deg, #08081a 0%, #0b0b1f 100%)',
-            borderRight: '1px solid rgba(139,92,246,0.15)',
+            borderRight: '1px solid rgba(255,90,0,0.15)',
             transform:   mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
             transition:  'transform 0.25s ease',
           }}
@@ -289,7 +289,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <main
           className="flex-1 overflow-y-auto"
           style={{
-            background: 'radial-gradient(ellipse 80% 50% at 20% -10%, rgba(99,102,241,0.05) 0%, transparent 60%), #0a0a18',
+            background: 'radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255,90,0,0.05) 0%, transparent 60%), #0a0a18',
           }}
         >
           {children}

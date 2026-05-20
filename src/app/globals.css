@@ -14,17 +14,16 @@
   --glass-border:    rgba(255, 255, 255, 0.08);
   --glass-border-md: rgba(255, 255, 255, 0.12);
 
-  /* Primary — Indigo/Violet (AI identity) */
-  --primary:       #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark:  #4f46e5;
-  --violet:        #8b5cf6;
-  --violet-light:  #a78bfa;
+  /* Primary — Orange (ArchiTechIA brand) */
+  --primary:       #FF5A00;
+  --primary-light: #FF7A2F;
+  --primary-dark:  #E64E00;
+  --primary-muted: #FF5A00;
 
-  /* Brand — Orange (ArchiTechIA) */
-  --brand:       #f97316;
-  --brand-light: #fb923c;
-  --brand-dark:  #ea580c;
+  /* Secondary — kept for compat */
+  --brand:       #FF5A00;
+  --brand-light: #FF7A2F;
+  --brand-dark:  #E64E00;
 
   /* Accent — Cyan (tech) */
   --cyan:       #06b6d4;
@@ -46,9 +45,9 @@
   --border-subtle: rgba(255, 255, 255, 0.04);
 
   /* Glow */
-  --glow-primary: rgba(99, 102, 241, 0.4);
-  --glow-brand:   rgba(249, 115, 22, 0.4);
-  --glow-violet:  rgba(139, 92, 246, 0.4);
+  --glow-primary: rgba(255, 90, 0, 0.45);
+  --glow-brand:   rgba(255, 90, 0, 0.45);
+  --glow-soft:    rgba(255, 90, 0, 0.2);
 
   /* Legacy compat */
   --background: var(--bg-base);
@@ -100,11 +99,11 @@ aside nav a {
 aside ::-webkit-scrollbar  { width: 3px; }
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  {
-  background: linear-gradient(180deg, var(--primary) 0%, var(--violet) 100%);
+  background: linear-gradient(180deg, #FF5A00 0%, #E64E00 100%);
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--primary-light) 0%, var(--violet-light) 100%);
+  background: linear-gradient(180deg, #FF7A2F 0%, #FF5A00 100%);
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
@@ -164,7 +163,7 @@ aside ::-webkit-scrollbar  { width: 3px; }
 
 [data-theme="light"] ::-webkit-scrollbar-track { background: #eef0f8; }
 [data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  background: linear-gradient(180deg, #FF5A00, #E64E00);
 }
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #818cf8, #a78bfa);
