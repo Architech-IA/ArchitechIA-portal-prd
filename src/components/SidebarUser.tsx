@@ -22,6 +22,11 @@ async function logLogout(userId: string, email: string) {
   } catch {}
 }
 
+const avatarStyle = {
+  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+  boxShadow:  '0 0 12px rgba(99,102,241,0.4)',
+} as const;
+
 export default function SidebarUser({ collapsed = false }: { collapsed?: boolean }) {
   const { data: session } = useSession();
 
@@ -36,73 +41,119 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
     .slice(0, 2)
     .map(w => w.charAt(0).toUpperCase())
     .join('');
-  const initial = name.charAt(0).toUpperCase();
 
   const handleLogout = async () => {
     await logLogout(userId, email);
     signOut({ callbackUrl: '/login' });
   };
 
+  const Avatar = () => (
+    <div
+      className="flex items-center justify-center overflow-hidden"
+      style={avatarStyle}
+    >
+      {avatar
+        ? <img src={avatar} alt={name} className="w-full h-full object-cover" />
+        : <span className="font-semibold text-white text-xs">{initials}</span>
+      }
+    </div>
+  );
+
+  const LogoutIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+    </svg>
+  );
+
   if (collapsed) {
     return (
-      <div className="p-2 border-t border-gray-800 flex flex-col items-center gap-2">
+      <div
+        className="p-2 flex flex-col items-center gap-2"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+      >
         <div
           title={`${name} — ${ROLE_LABELS[role] ?? role}`}
-          className="w-9 h-9 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 overflow-hidden"
+          className="w-9 h-9 rounded-xl"
+          style={avatarStyle}
         >
-          {avatar ? (
-            <img src={avatar} alt={name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="font-semibold text-black text-xs">{initials}</span>
-          )}
+          <Avatar />
         </div>
         <button
           onClick={handleLogout}
           title="Cerrar sesión"
-          className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors border border-gray-800"
-          style={{ color: '#6b7280' }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+          style={{
+            color:       '#475569',
+            background:  'rgba(255,255,255,0.03)',
+            border:      '1px solid rgba(255,255,255,0.06)',
+          }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.color = '#f87171';
-            (e.currentTarget as HTMLElement).style.background = 'rgba(127,29,29,0.2)';
-            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(127,29,29,0.5)';
+            const el = e.currentTarget as HTMLElement;
+            el.style.color       = '#f87171';
+            el.style.background  = 'rgba(239,68,68,0.1)';
+            el.style.borderColor = 'rgba(239,68,68,0.2)';
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.color = '#6b7280';
-            (e.currentTarget as HTMLElement).style.background = 'transparent';
-            (e.currentTarget as HTMLElement).style.borderColor = 'rgb(31,41,55)';
+            const el = e.currentTarget as HTMLElement;
+            el.style.color       = '#475569';
+            el.style.background  = 'rgba(255,255,255,0.03)';
+            el.style.borderColor = 'rgba(255,255,255,0.06)';
           }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+          <LogoutIcon />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 border-t border-gray-800">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {avatar ? (
-            <img src={avatar} alt={name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="font-semibold text-black text-sm">{initials}</span>
-          )}
+    <div
+      className="p-3"
+      style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+    >
+      <div
+        className="flex items-center gap-3 p-2.5 rounded-xl mb-2"
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          border:     '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div className="w-9 h-9 rounded-xl flex-shrink-0 overflow-hidden" style={avatarStyle}>
+          <Avatar />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-orange-400 text-sm truncate">{name}</p>
-          <p className="text-xs text-gray-500 truncate">{email}</p>
-          {role && <p className="text-xs text-gray-600">{ROLE_LABELS[role] ?? role}</p>}
+          <p className="font-semibold text-sm truncate" style={{ color: '#e2e8f0' }}>{name}</p>
+          <p className="text-xs truncate" style={{ color: '#475569' }}>{email}</p>
+          {role && (
+            <p className="text-xs truncate" style={{ color: '#818cf8' }}>
+              {ROLE_LABELS[role] ?? role}
+            </p>
+          )}
         </div>
       </div>
+
       <button
         onClick={handleLogout}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-colors border border-gray-800 hover:border-red-900"
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs rounded-xl transition-all"
+        style={{
+          color:      '#475569',
+          background: 'rgba(255,255,255,0.02)',
+          border:     '1px solid rgba(255,255,255,0.05)',
+        }}
+        onMouseEnter={e => {
+          const el = e.currentTarget as HTMLElement;
+          el.style.color       = '#f87171';
+          el.style.background  = 'rgba(239,68,68,0.08)';
+          el.style.borderColor = 'rgba(239,68,68,0.15)';
+        }}
+        onMouseLeave={e => {
+          const el = e.currentTarget as HTMLElement;
+          el.style.color       = '#475569';
+          el.style.background  = 'rgba(255,255,255,0.02)';
+          el.style.borderColor = 'rgba(255,255,255,0.05)';
+        }}
       >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
+        <LogoutIcon />
         Cerrar sesión
       </button>
     </div>
