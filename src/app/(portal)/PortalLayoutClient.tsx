@@ -5,6 +5,7 @@ import SidebarUser from "@/components/SidebarUser";
 import GlobalSearch from "@/components/GlobalSearch";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 const SUPERADMIN_ONLY_PATHS = new Set(['/traceability', '/graph', '/reportes']);
 
@@ -29,12 +30,16 @@ const SEPARATORS_BEFORE = new Set(['/backlog', '/finanzas', '/team']);
 
 export default function PortalLayoutClient({
   children,
-  isSuperAdmin,
+  isSuperAdmin: serverIsSuperAdmin,
 }: {
   children: React.ReactNode;
   isSuperAdmin: boolean;
 }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const clientRole = (session?.user as { role?: string })?.role ?? '';
+  // Doble capa: server prop O verificación client-side
+  const isSuperAdmin = serverIsSuperAdmin || clientRole === 'SUPERADMIN';
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
