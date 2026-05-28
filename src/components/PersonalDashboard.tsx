@@ -1,16 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import BacklogItemDetail from '@/components/BacklogItemDetail';
+
+interface BacklogItem {
+  id: string; title: string; description: string | null; type: string;
+  priority: string; status: string; points: number | null;
+  sprintId: string | null; sprint: { id: string; name: string } | null;
+  assigneeId: string | null; assigneeName: string | null; createdAt: string;
+  projectId: string | null; project: { name: string } | null;
+}
 
 interface PersonalData {
   user: { id: string; email: string; name: string };
   kpis: {
-    leadsActivos: number;
-    proyectos: number;
-    backlogPendientes: number;
-    backlogInProgress: number;
-    reunionesPróximas: number;
-    pipelineValue: number;
+    leadsActivos: number; proyectos: number; backlogPendientes: number;
+    backlogInProgress: number; reunionesPróximas: number; pipelineValue: number;
   };
   myLeads: {
     id: string; companyName: string; contactName: string;
@@ -18,14 +23,9 @@ interface PersonalData {
   }[];
   myProjects: {
     id: string; name: string; status: string; priority: string;
-    progress: number; endDate: string | null; description: string;
-    projectRole: string;
+    progress: number; endDate: string | null; description: string; projectRole: string;
   }[];
-  myBacklog: {
-    id: string; title: string; type: string; priority: string;
-    status: string; points: number | null; projectId: string | null;
-    project: { name: string } | null;
-  }[];
+  myBacklog: BacklogItem[];
   upcomingMeetings: {
     id: string; title: string; type: string; date: string;
     endDate: string | null; location: string | null; link: string | null;
@@ -38,35 +38,28 @@ const STATUS_LEAD: Record<string, string> = {
   QUALIFIED: 'Calificado', DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta',
   NEGOTIATION: 'Negociación', WON: 'Ganado', LOST: 'Perdido',
 };
-
 const STATUS_COLOR: Record<string, string> = {
   NEW: 'text-blue-400', CONTACTED: 'text-indigo-400', DIAGNOSIS: 'text-violet-400',
   QUALIFIED: 'text-cyan-400', DEMO_VALIDATION: 'text-yellow-400',
   PROPOSAL_SENT: 'text-orange-400', NEGOTIATION: 'text-amber-400',
   WON: 'text-green-400', LOST: 'text-red-400',
 };
-
 const PRIORITY_DOT: Record<string, string> = {
-  LOW: 'bg-gray-500', MEDIUM: 'bg-yellow-500',
-  HIGH: 'bg-orange-500', CRITICAL: 'bg-red-500',
+  LOW: 'bg-gray-500', MEDIUM: 'bg-yellow-500', HIGH: 'bg-orange-500', CRITICAL: 'bg-red-500',
 };
-
 const PROJECT_STATUS_COLOR: Record<string, string> = {
   PLANNING: 'text-blue-400', IN_PROGRESS: 'text-orange-400',
   ON_HOLD: 'text-yellow-400', COMPLETED: 'text-green-400', CANCELLED: 'text-red-400',
 };
-
 const BACKLOG_STATUS_LABEL: Record<string, string> = {
   BACKLOG: 'Pendiente', IN_PROGRESS: 'En progreso', REVIEW: 'En revisión', DONE: 'Listo',
 };
-
 const BACKLOG_STATUS_COLOR: Record<string, string> = {
   BACKLOG: 'bg-gray-700 text-gray-300',
   IN_PROGRESS: 'bg-orange-900/40 text-orange-300',
   REVIEW: 'bg-blue-900/40 text-blue-300',
   DONE: 'bg-green-900/40 text-green-300',
 };
-
 const MEETING_TYPE_LABEL: Record<string, string> = {
   INTERNAL_DAILY: 'Daily', INTERNAL_WORKSHOP: 'Workshop',
   COMERCIAL: 'Comercial', ASESORIA: 'Asesoría',
@@ -81,8 +74,9 @@ function formatTime(iso: string) {
 }
 
 export default function PersonalDashboard() {
-  const [data, setData] = useState<PersonalData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]               = useState<PersonalData | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [selectedItem, setSelectedItem] = useState<BacklogItem | null>(null);
 
   useEffect(() => {
     fetch('/api/dashboard/personal')
@@ -90,6 +84,30 @@ export default function PersonalDashboard() {
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  const handleStatusChange = async (item: BacklogItem, newStatus: string) => {
+    await fetch(`/api/backlog/${item.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...item, status: newStatus }),
+    });
+    setData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        myBacklog: prev.myBacklog.map(i =>
+          i.id === item.id ? { ...i, status: newStatus } : i
+        ).filter(i => i.status !== 'DONE'),
+      };
+    });
+    setSelectedItem(prev => prev?.id === item.id ? { ...prev, status: newStatus } : prev);
+  };
+
+  const handleDelete = async (item: BacklogItem) => {
+    await fetch(`/api/backlog/${item.id}`, { method: 'DELETE' });
+    setData(prev => prev ? { ...prev, myBacklog: prev.myBacklog.filter(i => i.id !== item.id) } : prev);
+    setSelectedItem(null);
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen">
@@ -99,13 +117,22 @@ export default function PersonalDashboard() {
 
   const d = data!;
   const today = new Date();
-  const todayMeetings = d.upcomingMeetings.filter(m => {
-    const mDate = new Date(m.date);
-    return mDate.toDateString() === today.toDateString();
-  });
+  const todayMeetings = d.upcomingMeetings.filter(m => new Date(m.date).toDateString() === today.toDateString());
 
   return (
     <div className="p-6 space-y-6">
+
+      {/* Popup de detalle de tarea */}
+      {selectedItem && (
+        <BacklogItemDetail
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onStatusChange={(item, newStatus) => handleStatusChange(item as unknown as BacklogItem, newStatus)}
+          currentUserName={d.user.name}
+          onEdit={() => { setSelectedItem(null); window.location.href = '/backlog'; }}
+          onDelete={() => handleDelete(selectedItem)}
+        />
+      )}
 
       {/* Header */}
       <div>
@@ -120,10 +147,10 @@ export default function PersonalDashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Leads activos',     value: d.kpis.leadsActivos,       sub: `$${d.kpis.pipelineValue.toLocaleString()} pipeline`, icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'text-white' },
-          { label: 'Proyectos',         value: d.kpis.proyectos,           sub: 'Asignados a ti',            icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', color: 'text-white' },
-          { label: 'Backlog pendiente', value: d.kpis.backlogPendientes,   sub: `${d.kpis.backlogInProgress} en progreso`, icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01', color: d.kpis.backlogInProgress > 0 ? 'text-orange-400' : 'text-white' },
-          { label: 'Próximas reuniones',value: d.kpis.reunionesPróximas,  sub: `${todayMeetings.length} hoy`,   icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', color: 'text-white' },
+          { label: 'Leads activos',      value: d.kpis.leadsActivos,      sub: `$${d.kpis.pipelineValue.toLocaleString()} pipeline`, icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'text-white' },
+          { label: 'Proyectos',          value: d.kpis.proyectos,          sub: 'Asignados a ti',                                     icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', color: 'text-white' },
+          { label: 'Backlog pendiente',  value: d.kpis.backlogPendientes,  sub: `${d.kpis.backlogInProgress} en progreso`,            icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01', color: d.kpis.backlogInProgress > 0 ? 'text-orange-400' : 'text-white' },
+          { label: 'Próximas reuniones', value: d.kpis.reunionesPróximas, sub: `${todayMeetings.length} hoy`,                        icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', color: 'text-white' },
         ].map(k => (
           <div key={k.label} className="rounded-xl p-4 border border-orange-500/20 hover:border-orange-500/40 transition-all" style={{ background: 'rgba(255,255,255,0.03)' }}>
             <div className="flex items-center justify-between mb-2">
@@ -155,16 +182,21 @@ export default function PersonalDashboard() {
           ) : (
             <div className="space-y-2">
               {d.myBacklog.slice(0, 8).map(item => (
-                <div key={item.id} className="flex items-start gap-3 px-3 py-2.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <button
+                  key={item.id}
+                  onClick={() => setSelectedItem(item)}
+                  className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-all hover:border-orange-500/30 cursor-pointer group"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid transparent' }}
+                >
                   <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${PRIORITY_DOT[item.priority] ?? 'bg-gray-500'}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-200 truncate">{item.title}</p>
+                    <p className="text-sm text-gray-200 truncate group-hover:text-white transition-colors">{item.title}</p>
                     {item.project && <p className="text-xs text-gray-500 truncate">{item.project.name}</p>}
                   </div>
                   <span className={`text-[11px] px-2 py-0.5 rounded-full flex-shrink-0 ${BACKLOG_STATUS_COLOR[item.status] ?? 'bg-gray-700 text-gray-400'}`}>
                     {BACKLOG_STATUS_LABEL[item.status] ?? item.status}
                   </span>
-                </div>
+                </button>
               ))}
               {d.myBacklog.length > 8 && (
                 <p className="text-xs text-gray-600 text-center pt-1">+{d.myBacklog.length - 8} más</p>
@@ -278,10 +310,7 @@ export default function PersonalDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-gray-800 rounded-full h-1.5">
-                      <div
-                        className="h-1.5 rounded-full transition-all"
-                        style={{ width: `${p.progress}%`, background: 'linear-gradient(90deg, #FF5A00, #FF7A2F)' }}
-                      />
+                      <div className="h-1.5 rounded-full transition-all" style={{ width: `${p.progress}%`, background: 'linear-gradient(90deg, #FF5A00, #FF7A2F)' }} />
                     </div>
                     <span className="text-xs text-gray-500 flex-shrink-0">{p.progress}%</span>
                   </div>

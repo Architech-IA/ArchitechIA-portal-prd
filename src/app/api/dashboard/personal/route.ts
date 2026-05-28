@@ -40,8 +40,10 @@ export async function GET(request: NextRequest) {
         status: { not: 'DONE' },
       },
       select: {
-        id: true, title: true, type: true, priority: true,
-        status: true, points: true, projectId: true,
+        id: true, title: true, description: true, type: true, priority: true,
+        status: true, points: true, sprintId: true, projectId: true,
+        assigneeId: true, assigneeName: true, createdAt: true,
+        sprint: { select: { id: true, name: true } },
         project: { select: { name: true } },
       },
       orderBy: [{ status: 'asc' }, { priority: 'desc' }],
