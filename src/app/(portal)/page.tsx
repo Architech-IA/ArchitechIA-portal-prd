@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import PersonalDashboard from '@/components/PersonalDashboard';
 
 interface DashboardData {
   counts: { leads: number; proposals: number; projects: number; activities: number };
@@ -38,6 +40,10 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export default function Home() {
+  const { data: session, status: sessionStatus } = useSession();
+  const userRole = (session?.user as { role?: string })?.role ?? '';
+  const isSuperAdmin = userRole === 'SUPERADMIN';
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [chartTab, setChartTab] = useState<'ingresos' | 'leads' | 'proyectos'>('ingresos');
@@ -60,11 +66,20 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (!isSuperAdmin && sessionStatus === 'authenticated') return;
     fetch('/api/dashboard')
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [isSuperAdmin, sessionStatus]);
+
+  if (sessionStatus === 'loading') return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
+    </div>
+  );
+
+  if (!isSuperAdmin) return <PersonalDashboard />;
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen">
