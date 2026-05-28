@@ -2,9 +2,41 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { prisma } from '@/lib/prisma'
 
+const INTERNO_NAME = 'ArchiTechIA — Interno'
+
+/**
+ * Garantiza que exista el proyecto "Interno" (para tareas que no son de un
+ * proyecto de cliente) y reasigna ahí cualquier tarea huérfana. Se ejecuta de
+ * forma perezosa en el GET: tras la primera corrida, el updateMany afecta 0
+ * filas, así que el costo es mínimo. Devuelve el id del proyecto Interno.
+ */
+async function ensureInternoAndBackfill(): Promise<string> {
+  let interno = await prisma.project.findFirst({
+    where: { name: INTERNO_NAME },
+    select: { id: true },
+  })
+  if (!interno) {
+    interno = await prisma.project.create({
+      data: {
+        name: INTERNO_NAME,
+        description:
+          'Tareas internas no asociadas a un proyecto de cliente (administración, marketing, mejoras del portal, etc.).',
+      },
+      select: { id: true },
+    })
+  }
+  await prisma.backlogItem.updateMany({
+    where: { projectId: null },
+    data: { projectId: interno.id },
+  })
+  return interno.id
+}
+
 export async function GET() {
+  await ensureInternoAndBackfill()
+
   const items = await prisma.backlogItem.findMany({
-    include: { sprint: { select: { id: true, name: true } } },
+    include: { project: { select: { id: true, name: true } } },
     orderBy: [{ status: 'asc' }, { priority: 'asc' }, { order: 'asc' }],
   })
   return NextResponse.json(items)
@@ -15,13 +47,24 @@ export async function POST(request: NextRequest) {
   if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const body = await request.json()
-  const { title, description, type, priority, status, points, sprintId, assigneeId, assigneeName } = body
+  const { title, description, type, priority, status, points, projectId, assigneeId, assigneeName } = body
+
+  // El proyecto es obligatorio: si no llega, se asigna al proyecto Interno.
+  const resolvedProjectId = projectId || (await ensureInternoAndBackfill())
 
   const item = await prisma.backlogItem.create({
-    data: { title, description: description || null, type, priority, status: status || 'BACKLOG',
-      points: points ? Number(points) : null, sprintId: sprintId || null,
-      assigneeId: assigneeId || null, assigneeName: assigneeName || null },
-    include: { sprint: { select: { id: true, name: true } } },
+    data: {
+      title,
+      description: description || null,
+      type,
+      priority,
+      status: status || 'BACKLOG',
+      points: points ? Number(points) : null,
+      projectId: resolvedProjectId,
+      assigneeId: assigneeId || null,
+      assigneeName: assigneeName || null,
+    },
+    include: { project: { select: { id: true, name: true } } },
   })
   return NextResponse.json(item)
 }

@@ -8,14 +8,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params
   const body = await request.json()
-  const { title, description, type, priority, status, points, sprintId, assigneeId, assigneeName } = body
+  const { title, description, type, priority, status, points, projectId, assigneeId, assigneeName } = body
 
   const item = await prisma.backlogItem.update({
     where: { id },
-    data: { title, description: description || null, type, priority, status,
-      points: points ? Number(points) : null, sprintId: sprintId || null,
-      assigneeId: assigneeId || null, assigneeName: assigneeName || null },
-    include: { sprint: { select: { id: true, name: true } } },
+    data: {
+      title, description: description || null, type, priority, status,
+      points: points ? Number(points) : null,
+      // Solo actualiza el proyecto si viene en el body (no lo borra por accidente).
+      ...(projectId !== undefined ? { projectId: projectId || null } : {}),
+      assigneeId: assigneeId || null, assigneeName: assigneeName || null,
+    },
+    include: { project: { select: { id: true, name: true } } },
   })
   return NextResponse.json(item)
 }

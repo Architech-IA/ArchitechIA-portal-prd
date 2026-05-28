@@ -6,9 +6,8 @@ import BacklogItemDetail from '@/components/BacklogItemDetail';
 interface BacklogItem {
   id: string; title: string; description: string | null; type: string;
   priority: string; status: string; points: number | null;
-  sprintId: string | null; sprint: { id: string; name: string } | null;
   assigneeId: string | null; assigneeName: string | null; createdAt: string;
-  projectId: string | null; project: { name: string } | null;
+  projectId: string | null; project: { id: string; name: string } | null;
 }
 
 interface PersonalData {
@@ -346,7 +345,7 @@ export default function PersonalDashboard() {
                       {item.title}
                     </p>
                     <p className="text-[11px] text-gray-600 truncate mt-0.5">
-                      {item.project?.name ?? 'Sin proyecto'}{item.sprint ? ` · ${item.sprint.name}` : ''}
+                      {item.project?.name ?? 'Sin proyecto'}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">

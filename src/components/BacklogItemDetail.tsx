@@ -11,8 +11,8 @@ interface BacklogItem {
   priority: string
   status: string
   points: number | null
-  sprintId: string | null
-  sprint: { id: string; name: string } | null
+  projectId: string | null
+  project: { id: string; name: string } | null
   assigneeId: string | null
   assigneeName: string | null
   createdAt: string
@@ -149,10 +149,10 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                     </div>
                   </div>
                 )}
-                {item.sprint && (
+                {item.project && (
                   <div className="bg-gray-800/60 rounded-lg p-3">
-                    <p className="text-[10px] text-gray-500 mb-1">Sprint</p>
-                    <p className="text-sm text-orange-400">{item.sprint.name}</p>
+                    <p className="text-[10px] text-gray-500 mb-1">Proyecto</p>
+                    <p className="text-sm text-orange-400">{item.project.name}</p>
                   </div>
                 )}
               </div>

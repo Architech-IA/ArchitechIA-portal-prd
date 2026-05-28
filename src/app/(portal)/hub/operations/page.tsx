@@ -5,7 +5,7 @@ export default function OperationsPage() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white">OPERATIONS</h1>
-        <p className="text-gray-400 mt-1">Proyectos, backlog, sprints y operaciones del equipo técnico</p>
+        <p className="text-gray-400 mt-1">Proyectos, backlog y operaciones del equipo técnico</p>
       </div>
 
       <div className="bg-gray-800 border border-gray-700 rounded-xl p-12 text-center">

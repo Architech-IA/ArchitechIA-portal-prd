@@ -5,14 +5,9 @@ import { useSession } from 'next-auth/react'
 import { Plus, LayoutGrid, List, X, Loader2, Flag, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye } from 'lucide-react'
 import BacklogItemDetail from '@/components/BacklogItemDetail'
 
-interface Sprint {
+interface Project {
   id: string
   name: string
-  goal: string | null
-  startDate: string | null
-  endDate: string | null
-  status: string
-  _count: { items: number }
 }
 
 interface BacklogItem {
@@ -23,8 +18,8 @@ interface BacklogItem {
   priority: string
   status: string
   points: number | null
-  sprintId: string | null
-  sprint: { id: string; name: string } | null
+  projectId: string | null
+  project: { id: string; name: string } | null
   assigneeId: string | null
   assigneeName: string | null
   createdAt: string
@@ -59,7 +54,7 @@ const PRIORITIES = [
 
 const EMPTY_FORM = {
   title: '', description: '', type: 'TASK', priority: 'MEDIUM',
-  status: 'BACKLOG', points: '', sprintId: '', assigneeId: '', assigneeName: '',
+  status: 'BACKLOG', points: '', projectId: '', assigneeId: '', assigneeName: '',
 }
 
 function TypeBadge({ type }: { type: string }) {
@@ -85,7 +80,7 @@ function PointsBadge({ points }: { points: number | null }) {
 export default function BacklogPage() {
   const { data: session } = useSession()
   const [items, setItems]   = useState<BacklogItem[]>([])
-  const [sprints, setSprints] = useState<Sprint[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView]         = useState<'kanban' | 'lista'>('kanban')
   const [kanbanExpanded, setKanbanExpanded] = useState(false)
@@ -95,23 +90,21 @@ export default function BacklogPage() {
   const [form, setForm]     = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [confirmDel, setConfirmDel] = useState<BacklogItem | null>(null)
-  const [filterSprint, setFilterSprint] = useState('')
+  const [filterProject, setFilterProject] = useState('')
   const [filterType, setFilterType]     = useState('')
   const [filterPriority, setFilterPriority] = useState('')
-  const [showSprintModal, setShowSprintModal] = useState(false)
-  const [sprintForm, setSprintForm] = useState({ name: '', goal: '', startDate: '', endDate: '' })
   const [users, setUsers] = useState<{ id: string; name: string; role: string }[]>([])
 
   const userName = (session?.user as any)?.name ?? ''
 
   const load = async () => {
-    const [i, s, u] = await Promise.all([
+    const [i, p, u] = await Promise.all([
       fetch('/api/backlog').then(r => r.json()),
-      fetch('/api/backlog/sprints').then(r => r.json()),
+      fetch('/api/projects').then(r => r.json()),
       fetch('/api/users').then(r => r.json()),
     ])
     setItems(Array.isArray(i) ? i : [])
-    setSprints(Array.isArray(s) ? s : [])
+    setProjects(Array.isArray(p) ? p.map((x: any) => ({ id: x.id, name: x.name })) : [])
     setUsers(Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : [])
     setLoading(false)
   }
@@ -129,7 +122,7 @@ export default function BacklogPage() {
     setForm({
       title: item.title, description: item.description ?? '', type: item.type,
       priority: item.priority, status: item.status, points: item.points ? String(item.points) : '',
-      sprintId: item.sprintId ?? '', assigneeId: item.assigneeId ?? '', assigneeName: item.assigneeName ?? '',
+      projectId: item.projectId ?? '', assigneeId: item.assigneeId ?? '', assigneeName: item.assigneeName ?? '',
     })
     setShowModal(true)
   }
@@ -138,7 +131,7 @@ export default function BacklogPage() {
     e.preventDefault()
     if (!form.title.trim()) return
     setSaving(true)
-    const body = { ...form, points: form.points ? Number(form.points) : null, sprintId: form.sprintId || null }
+    const body = { ...form, points: form.points ? Number(form.points) : null, projectId: form.projectId || null }
     if (editItem) {
       const res = await fetch(`/api/backlog/${editItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
@@ -160,26 +153,19 @@ export default function BacklogPage() {
   const changeStatus = async (item: BacklogItem, newStatus: string) => {
     const res = await fetch(`/api/backlog/${item.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...item, status: newStatus, sprintId: item.sprintId, assigneeName: item.assigneeName }),
+      body: JSON.stringify({ ...item, status: newStatus, projectId: item.projectId, assigneeName: item.assigneeName }),
     })
     if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
   }
 
-  const createSprint = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const res = await fetch('/api/backlog/sprints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sprintForm) })
-    if (res.ok) { const s = await res.json(); setSprints(prev => [s, ...prev]); setShowSprintModal(false); setSprintForm({ name: '', goal: '', startDate: '', endDate: '' }) }
-  }
-
   const filtered = items.filter(i => {
-    if (filterSprint && i.sprintId !== filterSprint) return false
+    if (filterProject && i.projectId !== filterProject) return false
     if (filterType && i.type !== filterType) return false
     if (filterPriority && i.priority !== filterPriority) return false
     return true
   })
 
   const byStatus = (status: string) => filtered.filter(i => i.status === status)
-  const activeSprint = sprints.find(s => s.status === 'ACTIVE')
   const totalDone = items.filter(i => i.status === 'DONE').length
   const totalPoints = items.filter(i => i.status === 'DONE').reduce((a, i) => a + (i.points ?? 0), 0)
 
@@ -196,16 +182,15 @@ export default function BacklogPage() {
           <h1 className="text-2xl font-bold text-white">Backlog</h1>
           <p className="text-xs text-gray-500 mt-0.5">
             {items.length} ítems · {totalDone} completados · {totalPoints} pts entregados
-            {activeSprint && <span className="ml-2 text-orange-400">· Sprint: {activeSprint.name}</span>}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Filters */}
           <div className="flex items-center gap-1.5">
-            <select value={filterSprint} onChange={e => setFilterSprint(e.target.value)} className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
-              <option value="">Todos los sprints</option>
-              {sprints.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <select value={filterProject} onChange={e => setFilterProject(e.target.value)} className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
+              <option value="">Todos los proyectos</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select value={filterType} onChange={e => setFilterType(e.target.value)} className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
               <option value="">Todos los tipos</option>
@@ -232,7 +217,6 @@ export default function BacklogPage() {
             </button>
           )}
 
-          <button onClick={() => setShowSprintModal(true)} className="text-xs px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors">+ Sprint</button>
           <button onClick={() => openNew()} className="flex items-center gap-1.5 text-xs px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors font-medium">
             <Plus size={14} /> Nueva tarea
           </button>
@@ -299,7 +283,7 @@ export default function BacklogPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                               <PointsBadge points={item.points} />
-                              {item.sprint && <span className="text-[10px] text-orange-400/70 bg-orange-500/10 px-1.5 py-0.5 rounded">{item.sprint.name}</span>}
+                              {item.project && <span className="text-[10px] text-orange-400/70 bg-orange-500/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">{item.project.name}</span>}
                             </div>
                             {item.assigneeName && (
                               <div className="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0" title={item.assigneeName}>
@@ -341,7 +325,7 @@ export default function BacklogPage() {
                   <th className="text-left px-4 py-3">Tipo</th>
                   <th className="text-left px-4 py-3">Prioridad</th>
                   <th className="text-left px-4 py-3">Estado</th>
-                  <th className="text-left px-4 py-3">Sprint</th>
+                  <th className="text-left px-4 py-3">Proyecto</th>
                   <th className="text-left px-4 py-3">Responsable</th>
                   <th className="text-center px-4 py-3">Pts</th>
                   <th className="text-center px-4 py-3">Acciones</th>
@@ -371,7 +355,7 @@ export default function BacklogPage() {
                           {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-xs text-orange-400/70">{item.sprint?.name ?? '—'}</td>
+                      <td className="px-4 py-3 text-xs text-orange-400/70">{item.project?.name ?? '—'}</td>
                       <td className="px-4 py-3 text-xs text-gray-400">{item.assigneeName ?? '—'}</td>
                       <td className="px-4 py-3 text-center"><PointsBadge points={item.points} /></td>
                       <td className="px-4 py-3 text-center">
@@ -435,10 +419,10 @@ export default function BacklogPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Sprint</label>
-                  <select value={form.sprintId} onChange={e => setForm({...form, sprintId: e.target.value})} className={inputCls}>
-                    <option value="">Sin sprint</option>
-                    {sprints.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <label className="block text-xs text-gray-400 mb-1">Proyecto *</label>
+                  <select required value={form.projectId} onChange={e => setForm({...form, projectId: e.target.value})} className={inputCls}>
+                    <option value="">Selecciona un proyecto…</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -468,42 +452,6 @@ export default function BacklogPage() {
         </div>
       )}
 
-      {/* Modal crear sprint */}
-      {showSprintModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800">
-              <h2 className="text-lg font-bold text-white">Nuevo Sprint</h2>
-              <button onClick={() => setShowSprintModal(false)} className="text-gray-500 hover:text-white"><X size={18} /></button>
-            </div>
-            <form onSubmit={createSprint} className="px-6 py-5 space-y-3">
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Nombre *</label>
-                <input required value={sprintForm.name} onChange={e => setSprintForm({...sprintForm, name: e.target.value})} placeholder="Sprint 1" className={inputCls} />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Objetivo</label>
-                <input value={sprintForm.goal} onChange={e => setSprintForm({...sprintForm, goal: e.target.value})} placeholder="Meta del sprint" className={inputCls} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Inicio</label>
-                  <input type="date" value={sprintForm.startDate} onChange={e => setSprintForm({...sprintForm, startDate: e.target.value})} className={inputCls + ' [color-scheme:dark]'} />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Fin</label>
-                  <input type="date" value={sprintForm.endDate} onChange={e => setSprintForm({...sprintForm, endDate: e.target.value})} className={inputCls + ' [color-scheme:dark]'} />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowSprintModal(false)} className="px-4 py-2 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 text-sm">Cancelar</button>
-                <button type="submit" className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-medium">Crear Sprint</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Item detail popup */}
       {viewItem && (
         <BacklogItemDetail
@@ -515,7 +463,7 @@ export default function BacklogPage() {
           onStatusChange={async (item, newStatus) => {
             const res = await fetch(`/api/backlog/${item.id}`, {
               method: 'PUT', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...item, status: newStatus, sprintId: item.sprintId, assigneeName: item.assigneeName }),
+              body: JSON.stringify({ ...item, status: newStatus, projectId: item.projectId, assigneeName: item.assigneeName }),
             })
             if (res.ok) {
               const updated = await res.json()
