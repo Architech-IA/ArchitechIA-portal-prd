@@ -30,9 +30,11 @@ const SEPARATORS_BEFORE = new Set(['/backlog', '/finanzas', '/team']);
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const userRole = (session?.user as { role?: string })?.role ?? '';
-  const isSuperAdmin = userRole === 'SUPERADMIN';
+  // Mientras carga, mostrar todos los links; ocultar restringidos solo cuando
+  // sabemos con certeza que el rol no es SUPERADMIN.
+  const isSuperAdmin = sessionStatus !== 'authenticated' || userRole === 'SUPERADMIN';
   const [collapsed, setCollapsed]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile]     = useState(false);
