@@ -288,7 +288,7 @@ export default function ProductosPage() {
     <div className="p-4 md:p-8">
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Productos</h1>
+          <h1 className="text-3xl font-bold text-white">Solutions</h1>
           <p className="text-gray-400 mt-1">Soluciones desarrolladas por ArchiTechIA</p>
         </div>
         {isAdmin && (

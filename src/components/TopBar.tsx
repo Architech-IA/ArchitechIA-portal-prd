@@ -66,7 +66,7 @@ const SEARCH_INDEX = [
   { label: 'FINANCE',              url: '/hub/finance',        tipo: 'Página'   },
   { label: 'OPERATIONS',           url: '/hub/operations',     tipo: 'Página'   },
   { label: 'LEGAL',                url: '/hub/legal',          tipo: 'Página'   },
-  { label: 'Productos',            url: '/productos',          tipo: 'Página'   },
+  { label: 'Solutions',            url: '/productos',          tipo: 'Página'   },
   { label: 'Cuentas',              url: '/resources/cuentas',  tipo: 'Página'   },
   { label: 'Finance',              url: '/finanzas',           tipo: 'Página'   },
   { label: 'Calendar / Meetings',  url: '/meetings',           tipo: 'Página'   },
