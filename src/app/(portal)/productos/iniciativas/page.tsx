@@ -126,6 +126,8 @@ export default function IniciativasPage() {
   const [iniciativas, setIniciativas] = useState<Iniciativa[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'cards' | 'tabla'>('cards')
+  const [page, setPage] = useState(1)
+  const PER_PAGE = 12
 
   const [search, setSearch] = useState('')
   const [fCategoria, setFCategoria] = useState('')
@@ -263,6 +265,13 @@ export default function IniciativasPage() {
     return true
   })
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const currentPage = Math.min(page, pageCount)
+  const pagedCards = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE)
+
+  // Vuelve a la primera página al cambiar filtros, búsqueda o vista.
+  useEffect(() => { setPage(1) }, [search, fCategoria, fEstado, fPrioridad, view])
+
   const kpis = {
     total: iniciativas.length,
     enEjecucion: iniciativas.filter(i => i.estado === 'EN_EJECUCION').length,
@@ -349,8 +358,9 @@ export default function IniciativasPage() {
           <button onClick={openNew} className="mt-3 text-orange-400 hover:text-orange-300 text-sm">+ Crear la primera</button>
         </div>
       ) : view === 'cards' ? (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filtered.map(i => (
+          {pagedCards.map(i => (
             <div key={i.id} onClick={() => setSelected(i)}
               className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden cursor-pointer hover:border-orange-500/40 transition-all group">
               <div className={`bg-gradient-to-r ${i.color} h-1.5`} />
@@ -372,6 +382,29 @@ export default function IniciativasPage() {
             </div>
           ))}
         </div>
+        {pageCount > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-6">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors">
+              Anterior
+            </button>
+            {Array.from({ length: pageCount }, (_, idx) => idx + 1).map(n => (
+              <button key={n} onClick={() => setPage(n)}
+                className={`min-w-[34px] px-2.5 py-1.5 rounded-lg text-sm border transition-colors ${
+                  n === currentPage
+                    ? 'bg-orange-600 border-orange-500 text-white font-medium'
+                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}>
+                {n}
+              </button>
+            ))}
+            <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={currentPage === pageCount}
+              className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors">
+              Siguiente
+            </button>
+          </div>
+        )}
+        </>
       ) : (
         <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
           <table className="w-full">
