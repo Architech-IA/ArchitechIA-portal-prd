@@ -3,37 +3,36 @@
 import { useEffect, useState } from 'react';
 
 interface UsageData {
-  done: number;
+  active: number;
   total: number;
 }
 
 /**
  * Barra de "uso" del footer del sidebar — réplica visual del bloque
  * "Credits used 810/3,300" de la referencia, pero con un dato real:
- * proyectos completados sobre el total.
+ * tareas de backlog activas (pendientes + en progreso) sobre el total.
  */
 export default function SidebarUsage() {
   const [data, setData] = useState<UsageData | null>(null);
 
   useEffect(() => {
-    let active = true;
+    let alive = true;
     fetch('/api/dashboard')
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
-        if (!active || !d) return;
-        const total = d?.counts?.projects ?? 0;
-        const done =
-          (d?.projectsByStatus as { status: string; _count: number }[] | undefined)
-            ?.find(s => s.status === 'COMPLETED')?._count ?? 0;
-        setData({ done, total });
+        if (!alive || !d) return;
+        const bs = d?.backlogStats;
+        const total = bs?.total ?? 0;
+        const active = (bs?.pendientes ?? 0) + (bs?.enProgreso ?? 0);
+        setData({ active, total });
       })
       .catch(() => {});
-    return () => { active = false; };
+    return () => { alive = false; };
   }, []);
 
   if (!data || data.total === 0) return null;
 
-  const pct = Math.min(100, Math.round((data.done / data.total) * 100));
+  const pct = Math.min(100, Math.round((data.active / data.total) * 100));
 
   return (
     <div className="px-3 pt-2 pb-1">
@@ -43,10 +42,10 @@ export default function SidebarUsage() {
       >
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium" style={{ color: '#94a3b8' }}>
-            Proyectos completados
+            Tareas activas
           </span>
           <span className="text-xs font-semibold tabular-nums" style={{ color: '#cbd5e1' }}>
-            {data.done}/{data.total}
+            {data.active}/{data.total}
           </span>
         </div>
         <div
