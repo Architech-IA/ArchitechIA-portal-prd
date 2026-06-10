@@ -37,8 +37,13 @@ export default function GlobalSearch() {
       }
       if (e.key === 'Escape') close();
     };
+    const onOpen = () => setOpen(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('open-global-search', onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('open-global-search', onOpen);
+    };
   }, [close]);
 
   useEffect(() => {
