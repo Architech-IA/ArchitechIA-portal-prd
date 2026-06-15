@@ -1,4 +1,4 @@
 {
-  "buildCommand": "prisma generate && prisma db push && prisma db seed && next build",
+  "buildCommand": "prisma generate && prisma db push && tsx prisma/seed-app-types.ts && next build",
   "framework": "nextjs"
 }
