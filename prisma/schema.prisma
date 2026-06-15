@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -30,6 +29,7 @@ model User {
   prospectos   Prospecto[]
   nicheMarkets NicheMarket[]
   comments     Comment[]
+  appInstances AppInstance[]
 }
 
 model Lead {
@@ -52,6 +52,7 @@ model Lead {
 
   proposals  Proposal[]
   activities Activity[]
+  appInstances AppInstance[]
 }
 
 model Proposal {
@@ -72,6 +73,7 @@ model Proposal {
   activities Activity[]
   tasks      ProposalTask[]
   documents  ProposalDocument[]
+  appInstances AppInstance[]
 }
 
 model ProposalTask {
@@ -113,6 +115,7 @@ model Project {
   milestones   Milestone[]
   activities   Activity[]
   backlogItems BacklogItem[]
+  appInstances AppInstance[]
 }
 
 model ProjectUser {
@@ -251,6 +254,8 @@ model Cliente {
   valorTotal Float    @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  appInstances AppInstance[]
 }
 
 model Producto {
@@ -529,4 +534,49 @@ model obsidian_links {
   target       obsidian_nodes? @relation("target", fields: [target_path], references: [path])
 
   @@unique([source_path, target_title])
+}
+
+model AppType {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String?
+  icon          String?
+  color         String   @default("from-orange-500 to-red-600")
+  category      String
+  schema        String
+  defaultConfig String   @default("{}")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  instances AppInstance[]
+}
+
+model AppInstance {
+  id          String   @id @default(cuid())
+  appTypeId   String
+  appType     AppType  @relation(fields: [appTypeId], references: [id])
+
+  name        String
+  description String?
+  slug        String   @unique
+  status      String   @default("DRAFT")
+
+  config      String   @default("{}")
+
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  proposalId  String?
+  proposal    Proposal? @relation(fields: [proposalId], references: [id])
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  clienteId   String?
+  cliente     Cliente? @relation(fields: [clienteId], references: [id])
+
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

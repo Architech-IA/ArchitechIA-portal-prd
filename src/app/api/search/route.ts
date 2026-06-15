@@ -9,9 +9,9 @@ export async function GET(request: NextRequest) {
     prisma.lead.findMany({
       where: {
         OR: [
-          { companyName: { contains: q, mode: 'insensitive' } },
-          { contactName: { contains: q, mode: 'insensitive' } },
-          { email:       { contains: q, mode: 'insensitive' } },
+          { companyName: { contains: q } },
+          { contactName: { contains: q } },
+          { email:       { contains: q } },
         ],
       },
       select: { id: true, companyName: true, contactName: true, status: true, estimatedValue: true },
@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
     prisma.proposal.findMany({
       where: {
         OR: [
-          { title:       { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
+          { title:       { contains: q } },
+          { description: { contains: q } },
         ],
       },
       select: { id: true, title: true, status: true, amount: true },
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     prisma.project.findMany({
       where: {
         OR: [
-          { name:        { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
+          { name:        { contains: q } },
+          { description: { contains: q } },
         ],
       },
       select: { id: true, name: true, status: true, progress: true },
@@ -39,20 +39,20 @@ export async function GET(request: NextRequest) {
     }),
     prisma.cliente.findMany({
       where: { OR: [
-        { nombre:   { contains: q, mode: 'insensitive' } },
-        { contacto: { contains: q, mode: 'insensitive' } },
-        { email:    { contains: q, mode: 'insensitive' } },
+        { nombre:   { contains: q } },
+        { contacto: { contains: q } },
+        { email:    { contains: q } },
       ]},
       select: { id: true, nombre: true, industria: true, estado: true },
       take: 5,
     }),
     prisma.backlogItem.findMany({
-      where: { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] },
+      where: { OR: [{ title: { contains: q } }, { description: { contains: q } }] },
       select: { id: true, title: true, status: true, type: true },
       take: 5,
     }),
     prisma.meeting.findMany({
-      where: { OR: [{ title: { contains: q, mode: 'insensitive' } }, { notes: { contains: q, mode: 'insensitive' } }] },
+      where: { OR: [{ title: { contains: q } }, { notes: { contains: q } }] },
       select: { id: true, title: true, date: true, type: true },
       take: 5,
     }),
@@ -60,3 +60,4 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ leads, proposals, projects, clientes, backlog, meetings });
 }
+

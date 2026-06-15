@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
 
   const results = await prisma.prospectorResult.findMany({
     where: {
-      ...(city     ? { city:     { contains: city,     mode: 'insensitive' } } : {}),
-      ...(category ? { category: { contains: category, mode: 'insensitive' } } : {}),
+      ...(city     ? { city:     { contains: city } } : {}),
+      ...(category ? { category: { contains: category } } : {}),
       ...(converted !== null ? { convertedToLead: converted === 'true' } : {}),
     },
     orderBy: { createdAt: 'desc' },
@@ -88,3 +88,4 @@ export async function DELETE(request: NextRequest) {
   await prisma.prospectorResult.delete({ where: { id } })
   return NextResponse.json({ ok: true })
 }
+

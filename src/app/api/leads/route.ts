@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   // Crear cliente automáticamente si no existe
   const existingCliente = await prisma.cliente.findFirst({
-    where: { nombre: { equals: companyName, mode: 'insensitive' } },
+    where: { nombre: { equals: companyName } },
   });
   if (!existingCliente) {
     await prisma.cliente.create({

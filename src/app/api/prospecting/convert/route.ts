@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   for (const place of places) {
     // Evitar duplicados por nombre de empresa en Clientes
     const exists = await prisma.cliente.findFirst({
-      where: { nombre: { equals: place.name, mode: 'insensitive' } },
+      where: { nombre: { equals: place.name } },
     })
 
     if (exists) {
@@ -52,3 +52,4 @@ export async function POST(request: NextRequest) {
     skippedNames: skipped,
   })
 }
+
