@@ -6,6 +6,7 @@ import {
   ArrowLeft, Settings, Box, Users, Layout, Globe, BarChart3,
 } from 'lucide-react';
 import CRMRuntime from '@/components/apps/crm/CRMRuntime';
+import LandingRuntime from '@/components/apps/landing/LandingRuntime';
 import AppRuntimePlaceholder from '@/components/apps/shared/AppRuntimePlaceholder';
 import type { AppInstance } from '@/lib/app-types';
 import { APP_STATUS_LABELS } from '@/lib/app-types';
@@ -94,7 +95,9 @@ export default function AppRuntimePage() {
 
       {/* Runtime area */}
       <div className="flex-1 overflow-hidden">
-        {app.appType.slug === 'crm' ? <CRMRuntime app={app} /> : <AppRuntimePlaceholder app={app} />}
+        {app.appType.slug === 'crm' && <CRMRuntime app={app} />}
+        {app.appType.slug === 'landing-page' && <LandingRuntime app={app} />}
+        {app.appType.slug !== 'crm' && app.appType.slug !== 'landing-page' && <AppRuntimePlaceholder app={app} />}
       </div>
     </div>
   );
