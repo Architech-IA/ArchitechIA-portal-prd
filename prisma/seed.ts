@@ -261,7 +261,7 @@ async function main() {
       icon: 'Users',
       color: 'from-blue-500 to-indigo-600',
       category: 'comercial',
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         properties: {
           companyName: { type: 'string', title: 'Nombre de la empresa' },
@@ -278,12 +278,12 @@ async function main() {
           theme: { type: 'string', title: 'Tema', enum: ['light', 'dark'], default: 'dark' },
         },
         required: ['companyName'],
-      }),
-      defaultConfig: JSON.stringify({
+      },
+      defaultConfig: {
         modules: ['contacts', 'deals'],
         pipelineStages: ['Nuevo', 'Contactado', 'Propuesta', 'Negociación', 'Cerrado'],
         theme: 'dark',
-      }),
+      },
     },
     {
       slug: 'landing-page',
@@ -292,7 +292,7 @@ async function main() {
       icon: 'Layout',
       color: 'from-pink-500 to-rose-600',
       category: 'marketing',
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         properties: {
           headline: { type: 'string', title: 'Título principal' },
@@ -306,12 +306,12 @@ async function main() {
           primaryColor: { type: 'string', title: 'Color primario', default: '#FF5A00' },
         },
         required: ['headline'],
-      }),
-      defaultConfig: JSON.stringify({
+      },
+      defaultConfig: {
         ctaText: 'Solicitar demo',
         formFields: ['Nombre', 'Email', 'Empresa'],
         primaryColor: '#FF5A00',
-      }),
+      },
     },
     {
       slug: 'webpage',
@@ -320,7 +320,7 @@ async function main() {
       icon: 'Globe',
       color: 'from-cyan-500 to-blue-600',
       category: 'marketing',
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         properties: {
           siteName: { type: 'string', title: 'Nombre del sitio' },
@@ -345,8 +345,8 @@ async function main() {
           seoDescription: { type: 'string', title: 'SEO Description' },
         },
         required: ['siteName'],
-      }),
-      defaultConfig: JSON.stringify({
+      },
+      defaultConfig: {
         pages: ['Inicio', 'Nosotros', 'Servicios', 'Contacto'],
         navigation: [
           { label: 'Inicio', href: '/' },
@@ -354,7 +354,7 @@ async function main() {
           { label: 'Servicios', href: '/servicios' },
           { label: 'Contacto', href: '/contacto' },
         ],
-      }),
+      },
     },
     {
       slug: 'dashboard',
@@ -363,7 +363,7 @@ async function main() {
       icon: 'BarChart3',
       color: 'from-emerald-500 to-teal-600',
       category: 'data',
-      schema: JSON.stringify({
+      schema: {
         type: 'object',
         properties: {
           dataSources: {
@@ -386,15 +386,15 @@ async function main() {
           },
           refreshInterval: { type: 'number', title: 'Intervalo de refresco (seg)', default: 60 },
         },
-      }),
-      defaultConfig: JSON.stringify({
+      },
+      defaultConfig: {
         dataSources: ['Ventas', 'Leads', 'Proyectos'],
         widgets: [
           { type: 'kpi', title: 'Leads activos', dataSource: 'Leads' },
           { type: 'chart', title: 'Pipeline mensual', dataSource: 'Ventas' },
         ],
         refreshInterval: 60,
-      }),
+      },
     },
   ];
 
@@ -419,3 +419,4 @@ async function main() {
 main()
   .catch((e) => { console.error(e); process.exit(1); })
   .finally(() => prisma.$disconnect());
+

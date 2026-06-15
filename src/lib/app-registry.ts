@@ -165,21 +165,19 @@ export function buildInitialConfig(definition: AppTypeDefinition): Record<string
   return config;
 }
 
-export function parseJsonConfig(value: string): Record<string, unknown> {
-  try {
-    const parsed = JSON.parse(value);
-    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
+export function parseJsonConfig(value: unknown): Record<string, unknown> {
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
   }
-}
-
-export function safeJsonStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '{}';
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
   }
+  return {};
 }
 
 export { AppConfigForm, AppRuntimePlaceholder };

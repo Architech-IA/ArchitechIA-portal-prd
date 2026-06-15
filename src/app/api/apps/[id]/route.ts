@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
-import { parseJsonConfig, safeJsonStringify } from '@/lib/app-registry';
+import type { AppInstance, AppTypeDefinition } from '@/lib/app-types';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,11 +23,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   return NextResponse.json({
     ...app,
-    config: parseJsonConfig(app.config),
+    config: app.config as unknown as AppInstance['config'],
     appType: {
       ...app.appType,
-      schema: parseJsonConfig(app.appType.schema),
-      defaultConfig: parseJsonConfig(app.appType.defaultConfig),
+      schema: app.appType.schema as unknown as AppTypeDefinition['schema'],
+      defaultConfig: app.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
     },
   });
 }
@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ('proposalId' in body) updateData.proposalId = body.proposalId || null;
   if ('projectId' in body) updateData.projectId = body.projectId || null;
   if ('clienteId' in body) updateData.clienteId = body.clienteId || null;
-  if ('config' in body) updateData.config = safeJsonStringify(body.config);
+  if ('config' in body) updateData.config = body.config as never;
 
   const app = await prisma.appInstance.update({
     where: { id },
@@ -66,11 +66,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   return NextResponse.json({
     ...app,
-    config: parseJsonConfig(app.config),
+    config: app.config as unknown as AppInstance['config'],
     appType: {
       ...app.appType,
-      schema: parseJsonConfig(app.appType.schema),
-      defaultConfig: parseJsonConfig(app.appType.defaultConfig),
+      schema: app.appType.schema as unknown as AppTypeDefinition['schema'],
+      defaultConfig: app.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
     },
   });
 }

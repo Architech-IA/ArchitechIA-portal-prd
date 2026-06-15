@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { parseJsonConfig } from '@/lib/app-registry';
+import type { AppInstance, AppTypeDefinition } from '@/lib/app-types';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -22,11 +22,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
 
   return NextResponse.json({
     ...app,
-    config: parseJsonConfig(app.config),
+    config: app.config as unknown as AppInstance['config'],
     appType: {
       ...app.appType,
-      schema: parseJsonConfig(app.appType.schema),
-      defaultConfig: parseJsonConfig(app.appType.defaultConfig),
+      schema: app.appType.schema as unknown as AppTypeDefinition['schema'],
+      defaultConfig: app.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
     },
   });
 }

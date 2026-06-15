@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { parseJsonConfig } from '@/lib/app-registry';
+import type { AppTypeDefinition } from '@/lib/app-types';
 
 export async function GET() {
   const types = await prisma.appType.findMany({
@@ -11,8 +11,8 @@ export async function GET() {
   return NextResponse.json(
     types.map((t) => ({
       ...t,
-      schema: parseJsonConfig(t.schema),
-      defaultConfig: parseJsonConfig(t.defaultConfig),
+      schema: t.schema as unknown as AppTypeDefinition['schema'],
+      defaultConfig: t.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
     })),
   );
 }

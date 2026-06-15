@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
-import { parseJsonConfig } from '@/lib/app-registry';
+import type { AppInstance, AppTypeDefinition } from '@/lib/app-types';
 
 function slugify(name: string) {
   return name
@@ -47,11 +47,11 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(
     apps.map((a) => ({
       ...a,
-      config: parseJsonConfig(a.config),
+      config: a.config as unknown as AppInstance['config'],
       appType: {
         ...a.appType,
-        schema: parseJsonConfig(a.appType.schema),
-        defaultConfig: parseJsonConfig(a.appType.defaultConfig),
+        schema: a.appType.schema as unknown as AppTypeDefinition['schema'],
+        defaultConfig: a.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
       },
     })),
   );
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       slug: uniqueSlug,
       appTypeId,
       status: 'DRAFT',
-      config: appType.defaultConfig,
+      config: appType.defaultConfig as never,
       leadId: leadId || null,
       proposalId: proposalId || null,
       projectId: projectId || null,
@@ -111,11 +111,11 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(
     {
       ...app,
-      config: parseJsonConfig(app.config),
+      config: app.config as unknown as AppInstance['config'],
       appType: {
         ...app.appType,
-        schema: parseJsonConfig(app.appType.schema),
-        defaultConfig: parseJsonConfig(app.appType.defaultConfig),
+        schema: app.appType.schema as unknown as AppTypeDefinition['schema'],
+        defaultConfig: app.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
       },
     },
     { status: 201 },

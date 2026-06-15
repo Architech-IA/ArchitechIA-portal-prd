@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -544,8 +545,8 @@ model AppType {
   icon          String?
   color         String   @default("from-orange-500 to-red-600")
   category      String
-  schema        String
-  defaultConfig String   @default("{}")
+  schema        Json
+  defaultConfig Json     @default("{}")
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -563,7 +564,7 @@ model AppInstance {
   slug        String   @unique
   status      String   @default("DRAFT")
 
-  config      String   @default("{}")
+  config      Json     @default("{}")
 
   leadId      String?
   lead        Lead?    @relation(fields: [leadId], references: [id])
