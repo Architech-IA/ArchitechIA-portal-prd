@@ -147,6 +147,8 @@ export default function PortalLayoutClient({
 
   const visibleSections = sections.filter(s => isSuperAdmin || !s.superAdmin);
 
+  // Pantalla completa para demos runtime de Mini-Apps (oculta sidebar y navbar)
+  const isAppRuntime = pathname && /^\/apps\/[^/]+$/.test(pathname);
 
   // Item de navegación reutilizable (modo expandido / colapsado / subitem)
   const NavLink = ({ item, isCollapsed, sub = false }: { item: NavItem; isCollapsed: boolean; sub?: boolean }) => {
@@ -325,6 +327,14 @@ export default function PortalLayoutClient({
       </>
     );
   };
+
+  if (isAppRuntime) {
+    return (
+      <div className="h-screen w-screen overflow-hidden" style={{ background: '#0a0a18' }}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen" style={{ background: '#06060f' }}>
