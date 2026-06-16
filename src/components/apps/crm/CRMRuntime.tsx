@@ -454,7 +454,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
           </div>
           <div className="min-w-0">
             <h2 className="truncate text-sm font-semibold">{companyName}</h2>
-            <p className="text-xs text-gray-500">Invoice Manager</p>
+            <p className="text-xs text-gray-500">Gestor Documental</p>
           </div>
         </div>
 
