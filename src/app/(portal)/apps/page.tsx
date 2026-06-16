@@ -65,18 +65,6 @@ export default function AppsHubPage() {
 
   return (
     <div className="p-6 md:p-8">
-      {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div />
-        <button
-          onClick={() => router.push('/apps/catalogo')}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:from-orange-600 hover:to-orange-700"
-        >
-          <Plus className="h-4 w-4" />
-          Nueva app
-        </button>
-      </div>
-
       {/* Filters */}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
         <div className="relative flex-1">
@@ -123,6 +111,13 @@ export default function AppsHubPage() {
             <List className="h-4 w-4" />
           </button>
         </div>
+        <button
+          onClick={() => router.push('/apps/catalogo')}
+          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:from-orange-600 hover:to-orange-700"
+        >
+          <Plus className="h-4 w-4" />
+          Nueva app
+        </button>
       </div>
 
       {/* Empty state */}
