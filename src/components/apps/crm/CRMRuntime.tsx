@@ -444,12 +444,12 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
   const headerTitle = activeView;
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#0a0a18] text-sm text-white">
+    <div className="flex h-full overflow-hidden bg-[#050505] text-sm text-white">
       {/* Left sidebar */}
-      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-gray-800 bg-[#0f0f1a]">
+      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-[#222222] bg-[#0a0a0a]">
         {/* Logo + company name */}
-        <div className="flex items-center gap-3 border-b border-gray-800 px-4 py-4">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-800 p-1">
+        <div className="flex items-center gap-3 border-b border-[#222222] px-4 py-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#1a1a1a] p-1">
             <img src="/apps/sml26-logo.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
           <div className="min-w-0">
@@ -460,7 +460,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
 
         {/* Search */}
         <div className="px-3 py-3">
-          <div className="flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-900/50 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-lg border border-[#222222] bg-[#141414]/50 px-3 py-2">
             <Search className="h-4 w-4 text-gray-500" />
             <input
               type="text"
@@ -614,7 +614,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
         </nav>
 
         {/* Footer items */}
-        <div className="border-t border-gray-800 px-3 py-3">
+        <div className="border-t border-[#222222] px-3 py-3">
           <div className="flex flex-col gap-0.5">
             <SidebarItem
               icon={Users2}
@@ -651,12 +651,12 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
       {/* Main content area */}
       <main className="flex min-w-0 flex-1 flex-col">
         {/* Header row */}
-        <header className="flex items-center justify-between border-b border-gray-800 bg-[#0a0a18] px-6 py-4">
+        <header className="flex items-center justify-between border-b border-[#222222] bg-[#050505] px-6 py-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleBack}
-              className="rounded-lg border border-gray-700 p-2 text-gray-400 hover:bg-gray-800 hover:text-white"
+              className="rounded-lg border border-[#2a2a2a] p-2 text-gray-400 hover:bg-[#1a1a1a] hover:text-white"
               title="Back"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -705,7 +705,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
               type="button"
               onClick={handleUpdate}
               disabled={updateLoading}
-              className={`flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-800 ${
+              className={`flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#141414] px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-[#1a1a1a] ${
                 updateLoading ? 'cursor-wait opacity-70' : ''
               }`}
             >
@@ -714,7 +714,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
               />
               Update
             </button>
-            <span className="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-300">
+            <span className="rounded-full bg-[#1a1a1a] px-2.5 py-1 text-xs font-medium text-gray-300">
               {selectedIds.size} Selected
             </span>
           </div>
@@ -723,15 +723,15 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
               <button
                 type="button"
                 onClick={() => setFilterOpen((v) => !v)}
-                className={`flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-800 ${
-                  filterOpen ? 'border-gray-500 bg-gray-800' : ''
+                className={`flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#141414] px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-[#1a1a1a] ${
+                  filterOpen ? 'border-gray-500 bg-[#1a1a1a]' : ''
                 }`}
               >
                 <Filter className="h-3.5 w-3.5" />
                 Filter
               </button>
               {filterOpen && (
-                <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-lg border border-gray-700 bg-gray-900 p-3 shadow-xl">
+                <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-lg border border-[#2a2a2a] bg-[#141414] p-3 shadow-xl">
                   <div className="mb-3">
                     <label className="mb-1.5 block text-xs font-medium text-gray-400">
                       Report Type
@@ -739,7 +739,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
                     <select
                       value={reportFilter}
                       onChange={(e) => setReportFilter(e.target.value as ReportFilter)}
-                      className="w-full rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-white outline-none focus:border-gray-500"
+                      className="w-full rounded-md border border-[#2a2a2a] bg-[#1a1a1a] px-2 py-1.5 text-xs text-white outline-none focus:border-gray-500"
                     >
                       <option value="all">All reports</option>
                       <option value="star">Star reports</option>
@@ -753,7 +753,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
                     <select
                       value={valueRangeFilter}
                       onChange={(e) => setValueRangeFilter(e.target.value as ValueRangeFilter)}
-                      className="w-full rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-white outline-none focus:border-gray-500"
+                      className="w-full rounded-md border border-[#2a2a2a] bg-[#1a1a1a] px-2 py-1.5 text-xs text-white outline-none focus:border-gray-500"
                     >
                       <option value="all">Any value</option>
                       <option value="low">Under $2,500</option>
@@ -767,7 +767,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
             <button
               type="button"
               onClick={handleSort}
-              className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-800"
+              className="flex items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#141414] px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-[#1a1a1a]"
             >
               {sortLabel}
               <ChevronDown className="h-3.5 w-3.5" />
@@ -824,7 +824,7 @@ function SidebarItem({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 border-l-2 border-transparent px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-800/50 hover:text-gray-200 ${
+      className={`flex w-full items-center gap-3 border-l-2 border-transparent px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-[#1a1a1a]/50 hover:text-gray-200 ${
         active
           ? accentClass ||
             'border-l-amber-500 bg-amber-500/10 text-amber-400'
@@ -849,15 +849,15 @@ function InvoiceManagerTable({
   toggleRow: (id: string) => void;
 }) {
   return (
-    <div className="min-w-[800px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+    <div className="min-w-[800px] overflow-hidden rounded-xl border border-[#222222] bg-[#141414]">
       <table className="w-full text-left text-xs">
-        <thead className="sticky top-0 z-10 bg-gray-900 text-gray-400">
-          <tr className="border-b border-gray-800">
+        <thead className="sticky top-0 z-10 bg-[#141414] text-gray-400">
+          <tr className="border-b border-[#222222]">
             <th className="w-10 px-3 py-3 font-medium"></th>
             <th className="w-10 px-3 py-3 font-medium">
               <input
                 type="checkbox"
-                className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-0 focus:ring-offset-0"
+                className="h-3.5 w-3.5 rounded border-[#333333] bg-[#1a1a1a] text-amber-500 focus:ring-0 focus:ring-offset-0"
                 onChange={(e) => {
                   if (e.target.checked) {
                     setSelectedIds(new Set(filteredRows.map((r) => r.id)));
@@ -884,8 +884,8 @@ function InvoiceManagerTable({
             return (
               <tr
                 key={row.id}
-                className={`transition-colors hover:bg-gray-800/50 ${
-                  selected ? 'bg-gray-800/30' : ''
+                className={`transition-colors hover:bg-[#1a1a1a]/50 ${
+                  selected ? 'bg-[#1a1a1a]/30' : ''
                 }`}
               >
                 <td className="px-3 py-3">
@@ -896,7 +896,7 @@ function InvoiceManagerTable({
                     type="checkbox"
                     checked={selected}
                     onChange={() => toggleRow(row.id)}
-                    className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-0 focus:ring-offset-0"
+                    className="h-3.5 w-3.5 rounded border-[#333333] bg-[#1a1a1a] text-amber-500 focus:ring-0 focus:ring-offset-0"
                   />
                 </td>
                 <td className="px-3 py-3 font-medium text-gray-200">
@@ -1007,13 +1007,13 @@ function StatCard({
 }) {
   return (
     <div
-      className={`rounded-xl border border-gray-800 bg-gray-900 p-4 transition-transform ${
+      className={`rounded-xl border border-[#222222] bg-[#141414] p-4 transition-transform ${
         pulse ? 'scale-[1.02]' : ''
       }`}
     >
       <div className="mb-3 flex items-center justify-between">
         <span className="text-xs text-gray-500">{label}</span>
-        <div className="rounded-lg bg-gray-800 p-1.5">
+        <div className="rounded-lg bg-[#1a1a1a] p-1.5">
           <Icon className="h-4 w-4 text-gray-400" />
         </div>
       </div>
@@ -1036,7 +1036,7 @@ function SectionCard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+    <div className="rounded-xl border border-[#222222] bg-[#141414] p-4">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
         {action}
@@ -1149,11 +1149,11 @@ function OverviewView({
             ].map((task, i) => (
               <label
                 key={i}
-                className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/50 p-2 transition-colors hover:bg-gray-800/50"
+                className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#222222] bg-[#141414]/50 p-2 transition-colors hover:bg-[#1a1a1a]/50"
               >
                 <input
                   type="checkbox"
-                  className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-0"
+                  className="h-3.5 w-3.5 rounded border-[#333333] bg-[#1a1a1a] text-amber-500 focus:ring-0"
                 />
                 <span className="text-xs text-gray-300">{task}</span>
               </label>
@@ -1162,7 +1162,7 @@ function OverviewView({
         </SectionCard>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-2 text-xs text-gray-500">
+      <div className="flex items-center justify-between rounded-lg border border-[#222222] bg-[#141414]/50 px-4 py-2 text-xs text-gray-500">
         <span>Last updated: {formatDate(lastUpdated)} at {lastUpdated.toLocaleTimeString()}</span>
         <span className="flex items-center gap-1 text-emerald-400">
           <CircleDot className="h-3 w-3" />
@@ -1194,7 +1194,7 @@ function ClientsView({ pulseStats }: { pulseStats: boolean }) {
       <SectionCard
         title="Client Directory"
         action={
-          <button className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800">
+          <button className="rounded-md border border-[#2a2a2a] px-2 py-1 text-xs text-gray-300 hover:bg-[#1a1a1a]">
             + Add Client
           </button>
         }
@@ -1257,7 +1257,7 @@ function ProjectsView() {
       <SectionCard title="Project Pipeline">
         <div className="space-y-4">
           {projects.map((project) => (
-            <div key={project.name} className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+            <div key={project.name} className="rounded-lg border border-[#222222] bg-[#141414]/50 p-3">
               <div className="mb-2 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-200">{project.name}</p>
@@ -1275,7 +1275,7 @@ function ProjectsView() {
                   {project.status}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-800">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#1a1a1a]">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-600"
                   style={{ width: `${project.progress}%` }}
@@ -1312,7 +1312,7 @@ function PaymentsHubView({ pulseStats }: { pulseStats: boolean }) {
                   <span className="text-gray-300">{method.name}</span>
                   <span className="text-gray-500">{method.share}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-800">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-[#1a1a1a]">
                   <div className={`h-full rounded-full ${method.color}`} style={{ width: `${method.share}%` }} />
                 </div>
               </div>
@@ -1371,8 +1371,8 @@ function InvoicesDashboardView({ pulseStats }: { pulseStats: boolean }) {
             { label: 'Pending', value: 22, color: 'bg-amber-500' },
             { label: 'Overdue', value: 10, color: 'bg-rose-500' },
           ].map((item) => (
-            <div key={item.label} className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 text-center">
-              <div className="mx-auto mb-2 h-16 w-16 rounded-full border-4 border-gray-800 p-1">
+            <div key={item.label} className="rounded-lg border border-[#222222] bg-[#141414]/50 p-4 text-center">
+              <div className="mx-auto mb-2 h-16 w-16 rounded-full border-4 border-[#222222] p-1">
                 <div
                   className={`flex h-full w-full items-center justify-center rounded-full ${item.color}`}
                   style={{ opacity: 0.9 }}
@@ -1400,10 +1400,10 @@ function PaymentHistoryView() {
 
   return (
     <SectionCard title="Payment History">
-      <div className="min-w-[600px] overflow-hidden rounded-lg border border-gray-800">
+      <div className="min-w-[600px] overflow-hidden rounded-lg border border-[#222222]">
         <table className="w-full text-left text-xs">
-          <thead className="bg-gray-900 text-gray-400">
-            <tr className="border-b border-gray-800">
+          <thead className="bg-[#141414] text-gray-400">
+            <tr className="border-b border-[#222222]">
               <th className="px-3 py-2 font-medium">Invoice</th>
               <th className="px-3 py-2 font-medium">Client</th>
               <th className="px-3 py-2 font-medium">Date</th>
@@ -1413,7 +1413,7 @@ function PaymentHistoryView() {
           </thead>
           <tbody className="divide-y divide-gray-800">
             {history.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-800/50">
+              <tr key={row.id} className="hover:bg-[#1a1a1a]/50">
                 <td className="px-3 py-2.5 font-medium text-gray-200">{row.id}</td>
                 <td className="px-3 py-2.5 text-gray-300">{row.client}</td>
                 <td className="px-3 py-2.5 text-gray-400">{row.date}</td>
@@ -1446,7 +1446,7 @@ function SubscriptionsView() {
       <SectionCard title="Plans Overview">
         <div className="space-y-3">
           {plans.map((plan) => (
-            <div key={plan.name} className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 p-3">
+            <div key={plan.name} className="flex items-center justify-between rounded-lg border border-[#222222] bg-[#141414]/50 p-3">
               <div>
                 <p className="text-xs font-medium text-gray-200">{plan.name}</p>
                 <p className="text-[10px] text-gray-500">{plan.clients} clients</p>
@@ -1523,8 +1523,8 @@ function GrowthOverviewView() {
             { name: 'Referral', value: 22, color: 'bg-emerald-500' },
             { name: 'Paid Ads', value: 15, color: 'bg-amber-500' },
           ].map((channel) => (
-            <div key={channel.name} className="rounded-lg border border-gray-800 bg-gray-900/50 p-3 text-center">
-              <div className="mx-auto mb-2 h-3 w-full overflow-hidden rounded-full bg-gray-800">
+            <div key={channel.name} className="rounded-lg border border-[#222222] bg-[#141414]/50 p-3 text-center">
+              <div className="mx-auto mb-2 h-3 w-full overflow-hidden rounded-full bg-[#1a1a1a]">
                 <div className={`h-full ${channel.color}`} style={{ width: `${channel.value}%` }} />
               </div>
               <p className="text-lg font-semibold text-white">{channel.value}%</p>
@@ -1562,7 +1562,7 @@ function ExpenseTrackerView() {
                 <span className="text-gray-300">{cat.name}</span>
                 <span className="text-gray-400">{formatCurrency(cat.amount)}</span>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-800">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#1a1a1a]">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400"
                   style={{ width: `${cat.percent}%` }}
@@ -1597,10 +1597,10 @@ function PerformanceReportsView() {
           {reports.map((report) => (
             <div
               key={report.name}
-              className="flex items-start justify-between rounded-lg border border-gray-800 bg-gray-900/50 p-3 transition-colors hover:bg-gray-800/50"
+              className="flex items-start justify-between rounded-lg border border-[#222222] bg-[#141414]/50 p-3 transition-colors hover:bg-[#1a1a1a]/50"
             >
               <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-gray-800 p-2">
+                <div className="rounded-lg bg-[#1a1a1a] p-2">
                   <report.icon className="h-4 w-4 text-gray-400" />
                 </div>
                 <div>
@@ -1608,7 +1608,7 @@ function PerformanceReportsView() {
                   <p className="text-[10px] text-gray-500">{report.date}</p>
                 </div>
               </div>
-              <button className="rounded-md border border-gray-700 p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white">
+              <button className="rounded-md border border-[#2a2a2a] p-1.5 text-gray-400 hover:bg-[#1a1a1a] hover:text-white">
                 <Download className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -1697,10 +1697,10 @@ function NotificationsView() {
           <div
             key={i}
             className={`flex items-start gap-3 rounded-lg border p-3 ${
-              note.read ? 'border-gray-800 bg-gray-900/30' : 'border-gray-700 bg-gray-800/30'
+              note.read ? 'border-[#222222] bg-[#141414]/30' : 'border-[#2a2a2a] bg-[#1a1a1a]/30'
             }`}
           >
-            <div className={`mt-0.5 rounded-full p-1 ${note.read ? 'bg-gray-800' : 'bg-amber-500/10'}`}>
+            <div className={`mt-0.5 rounded-full p-1 ${note.read ? 'bg-[#1a1a1a]' : 'bg-amber-500/10'}`}>
               <note.icon className={`h-3.5 w-3.5 ${note.read ? 'text-gray-500' : 'text-amber-400'}`} />
             </div>
             <div className="flex-1">
@@ -1734,7 +1734,7 @@ function TeamAccessView() {
       <SectionCard
         title="Team Members"
         action={
-          <button className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800">
+          <button className="rounded-md border border-[#2a2a2a] px-2 py-1 text-xs text-gray-300 hover:bg-[#1a1a1a]">
             + Invite
           </button>
         }
@@ -1791,7 +1791,7 @@ function AutomationRulesView() {
       <SectionCard
         title="Automation Rules"
         action={
-          <button className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800">
+          <button className="rounded-md border border-[#2a2a2a] px-2 py-1 text-xs text-gray-300 hover:bg-[#1a1a1a]">
             + New Rule
           </button>
         }
@@ -1842,10 +1842,10 @@ function IntegrationsView() {
           {integrations.map((integration) => (
             <div
               key={integration.name}
-              className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900/50 p-3"
+              className="flex items-center justify-between rounded-lg border border-[#222222] bg-[#141414]/50 p-3"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800 text-xs font-bold text-gray-400">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a1a1a] text-xs font-bold text-gray-400">
                   {integration.name[0]}
                 </div>
                 <div>
