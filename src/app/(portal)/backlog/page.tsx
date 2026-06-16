@@ -166,8 +166,6 @@ export default function BacklogPage() {
   })
 
   const byStatus = (status: string) => filtered.filter(i => i.status === status)
-  const totalDone = items.filter(i => i.status === 'DONE').length
-  const totalPoints = items.filter(i => i.status === 'DONE').reduce((a, i) => a + (i.points ?? 0), 0)
 
   const inputCls = 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500'
 
@@ -177,13 +175,7 @@ export default function BacklogPage() {
     <div className="flex flex-col h-screen overflow-hidden">
 
       {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-gray-800 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {items.length} ítems · {totalDone} completados · {totalPoints} pts entregados
-          </p>
-        </div>
-
+      <div className="flex-shrink-0 px-6 py-4 border-b border-gray-800 flex items-center justify-end gap-4">
         <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Filters */}
           <div className="flex items-center gap-1.5">
