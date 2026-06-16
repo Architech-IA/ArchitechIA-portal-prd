@@ -2,565 +2,546 @@
 
 import { useMemo, useState } from 'react';
 import {
-  LayoutDashboard, Users, Briefcase, CheckSquare, BarChart3,
-  Search, Bell, Settings, MoreHorizontal, Phone, Mail, Calendar,
-  ArrowUpRight, ArrowDownRight, Plus,
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  Wallet,
+  Building2,
+  Receipt,
+  FileText,
+  History,
+  Repeat,
+  TrendingUp,
+  BarChart3,
+  LineChart,
+  PieChart,
+  HelpCircle,
+  Bell,
+  Users2,
+  Zap,
+  Plug,
+  Shield,
+  Search,
+  GripVertical,
+  ArrowLeft,
+  RotateCw,
+  Filter,
+  ChevronDown,
+  ChevronRight,
+  Star,
+  Plus,
 } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
 import AppBackButton from '@/components/apps/shared/AppBackButton';
 
-interface Contact {
+interface InvoiceRow {
   id: string;
-  name: string;
-  role: string;
   company: string;
-  email: string;
-  phone: string;
-  status: 'active' | 'inactive';
-  lastActivity: string;
-}
-
-interface Deal {
-  id: string;
-  title: string;
-  company: string;
-  contact: string;
+  clientName: string;
   value: number;
-  stage: string;
-  probability: number;
-  expectedClose: string;
-  owner: string;
+  reportIcon: 'star' | 'plus';
+  reportColor: string;
+  reportDescription: string;
+  checked: boolean;
 }
 
-interface Task {
-  id: string;
-  title: string;
-  deal: string;
-  dueDate: string;
-  completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-}
+const AVATAR_COLORS = [
+  'bg-blue-500',
+  'bg-emerald-500',
+  'bg-violet-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-cyan-500',
+  'bg-indigo-500',
+  'bg-lime-500',
+  'bg-fuchsia-500',
+  'bg-teal-500',
+  'bg-sky-500',
+  'bg-orange-500',
+  'bg-pink-500',
+  'bg-red-500',
+];
 
-interface Activity {
-  id: string;
-  type: 'call' | 'email' | 'meeting' | 'note';
-  description: string;
-  date: string;
-  user: string;
-}
-
-const MODULE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  dashboard: LayoutDashboard,
-  contacts: Users,
-  deals: Briefcase,
-  tasks: CheckSquare,
-  reports: BarChart3,
-};
-
-const MODULE_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  contacts: 'Contactos',
-  deals: 'Pipeline',
-  tasks: 'Tareas',
-  reports: 'Reportes',
-};
-
-const PRIORITY_COLORS: Record<Task['priority'], string> = {
-  low: 'bg-gray-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-red-500',
-};
-
-const ACTIVITY_ICONS: Record<Activity['type'], React.ComponentType<{ className?: string }>> = {
-  call: Phone,
-  email: Mail,
-  meeting: Calendar,
-  note: CheckSquare,
-};
-
-function createDummyData() {
-  const contacts: Contact[] = [
-    { id: 'c1', name: 'Roberto Sánchez', role: 'CEO', company: 'TechCorp', email: 'roberto@techcorp.com', phone: '+57 312 345 6789', status: 'active', lastActivity: '2025-06-10' },
-    { id: 'c2', name: 'Laura Fernández', role: 'CTO', company: 'InnovateLab', email: 'laura@innovatelab.com', phone: '+57 310 456 7890', status: 'active', lastActivity: '2025-06-12' },
-    { id: 'c3', name: 'Miguel Torres', role: 'Director de Ops', company: 'DataFlow', email: 'miguel@dataflow.com', phone: '+57 315 567 8901', status: 'active', lastActivity: '2025-06-08' },
-    { id: 'c4', name: 'Patricia Ruiz', role: 'Gerente Comercial', company: 'CloudSync', email: 'patricia@cloudsync.com', phone: '+57 318 678 9012', status: 'inactive', lastActivity: '2025-05-28' },
-    { id: 'c5', name: 'Andrés Gómez', role: 'Founder', company: 'StartUpX', email: 'andres@startupx.com', phone: '+57 320 789 0123', status: 'active', lastActivity: '2025-06-14' },
-    { id: 'c6', name: 'Carolina Mendoza', role: 'COO', company: 'Ortega & Asoc.', email: 'carolina@ortega.com', phone: '+57 311 890 1234', status: 'active', lastActivity: '2025-06-13' },
+function createInvoiceRows(): InvoiceRow[] {
+  const data: Omit<InvoiceRow, 'id'>[] = [
+    {
+      company: 'BrightPath',
+      clientName: 'Elena Voss',
+      value: 1300,
+      reportIcon: 'star',
+      reportColor: 'text-amber-400',
+      reportDescription: 'Financial dashboard for quarterly review.',
+      checked: true,
+    },
+    {
+      company: 'CoreVision',
+      clientName: 'Marcus Chen',
+      value: 2500,
+      reportIcon: 'plus',
+      reportColor: 'text-blue-400',
+      reportDescription: 'Designed an AI workflow automation suite.',
+      checked: false,
+    },
+    {
+      company: 'VentureEdge',
+      clientName: 'Sarah Lind',
+      value: 3600,
+      reportIcon: 'star',
+      reportColor: 'text-rose-400',
+      reportDescription: 'Generated revenue insights report for Q2.',
+      checked: true,
+    },
+    {
+      company: 'Skyline Group',
+      clientName: 'David Park',
+      value: 800,
+      reportIcon: 'plus',
+      reportColor: 'text-emerald-400',
+      reportDescription: 'Onboarded client to subscription billing.',
+      checked: false,
+    },
+    {
+      company: 'NextLink',
+      clientName: 'Ava Reynolds',
+      value: 4200,
+      reportIcon: 'star',
+      reportColor: 'text-violet-400',
+      reportDescription: 'Performance tracking for outreach campaign.',
+      checked: true,
+    },
+    {
+      company: 'HelixOne',
+      clientName: 'Noah Brooks',
+      value: 2300,
+      reportIcon: 'plus',
+      reportColor: 'text-cyan-400',
+      reportDescription: 'Built a custom CRM integration pipeline.',
+      checked: false,
+    },
+    {
+      company: 'NovaTech',
+      clientName: 'Isabella Torres',
+      value: 10800,
+      reportIcon: 'star',
+      reportColor: 'text-amber-400',
+      reportDescription: 'Financial dashboard for enterprise rollout.',
+      checked: true,
+    },
+    {
+      company: 'AxisLogic',
+      clientName: 'Liam Foster',
+      value: 2300,
+      reportIcon: 'plus',
+      reportColor: 'text-blue-400',
+      reportDescription: 'Designed an AI workflow for data tagging.',
+      checked: false,
+    },
+    {
+      company: 'FusionWorks',
+      clientName: 'Mia Patel',
+      value: 7500,
+      reportIcon: 'star',
+      reportColor: 'text-rose-400',
+      reportDescription: 'Generated revenue insights report for Q3.',
+      checked: false,
+    },
+    {
+      company: 'DataVerse',
+      clientName: 'Ethan Cole',
+      value: 15000,
+      reportIcon: 'plus',
+      reportColor: 'text-emerald-400',
+      reportDescription: 'Onboarded client to analytics warehouse.',
+      checked: false,
+    },
+    {
+      company: 'Optima Corp',
+      clientName: 'Olivia Hart',
+      value: 4200,
+      reportIcon: 'star',
+      reportColor: 'text-violet-400',
+      reportDescription: 'Performance tracking for sales funnel.',
+      checked: false,
+    },
+    {
+      company: 'StratusFlow',
+      clientName: 'Lucas Gray',
+      value: 2500,
+      reportIcon: 'plus',
+      reportColor: 'text-cyan-400',
+      reportDescription: 'Built a custom billing workflow engine.',
+      checked: false,
+    },
+    {
+      company: 'BluePeak',
+      clientName: 'Sophia Kim',
+      value: 4200,
+      reportIcon: 'star',
+      reportColor: 'text-amber-400',
+      reportDescription: 'Financial dashboard for investor deck.',
+      checked: true,
+    },
+    {
+      company: 'NeuraSys',
+      clientName: 'James Wright',
+      value: 1300,
+      reportIcon: 'plus',
+      reportColor: 'text-blue-400',
+      reportDescription: 'Designed an AI workflow for support bots.',
+      checked: false,
+    },
   ];
 
-  const deals: Deal[] = [
-    { id: 'd1', title: 'Automatización de reporting', company: 'DataFlow', contact: 'Miguel Torres', value: 35000, stage: 'Negociación', probability: 75, expectedClose: '2025-07-15', owner: 'Santiago Ortega' },
-    { id: 'd2', title: 'Chatbot de atención al cliente', company: 'InnovateLab', contact: 'Laura Fernández', value: 25000, stage: 'Propuesta', probability: 50, expectedClose: '2025-07-22', owner: 'Daniel Martínez' },
-    { id: 'd3', title: 'Workflow automation', company: 'TechCorp', contact: 'Roberto Sánchez', value: 15000, stage: 'Contactado', probability: 30, expectedClose: '2025-08-05', owner: 'Freddy Orozco' },
-    { id: 'd4', title: 'Agente de seguridad IA', company: 'CloudSync', contact: 'Patricia Ruiz', value: 42000, stage: 'Nuevo', probability: 10, expectedClose: '2025-08-30', owner: 'Santiago Ortega' },
-    { id: 'd5', title: 'Migración de datos a IA', company: 'StartUpX', contact: 'Andrés Gómez', value: 18000, stage: 'Propuesta', probability: 45, expectedClose: '2025-07-30', owner: 'Daniel Martínez' },
-    { id: 'd6', title: 'Sistema de citas inteligente', company: 'Ortega & Asoc.', contact: 'Carolina Mendoza', value: 12000, stage: 'Cerrado', probability: 100, expectedClose: '2025-06-01', owner: 'Freddy Orozco' },
-    { id: 'd7', title: 'Dashboard predictivo', company: 'DataFlow', contact: 'Miguel Torres', value: 28000, stage: 'Negociación', probability: 80, expectedClose: '2025-07-10', owner: 'Santiago Ortega' },
-  ];
-
-  const tasks: Task[] = [
-    { id: 't1', title: 'Enviar propuesta a InnovateLab', deal: 'Chatbot de atención al cliente', dueDate: '2025-06-16', completed: false, priority: 'high' },
-    { id: 't2', title: 'Llamada de seguimiento con TechCorp', deal: 'Workflow automation', dueDate: '2025-06-17', completed: false, priority: 'medium' },
-    { id: 't3', title: 'Preparar demo para DataFlow', deal: 'Automatización de reporting', dueDate: '2025-06-18', completed: true, priority: 'high' },
-    { id: 't4', title: 'Revisar contrato de Ortega & Asoc.', deal: 'Sistema de citas inteligente', dueDate: '2025-06-15', completed: true, priority: 'low' },
-    { id: 't5', title: 'Investigar integración con CloudSync', deal: 'Agente de seguridad IA', dueDate: '2025-06-20', completed: false, priority: 'medium' },
-  ];
-
-  const activities: Activity[] = [
-    { id: 'a1', type: 'call', description: 'Llamada de discovery con TechCorp', date: '2025-06-14', user: 'Freddy Orozco' },
-    { id: 'a2', type: 'email', description: 'Propuesta enviada a InnovateLab', date: '2025-06-13', user: 'Daniel Martínez' },
-    { id: 'a3', type: 'meeting', description: 'Demo con DataFlow', date: '2025-06-12', user: 'Santiago Ortega' },
-    { id: 'a4', type: 'note', description: 'CloudSync interesado en piloto', date: '2025-06-10', user: 'Santiago Ortega' },
-    { id: 'a5', type: 'call', description: 'Seguimiento con Ortega & Asoc.', date: '2025-06-09', user: 'Freddy Orozco' },
-  ];
-
-  return { contacts, deals, tasks, activities };
+  return data.map((row, index) => ({ ...row, id: `inv-${index + 1}` }));
 }
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
+
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
 }
 
 export default function CRMRuntime({ app }: { app: AppInstance }) {
   const config = app.config;
   const companyName = String(config.companyName || app.name);
-  const theme = String(config.theme || 'dark');
-  const modules = Array.isArray(config.modules) ? (config.modules as string[]) : ['contacts', 'deals'];
-  const pipelineStages = Array.isArray(config.pipelineStages)
-    ? (config.pipelineStages as string[])
-    : ['Nuevo', 'Contactado', 'Propuesta', 'Negociación', 'Cerrado'];
+  const primaryColor = String(config.primaryColor || 'orange');
 
-  const [activeModule, setActiveModule] = useState(() => modules[0] || 'deals');
+  const rows = useMemo(() => createInvoiceRows(), []);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(rows.filter((r) => r.checked).map((r) => r.id)),
+  );
   const [search, setSearch] = useState('');
-  const data = useMemo(() => createDummyData(), []);
+  const [financialOpen, setFinancialOpen] = useState(true);
+  const [analyticsOpen, setAnalyticsOpen] = useState(true);
 
-  const isDark = theme === 'dark';
-  const bgMain = isDark ? 'bg-[#0a0a18]' : 'bg-gray-50';
-  const bgCard = isDark ? 'bg-gray-900' : 'bg-white';
-  const textMain = isDark ? 'text-white' : 'text-gray-900';
-  const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
-  const borderColor = isDark ? 'border-gray-800' : 'border-gray-200';
-  const sidebarBg = isDark ? 'bg-[#08081a]' : 'bg-white';
+  const activeItemAccent =
+    primaryColor === 'blue'
+      ? 'border-l-blue-500 bg-blue-500/10 text-blue-400'
+      : primaryColor === 'emerald'
+      ? 'border-l-emerald-500 bg-emerald-500/10 text-emerald-400'
+      : primaryColor === 'violet'
+      ? 'border-l-violet-500 bg-violet-500/10 text-violet-400'
+      : 'border-l-orange-500 bg-orange-500/10 text-orange-400';
 
-  return (
-    <div className={`flex h-full flex-col ${bgMain} ${textMain}`}>
-      <CRMHeader companyName={companyName} isDark={isDark} search={search} onSearch={setSearch} />
-      <div className="flex flex-1 overflow-hidden">
-        <CRMSidebar
-          modules={modules}
-          activeModule={activeModule}
-          onModuleChange={setActiveModule}
-          isDark={isDark}
-          sidebarBg={sidebarBg}
-          borderColor={borderColor}
-          textMuted={textMuted}
-        />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          {activeModule === 'dashboard' && <CRMDashboard data={data} pipelineStages={pipelineStages} bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} isDark={isDark} />}
-          {activeModule === 'contacts' && <CRMContacts contacts={data.contacts} search={search} bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} />}
-          {activeModule === 'deals' && <CRMPipeline deals={data.deals} stages={pipelineStages} bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} isDark={isDark} />}
-          {activeModule === 'tasks' && <CRMTasks tasks={data.tasks} bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} />}
-          {activeModule === 'reports' && <CRMReports data={data} bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} />}
-        </main>
-      </div>
-    </div>
+  const toggleRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const filteredRows = rows.filter(
+    (row) =>
+      row.company.toLowerCase().includes(search.toLowerCase()) ||
+      row.clientName.toLowerCase().includes(search.toLowerCase()) ||
+      row.reportDescription.toLowerCase().includes(search.toLowerCase()),
   );
-}
-
-function CRMHeader({
-  companyName,
-  isDark,
-  search,
-  onSearch,
-}: {
-  companyName: string;
-  isDark: boolean;
-  search: string;
-  onSearch: (value: string) => void;
-}) {
-  const bg = isDark ? 'bg-[#08081a]/90' : 'bg-white/90';
-  const border = isDark ? 'border-gray-800' : 'border-gray-200';
 
   return (
-    <header className={`flex items-center justify-between border-b ${border} ${bg} px-4 py-3 backdrop-blur md:px-6`}>
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg">
-          <Briefcase className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold">{companyName}</h1>
-          <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>CRM por ArchiTechIA</p>
-        </div>
-      </div>
-      <div className="hidden items-center gap-3 md:flex">
-        <div className={`flex items-center gap-2 rounded-lg border ${border} px-3 py-2 ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
-          <Search className="h-4 w-4 text-gray-500" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-            placeholder="Buscar..."
-            className={`border-none bg-transparent text-sm outline-none ${isDark ? 'text-white placeholder-gray-600' : 'text-gray-900 placeholder-gray-500'}`}
-          />
-        </div>
-        <button className={`rounded-lg p-2 ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
-          <Bell className="h-5 w-5 text-gray-500" />
-        </button>
-        <button className={`rounded-lg p-2 ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
-          <Settings className="h-5 w-5 text-gray-500" />
-        </button>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-xs font-bold text-white">
-          AD
-        </div>
-        <AppBackButton />
-      </div>
-    </header>
-  );
-}
-
-function CRMSidebar({
-  modules,
-  activeModule,
-  onModuleChange,
-  isDark,
-  sidebarBg,
-  borderColor,
-  textMuted,
-}: {
-  modules: string[];
-  activeModule: string;
-  onModuleChange: (module: string) => void;
-  isDark: boolean;
-  sidebarBg: string;
-  borderColor: string;
-  textMuted: string;
-}) {
-  return (
-    <aside className={`hidden w-56 flex-shrink-0 flex-col border-r ${borderColor} ${sidebarBg} md:flex`}>
-      <nav className="flex-1 p-3">
-        <div className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Módulos</div>
-        <div className="space-y-1">
-          {modules.map((module) => {
-            const Icon = MODULE_ICONS[module] ?? LayoutDashboard;
-            const active = activeModule === module;
-            return (
-              <button
-                key={module}
-                onClick={() => onModuleChange(module)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                  active
-                    ? 'bg-orange-500/10 text-orange-400'
-                    : `${textMuted} hover:bg-gray-800/50 hover:text-white`
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {MODULE_LABELS[module] ?? module}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-      <div className={`border-t ${borderColor} p-4`}>
-        <div className={`rounded-lg ${isDark ? 'bg-gray-900' : 'bg-gray-100'} p-3`}>
-          <p className={`text-xs ${textMuted}`}>Plan activo</p>
-          <p className="text-sm font-semibold">CRM Pro</p>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function CRMDashboard({
-  data,
-  pipelineStages,
-  bgCard,
-  borderColor,
-  textMuted,
-  isDark,
-}: {
-  data: ReturnType<typeof createDummyData>;
-  pipelineStages: string[];
-  bgCard: string;
-  borderColor: string;
-  textMuted: string;
-  isDark: boolean;
-}) {
-  const totalValue = data.deals.reduce((sum, d) => sum + d.value, 0);
-  const weightedValue = data.deals.reduce((sum, d) => sum + d.value * (d.probability / 100), 0);
-  const wonValue = data.deals.filter((d) => d.stage === 'Cerrado').reduce((sum, d) => sum + d.value, 0);
-  const activeDeals = data.deals.filter((d) => d.stage !== 'Cerrado').length;
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Valor del pipeline" value={formatCurrency(totalValue)} trend="+12%" positive bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} />
-        <KpiCard label="Valor ponderado" value={formatCurrency(weightedValue)} trend="+8%" positive bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} />
-        <KpiCard label="Ganado" value={formatCurrency(wonValue)} trend="+24%" positive bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} />
-        <KpiCard label="Deals activos" value={String(activeDeals)} trend="-2" positive={false} bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className={`lg:col-span-2 rounded-xl border ${borderColor} ${bgCard} p-5`}>
-          <h3 className="mb-4 text-base font-semibold">Pipeline resumido</h3>
-          <CRMPipeline deals={data.deals} stages={pipelineStages} bgCard={bgCard} borderColor={borderColor} textMuted={textMuted} isDark={isDark} />
-        </div>
-        <div className={`rounded-xl border ${borderColor} ${bgCard} p-5`}>
-          <h3 className="mb-4 text-base font-semibold">Actividad reciente</h3>
-          <div className="space-y-3">
-            {data.activities.slice(0, 5).map((activity) => {
-              const Icon = ACTIVITY_ICONS[activity.type];
-              return (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm">{activity.description}</p>
-                    <p className={`text-xs ${textMuted}`}>{activity.user} • {activity.date}</p>
-                  </div>
-                </div>
-              );
-            })}
+    <div className="flex h-full overflow-hidden bg-[#0a0a18] text-sm text-white">
+      {/* Left sidebar */}
+      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-gray-800 bg-[#0f0f1a]">
+        {/* Logo + company name */}
+        <div className="flex items-center gap-3 border-b border-gray-800 px-4 py-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold">
+            RV
+          </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-semibold">{companyName}</h2>
+            <p className="text-xs text-gray-500">Invoice Manager</p>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function KpiCard({
-  label, value, trend, positive, bgCard, borderColor, textMuted,
-}: {
-  label: string;
-  value: string;
-  trend: string;
-  positive: boolean;
-  bgCard: string;
-  borderColor: string;
-  textMuted: string;
-}) {
-  const TrendIcon = positive ? ArrowUpRight : ArrowDownRight;
-  const trendColor = positive ? 'text-green-400' : 'text-red-400';
-
-  return (
-    <div className={`rounded-xl border ${borderColor} ${bgCard} p-5`}>
-      <p className={`text-sm ${textMuted}`}>{label}</p>
-      <p className="mt-1 text-2xl font-bold">{value}</p>
-      <div className={`mt-2 flex items-center gap-1 text-xs ${trendColor}`}>
-        <TrendIcon className="h-3.5 w-3.5" />
-        {trend}
-      </div>
-    </div>
-  );
-}
-
-function CRMContacts({
-  contacts,
-  search,
-  bgCard,
-  borderColor,
-  textMuted,
-}: {
-  contacts: Contact[];
-  search: string;
-  bgCard: string;
-  borderColor: string;
-  textMuted: string;
-}) {
-  const filtered = contacts.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.company.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  return (
-    <div className={`rounded-xl border ${borderColor} ${bgCard} overflow-hidden`}>
-      <div className="flex items-center justify-between border-b border-inherit p-4">
-        <h3 className="text-base font-semibold">Contactos</h3>
-        <button className="flex items-center gap-1 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700">
-          <Plus className="h-3.5 w-3.5" />
-          Nuevo
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className={`border-b ${borderColor}`}>
-              <th className="px-4 py-3 font-medium">Contacto</th>
-              <th className="px-4 py-3 font-medium">Empresa</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Teléfono</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((contact) => (
-              <tr key={contact.id} className={`border-b ${borderColor} last:border-0 hover:bg-black/5`}>
-                <td className="px-4 py-3">
-                  <div className="font-medium">{contact.name}</div>
-                  <div className={`text-xs ${textMuted}`}>{contact.role}</div>
-                </td>
-                <td className="px-4 py-3">{contact.company}</td>
-                <td className="px-4 py-3">{contact.email}</td>
-                <td className="px-4 py-3">{contact.phone}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${contact.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'}`}>
-                    {contact.status === 'active' ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function CRMPipeline({
-  deals,
-  stages,
-  bgCard,
-  borderColor,
-  textMuted,
-  isDark,
-}: {
-  deals: Deal[];
-  stages: string[];
-  bgCard: string;
-  borderColor: string;
-  textMuted: string;
-  isDark: boolean;
-}) {
-  return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
-      {stages.map((stage) => {
-        const stageDeals = deals.filter((d) => d.stage === stage);
-        const stageValue = stageDeals.reduce((sum, d) => sum + d.value, 0);
-        return (
-          <div key={stage} className={`w-72 flex-shrink-0 rounded-xl border ${borderColor} ${bgCard} p-3`}>
-            <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-sm font-semibold">{stage}</h4>
-              <span className={`rounded-full px-2 py-0.5 text-xs ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
-                {stageDeals.length}
-              </span>
-            </div>
-            <p className={`mb-3 text-xs ${textMuted}`}>{formatCurrency(stageValue)}</p>
-            <div className="space-y-2">
-              {stageDeals.map((deal) => (
-                <div key={deal.id} className={`rounded-lg border ${borderColor} p-3 hover:border-orange-500/30 transition-colors`}>
-                  <div className="mb-1 flex items-start justify-between">
-                    <p className="text-sm font-medium">{deal.title}</p>
-                    <button className="text-gray-500 hover:text-white">
-                      <MoreHorizontal className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <p className={`text-xs ${textMuted}`}>{deal.company}</p>
-                  <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className="font-semibold text-orange-400">{formatCurrency(deal.value)}</span>
-                    <span className={textMuted}>{deal.probability}%</span>
-                  </div>
-                  <div className="mt-2 h-1 w-full rounded-full bg-gray-800">
-                    <div className="h-1 rounded-full bg-gradient-to-r from-orange-500 to-orange-600" style={{ width: `${deal.probability}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Search */}
+        <div className="px-3 py-3">
+          <div className="flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-900/50 px-3 py-2">
+            <Search className="h-4 w-4 text-gray-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-full bg-transparent text-xs text-white placeholder-gray-600 outline-none"
+            />
           </div>
-        );
-      })}
-    </div>
-  );
-}
+        </div>
 
-function CRMTasks({
-  tasks,
-  bgCard,
-  borderColor,
-  textMuted,
-}: {
-  tasks: Task[];
-  bgCard: string;
-  borderColor: string;
-  textMuted: string;
-}) {
-  return (
-    <div className={`rounded-xl border ${borderColor} ${bgCard} p-5`}>
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold">Tareas</h3>
-        <button className="flex items-center gap-1 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700">
-          <Plus className="h-3.5 w-3.5" />
-          Nueva tarea
-        </button>
-      </div>
-      <div className="space-y-2">
-        {tasks.map((task) => (
-          <div key={task.id} className={`flex items-center gap-3 rounded-lg border ${borderColor} p-3`}>
-            <div className={`h-2 w-2 rounded-full ${PRIORITY_COLORS[task.priority]}`} />
-            <div className="flex-1">
-              <p className={`text-sm ${task.completed ? 'line-through opacity-60' : ''}`}>{task.title}</p>
-              <p className={`text-xs ${textMuted}`}>{task.deal} • Vence {task.dueDate}</p>
+        {/* Navigation */}
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-2">
+          <SidebarItem icon={LayoutDashboard} label="Overview" />
+          <SidebarItem icon={Users} label="Clients" />
+          <SidebarItem icon={Briefcase} label="Projects" />
+
+          <SidebarSectionHeader label="Payments Hub" />
+          <SidebarItem icon={Wallet} label="Payments Hub" />
+
+          <button
+            type="button"
+            onClick={() => setFinancialOpen((v) => !v)}
+            className="mt-2 flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500"
+          >
+            <span>Financial Center</span>
+            {financialOpen ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </button>
+          {financialOpen && (
+            <div className="flex flex-col gap-0.5">
+              <SidebarItem icon={Receipt} label="Invoices Dashboard" />
+              <SidebarItem icon={FileText} label="Invoice Manager" active accentClass={activeItemAccent} />
+              <SidebarItem icon={History} label="Payment History" />
+              <SidebarItem icon={Repeat} label="Subscriptions" />
+              <SidebarItem icon={TrendingUp} label="Revenue Insights" />
             </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setAnalyticsOpen((v) => !v)}
+            className="mt-2 flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500"
+          >
+            <span>Analytics</span>
+            {analyticsOpen ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </button>
+          {analyticsOpen && (
+            <div className="flex flex-col gap-0.5">
+              <SidebarItem icon={LineChart} label="Growth Overview" />
+              <SidebarItem icon={PieChart} label="Expense Tracker" />
+              <SidebarItem icon={BarChart3} label="Performance Reports" />
+            </div>
+          )}
+
+          <div className="mt-auto flex flex-col gap-0.5 pt-4">
+            <SidebarItem icon={HelpCircle} label="Support Center" />
+            <SidebarItem icon={Bell} label="Notifications" />
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+        </nav>
 
-function CRMReports({
-  data,
-  bgCard,
-  borderColor,
-  textMuted,
-}: {
-  data: ReturnType<typeof createDummyData>;
-  bgCard: string;
-  borderColor: string;
-  textMuted: string;
-}) {
-  const totalValue = data.deals.reduce((sum, d) => sum + d.value, 0);
-  const avgDeal = totalValue / data.deals.length;
-  const won = data.deals.filter((d) => d.stage === 'Cerrado').length;
-  const conversionRate = Math.round((won / data.deals.length) * 100);
+        {/* Footer items */}
+        <div className="border-t border-gray-800 px-3 py-3">
+          <div className="flex flex-col gap-0.5">
+            <SidebarItem icon={Users2} label="Team Access" />
+            <SidebarItem icon={Zap} label="Automation Rules" />
+            <SidebarItem icon={Plug} label="Integrations" />
+            <SidebarItem icon={Shield} label="Compliance Center" />
+          </div>
+        </div>
+      </aside>
 
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className={`rounded-xl border ${borderColor} ${bgCard} p-5`}>
-          <p className={`text-sm ${textMuted}`}>Deal promedio</p>
-          <p className="mt-1 text-2xl font-bold">{formatCurrency(avgDeal)}</p>
+      {/* Main content area */}
+      <main className="flex min-w-0 flex-1 flex-col">
+        {/* Header row */}
+        <header className="flex items-center justify-between border-b border-gray-800 bg-[#0a0a18] px-6 py-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="rounded-lg border border-gray-700 p-2 text-gray-400 hover:bg-gray-800 hover:text-white"
+              title="Back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <h1 className="text-base font-semibold">Invoice Manager</h1>
+          </div>
+          <AppBackButton />
+        </header>
+
+        {/* Breadcrumb */}
+        <div className="px-6 py-3 text-xs text-gray-500">
+          Dashboard <span className="mx-1">&gt;</span> Financial Center{' '}
+          <span className="mx-1">&gt;</span>{' '}
+          <span className="text-gray-300">Invoice Manager</span>
         </div>
-        <div className={`rounded-xl border ${borderColor} ${bgCard} p-5`}>
-          <p className={`text-sm ${textMuted}`}>Tasa de conversión</p>
-          <p className="mt-1 text-2xl font-bold">{conversionRate}%</p>
+
+        {/* Action bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+              Update
+            </button>
+            <span className="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-300">
+              {selectedIds.size} Selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Filter
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800"
+            >
+              Sort
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+            <span className="text-xs text-gray-500">80 Results</span>
+          </div>
         </div>
-        <div className={`rounded-xl border ${borderColor} ${bgCard} p-5`}>
-          <p className={`text-sm ${textMuted}`}>Contactos activos</p>
-          <p className="mt-1 text-2xl font-bold">{data.contacts.filter((c) => c.status === 'active').length}</p>
-        </div>
-      </div>
-      <div className={`rounded-xl border ${borderColor} ${bgCard} p-5`}>
-        <h3 className="mb-4 text-base font-semibold">Deals por etapa</h3>
-        <div className="space-y-3">
-          {['Nuevo', 'Contactado', 'Propuesta', 'Negociación', 'Cerrado'].map((stage) => {
-            const count = data.deals.filter((d) => d.stage === stage).length;
-            const pct = data.deals.length > 0 ? (count / data.deals.length) * 100 : 0;
-            return (
-              <div key={stage}>
-                <div className="mb-1 flex items-center justify-between text-sm">
-                  <span>{stage}</span>
-                  <span className={textMuted}>{count}</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-gray-800">
-                  <div className="h-2 rounded-full bg-orange-500" style={{ width: `${pct}%` }} />
-                </div>
+
+        {/* Data table */}
+        <div className="flex-1 overflow-auto px-6 pb-6">
+          <div className="min-w-[800px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+            <table className="w-full text-left text-xs">
+              <thead className="sticky top-0 z-10 bg-gray-900 text-gray-400">
+                <tr className="border-b border-gray-800">
+                  <th className="w-10 px-3 py-3 font-medium"></th>
+                  <th className="w-10 px-3 py-3 font-medium">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-0 focus:ring-offset-0"
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(new Set(filteredRows.map((r) => r.id)));
+                        } else {
+                          setSelectedIds(new Set());
+                        }
+                      }}
+                      checked={
+                        filteredRows.length > 0 &&
+                        filteredRows.every((r) => selectedIds.has(r.id))
+                      }
+                    />
+                  </th>
+                  <th className="px-3 py-3 font-medium">Company</th>
+                  <th className="px-3 py-3 font-medium">Client Name</th>
+                  <th className="px-3 py-3 font-medium">Deal Value</th>
+                  <th className="px-3 py-3 font-medium">Business Report</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {filteredRows.map((row) => {
+                  const selected = selectedIds.has(row.id);
+                  const ReportIcon = row.reportIcon === 'star' ? Star : Plus;
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`transition-colors hover:bg-gray-800/50 ${
+                        selected ? 'bg-gray-800/30' : ''
+                      }`}
+                    >
+                      <td className="px-3 py-3">
+                        <GripVertical className="h-4 w-4 text-gray-600" />
+                      </td>
+                      <td className="px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleRow(row.id)}
+                          className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-0 focus:ring-offset-0"
+                        />
+                      </td>
+                      <td className="px-3 py-3 font-medium text-gray-200">
+                        {row.company}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${getAvatarColor(
+                              row.clientName,
+                            )}`}
+                          >
+                            {getInitials(row.clientName)}
+                          </div>
+                          <span className="text-gray-300">{row.clientName}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 font-medium text-gray-200">
+                        {formatCurrency(row.value)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <ReportIcon
+                            className={`h-4 w-4 flex-shrink-0 ${row.reportColor}`}
+                          />
+                          <span className="text-gray-400">{row.reportDescription}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filteredRows.length === 0 && (
+              <div className="px-6 py-12 text-center text-xs text-gray-500">
+                No results found.
               </div>
-            );
-          })}
+            )}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
+  );
+}
+
+function SidebarSectionHeader({ label }: { label: string }) {
+  return (
+    <div className="mt-3 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+      {label}
+    </div>
+  );
+}
+
+function SidebarItem({
+  icon: Icon,
+  label,
+  active,
+  accentClass,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  active?: boolean;
+  accentClass?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`flex w-full items-center gap-3 border-l-2 border-transparent px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-800/50 hover:text-gray-200 ${
+        active
+          ? accentClass ||
+            'border-l-orange-500 bg-orange-500/10 text-orange-400'
+          : ''
+      }`}
+    >
+      <Icon className="h-4 w-4 flex-shrink-0" />
+      <span className="truncate">{label}</span>
+    </button>
   );
 }
