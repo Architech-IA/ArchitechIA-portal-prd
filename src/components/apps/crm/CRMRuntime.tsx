@@ -99,7 +99,7 @@ const AVATAR_COLORS = [
   'bg-fuchsia-500',
   'bg-teal-500',
   'bg-sky-500',
-  'bg-orange-500',
+  'bg-amber-600',
   'bg-pink-500',
   'bg-red-500',
 ];
@@ -310,7 +310,7 @@ const ANALYTICS_VIEWS: ViewId[] = ['Growth Overview', 'Expense Tracker', 'Perfor
 export default function CRMRuntime({ app }: { app: AppInstance }) {
   const config = app.config;
   const companyName = String(config.companyName || app.name);
-  const primaryColor = String(config.primaryColor || 'orange');
+  const primaryColor = String(config.primaryColor || 'amber');
 
   const rows = useMemo(() => createInvoiceRows(), []);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -339,7 +339,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
       ? 'border-l-emerald-500 bg-emerald-500/10 text-emerald-400'
       : primaryColor === 'violet'
       ? 'border-l-violet-500 bg-violet-500/10 text-violet-400'
-      : 'border-l-orange-500 bg-orange-500/10 text-orange-400';
+      : 'border-l-amber-500 bg-amber-500/10 text-amber-400';
 
   const activeButtonAccent =
     primaryColor === 'blue'
@@ -348,7 +348,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
       ? 'hover:text-emerald-400 hover:border-emerald-500/50'
       : primaryColor === 'violet'
       ? 'hover:text-violet-400 hover:border-violet-500/50'
-      : 'hover:text-orange-400 hover:border-orange-500/50';
+      : 'hover:text-amber-400 hover:border-amber-500/50';
 
   const switchView = (view: ViewId) => {
     setPreviousView(activeView);
@@ -449,8 +449,8 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
       <aside className="flex w-64 flex-shrink-0 flex-col border-r border-gray-800 bg-[#0f0f1a]">
         {/* Logo + company name */}
         <div className="flex items-center gap-3 border-b border-gray-800 px-4 py-4">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold">
-            RV
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-800 p-1">
+            <img src="/apps/sml26-logo.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
           <div className="min-w-0">
             <h2 className="truncate text-sm font-semibold">{companyName}</h2>
@@ -827,7 +827,7 @@ function SidebarItem({
       className={`flex w-full items-center gap-3 border-l-2 border-transparent px-3 py-2 text-left text-xs text-gray-400 transition-colors hover:bg-gray-800/50 hover:text-gray-200 ${
         active
           ? accentClass ||
-            'border-l-orange-500 bg-orange-500/10 text-orange-400'
+            'border-l-amber-500 bg-amber-500/10 text-amber-400'
           : ''
       }`}
     >
@@ -857,7 +857,7 @@ function InvoiceManagerTable({
             <th className="w-10 px-3 py-3 font-medium">
               <input
                 type="checkbox"
-                className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-0 focus:ring-offset-0"
+                className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-0 focus:ring-offset-0"
                 onChange={(e) => {
                   if (e.target.checked) {
                     setSelectedIds(new Set(filteredRows.map((r) => r.id)));
@@ -896,7 +896,7 @@ function InvoiceManagerTable({
                     type="checkbox"
                     checked={selected}
                     onChange={() => toggleRow(row.id)}
-                    className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-0 focus:ring-offset-0"
+                    className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-0 focus:ring-offset-0"
                   />
                 </td>
                 <td className="px-3 py-3 font-medium text-gray-200">
@@ -1108,7 +1108,7 @@ function OverviewView({
                       ? 'bg-emerald-500/70'
                       : accentColor === 'violet'
                       ? 'bg-violet-500/70'
-                      : 'bg-orange-500/70'
+                      : 'bg-amber-500/70'
                   }`}
                   style={{ height: `${h}%` }}
                 />
@@ -1153,7 +1153,7 @@ function OverviewView({
               >
                 <input
                   type="checkbox"
-                  className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-orange-500 focus:ring-0"
+                  className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-0"
                 />
                 <span className="text-xs text-gray-300">{task}</span>
               </label>
@@ -1277,7 +1277,7 @@ function ProjectsView() {
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-gray-800">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-600"
                   style={{ width: `${project.progress}%` }}
                 />
               </div>
@@ -1564,7 +1564,7 @@ function ExpenseTrackerView() {
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-800">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-rose-500 to-orange-500"
+                  className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400"
                   style={{ width: `${cat.percent}%` }}
                 />
               </div>
@@ -1700,14 +1700,14 @@ function NotificationsView() {
               note.read ? 'border-gray-800 bg-gray-900/30' : 'border-gray-700 bg-gray-800/30'
             }`}
           >
-            <div className={`mt-0.5 rounded-full p-1 ${note.read ? 'bg-gray-800' : 'bg-orange-500/10'}`}>
-              <note.icon className={`h-3.5 w-3.5 ${note.read ? 'text-gray-500' : 'text-orange-400'}`} />
+            <div className={`mt-0.5 rounded-full p-1 ${note.read ? 'bg-gray-800' : 'bg-amber-500/10'}`}>
+              <note.icon className={`h-3.5 w-3.5 ${note.read ? 'text-gray-500' : 'text-amber-400'}`} />
             </div>
             <div className="flex-1">
               <p className={`text-xs ${note.read ? 'text-gray-400' : 'text-gray-200'}`}>{note.text}</p>
               <p className="text-[10px] text-gray-500">{note.time}</p>
             </div>
-            {!note.read && <span className="h-2 w-2 rounded-full bg-orange-400" />}
+            {!note.read && <span className="h-2 w-2 rounded-full bg-amber-400" />}
           </div>
         ))}
       </div>
