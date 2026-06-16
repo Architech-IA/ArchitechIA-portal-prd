@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Bot, Send, User, Sparkles } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Message {
   id: string;
@@ -70,9 +71,12 @@ export default function AIChatbotRuntime({ app }: { app: AppInstance }) {
           <h2 className="text-base font-bold text-white">{botName}</h2>
           <p className="text-xs text-gray-400">{companyName} • Asistente virtual</p>
         </div>
-        <div className="ml-auto flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-          En línea
+        <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+            En línea
+          </div>
+          <AppBackButton />
         </div>
       </div>
 

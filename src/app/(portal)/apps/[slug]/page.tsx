@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import {
-  ArrowLeft, Box, Users, Layout, Globe, BarChart3,
-  Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban,
-} from 'lucide-react';
+import { useParams } from 'next/navigation';
+
 import CRMRuntime from '@/components/apps/crm/CRMRuntime';
 import LandingRuntime from '@/components/apps/landing/LandingRuntime';
 import AIChatbotRuntime from '@/components/apps/ai-chatbot/AIChatbotRuntime';
@@ -19,22 +16,7 @@ import ProjectManagerRuntime from '@/components/apps/project-manager/ProjectMana
 import AppRuntimePlaceholder from '@/components/apps/shared/AppRuntimePlaceholder';
 import type { AppInstance } from '@/lib/app-types';
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Users,
-  Layout,
-  Globe,
-  BarChart3,
-  Bot,
-  FileText,
-  UserCircle,
-  Headphones,
-  Shield,
-  Plug,
-  Kanban,
-};
-
 export default function AppRuntimePage() {
-  const router = useRouter();
   const params = useParams();
   const slug = String(params.slug);
 
@@ -71,20 +53,9 @@ export default function AppRuntimePage() {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Barra mínima de navegación */}
-      <div className="flex items-center border-b border-gray-800/50 bg-gray-900/50 px-4 py-2">
-        <button
-          onClick={() => router.push('/apps/catalogo')}
-          className="rounded-lg border border-gray-700 p-2 text-gray-300 hover:bg-gray-800 hover:text-white"
-          title="Volver al catálogo"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-      </div>
-
+    <div className="h-full">
       {/* Runtime area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="h-full overflow-hidden">
         {app.appType.slug === 'crm' && <CRMRuntime app={app} />}
         {app.appType.slug === 'landing-page' && <LandingRuntime app={app} />}
         {app.appType.slug === 'ai-chatbot' && <AIChatbotRuntime app={app} />}

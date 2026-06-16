@@ -2,6 +2,7 @@
 
 import { FileText, CheckCircle2, Clock, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Invoice {
   id: string;
@@ -79,8 +80,11 @@ export default function RPAInvoicingRuntime({ app }: { app: AppInstance }) {
             <p className="text-xs text-gray-400">Automatización de facturación RPA</p>
           </div>
         </div>
-        <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400">
-          Auto-aprobación &lt; {formatCurrency(autoApproveBelow)}
+        <div className="flex items-center gap-3">
+          <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400">
+            Auto-aprobación &lt; {formatCurrency(autoApproveBelow)}
+          </div>
+          <AppBackButton />
         </div>
       </div>
 

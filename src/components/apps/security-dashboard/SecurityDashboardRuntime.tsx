@@ -2,6 +2,7 @@
 
 import { Shield, Server, Monitor, Network, AppWindow, Database, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Threat {
   id: string;
@@ -94,8 +95,11 @@ export default function SecurityDashboardRuntime({ app }: { app: AppInstance }) 
             <p className="text-xs text-gray-400">Panel de seguridad</p>
           </div>
         </div>
-        <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400">
-          Último escaneo: hace 5 min
+        <div className="flex items-center gap-3">
+          <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400">
+            Último escaneo: hace 5 min
+          </div>
+          <AppBackButton />
         </div>
       </div>
 

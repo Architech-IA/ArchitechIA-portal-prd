@@ -6,6 +6,7 @@ import {
   Star, Users, Clock, Globe,
 } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Feature {
   icon: React.ComponentType<{ className?: string }>;
@@ -161,14 +162,17 @@ export default function LandingRuntime({ app }: { app: AppInstance }) {
             >
               {ctaText}
             </button>
+            <AppBackButton />
           </div>
 
-          <button
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          <div className="flex items-center gap-3 md:hidden">
+            <AppBackButton />
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
 
         {mobileMenuOpen && (

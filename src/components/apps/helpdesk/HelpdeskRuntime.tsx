@@ -2,6 +2,7 @@
 
 import { Headphones, Search, Plus, AlertCircle, Clock } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Ticket {
   id: string;
@@ -72,10 +73,13 @@ export default function HelpdeskRuntime({ app }: { app: AppInstance }) {
             <p className="text-xs text-gray-400">Centro de soporte</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
-          <Plus className="h-4 w-4" />
-          Nuevo ticket
-        </button>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700">
+            <Plus className="h-4 w-4" />
+            Nuevo ticket
+          </button>
+          <AppBackButton />
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto p-6">

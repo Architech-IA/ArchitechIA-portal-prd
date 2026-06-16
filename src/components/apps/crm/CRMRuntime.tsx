@@ -7,6 +7,7 @@ import {
   ArrowUpRight, ArrowDownRight, Plus,
 } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Contact {
   id: string;
@@ -211,6 +212,7 @@ function CRMHeader({
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-xs font-bold text-white">
           AD
         </div>
+        <AppBackButton />
       </div>
     </header>
   );

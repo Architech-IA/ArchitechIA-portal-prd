@@ -2,6 +2,7 @@
 
 import { Plug, CheckCircle2, AlertCircle, PauseCircle, Clock } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Integration {
   name: string;
@@ -80,9 +81,12 @@ export default function IntegrationHubRuntime({ app }: { app: AppInstance }) {
             <p className="text-xs text-gray-400">Integration Hub</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400">
-          <Clock className="h-3.5 w-3.5" />
-          Sincronización {SYNC_LABELS[syncFrequency] ?? syncFrequency}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400">
+            <Clock className="h-3.5 w-3.5" />
+            Sincronización {SYNC_LABELS[syncFrequency] ?? syncFrequency}
+          </div>
+          <AppBackButton />
         </div>
       </div>
 

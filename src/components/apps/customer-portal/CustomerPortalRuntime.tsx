@@ -6,6 +6,7 @@ import {
   Bell, Search,
 } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 type ModuleKey = 'projects' | 'invoices' | 'tickets' | 'documents' | 'profile';
 
@@ -95,6 +96,7 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-xs font-bold text-white">
             CL
           </div>
+          <AppBackButton />
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { BarChart3, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface KpiCard {
   label: string;
@@ -53,9 +54,12 @@ export default function BIDashboardRuntime({ app }: { app: AppInstance }) {
             <p className="text-xs text-gray-400">Dashboard BI • Datos en tiempo real</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <RefreshCw className="h-3.5 w-3.5" />
-          Actualiza cada {refreshInterval}s
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <RefreshCw className="h-3.5 w-3.5" />
+            Actualiza cada {refreshInterval}s
+          </div>
+          <AppBackButton />
         </div>
       </div>
 

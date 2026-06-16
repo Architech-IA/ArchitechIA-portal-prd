@@ -2,6 +2,7 @@
 
 import { Kanban, Plus, Calendar, Clock, UserCircle } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
+import AppBackButton from '@/components/apps/shared/AppBackButton';
 
 interface Task {
   id: string;
@@ -68,6 +69,7 @@ export default function ProjectManagerRuntime({ app }: { app: AppInstance }) {
             <Plus className="h-4 w-4" />
             Tarea
           </button>
+          <AppBackButton />
         </div>
       </div>
 
