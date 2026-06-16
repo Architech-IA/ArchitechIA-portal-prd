@@ -42,6 +42,7 @@ export default function AppRuntimePage() {
 
   const [app, setApp] = useState<AppInstance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [headerVisible, setHeaderVisible] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +75,6 @@ export default function AppRuntimePage() {
 
   const Icon = ICON_MAP[app.appType.icon] ?? Box;
   const status = APP_STATUS_LABELS[app.status];
-  const [headerVisible, setHeaderVisible] = useState(true);
 
   return (
     <div className="relative flex h-full flex-col">
