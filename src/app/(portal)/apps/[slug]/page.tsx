@@ -71,18 +71,20 @@ export default function AppRuntimePage() {
   }
 
   return (
-    <div className="relative flex h-full flex-col">
-      {/* Regresar al catálogo */}
-      <button
-        onClick={() => router.push('/apps/catalogo')}
-        className="absolute left-4 top-4 z-50 flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900/90 px-4 py-2 text-sm font-medium text-gray-300 shadow-lg backdrop-blur hover:bg-gray-800 hover:text-white"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Regresar al catálogo
-      </button>
+    <div className="flex h-full flex-col">
+      {/* Barra mínima de navegación */}
+      <div className="flex items-center border-b border-gray-800/50 bg-gray-900/50 px-4 py-2">
+        <button
+          onClick={() => router.push('/apps/catalogo')}
+          className="rounded-lg border border-gray-700 p-2 text-gray-300 hover:bg-gray-800 hover:text-white"
+          title="Volver al catálogo"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+      </div>
 
       {/* Runtime area */}
-      <div className="h-full overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         {app.appType.slug === 'crm' && <CRMRuntime app={app} />}
         {app.appType.slug === 'landing-page' && <LandingRuntime app={app} />}
         {app.appType.slug === 'ai-chatbot' && <AIChatbotRuntime app={app} />}
