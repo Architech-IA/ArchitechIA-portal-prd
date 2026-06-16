@@ -61,6 +61,42 @@ export default function PortalLayoutClient({
   isSuperAdmin: boolean;
 }) {
   const pathname = usePathname();
+
+  const pageTitle = (() => {
+    if (pathname === '/') return 'Dashboard';
+    if (pathname === '/apps') return 'Mini-Apps Hub';
+    if (pathname === '/apps/catalogo') return 'Catálogo de Apps';
+    if (pathname === '/apps/nueva/crm') return 'Nueva App: CRM';
+    if (pathname === '/apps/nueva/landing') return 'Nueva App: Landing Page';
+    if (pathname?.startsWith('/apps/') && pathname?.endsWith('/config')) return 'Configuración';
+    if (pathname?.startsWith('/apps/')) return 'App';
+    if (pathname === '/leads') return 'Leads';
+    if (pathname === '/leads/lista') return 'Lista de Leads';
+    if (pathname === '/leads/pipeline') return 'Pipeline';
+    if (pathname === '/leads/clientes') return 'Clientes';
+    if (pathname === '/leads/prospector') return 'Prospector';
+    if (pathname === '/leads/mercado') return 'Mercado';
+    if (pathname === '/proposals') return 'Propuestas';
+    if (pathname === '/projects') return 'Proyectos';
+    if (pathname === '/traceability') return 'Trazabilidad';
+    if (pathname === '/hub') return 'HUB';
+    if (pathname === '/hub/team') return 'Equipo';
+    if (pathname === '/hub/business') return 'Business';
+    if (pathname === '/hub/finance') return 'Finance';
+    if (pathname === '/hub/operations') return 'Operations';
+    if (pathname === '/hub/legal') return 'Legal';
+    if (pathname === '/productos') return 'Solutions';
+    if (pathname === '/resources/cuentas') return 'Cuentas';
+    if (pathname === '/finanzas') return 'Finance';
+    if (pathname === '/meetings') return 'Calendar / Meetings';
+    const clean = pathname?.replace(/^\//, '') || '';
+    if (!clean) return 'ArchiTechIA';
+    return clean
+      .split('/')
+      .pop()
+      ?.replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase()) || 'ArchiTechIA';
+  })();
   const { data: session } = useSession();
   const clientRole = (session?.user as { role?: string })?.role ?? '';
   // Doble capa: server prop O verificación client-side
@@ -355,7 +391,7 @@ export default function PortalLayoutClient({
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <TopBar onMenuClick={() => setMobileOpen(true)} isMobile={isMobile} />
+        <TopBar onMenuClick={() => setMobileOpen(true)} isMobile={isMobile} title={pageTitle} />
         <main className="flex-1 overflow-y-auto" style={{ background: 'radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255,90,0,0.05) 0%, transparent 60%), #0a0a18' }}>
           {children}
         </main>

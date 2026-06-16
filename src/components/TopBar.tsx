@@ -106,7 +106,15 @@ const btnHoverOut = (el: HTMLElement) => {
   el.style.borderColor   = 'rgba(255,255,255,0.08)';
 };
 
-export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => void; isMobile?: boolean }) {
+export default function TopBar({
+  onMenuClick,
+  isMobile,
+  title,
+}: {
+  onMenuClick?: () => void;
+  isMobile?: boolean;
+  title?: string;
+}) {
   const { theme, toggle } = useTheme();
   const router = useRouter();
 
@@ -209,8 +217,18 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
       )}
 
       {/* BÃºsqueda global */}
-      <div className="flex-1 relative" ref={searchRef}>
-        <div className="relative max-w-md">
+      {/* Titulo de la pagina */}
+      <div className="flex-shrink-0 min-w-0">
+        <h1 className="text-base font-semibold truncate" style={{ color: '#f1f5f9' }}>
+          {title || 'ArchiTechIA'}
+        </h1>
+      </div>
+
+      <div className="flex-1" />
+
+      {/* Busqueda global */}
+      <div className="relative hidden sm:block" ref={searchRef} style={{ width: '240px' }}>
+        <div className="relative">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -249,7 +267,7 @@ export default function TopBar({ onMenuClick, isMobile }: { onMenuClick?: () => 
 
         {showSearch && resultados.length > 0 && (
           <div
-            className="absolute top-full mt-1.5 w-full max-w-md overflow-hidden z-50 animate-fade-in"
+            className="absolute top-full right-0 mt-1.5 w-80 overflow-hidden z-50 animate-fade-in"
             style={dropdownStyle}
           >
             {resultados.map(r => {
