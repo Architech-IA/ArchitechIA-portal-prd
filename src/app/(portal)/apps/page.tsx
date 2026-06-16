@@ -64,7 +64,7 @@ export default function AppsHubPage() {
   }
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="px-6 pb-6 pt-4 md:px-8 md:pb-8 md:pt-6">
       {/* Filters */}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
         <div className="relative flex-1">
