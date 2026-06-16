@@ -48,41 +48,6 @@ function NotifIcon({ tipo }: { tipo: string }) {
   );
 }
 
-const SEARCH_INDEX = [
-  { label: 'Dashboard',            url: '/',                   tipo: 'Página'   },
-  { label: 'Leads',                url: '/leads',              tipo: 'Página'   },
-  { label: 'Lista de Leads',       url: '/leads/lista',        tipo: 'Página'   },
-  { label: 'Pipeline',             url: '/leads/pipeline',     tipo: 'Página'   },
-  { label: 'Clientes',             url: '/leads/clientes',     tipo: 'Página'   },
-  { label: 'Prospector',           url: '/leads/prospector',   tipo: 'Página'   },
-  { label: 'Mercado',              url: '/leads/mercado',      tipo: 'Página'   },
-  { label: 'Propuestas',           url: '/proposals',          tipo: 'Página'   },
-  { label: 'Proyectos',            url: '/projects',           tipo: 'Página'   },
-  { label: 'Trazabilidad',         url: '/traceability',       tipo: 'Página'   },
-  { label: 'HUB',                  url: '/hub',                tipo: 'Página'   },
-  { label: 'Equipo',               url: '/hub/team',           tipo: 'Página'   },
-  { label: 'ADMIN',                url: '/hub/team',           tipo: 'Página'   },
-  { label: 'BUSINESS',             url: '/hub/business',       tipo: 'Página'   },
-  { label: 'FINANCE',              url: '/hub/finance',        tipo: 'Página'   },
-  { label: 'OPERATIONS',           url: '/hub/operations',     tipo: 'Página'   },
-  { label: 'LEGAL',                url: '/hub/legal',          tipo: 'Página'   },
-  { label: 'Solutions',            url: '/productos',          tipo: 'Página'   },
-  { label: 'Cuentas',              url: '/resources/cuentas',  tipo: 'Página'   },
-  { label: 'Finance',              url: '/finanzas',           tipo: 'Página'   },
-  { label: 'Calendar / Meetings',  url: '/meetings',           tipo: 'Página'   },
-  { label: 'Pipeline de Ventas',   url: '/leads/pipeline',     tipo: 'Página'   },
-  { label: 'Agente de Seguridad AI', url: '/productos',        tipo: 'Producto' },
-  { label: 'Zoho Mail',            url: '/resources/cuentas',  tipo: 'Cuenta'   },
-  { label: 'GitHub',               url: '/resources/cuentas',  tipo: 'Cuenta'   },
-  { label: 'n8n',                  url: '/resources/cuentas',  tipo: 'Cuenta'   },
-];
-
-const TIPO_TAG_COLORS: Record<string, { bg: string; text: string }> = {
-  Página:   { bg: 'rgba(255,90,0,0.12)',  text: '#FF5A00' },
-  Producto: { bg: 'rgba(6,182,212,0.15)', text: '#22d3ee' },
-  Cuenta:   { bg: 'rgba(255,140,0,0.15)', text: '#FF8C00' },
-};
-
 const glassBtn = {
   width: '36px',
   height: '36px',
@@ -118,12 +83,9 @@ export default function TopBar({
   const { theme, toggle } = useTheme();
   const router = useRouter();
 
-  const [query, setQuery]           = useState('');
-  const [showSearch, setShowSearch] = useState(false);
   const [notifs, setNotifs]         = useState<Notif[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [hora, setHora]             = useState('');
-  const searchRef = useRef<HTMLDivElement>(null);
   const notifRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -153,13 +115,9 @@ export default function TopBar({
   }, []);
 
   const unread = notifs.filter(n => !n.leida).length;
-  const resultados = query.length >= 2
-    ? SEARCH_INDEX.filter(s => s.label.toLowerCase().includes(query.toLowerCase()))
-    : [];
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearch(false);
       if (notifRef.current  && !notifRef.current.contains(e.target as Node))  setShowNotifs(false);
     };
     document.addEventListener('mousedown', handler);
@@ -176,12 +134,6 @@ export default function TopBar({
   const marcarLeida = (id: string) => {
     setNotifs(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
     fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, read: true }) }).catch(() => {});
-  };
-
-  const irA = (url: string) => {
-    router.push(url);
-    setQuery('');
-    setShowSearch(false);
   };
 
   const dropdownStyle = {
@@ -216,7 +168,6 @@ export default function TopBar({
         </button>
       )}
 
-      {/* BÃºsqueda global */}
       {/* Titulo de la pagina */}
       <div className="flex-shrink-0 min-w-0">
         <h1 className="text-base font-semibold truncate" style={{ color: '#f1f5f9' }}>
@@ -227,73 +178,24 @@ export default function TopBar({
       <div className="flex-1" />
 
       {/* Busqueda global */}
-      <div className="relative hidden sm:block" ref={searchRef} style={{ width: '240px' }}>
-        <div className="relative">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            style={{ color: '#475569', pointerEvents: 'none' }}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar pÃ¡ginas, clientes, productos..."
-            value={query}
-            onChange={e => { setQuery(e.target.value); setShowSearch(true); }}
-            onFocus={e => {
-              setShowSearch(true);
-              e.currentTarget.style.borderColor = 'rgba(255,90,0,0.5)';
-              e.currentTarget.style.boxShadow   = '0 0 0 3px rgba(255,90,0,0.1)';
-            }}
-            style={{
-              width: '100%',
-              paddingLeft: '36px', paddingRight: '16px',
-              paddingTop: '8px',   paddingBottom: '8px',
-              background:  'rgba(255,255,255,0.04)',
-              border:      '1px solid rgba(255,255,255,0.08)',
-              borderRadius:'10px',
-              color:       '#f1f5f9',
-              fontSize:    '13px',
-              outline:     'none',
-              transition:  'all 0.15s ease',
-            }}
-            onBlur={e => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-              e.currentTarget.style.boxShadow   = 'none';
-            }}
-          />
-        </div>
-
-        {showSearch && resultados.length > 0 && (
-          <div
-            className="absolute top-full right-0 mt-1.5 w-80 overflow-hidden z-50 animate-fade-in"
-            style={dropdownStyle}
-          >
-            {resultados.map(r => {
-              const tc = TIPO_TAG_COLORS[r.tipo] ?? TIPO_TAG_COLORS['Página'];
-              return (
-                <button
-                  key={r.url + r.label}
-                  onClick={() => irA(r.url)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all"
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.08)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                >
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 font-medium"
-                    style={{ background: tc.bg, color: tc.text }}
-                  >
-                    {r.tipo}
-                  </span>
-                  <span className="text-sm" style={{ color: '#e2e8f0' }}>{r.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <button
+        onClick={() => window.dispatchEvent(new Event('open-global-search'))}
+        className="relative hidden sm:flex items-center gap-2 rounded-xl px-3 py-2 transition-all"
+        style={{ width: '240px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,90,0,0.3)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'; }}
+      >
+        <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#475569' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+        </svg>
+        <span className="text-sm flex-1 text-left" style={{ color: '#64748b' }}>Buscar...</span>
+        <kbd
+          className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+          style={{ color: '#64748b', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          ⌘K
+        </kbd>
+      </button>
 
       {/* Toggle tema */}
       <button

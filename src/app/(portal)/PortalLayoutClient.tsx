@@ -147,7 +147,6 @@ export default function PortalLayoutClient({
 
   const visibleSections = sections.filter(s => isSuperAdmin || !s.superAdmin);
 
-  const openSearch = () => window.dispatchEvent(new Event('open-global-search'));
 
   // Item de navegación reutilizable (modo expandido / colapsado / subitem)
   const NavLink = ({ item, isCollapsed, sub = false }: { item: NavItem; isCollapsed: boolean; sub?: boolean }) => {
@@ -255,45 +254,6 @@ export default function PortalLayoutClient({
             </button>
           )}
         </div>
-
-        {/* Buscador (réplica del Search de la referencia) */}
-        {!isCollapsed ? (
-          <div className="px-3 pt-3">
-            <button
-              onClick={openSearch}
-              className="w-full flex items-center gap-2 rounded-xl px-3 py-2 transition-all"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,90,0,0.3)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'; }}
-            >
-              <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#475569' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
-              </svg>
-              <span className="text-sm flex-1 text-left" style={{ color: '#64748b' }}>Buscar…</span>
-              <kbd
-                className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                style={{ color: '#64748b', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                ⌘K
-              </kbd>
-            </button>
-          </div>
-        ) : (
-          <div className="px-2 pt-3">
-            <button
-              onClick={openSearch}
-              title="Buscar (⌘K)"
-              className="w-full flex items-center justify-center py-2 rounded-lg transition-all"
-              style={{ color: '#475569' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#FF7A2F'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.1)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
-              </svg>
-            </button>
-          </div>
-        )}
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-3 overflow-y-auto overflow-x-hidden">
