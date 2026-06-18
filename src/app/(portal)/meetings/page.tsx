@@ -242,11 +242,17 @@ export default function MeetingsPage() {
 
   return (
     <div className="p-8">
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-800 rounded-lg p-1 w-fit">
-        <button onClick={() => setTab('calendario')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'calendario' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Mes</button>
-        <button onClick={() => setTab('semana')}     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'semana'     ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Semana</button>
-        <button onClick={() => setTab('lista')}      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'lista'      ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Lista</button>
+      {/* Tabs + botón nueva reunión */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex gap-1 bg-gray-800 rounded-lg p-1 w-fit">
+          <button onClick={() => setTab('calendario')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'calendario' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Mes</button>
+          <button onClick={() => setTab('semana')}     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'semana'     ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Semana</button>
+          <button onClick={() => setTab('lista')}      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'lista'      ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Lista</button>
+        </div>
+        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          Nueva Reunión
+        </button>
       </div>
 
       {/* KPIs */}

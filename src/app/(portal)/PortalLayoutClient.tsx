@@ -88,7 +88,7 @@ export default function PortalLayoutClient({
     if (pathname === '/productos') return 'Solutions';
     if (pathname === '/resources/cuentas') return 'Cuentas';
     if (pathname === '/finanzas') return 'Finance';
-    if (pathname === '/meetings') return 'Calendar / Meetings';
+    if (pathname === '/meetings') return 'Calendar';
     const clean = pathname?.replace(/^\//, '') || '';
     if (!clean) return 'ArchiTechIA';
     return clean
