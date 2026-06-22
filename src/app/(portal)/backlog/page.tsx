@@ -377,29 +377,29 @@ export default function BacklogPage() {
     <div className="flex flex-col h-screen overflow-hidden">
 
       {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-gray-800 flex items-center justify-end gap-4">
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {/* Filters */}
-          <div className="flex items-center gap-1.5">
-            <select value={filterProject} onChange={e => setFilterProject(e.target.value)} className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
-              <option value="">Todos los proyectos</option>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <select value={filterSolution} onChange={e => setFilterSolution(e.target.value)} className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
-              <option value="">Todas las soluciones</option>
-              {soluciones.map(s => <option key={s.id} value={s.id}>{SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: {s.nombre}</option>)}
-            </select>
-            <select value={filterType} onChange={e => setFilterType(e.target.value)} className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
-              <option value="">Todos los tipos</option>
-              {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-            </select>
-            <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
-              <option value="">Todas las prioridades</option>
-              {PRIORITIES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-            </select>
-          </div>
+      <div className="flex-shrink-0 px-4 py-3 border-b border-gray-800 flex items-center gap-2 min-w-0">
+        {/* Filters — scroll horizontal en pantallas pequeñas */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
+          <select value={filterProject} onChange={e => setFilterProject(e.target.value)} className="flex-shrink-0 text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
+            <option value="">Todos los proyectos</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <select value={filterSolution} onChange={e => setFilterSolution(e.target.value)} className="flex-shrink-0 text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
+            <option value="">Todas las soluciones</option>
+            {soluciones.map(s => <option key={s.id} value={s.id}>{SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: {s.nombre}</option>)}
+          </select>
+          <select value={filterType} onChange={e => setFilterType(e.target.value)} className="flex-shrink-0 text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
+            <option value="">Todos los tipos</option>
+            {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+          </select>
+          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="flex-shrink-0 text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-orange-500">
+            <option value="">Todas las prioridades</option>
+            {PRIORITIES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select>
+        </div>
 
-          {/* View toggle */}
+        {/* Acciones — siempre visibles, nunca bajan de línea */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
             <button onClick={() => setView('kanban')} className={`p-1.5 rounded-md transition-colors ${view === 'kanban' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}><LayoutGrid size={14} /></button>
             <button onClick={() => setView('lista')}  className={`p-1.5 rounded-md transition-colors ${view === 'lista'  ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}><List size={14} /></button>
@@ -408,21 +408,20 @@ export default function BacklogPage() {
             <button
               onClick={() => setKanbanExpanded(v => !v)}
               title={kanbanExpanded ? 'Vista compacta' : 'Vista expandida'}
-              className={`p-1.5 rounded-lg border transition-colors text-xs ${kanbanExpanded ? 'bg-orange-600/20 border-orange-500/40 text-orange-400' : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-white'}`}
+              className={`p-1.5 rounded-lg border transition-colors ${kanbanExpanded ? 'bg-orange-600/20 border-orange-500/40 text-orange-400' : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-white'}`}
             >
               {kanbanExpanded ? <ChevronDown size={14} /> : <Filter size={14} />}
             </button>
           )}
-
           <button
             onClick={() => importFileRef.current?.click()}
-            className="flex items-center gap-1.5 text-xs px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 rounded-lg transition-colors font-medium"
           >
-            <Upload size={14} /> Import
+            <Upload size={13} /> Import
           </button>
           <input ref={importFileRef} type="file" accept=".txt,.md,.markdown,.xml,.html,.htm" className="hidden" onChange={handleFileSelect} />
-          <button onClick={() => openNew()} className="flex items-center gap-1.5 text-xs px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors font-medium">
-            <Plus size={14} /> New
+          <button onClick={() => openNew()} className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors font-medium">
+            <Plus size={13} /> New
           </button>
         </div>
       </div>
