@@ -326,7 +326,7 @@ export default function ProductosPage() {
           <p className="text-gray-400 text-sm leading-relaxed">Proyectos tecnológicos completos con IA y automatización.</p>
         </Link>
         <Link
-          href="/productos/poc"
+          href="/productos/pilots"
           className="group bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-cyan-500/40 transition-all"
         >
           <div className="flex items-start justify-between mb-3">
