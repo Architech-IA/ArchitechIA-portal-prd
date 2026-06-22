@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { Plus, LayoutGrid, List, X, Loader2, Flag, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye } from 'lucide-react'
+import { Plus, LayoutGrid, List, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye, Upload, CheckSquare, Square } from 'lucide-react'
 import BacklogItemDetail from '@/components/BacklogItemDetail'
 
 interface Project {
@@ -65,6 +65,105 @@ const EMPTY_FORM = {
   status: 'BACKLOG', points: '', projectId: '', solucionId: '', assigneeId: '', assigneeName: '',
 }
 
+interface ImportTask {
+  id: string
+  title: string
+  description: string
+  selected: boolean
+}
+
+function parseFileToTasks(content: string, fileName: string): { title: string; description: string }[] {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? 'txt'
+
+  if (ext === 'html' || ext === 'htm') {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(content, 'text/html')
+    const results: { title: string; description: string }[] = []
+    const rows = doc.querySelectorAll('tr')
+    if (rows.length > 1) {
+      rows.forEach((row, i) => {
+        if (i === 0) return
+        const cells = row.querySelectorAll('td')
+        const title = cells[0]?.textContent?.trim() ?? ''
+        const desc = cells[1]?.textContent?.trim() ?? ''
+        if (title.length > 2) results.push({ title, description: desc })
+      })
+      if (results.length) return results
+    }
+    const lis = doc.querySelectorAll('li')
+    if (lis.length > 0) {
+      lis.forEach(li => {
+        const text = li.textContent?.trim() ?? ''
+        if (text.length > 2 && text.length < 300) results.push({ title: text, description: '' })
+      })
+      if (results.length) return results
+    }
+    const headings = doc.querySelectorAll('h2, h3, h4')
+    headings.forEach(h => {
+      const title = h.textContent?.trim() ?? ''
+      const next = h.nextElementSibling
+      const desc = next && ['P', 'DIV'].includes(next.tagName) ? next.textContent?.trim() ?? '' : ''
+      if (title) results.push({ title, description: desc })
+    })
+    return results
+  }
+
+  if (ext === 'xml') {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(content, 'text/xml')
+    const results: { title: string; description: string }[] = []
+    for (const tag of ['task', 'item', 'actividad', 'tarea', 'activity', 'issue', 'story']) {
+      const els = doc.getElementsByTagName(tag)
+      if (els.length > 0) {
+        Array.from(els).forEach(el => {
+          const titleEl = el.querySelector('title,titulo,name,nombre,summary')
+          const descEl = el.querySelector('description,descripcion,desc,body,detail')
+          const title = titleEl?.textContent?.trim() || el.getAttribute('title') || el.getAttribute('name') || ''
+          const description = descEl?.textContent?.trim() ?? ''
+          if (title.trim().length > 2) results.push({ title: title.trim(), description })
+        })
+        if (results.length) return results
+      }
+    }
+    doc.querySelectorAll('*').forEach(el => {
+      if (el.children.length === 0) {
+        const text = el.textContent?.trim() ?? ''
+        if (text.length > 3 && text.length < 200) results.push({ title: text, description: '' })
+      }
+    })
+    return results
+  }
+
+  // txt / md / markdown
+  const lines = content.split('\n')
+  const results: { title: string; description: string }[] = []
+  const hasHeaders = lines.some(l => /^#{1,3}\s/.test(l.trim()))
+
+  if (hasHeaders) {
+    let current: { title: string; description: string } | null = null
+    for (const line of lines) {
+      const trimmed = line.trim()
+      const m = trimmed.match(/^#{1,3}\s+(.+)/)
+      if (m) {
+        if (current) results.push(current)
+        current = { title: m[1].trim(), description: '' }
+      } else if (current && trimmed && !trimmed.startsWith('#')) {
+        current.description += (current.description ? ' ' : '') + trimmed
+      }
+    }
+    if (current) results.push(current)
+    return results
+  }
+
+  for (const line of lines) {
+    let title = line.trim()
+    if (!title) continue
+    title = title.replace(/^[-*+]\s+(\[[ x]\]\s+)?/, '').replace(/^\d+[.)]\s+/, '').replace(/^#{1,6}\s+/, '').trim()
+    if (title.length > 2) results.push({ title, description: '' })
+  }
+  return results
+}
+
 function TypeBadge({ type }: { type: string }) {
   const t = TYPES.find(x => x.key === type) ?? TYPES[2]
   const Icon = t.icon
@@ -117,6 +216,13 @@ export default function BacklogPage() {
   const [filterPriority, setFilterPriority] = useState('')
   const [filterSolution, setFilterSolution] = useState('')
   const [users, setUsers] = useState<{ id: string; name: string; role: string }[]>([])
+
+  const importFileRef = useRef<HTMLInputElement>(null)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importTasks, setImportTasks] = useState<ImportTask[]>([])
+  const [importDefaults, setImportDefaults] = useState({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', projectId: '', solucionId: '', assigneeId: '', assigneeName: '' })
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
 
   const userName = (session?.user as any)?.name ?? ''
 
@@ -183,6 +289,60 @@ export default function BacklogPage() {
     setConfirmDel(null)
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const content = ev.target?.result as string
+      const parsed = parseFileToTasks(content, file.name)
+      if (parsed.length === 0) { alert('No se detectaron tareas en el archivo.'); return }
+      setImportTasks(parsed.map((t, i) => ({ ...t, id: `imp-${i}`, selected: true })))
+      setImportDefaults({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', projectId: '', solucionId: '', assigneeId: '', assigneeName: userName })
+      setImportError('')
+      setShowImportModal(true)
+    }
+    reader.readAsText(file, 'utf-8')
+    e.target.value = ''
+  }
+
+  const handleImportSubmit = async () => {
+    const selected = importTasks.filter(t => t.selected && t.title.trim())
+    if (selected.length === 0) { setImportError('Selecciona al menos una tarea.'); return }
+    if (!importDefaults.projectId) { setImportError('Selecciona un proyecto por defecto.'); return }
+    if (!importDefaults.solucionId) { setImportError('Selecciona una solución asociada.'); return }
+    setImporting(true)
+    setImportError('')
+    try {
+      const created: BacklogItem[] = []
+      for (const t of selected) {
+        const res = await fetch('/api/backlog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: t.title.trim(),
+            description: t.description.trim() || null,
+            type: importDefaults.type,
+            priority: importDefaults.priority,
+            status: importDefaults.status,
+            points: importDefaults.points ? Number(importDefaults.points) : null,
+            projectId: importDefaults.projectId,
+            solucionId: importDefaults.solucionId,
+            assigneeId: importDefaults.assigneeId || null,
+            assigneeName: importDefaults.assigneeName || null,
+          }),
+        })
+        if (res.ok) created.push(await res.json())
+      }
+      setItems(prev => [...created.reverse(), ...prev])
+      setShowImportModal(false)
+    } catch {
+      setImportError('Error al importar. Revisa la consola.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const changeStatus = async (item: BacklogItem, newStatus: string) => {
     const res = await fetch(`/api/backlog/${item.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -246,8 +406,15 @@ export default function BacklogPage() {
             </button>
           )}
 
+          <button
+            onClick={() => importFileRef.current?.click()}
+            className="flex items-center gap-1.5 text-xs px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 rounded-lg transition-colors font-medium"
+          >
+            <Upload size={14} /> Import
+          </button>
+          <input ref={importFileRef} type="file" accept=".txt,.md,.markdown,.xml,.html,.htm" className="hidden" onChange={handleFileSelect} />
           <button onClick={() => openNew()} className="flex items-center gap-1.5 text-xs px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors font-medium">
-            <Plus size={14} /> Nueva tarea
+            <Plus size={14} /> New
           </button>
         </div>
       </div>
@@ -511,6 +678,123 @@ export default function BacklogPage() {
             }
           }}
         />
+      )}
+
+      {/* Import modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(4px)' }}>
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-orange-600/20 border border-orange-500/30 flex items-center justify-center">
+                  <Upload className="text-orange-400" size={16} />
+                </div>
+                <div>
+                  <h2 className="text-white font-bold text-lg leading-none">Importar tareas</h2>
+                  <p className="text-orange-400/70 text-xs mt-0.5">{importTasks.filter(t => t.selected).length} de {importTasks.length} seleccionadas</p>
+                </div>
+              </div>
+              <button onClick={() => setShowImportModal(false)} disabled={importing} className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-50">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+              {/* Defaults */}
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Configuración por defecto (aplica a todas)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Proyecto <span className="text-orange-400">*</span></label>
+                    <select value={importDefaults.projectId} onChange={e => setImportDefaults(d => ({ ...d, projectId: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
+                      <option value="">Selecciona un proyecto…</option>
+                      {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Solución asociada <span className="text-orange-400">*</span></label>
+                    <select value={importDefaults.solucionId} onChange={e => setImportDefaults(d => ({ ...d, solucionId: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
+                      <option value="">Selecciona una solución…</option>
+                      {soluciones.map(s => <option key={s.id} value={s.id}>{SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: {s.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Tipo</label>
+                    <select value={importDefaults.type} onChange={e => setImportDefaults(d => ({ ...d, type: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
+                      {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Prioridad</label>
+                    <select value={importDefaults.priority} onChange={e => setImportDefaults(d => ({ ...d, priority: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
+                      {PRIORITIES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Estado inicial</label>
+                    <select value={importDefaults.status} onChange={e => setImportDefaults(d => ({ ...d, status: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
+                      {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Story points</label>
+                    <input type="number" min={0} max={100} value={importDefaults.points} onChange={e => setImportDefaults(d => ({ ...d, points: e.target.value }))} placeholder="0" className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-gray-400 mb-1">Responsable</label>
+                    <select value={importDefaults.assigneeId} onChange={e => { const u = users.find(x => x.id === e.target.value); setImportDefaults(d => ({ ...d, assigneeId: e.target.value, assigneeName: u?.name ?? '' })) }} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
+                      <option value="">Sin asignar</option>
+                      {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Task list */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Tareas detectadas</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => setImportTasks(ts => ts.map(t => ({ ...t, selected: true })))} className="text-xs text-orange-400 hover:text-orange-300 transition-colors">Seleccionar todo</button>
+                    <button onClick={() => setImportTasks(ts => ts.map(t => ({ ...t, selected: false })))} className="text-xs text-gray-500 hover:text-gray-400 transition-colors">Deseleccionar</button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {importTasks.map(task => (
+                    <div key={task.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${task.selected ? 'bg-gray-800 border-gray-700' : 'bg-gray-950 border-gray-800 opacity-50'}`}>
+                      <button onClick={() => setImportTasks(ts => ts.map(t => t.id === task.id ? { ...t, selected: !t.selected } : t))} className="mt-0.5 flex-shrink-0 text-orange-400">
+                        {task.selected ? <CheckSquare size={16} /> : <Square size={16} className="text-gray-600" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={task.title}
+                          onChange={e => setImportTasks(ts => ts.map(t => t.id === task.id ? { ...t, title: e.target.value } : t))}
+                          className="w-full bg-transparent text-sm text-white focus:outline-none border-b border-transparent focus:border-orange-500 pb-0.5 transition-colors"
+                        />
+                        {task.description && <p className="text-xs text-gray-500 mt-1 truncate">{task.description}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex-shrink-0 px-6 py-4 border-t border-gray-800">
+              {importError && (
+                <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5"><X size={12} />{importError}</p>
+              )}
+              <div className="flex items-center justify-end gap-3">
+                <button type="button" onClick={() => setShowImportModal(false)} disabled={importing} className="px-4 py-2 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800 text-sm disabled:opacity-50">Cancelar</button>
+                <button onClick={handleImportSubmit} disabled={importing} className="inline-flex items-center gap-2 px-5 py-2 bg-orange-600 hover:bg-orange-500 disabled:bg-orange-800 text-white rounded-lg text-sm font-semibold transition-colors">
+                  {importing ? <><Loader2 size={13} className="animate-spin" /> Importando…</> : <><Upload size={13} /> Importar {importTasks.filter(t => t.selected).length} tareas</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Confirm delete */}
