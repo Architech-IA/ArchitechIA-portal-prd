@@ -70,9 +70,14 @@ interface ImportTask {
   title: string
   description: string
   selected: boolean
+  points?: string
+  type?: string
+  priority?: string
 }
 
-function parseFileToTasks(content: string, fileName: string): { title: string; description: string }[] {
+type ParsedTask = { title: string; description: string; points?: string; type?: string; priority?: string }
+
+function parseFileToTasks(content: string, fileName: string): ParsedTask[] {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? 'txt'
 
   if (ext === 'html' || ext === 'htm') {
@@ -111,7 +116,7 @@ function parseFileToTasks(content: string, fileName: string): { title: string; d
   if (ext === 'xml') {
     const parser = new DOMParser()
     const doc = parser.parseFromString(content, 'text/xml')
-    const results: { title: string; description: string }[] = []
+    const results: ParsedTask[] = []
     for (const tag of ['task', 'item', 'actividad', 'tarea', 'activity', 'issue', 'story']) {
       const els = doc.getElementsByTagName(tag)
       if (els.length > 0) {
@@ -120,7 +125,10 @@ function parseFileToTasks(content: string, fileName: string): { title: string; d
           const descEl = el.querySelector('description,descripcion,desc,body,detail')
           const title = titleEl?.textContent?.trim() || el.getAttribute('title') || el.getAttribute('name') || ''
           const description = descEl?.textContent?.trim() ?? ''
-          if (title.trim().length > 2) results.push({ title: title.trim(), description })
+          const points = el.querySelector('points,puntos,storypoints,pts')?.textContent?.trim()
+          const type = el.querySelector('type,tipo')?.textContent?.trim()
+          const priority = el.querySelector('priority,prioridad')?.textContent?.trim()
+          if (title.trim().length > 2) results.push({ title: title.trim(), description, points, type, priority })
         })
         if (results.length) return results
       }
@@ -322,10 +330,10 @@ export default function BacklogPage() {
           body: JSON.stringify({
             title: t.title.trim(),
             description: t.description.trim() || null,
-            type: importDefaults.type,
-            priority: importDefaults.priority,
+            type: t.type ?? importDefaults.type,
+            priority: t.priority ?? importDefaults.priority,
             status: importDefaults.status,
-            points: importDefaults.points ? Number(importDefaults.points) : null,
+            points: (() => { const p = t.points ?? importDefaults.points; return p ? Number(p) : null })(),
             projectId: importDefaults.projectId,
             solucionId: importDefaults.solucionId,
             assigneeId: importDefaults.assigneeId || null,
@@ -775,6 +783,16 @@ export default function BacklogPage() {
                         />
                         {task.description && <p className="text-xs text-gray-500 mt-1 truncate">{task.description}</p>}
                       </div>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={task.points ?? importDefaults.points}
+                        onChange={e => setImportTasks(ts => ts.map(t => t.id === task.id ? { ...t, points: e.target.value } : t))}
+                        className="w-14 flex-shrink-0 text-center text-xs bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-orange-500"
+                        placeholder="pts"
+                        title="Story points"
+                      />
                     </div>
                   ))}
                 </div>
