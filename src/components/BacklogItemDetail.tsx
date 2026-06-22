@@ -69,7 +69,7 @@ const PRIORITY_LABELS: Record<string, { label: string; color: string; dot: strin
 }
 
 const SOLUCION_TIPO_LABELS: Record<string, string> = {
-  PROJECT: 'Proyecto', DEMO: 'Demo', PARTNERSHIP: 'Partnership', PRODUCT: 'Producto',
+  PROJECT: 'Proyecto', DEMO: 'Demo', PARTNERSHIP: 'Partnership', PRODUCT: 'Producto', INTERN: 'Intern',
 }
 
 export default function BacklogItemDetail({ item, onClose, onStatusChange, currentUserName, onEdit, onDelete }: Props) {

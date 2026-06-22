@@ -17,8 +17,8 @@ interface Solucion {
 }
 
 interface SolucionesListProps {
-  tipo: 'PROJECT' | 'DEMO' | 'PARTNERSHIP' | 'PRODUCT'
-  color: 'orange' | 'cyan' | 'violet'
+  tipo: 'PROJECT' | 'DEMO' | 'PARTNERSHIP' | 'PRODUCT' | 'INTERN'
+  color: 'orange' | 'cyan' | 'violet' | 'emerald'
   title?: string
 }
 
@@ -40,6 +40,12 @@ const colorMap = {
     bg: 'bg-violet-600/15',
     text: 'text-violet-400',
     badge: 'bg-violet-900/30 text-violet-400 border-violet-800/40',
+  },
+  emerald: {
+    border: 'border-emerald-500/30',
+    bg: 'bg-emerald-600/15',
+    text: 'text-emerald-400',
+    badge: 'bg-emerald-900/30 text-emerald-400 border-emerald-800/40',
   },
 }
 

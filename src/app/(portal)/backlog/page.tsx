@@ -86,7 +86,7 @@ function PointsBadge({ points }: { points: number | null }) {
 }
 
 const SOLUCION_TIPO_LABELS: Record<string, string> = {
-  PROJECT: 'Proyecto', DEMO: 'Demo', PARTNERSHIP: 'Partnership', PRODUCT: 'Producto',
+  PROJECT: 'Proyecto', DEMO: 'Demo', PARTNERSHIP: 'Partnership', PRODUCT: 'Producto', INTERN: 'Intern',
 }
 
 function SolutionBadge({ solucion }: { solucion: { id: string; nombre: string; tipo: string } | null }) {

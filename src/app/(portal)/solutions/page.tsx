@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { FolderKanban, FlaskConical, Handshake, ArrowRight } from 'lucide-react';
+import { FolderKanban, FlaskConical, Handshake, Building2, ArrowRight } from 'lucide-react';
 
 interface Producto {
   id: string;
@@ -306,7 +306,7 @@ export default function ProductosPage() {
       </div>
 
       {/* Tipos de soluciones a la medida */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Link
           href="/solutions/projects"
           className="group bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-orange-500/40 transition-all"
@@ -360,6 +360,24 @@ export default function ProductosPage() {
           </div>
           <h3 className="text-white font-semibold mb-1">Partnership</h3>
           <p className="text-gray-400 text-sm leading-relaxed">Alianzas estratégicas para co-crear soluciones y productos.</p>
+        </Link>
+        <Link
+          href="/solutions/intern"
+          className="group bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-emerald-500/40 transition-all"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-600/15 flex items-center justify-center">
+              <Building2 className="text-emerald-400" size={20} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 text-xs bg-emerald-900/30 text-emerald-400 rounded-full border border-emerald-800/40">
+                {soluciones.filter(s => s.tipo === 'INTERN').length}
+              </span>
+              <ArrowRight className="text-gray-600 group-hover:text-emerald-400 transition-colors" size={18} />
+            </div>
+          </div>
+          <h3 className="text-white font-semibold mb-1">Intern</h3>
+          <p className="text-gray-400 text-sm leading-relaxed">Soluciones internas, herramientas y plataformas de ArchiTechIA.</p>
         </Link>
       </div>
 

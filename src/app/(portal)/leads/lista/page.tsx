@@ -679,6 +679,7 @@ export default function LeadsPage() {
                     <option value="Demo">Demo</option>
                     <option value="Partnership">Partnership</option>
                     <option value="Products">Products</option>
+                    <option value="Intern">Intern</option>
                   </select>
                 </div>
                 <div>

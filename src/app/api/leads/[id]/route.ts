@@ -53,6 +53,7 @@ export async function PUT(
         Demo: 'DEMO',
         Partnership: 'PARTNERSHIP',
         Products: 'PRODUCT',
+        Intern: 'INTERN',
       };
       await prisma.solucion.upsert({
         where: { leadId: id },

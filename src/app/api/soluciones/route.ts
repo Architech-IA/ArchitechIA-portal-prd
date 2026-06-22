@@ -1,7 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+const INTERN_SOLUTION_NAME = 'Portal Interno ArchitechIA';
+
+/**
+ * Garantiza que exista la solución interna base. Se ejecuta de forma perezosa
+ * en el GET de soluciones; tras la primera corrida ya existe y no hace nada.
+ */
+async function ensureInternSolution(): Promise<void> {
+  const existing = await prisma.solucion.findFirst({
+    where: { tipo: 'INTERN', nombre: INTERN_SOLUTION_NAME },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  await prisma.solucion.create({
+    data: {
+      nombre: INTERN_SOLUTION_NAME,
+      descripcion: 'Solución interna que agrupa el portal, herramientas y plataformas de ArchiTechIA.',
+      tipo: 'INTERN',
+      estado: 'ACTIVO',
+      valorEstimado: 0,
+    },
+  });
+}
+
 export async function GET(request: NextRequest) {
+  await ensureInternSolution();
+
   const { searchParams } = new URL(request.url);
   const tipo = searchParams.get('tipo');
 

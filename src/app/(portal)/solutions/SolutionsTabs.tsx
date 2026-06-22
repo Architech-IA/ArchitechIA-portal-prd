@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { Package, Lightbulb, FolderKanban, FlaskConical, Handshake } from 'lucide-react'
+import { Package, Lightbulb, FolderKanban, FlaskConical, Handshake, Building2 } from 'lucide-react'
 
 export default function SolutionsTabs() {
   const pathname = usePathname()
@@ -27,6 +27,7 @@ export default function SolutionsTabs() {
     { href: '/solutions/projects', label: 'Projects', icon: FolderKanban, exact: false },
     { href: '/solutions/pilots', label: 'Pilots', icon: FlaskConical, exact: false },
     { href: '/solutions/partnership', label: 'Partnership', icon: Handshake, exact: false },
+    { href: '/solutions/intern', label: 'Intern', icon: Building2, exact: false },
     { href: '/solutions/iniciativas', label: 'Iniciativas', icon: Lightbulb, exact: false },
   ]
 

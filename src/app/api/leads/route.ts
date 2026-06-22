@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       Demo: 'DEMO',
       Partnership: 'PARTNERSHIP',
       Products: 'PRODUCT',
+      Intern: 'INTERN',
     };
     await prisma.solucion.create({
       data: {
