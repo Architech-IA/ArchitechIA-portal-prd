@@ -5,9 +5,9 @@
   /* Backgrounds */
   --bg-base:     #06060f;
   --bg-surface:  #09091a;
-  --bg-elevated: rgba(32, 32, 60, 0.96);
-  --bg-card:     rgba(30, 30, 56, 0.94);
-  --bg-card-2:   rgba(38, 38, 66, 0.95);
+  --bg-elevated: rgba(32, 32, 60, 0.58);
+  --bg-card:     rgba(30, 30, 56, 0.56);
+  --bg-card-2:   rgba(38, 38, 66, 0.57);
 
   /* Glass */
   --glass-bg:        rgba(255, 255, 255, 0.03);
@@ -75,10 +75,10 @@
    utilities. Overriding the scale here re-skins every page at once instead
    of touching each file individually.                              ── */
 @theme {
-  --color-gray-950: rgba(16, 16, 32, 0.96);
-  --color-gray-900: rgba(24, 24, 44, 0.94);
-  --color-gray-800: rgba(30, 30, 56, 0.95);
-  --color-gray-700: rgba(46, 46, 78, 0.96);
+  --color-gray-950: rgba(16, 16, 32, 0.58);
+  --color-gray-900: rgba(24, 24, 44, 0.56);
+  --color-gray-800: rgba(30, 30, 56, 0.57);
+  --color-gray-700: rgba(46, 46, 78, 0.58);
   --color-gray-600: #2a2a4a;
   --color-gray-500: #5a6577;
   --color-gray-400: #94a3b8;
@@ -175,7 +175,7 @@ body::before {
 
 /* ─── Glass morphism ───────────────────────────────────────────  */
 .glass {
-  background: rgba(30, 30, 56, 0.96);
+  background: rgba(30, 30, 56, 0.58);
   backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
 }
