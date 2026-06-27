@@ -23,6 +23,7 @@ interface SolucionesListProps {
   title?: string
   refreshKey?: number
   headerAction?: React.ReactNode
+  hideIcon?: boolean
 }
 
 const colorMap = {
@@ -40,7 +41,7 @@ const TIPO_ICON: Record<SolucionesListProps['tipo'], typeof FlaskConical> = {
   PRODUCT: Package,
 }
 
-export default function SolucionesList({ tipo, color, title, refreshKey, headerAction }: SolucionesListProps) {
+export default function SolucionesList({ tipo, color, title, refreshKey, headerAction, hideIcon }: SolucionesListProps) {
   const [soluciones, setSoluciones] = useState<Solucion[]>([])
   const [loading, setLoading] = useState(true)
   const c = colorMap[color]
@@ -57,38 +58,50 @@ export default function SolucionesList({ tipo, color, title, refreshKey, headerA
       .catch(() => setLoading(false))
   }, [tipo, refreshKey])
 
+  const header = (
+    <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center gap-2.5">
+        {!hideIcon && (
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: `${c.hex}1f`, border: `1px solid ${c.hex}33` }}>
+            <Icon size={16} style={{ color: c.hex }} />
+          </div>
+        )}
+        <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          {title || 'Soluciones asociadas'}
+          <span className={`badge ${c.badge}`}>{soluciones.length}</span>
+        </h2>
+      </div>
+      {headerAction}
+    </div>
+  )
+
   if (loading) {
     return (
-      <div className="card p-8 flex items-center justify-center">
-        <Loader2 className={`${c.text} animate-spin`} size={24} />
+      <div className="card p-6 md:p-8">
+        {header}
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className={`${c.text} animate-spin`} size={24} />
+        </div>
       </div>
     )
   }
 
   if (soluciones.length === 0) {
     return (
-      <div className="card p-8 text-center">
-        <p className="text-gray-500 text-sm">No hay soluciones de este tipo asociadas a leads.</p>
-        <p className="text-gray-600 text-xs mt-1">Selecciona una solución al crear o editar un lead.</p>
+      <div className="card p-6 md:p-8">
+        {header}
+        <div className="text-center py-6">
+          <p className="text-gray-500 text-sm">No hay soluciones de este tipo asociadas a leads.</p>
+          <p className="text-gray-600 text-xs mt-1">Selecciona una solución al crear o editar un lead, o usa el botón de arriba.</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="card p-6 md:p-8">
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: `${c.hex}1f`, border: `1px solid ${c.hex}33` }}>
-            <Icon size={16} style={{ color: c.hex }} />
-          </div>
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
-            {title || 'Soluciones asociadas'}
-            <span className={`badge ${c.badge}`}>{soluciones.length}</span>
-          </h2>
-        </div>
-        {headerAction}
-      </div>
+      {header}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {soluciones.map(s => (
           <div

@@ -4,7 +4,10 @@ import { logActivity } from '@/lib/activity';
 
 export async function GET() {
   const leads = await prisma.lead.findMany({
-    include: { user: { select: { id: true, name: true, email: true } } },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      solucion: { select: { id: true } },
+    },
     orderBy: { createdAt: 'desc' },
   });
   return NextResponse.json(leads);
