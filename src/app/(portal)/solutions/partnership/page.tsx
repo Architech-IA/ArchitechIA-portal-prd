@@ -136,17 +136,21 @@ export default function PartnershipSolutionPage() {
       <SolucionesList tipo="PARTNERSHIP" color="violet" title="Partnerships activos" />
 
       {/* CTA */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-            <Handshake className="text-violet-400" size={22} />
-            ¿Listo para una alianza?
-          </h2>
-          <p className="text-gray-400 text-sm">Hablemos de cómo podemos construir y escalar juntos.</p>
+      <div className="card p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}>
+            <Handshake className="text-violet-400" size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white mb-1">¿Listo para una alianza?</h2>
+            <p className="text-gray-400 text-sm">Hablemos de cómo podemos construir y escalar juntos.</p>
+          </div>
         </div>
         <Link
           href="/leads"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
+          className="btn flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', color: 'white', borderColor: 'rgba(139,92,246,0.5)' }}
         >
           Conversar con comercial
           <ArrowRight size={16} />

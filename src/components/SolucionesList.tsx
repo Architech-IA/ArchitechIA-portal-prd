@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import React from 'react'
 import Link from 'next/link'
-import { Loader2, ExternalLink, DollarSign } from 'lucide-react'
+import { Loader2, ExternalLink, DollarSign, FlaskConical, Briefcase, Handshake, GraduationCap, Package } from 'lucide-react'
 
 interface Solucion {
   id: string
@@ -26,36 +26,25 @@ interface SolucionesListProps {
 }
 
 const colorMap = {
-  orange: {
-    border: 'border-orange-500/30',
-    bg: 'bg-orange-600/15',
-    text: 'text-orange-400',
-    badge: 'bg-orange-900/30 text-orange-400 border-orange-800/40',
-  },
-  cyan: {
-    border: 'border-cyan-500/30',
-    bg: 'bg-cyan-600/15',
-    text: 'text-cyan-400',
-    badge: 'bg-cyan-900/30 text-cyan-400 border-cyan-800/40',
-  },
-  violet: {
-    border: 'border-violet-500/30',
-    bg: 'bg-violet-600/15',
-    text: 'text-violet-400',
-    badge: 'bg-violet-900/30 text-violet-400 border-violet-800/40',
-  },
-  emerald: {
-    border: 'border-emerald-500/30',
-    bg: 'bg-emerald-600/15',
-    text: 'text-emerald-400',
-    badge: 'bg-emerald-900/30 text-emerald-400 border-emerald-800/40',
-  },
+  orange: { hex: '#FF5A00', text: 'text-orange-400', badge: 'badge-primary' },
+  cyan:   { hex: '#06B6D4', text: 'text-cyan-400',   badge: 'badge-cyan' },
+  violet: { hex: '#8B5CF6', text: 'text-violet-400', badge: 'badge-primary' },
+  emerald:{ hex: '#10B981', text: 'text-emerald-400', badge: 'badge-success' },
+}
+
+const TIPO_ICON: Record<SolucionesListProps['tipo'], typeof FlaskConical> = {
+  DEMO: FlaskConical,
+  PROJECT: Briefcase,
+  PARTNERSHIP: Handshake,
+  INTERN: GraduationCap,
+  PRODUCT: Package,
 }
 
 export default function SolucionesList({ tipo, color, title, refreshKey, headerAction }: SolucionesListProps) {
   const [soluciones, setSoluciones] = useState<Solucion[]>([])
   const [loading, setLoading] = useState(true)
   const c = colorMap[color]
+  const Icon = TIPO_ICON[tipo]
 
   useEffect(() => {
     setLoading(true)
@@ -70,7 +59,7 @@ export default function SolucionesList({ tipo, color, title, refreshKey, headerA
 
   if (loading) {
     return (
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 flex items-center justify-center">
+      <div className="card p-8 flex items-center justify-center">
         <Loader2 className={`${c.text} animate-spin`} size={24} />
       </div>
     )
@@ -78,7 +67,7 @@ export default function SolucionesList({ tipo, color, title, refreshKey, headerA
 
   if (soluciones.length === 0) {
     return (
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center">
+      <div className="card p-8 text-center">
         <p className="text-gray-500 text-sm">No hay soluciones de este tipo asociadas a leads.</p>
         <p className="text-gray-600 text-xs mt-1">Selecciona una solución al crear o editar un lead.</p>
       </div>
@@ -86,34 +75,46 @@ export default function SolucionesList({ tipo, color, title, refreshKey, headerA
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8">
+    <div className="card p-6 md:p-8">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          {title || 'Soluciones asociadas'}
-          <span className={`px-2 py-0.5 text-xs rounded-full border ${c.badge}`}>{soluciones.length}</span>
-        </h2>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: `${c.hex}1f`, border: `1px solid ${c.hex}33` }}>
+            <Icon size={16} style={{ color: c.hex }} />
+          </div>
+          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+            {title || 'Soluciones asociadas'}
+            <span className={`badge ${c.badge}`}>{soluciones.length}</span>
+          </h2>
+        </div>
         {headerAction}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {soluciones.map(s => (
           <div
             key={s.id}
-            className={`bg-gray-950 border border-gray-800 rounded-xl p-5 hover:${c.border} transition-colors`}
+            className="card card-hover p-5"
           >
             <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <h3 className="text-white font-semibold">{s.nombre}</h3>
-                {s.lead && (
-                  <Link
-                    href={`/leads/lista`}
-                    className={`text-xs ${c.text} hover:underline flex items-center gap-1 mt-1`}
-                  >
-                    Lead: {s.lead.companyName}
-                    <ExternalLink size={10} />
-                  </Link>
-                )}
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: `${c.hex}1f`, border: `1px solid ${c.hex}33` }}>
+                  <Icon size={16} style={{ color: c.hex }} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-white font-semibold truncate">{s.nombre}</h3>
+                  {s.lead && (
+                    <Link
+                      href={`/leads/lista`}
+                      className={`text-xs ${c.text} hover:underline flex items-center gap-1 mt-1`}
+                    >
+                      Lead: {s.lead.companyName}
+                      <ExternalLink size={10} />
+                    </Link>
+                  )}
+                </div>
               </div>
-              <span className={`px-2 py-0.5 text-[10px] rounded-full border ${c.badge}`}>
+              <span className={`badge ${c.badge} flex-shrink-0`}>
                 {s.estado}
               </span>
             </div>
