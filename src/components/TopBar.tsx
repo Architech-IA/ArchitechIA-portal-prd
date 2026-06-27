@@ -86,6 +86,7 @@ export default function TopBar({
   const [notifs, setNotifs]         = useState<Notif[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [hora, setHora]             = useState('');
+  const [live, setLive]             = useState<boolean | null>(null);
   const notifRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,6 +95,8 @@ export default function TopBar({
       .then((d: ApiNotif[]) => setNotifs(Array.isArray(d) ? d.map(mapNotif) : []))
       .catch(() => {});
     const sse = new EventSource('/api/notifications/sse');
+    sse.onopen = () => setLive(true);
+    sse.onerror = () => setLive(false);
     sse.onmessage = (e) => {
       try { setNotifs((JSON.parse(e.data) as ApiNotif[]).map(mapNotif)); } catch {}
     };
@@ -169,10 +172,27 @@ export default function TopBar({
       )}
 
       {/* Titulo de la pagina */}
-      <div className="flex-shrink-0 min-w-0">
+      <div className="flex-shrink-0 min-w-0 flex items-center gap-2.5">
         <h1 className="text-base font-semibold truncate" style={{ color: '#f1f5f9' }}>
           {title || 'ArchiTechIA'}
         </h1>
+        {live !== null && (
+          <span
+            className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full flex-shrink-0"
+            style={{
+              background: live ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              border:     `1px solid ${live ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+            }}
+          >
+            <span className="relative flex">
+              {live && <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping-slow opacity-40" />}
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: live ? '#34d399' : '#f87171' }} />
+            </span>
+            <span className="text-[10px] font-medium" style={{ color: live ? '#34d399' : '#f87171' }}>
+              {live ? 'live' : 'sin conexión'}
+            </span>
+          </span>
+        )}
       </div>
 
       <div className="flex-1" />

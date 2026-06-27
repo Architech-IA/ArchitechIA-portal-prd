@@ -53,6 +53,26 @@ const bottomLinks: NavItem[] = [
   { href: '/profile', label: 'Mi Perfil', icon: 'M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
 ];
 
+// Color distintivo por módulo — réplica del "module color coding" de mainFJ-hub
+const MODULE_COLORS: Record<string, { icon: string; bg: string; border: string; glow: string }> = {
+  '/':                  { icon: '#a78bfa', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.25)', glow: '0 0 12px rgba(139,92,246,0.3)' },
+  '/apps':              { icon: '#22d3ee', bg: 'rgba(6,182,212,0.12)',  border: 'rgba(6,182,212,0.25)',  glow: '0 0 12px rgba(6,182,212,0.3)'  },
+  '/leads':             { icon: '#60a5fa', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)', glow: '0 0 12px rgba(59,130,246,0.3)' },
+  '/meetings':          { icon: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)', glow: '0 0 12px rgba(245,158,11,0.3)' },
+  '/calculador':        { icon: '#2dd4bf', bg: 'rgba(20,184,166,0.12)', border: 'rgba(20,184,166,0.25)', glow: '0 0 12px rgba(20,184,166,0.3)' },
+  '/projects':          { icon: '#818cf8', bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.25)', glow: '0 0 12px rgba(99,102,241,0.3)' },
+  '/backlog':           { icon: '#c084fc', bg: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.25)', glow: '0 0 12px rgba(168,85,247,0.3)' },
+  '/hub':               { icon: '#f472b6', bg: 'rgba(236,72,153,0.12)', border: 'rgba(236,72,153,0.25)', glow: '0 0 12px rgba(236,72,153,0.3)' },
+  '/solutions':         { icon: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)', glow: '0 0 12px rgba(16,185,129,0.3)' },
+  '/resources/cuentas': { icon: '#38bdf8', bg: 'rgba(14,165,233,0.12)', border: 'rgba(14,165,233,0.25)', glow: '0 0 12px rgba(14,165,233,0.3)' },
+  '/finanzas':          { icon: '#4ade80', bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.25)',  glow: '0 0 12px rgba(34,197,94,0.3)'  },
+  '/traceability':      { icon: '#fb7185', bg: 'rgba(244,63,94,0.12)',  border: 'rgba(244,63,94,0.25)',  glow: '0 0 12px rgba(244,63,94,0.3)'  },
+  '/graph':             { icon: '#e879f9', bg: 'rgba(217,70,239,0.12)', border: 'rgba(217,70,239,0.25)', glow: '0 0 12px rgba(217,70,239,0.3)' },
+  '/reportes':          { icon: '#fda4af', bg: 'rgba(251,113,133,0.12)',border: 'rgba(251,113,133,0.25)',glow: '0 0 12px rgba(251,113,133,0.3)'},
+  '/profile':           { icon: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)', glow: '0 0 12px rgba(245,158,11,0.3)' },
+};
+const DEFAULT_MODULE_COLOR = { icon: '#5a6577', bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.05)', glow: '' };
+
 export default function PortalLayoutClient({
   children,
   isSuperAdmin: serverIsSuperAdmin,
@@ -157,6 +177,7 @@ export default function PortalLayoutClient({
   // Item de navegación reutilizable (modo expandido / colapsado / subitem)
   const NavLink = ({ item, isCollapsed, sub = false }: { item: NavItem; isCollapsed: boolean; sub?: boolean }) => {
     const active = isActive(item.href);
+    const mc = MODULE_COLORS[item.href] ?? DEFAULT_MODULE_COLOR;
     return (
       <a
         href={item.href}
@@ -166,7 +187,7 @@ export default function PortalLayoutClient({
           fontSize: '12px',
           fontWeight: 300,
           gap: isCollapsed ? '0' : '10px',
-          padding: isCollapsed ? '10px 0' : '8px 12px',
+          padding: isCollapsed ? '8px 0' : '6px 8px',
           marginLeft: !isCollapsed && sub ? '8px' : '0',
           justifyContent: isCollapsed ? 'center' : 'flex-start',
           color: active ? '#FF7A2F' : '#e2e8f0',
@@ -180,9 +201,19 @@ export default function PortalLayoutClient({
         {active && !isCollapsed && (
           <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full" style={{ background: '#FF5A00' }} />
         )}
-        <svg style={{ color: active ? '#FF7A2F' : '#5a6577', flexShrink: 0 }} className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={item.icon} />
-        </svg>
+        <span
+          className="flex items-center justify-center rounded-lg flex-shrink-0 transition-all"
+          style={{
+            width: '26px', height: '26px',
+            background: active ? mc.bg : 'rgba(255,255,255,0.03)',
+            border: `1px solid ${active ? mc.border : 'rgba(255,255,255,0.05)'}`,
+            boxShadow: active ? mc.glow : 'none',
+          }}
+        >
+          <svg style={{ color: active ? mc.icon : '#5a6577', flexShrink: 0 }} className="w-[15px] h-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={item.icon} />
+          </svg>
+        </span>
         {!isCollapsed && item.label}
         {!isCollapsed && active && (
           <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#FF5A00', boxShadow: '0 0 6px rgba(255,90,0,0.8)' }} />
