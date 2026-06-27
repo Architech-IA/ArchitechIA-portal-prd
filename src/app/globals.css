@@ -5,9 +5,9 @@
   /* Backgrounds */
   --bg-base:     #06060f;
   --bg-surface:  #09091a;
-  --bg-elevated: rgba(17, 17, 40, 0.7);
-  --bg-card:     rgba(14, 14, 34, 0.55);
-  --bg-card-2:   rgba(20, 20, 44, 0.6);
+  --bg-elevated: rgba(17, 17, 40, 0.88);
+  --bg-card:     rgba(14, 14, 34, 0.8);
+  --bg-card-2:   rgba(20, 20, 44, 0.84);
 
   /* Glass */
   --glass-bg:        rgba(255, 255, 255, 0.03);
@@ -75,10 +75,10 @@
    utilities. Overriding the scale here re-skins every page at once instead
    of touching each file individually.                              ── */
 @theme {
-  --color-gray-950: rgba(4, 4, 16, 0.6);
-  --color-gray-900: rgba(9, 9, 24, 0.55);
-  --color-gray-800: rgba(14, 14, 34, 0.6);
-  --color-gray-700: rgba(27, 27, 56, 0.65);
+  --color-gray-950: rgba(4, 4, 16, 0.88);
+  --color-gray-900: rgba(9, 9, 24, 0.82);
+  --color-gray-800: rgba(14, 14, 34, 0.85);
+  --color-gray-700: rgba(27, 27, 56, 0.88);
   --color-gray-600: #2a2a4a;
   --color-gray-500: #5a6577;
   --color-gray-400: #94a3b8;
@@ -113,6 +113,7 @@ aside nav a {
 /* Paneles translúcidos — bg-gray-900/800 ahora llevan alpha (ver @theme
    arriba); aquí se les agrega blur para que se lean como vidrio sobre el
    fondo de figuras de color, sin tocar cada página individualmente. */
+[class*="bg-gray-950"],
 [class*="bg-gray-900"],
 [class*="bg-gray-800"] {
   backdrop-filter: blur(20px);
@@ -174,7 +175,7 @@ body::before {
 
 /* ─── Glass morphism ───────────────────────────────────────────  */
 .glass {
-  background: rgba(14, 14, 34, 0.7);
+  background: rgba(14, 14, 34, 0.88);
   backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
 }
