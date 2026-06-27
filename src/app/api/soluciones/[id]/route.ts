@@ -20,7 +20,7 @@ export async function PUT(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { nombre, descripcion, tipo, estado, valorEstimado, leadId } = body;
+  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura } = body;
 
   try {
     const solucion = await prisma.solucion.update({
@@ -32,6 +32,8 @@ export async function PUT(
         estado: estado || 'ACTIVO',
         valorEstimado: parseFloat(valorEstimado) || 0,
         leadId: leadId || null,
+        ...(repositorio !== undefined ? { repositorio: repositorio || null } : {}),
+        ...(arquitectura !== undefined ? { arquitectura: arquitectura || '[]' } : {}),
       },
       include: { lead: { select: { id: true, companyName: true, contactName: true, status: true } } },
     });

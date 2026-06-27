@@ -4,9 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   FlaskConical, CheckCircle2, ArrowRight, Zap, Gauge,
-  Target, ShieldCheck, Plus, X, Loader2,
+  Target, ShieldCheck, Plus, X, Loader2, FolderGit2, Sliders, LayoutGrid, Code2, ExternalLink,
 } from 'lucide-react'
 import SolucionesList from '@/components/SolucionesList'
+import ArchitectureCanvas, { type ArchNode } from '@/components/ArchitectureCanvas'
 
 const benefits = [
   {
@@ -53,6 +54,7 @@ interface FormState {
   estado: string
   valorEstimado: string
   leadId: string
+  repositorio: string
 }
 
 const defaultForm: FormState = {
@@ -61,11 +63,22 @@ const defaultForm: FormState = {
   estado: 'ACTIVO',
   valorEstimado: '0',
   leadId: '',
+  repositorio: '',
 }
+
+type TabKey = 'general' | 'arquitectura' | 'codigo'
+
+const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
+  { key: 'general', label: 'General', icon: Sliders },
+  { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
+  { key: 'codigo', label: 'Código fuente', icon: Code2 },
+]
 
 export default function PocSolutionPage() {
   const [showModal, setShowModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabKey>('general')
   const [form, setForm] = useState<FormState>(defaultForm)
+  const [archNodes, setArchNodes] = useState<ArchNode[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -74,6 +87,8 @@ export default function PocSolutionPage() {
 
   async function openModal() {
     setForm(defaultForm)
+    setArchNodes([])
+    setActiveTab('general')
     setError('')
     setShowModal(true)
     setLoadingLeads(true)
@@ -104,8 +119,14 @@ export default function PocSolutionPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.leadId) {
+      setError('Selecciona un lead asociado.')
+      setActiveTab('general')
+      return
+    }
     if (!form.nombre.trim()) {
       setError('El nombre es obligatorio.')
+      setActiveTab('general')
       return
     }
     setSaving(true)
@@ -120,7 +141,9 @@ export default function PocSolutionPage() {
           tipo: 'DEMO',
           estado: form.estado,
           valorEstimado: parseFloat(form.valorEstimado) || 0,
-          leadId: form.leadId || null,
+          leadId: form.leadId,
+          repositorio: form.repositorio.trim() || null,
+          arquitectura: JSON.stringify(archNodes),
         }),
       })
       if (!res.ok) {
@@ -250,7 +273,7 @@ export default function PocSolutionPage() {
           style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div className="relative w-full max-w-lg bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-2xl bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
             {/* Header del modal */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800 bg-gradient-to-r from-cyan-900/40 to-gray-900">
               <div className="flex items-center gap-3">
@@ -271,104 +294,191 @@ export default function PocSolutionPage() {
               </button>
             </div>
 
+            {/* Tabs */}
+            <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-800">
+              {TABS.map(t => {
+                const active = activeTab === t.key
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setActiveTab(t.key)}
+                    className="relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors"
+                    style={{ color: active ? '#22d3ee' : '#64748b' }}
+                  >
+                    <t.icon size={14} />
+                    {t.label}
+                    {active && (
+                      <span className="absolute left-0 right-0 -bottom-px h-0.5 rounded-full bg-cyan-400" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
             {/* Formulario */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {/* Lead asociado */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Lead asociado <span className="text-gray-600 font-normal">(opcional)</span>
-                </label>
-                {loadingLeads ? (
-                  <div className="flex items-center gap-2 text-gray-500 text-sm py-3">
-                    <Loader2 size={14} className="animate-spin" /> Cargando leads…
+            <form onSubmit={handleSubmit}>
+              <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+
+                {/* ── Tab: General ───────────────────────────────────────── */}
+                {activeTab === 'general' && (
+                  <>
+                    {/* Lead asociado */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                        Lead asociado <span className="text-cyan-400">*</span>
+                      </label>
+                      {loadingLeads ? (
+                        <div className="flex items-center gap-2 text-gray-500 text-sm py-3">
+                          <Loader2 size={14} className="animate-spin" /> Cargando leads…
+                        </div>
+                      ) : (
+                        <select
+                          value={form.leadId}
+                          onChange={e => handleLeadChange(e.target.value)}
+                          disabled={saving}
+                          required
+                          className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
+                        >
+                          <option value="" disabled>Selecciona un lead…</option>
+                          {availableLeads.map(l => (
+                            <option key={l.id} value={l.id}>{l.companyName} — {l.contactName}</option>
+                          ))}
+                        </select>
+                      )}
+                      {!loadingLeads && availableLeads.length === 0 && (
+                        <p className="text-gray-600 text-xs mt-1.5">No hay leads sin PoC/solución asociada todavía. Crea o libera un lead primero.</p>
+                      )}
+                    </div>
+
+                    {/* Nombre */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                        Nombre <span className="text-cyan-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={form.nombre}
+                        onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                        placeholder="Ej. Empresa XYZ — Demo"
+                        disabled={saving}
+                        className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
+                      />
+                    </div>
+
+                    {/* Descripción */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                        Descripción <span className="text-gray-600 font-normal">(opcional)</span>
+                      </label>
+                      <textarea
+                        value={form.descripcion}
+                        onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+                        placeholder="Describe el alcance del PoC..."
+                        rows={3}
+                        disabled={saving}
+                        className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm resize-none focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
+                      />
+                    </div>
+
+                    {/* Repositorio */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5 flex items-center gap-1.5">
+                        <FolderGit2 size={14} className="text-gray-500" />
+                        Repositorio <span className="text-gray-600 font-normal">(opcional)</span>
+                      </label>
+                      <input
+                        type="url"
+                        value={form.repositorio}
+                        onChange={e => setForm(f => ({ ...f, repositorio: e.target.value }))}
+                        placeholder="https://github.com/Architech-IA/..."
+                        disabled={saving}
+                        className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
+                      />
+                    </div>
+
+                    {/* Estado + Valor en fila */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1.5">Estado</label>
+                        <select
+                          value={form.estado}
+                          onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}
+                          disabled={saving}
+                          className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
+                        >
+                          {ESTADOS.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1.5">Valor estimado ($)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={form.valorEstimado}
+                          onChange={e => setForm(f => ({ ...f, valorEstimado: e.target.value }))}
+                          disabled={saving}
+                          className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ── Tab: Arquitectura ──────────────────────────────────── */}
+                {activeTab === 'arquitectura' && (
+                  <ArchitectureCanvas nodes={archNodes} onChange={setArchNodes} />
+                )}
+
+                {/* ── Tab: Código fuente ─────────────────────────────────── */}
+                {activeTab === 'codigo' && (
+                  <div className="space-y-3">
+                    {form.repositorio ? (
+                      <a
+                        href={form.repositorio}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 bg-gray-950 border border-gray-700 hover:border-cyan-500/40 rounded-xl px-4 py-3.5 transition-colors group"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-cyan-600/15 flex items-center justify-center flex-shrink-0">
+                          <FolderGit2 size={16} className="text-cyan-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{form.repositorio}</p>
+                          <p className="text-gray-500 text-xs">Abrir repositorio</p>
+                        </div>
+                        <ExternalLink size={14} className="text-gray-500 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
+                      </a>
+                    ) : (
+                      <div className="text-center py-8">
+                        <FolderGit2 size={28} className="text-gray-700 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">Todavía no registraste un repositorio.</p>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('general')}
+                          className="text-cyan-400 hover:text-cyan-300 text-xs mt-1.5 transition-colors"
+                        >
+                          Agregarlo en la pestaña General →
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <select
-                    value={form.leadId}
-                    onChange={e => handleLeadChange(e.target.value)}
-                    disabled={saving}
-                    className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
-                  >
-                    <option value="">Sin lead — solo registrar el PoC</option>
-                    {availableLeads.map(l => (
-                      <option key={l.id} value={l.id}>{l.companyName} — {l.contactName}</option>
-                    ))}
-                  </select>
                 )}
-                {!loadingLeads && availableLeads.length === 0 && (
-                  <p className="text-gray-600 text-xs mt-1.5">No hay leads sin PoC/solución asociada todavía.</p>
+
+                {/* Error */}
+                {error && (
+                  <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-xl px-4 py-3">
+                    <X size={14} className="text-red-400 flex-shrink-0" />
+                    <p className="text-red-400 text-sm">{error}</p>
+                  </div>
                 )}
               </div>
-
-              {/* Nombre */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Nombre <span className="text-cyan-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.nombre}
-                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                  placeholder="Ej. Empresa XYZ — Demo"
-                  disabled={saving}
-                  className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                />
-              </div>
-
-              {/* Descripción */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Descripción <span className="text-gray-600 font-normal">(opcional)</span>
-                </label>
-                <textarea
-                  value={form.descripcion}
-                  onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
-                  placeholder="Describe el alcance del PoC..."
-                  rows={3}
-                  disabled={saving}
-                  className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm resize-none focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                />
-              </div>
-
-              {/* Estado + Valor en fila */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Estado</label>
-                  <select
-                    value={form.estado}
-                    onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}
-                    disabled={saving}
-                    className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
-                  >
-                    {ESTADOS.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1.5">Valor estimado ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={form.valorEstimado}
-                    onChange={e => setForm(f => ({ ...f, valorEstimado: e.target.value }))}
-                    disabled={saving}
-                    className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                  />
-                </div>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-xl px-4 py-3">
-                  <X size={14} className="text-red-400 flex-shrink-0" />
-                  <p className="text-red-400 text-sm">{error}</p>
-                </div>
-              )}
 
               {/* Acciones */}
-              <div className="flex items-center justify-end gap-3 pt-1">
+              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-800 bg-gray-900/60">
                 <button
                   type="button"
                   onClick={closeModal}

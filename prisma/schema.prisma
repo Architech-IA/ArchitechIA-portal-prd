@@ -65,6 +65,8 @@ model Solucion {
   tipo          String        // PROJECT, DEMO, PARTNERSHIP, PRODUCT
   estado        String        @default("ACTIVO")
   valorEstimado Float         @default(0)
+  repositorio   String?
+  arquitectura  String?       @default("[]") // JSON: nodos del lienzo de arquitectura
   leadId        String?       @unique
   lead          Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   backlogItems  BacklogItem[]

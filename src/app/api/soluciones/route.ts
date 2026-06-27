@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { nombre, descripcion, tipo, estado, valorEstimado, leadId } = body;
+  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura } = body;
 
   const solucion = await prisma.solucion.create({
     data: {
@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
       estado: estado || 'ACTIVO',
       valorEstimado: parseFloat(valorEstimado) || 0,
       leadId: leadId || null,
+      repositorio: repositorio || null,
+      arquitectura: arquitectura || '[]',
     },
     include: { lead: { select: { id: true, companyName: true, contactName: true, status: true } } },
   });
