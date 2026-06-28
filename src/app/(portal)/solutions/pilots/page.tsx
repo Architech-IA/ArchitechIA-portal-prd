@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import {
   FlaskConical, CheckCircle2, ArrowRight, Zap, Gauge,
   Target, ShieldCheck, Plus, X, Loader2, FolderGit2, Sliders, LayoutGrid, Code2, ExternalLink,
-  FileText, Calendar, Trash2, Pencil,
+  FileText, Calendar, Trash2, Pencil, Upload,
 } from 'lucide-react'
 import SolucionesList, { type Solucion } from '@/components/SolucionesList'
 import ArchitectureCanvas, { type ArchNode } from '@/components/ArchitectureCanvas'
@@ -104,6 +104,26 @@ export default function PocSolutionPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(false)
+  const [draggingPlan, setDraggingPlan] = useState(false)
+  const [planFileError, setPlanFileError] = useState('')
+  const planFileInputRef = useRef<HTMLInputElement>(null)
+
+  function importPlanFile(file: File | undefined) {
+    if (!file) return
+    const okExt = /\.(md|markdown|txt)$/i.test(file.name)
+    if (!okExt) {
+      setPlanFileError('Solo se aceptan archivos .md, .markdown o .txt.')
+      return
+    }
+    setPlanFileError('')
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = String(reader.result || '')
+      setForm(f => ({ ...f, planTrabajo: text }))
+    }
+    reader.onerror = () => setPlanFileError('No se pudo leer el archivo.')
+    reader.readAsText(file)
+  }
 
   async function loadLeads() {
     setLoadingLeads(true)
@@ -505,19 +525,60 @@ export default function PocSolutionPage() {
                 {/* ── Tab: Plan de Trabajo ───────────────────────────────── */}
                 {activeTab === 'plan' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5 flex items-center gap-1.5">
-                      <FileText size={14} className="text-gray-500" />
-                      Plan de trabajo <span className="text-gray-600 font-normal">(Markdown o texto libre)</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5">
+                        <FileText size={14} className="text-gray-500" />
+                        Plan de trabajo <span className="text-gray-600 font-normal">(Markdown o texto libre)</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => planFileInputRef.current?.click()}
+                        disabled={saving}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
+                      >
+                        <Upload size={12} />
+                        Subir archivo
+                      </button>
+                      <input
+                        ref={planFileInputRef}
+                        type="file"
+                        accept=".md,.markdown,.txt,text/markdown,text/plain"
+                        className="hidden"
+                        onChange={e => { importPlanFile(e.target.files?.[0]); e.target.value = '' }}
+                      />
+                    </div>
+
+                    {/* Dropzone */}
+                    <div
+                      onDragOver={e => { e.preventDefault(); setDraggingPlan(true) }}
+                      onDragLeave={() => setDraggingPlan(false)}
+                      onDrop={e => {
+                        e.preventDefault()
+                        setDraggingPlan(false)
+                        importPlanFile(e.dataTransfer.files?.[0])
+                      }}
+                      className="rounded-xl border-2 border-dashed transition-colors mb-2 px-4 py-3 flex items-center gap-2.5"
+                      style={{
+                        borderColor: draggingPlan ? 'rgba(6,182,212,0.6)' : 'rgba(255,255,255,0.08)',
+                        background: draggingPlan ? 'rgba(6,182,212,0.06)' : 'transparent',
+                      }}
+                    >
+                      <Upload size={14} className="text-gray-500 flex-shrink-0" />
+                      <p className="text-gray-500 text-xs">Arrastrá acá un archivo <span className="text-gray-400">.md / .markdown / .txt</span> para importarlo, o usá el botón de arriba.</p>
+                    </div>
+                    {planFileError && (
+                      <p className="text-red-400 text-xs mb-2">{planFileError}</p>
+                    )}
+
                     <textarea
                       value={form.planTrabajo}
                       onChange={e => setForm(f => ({ ...f, planTrabajo: e.target.value }))}
                       placeholder={'# Plan de trabajo\n\n## Contexto\n...\n\n## Pasos de ejecución\n1. ...'}
-                      rows={16}
+                      rows={14}
                       disabled={saving}
                       className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-xs font-mono leading-relaxed resize-none focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
                     />
-                    <p className="text-gray-600 text-xs mt-1.5">Pegá acá el plan completo (por ejemplo, el que armamos en la conversación con Claude) para que quede guardado junto a la PoC.</p>
+                    <p className="text-gray-600 text-xs mt-1.5">Importar un archivo reemplaza el contenido actual de este campo — podés seguir editándolo abajo después de importarlo.</p>
                   </div>
                 )}
 
