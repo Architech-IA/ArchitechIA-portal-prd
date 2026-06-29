@@ -239,16 +239,16 @@ export default function PocDetailPage() {
 
   return (
     <div>
-      {/* Tabs (con "Volver a Pilots" integrado) — mismo estilo visual que SolutionsTabs */}
-      <div className="border-b border-gray-800 px-4 md:px-8">
+      {/* Tabs (con "Volver a Pilots" integrado) */}
+      <div className="border-b border-gray-700 bg-gray-900/60 px-4 md:px-8">
         <nav className="flex gap-1 overflow-x-auto overflow-y-hidden">
           <Link
             href="/solutions/pilots"
-            className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-400 border-b-2 border-transparent -mb-px hover:text-white transition-colors flex-shrink-0"
+            className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-300 border-b-2 border-transparent -mb-px rounded-t-md hover:text-white hover:bg-white/5 transition-colors flex-shrink-0"
           >
             <ArrowLeft size={15} /> Volver a Pilots
           </Link>
-          <span className="w-px my-3 bg-gray-800 flex-shrink-0" />
+          <span className="w-px my-3 bg-gray-700 flex-shrink-0" />
           {TABS.map(t => {
             const active = activeTab === t.key
             return (
@@ -256,8 +256,10 @@ export default function PocDetailPage() {
                 key={t.key}
                 type="button"
                 onClick={() => setActiveTab(t.key)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors flex-shrink-0 ${
-                  active ? 'text-orange-400 border-orange-500' : 'text-gray-400 border-transparent hover:text-white'
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px rounded-t-md transition-colors flex-shrink-0 ${
+                  active
+                    ? 'text-orange-400 border-orange-500 bg-orange-500/10'
+                    : 'text-gray-300 border-transparent hover:text-white hover:bg-white/5'
                 }`}
               >
                 <t.icon size={15} />
