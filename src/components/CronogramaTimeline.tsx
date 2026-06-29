@@ -120,7 +120,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
         </p>
       )}
 
-      <div className="border border-gray-800 rounded-xl overflow-x-auto">
+      <div className="border border-cyan-800/40 rounded-xl overflow-x-auto">
         <div className="min-w-max">
           {/* Encabezado: un día por columna */}
           <div className="flex border-b border-cyan-800/50 bg-cyan-950/40">
@@ -135,7 +135,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
           </div>
 
           {/* Filas: una por actividad, con franjas alternadas para distinguirlas */}
-          <div className="divide-y divide-gray-800/60">
+          <div className="divide-y divide-cyan-800/25">
             {completas.map((f, idx) => {
               const s = new Date(f.fechaInicio + 'T00:00:00').getTime()
               const e = new Date(f.fechaFin + 'T00:00:00').getTime()
@@ -149,7 +149,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                   onClick={() => { setSelectedId(f.id); setBacklogError('') }}
                   className={`flex items-stretch w-full text-left transition-colors hover:bg-gray-800/50 cursor-pointer ${idx % 2 === 0 ? 'bg-gray-900/30' : 'bg-transparent'}`}
                 >
-                  <div className="w-44 flex-shrink-0 border-r border-gray-800 px-3 py-3 min-w-0">
+                  <div className="w-44 flex-shrink-0 border-r border-cyan-800/30 px-3 py-3 min-w-0">
                     <p className="text-sm text-gray-200 truncate" title={f.fase}>{f.fase || 'Sin nombre'}</p>
                     <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                       style={{ background: `${color.bg}20`, color: color.text }}>
@@ -161,7 +161,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                       const inRange = i >= startIdx && i < startIdx + spanDays
                       const isFirst = i === startIdx
                       return (
-                        <div key={i} className="relative h-12 border-r border-gray-800/30 last:border-r-0 flex items-center justify-center">
+                        <div key={i} className="relative h-12 border-r border-cyan-800/20 last:border-r-0 flex items-center justify-center">
                           {inRange && (
                             <div
                               className="absolute inset-y-2.5 inset-x-0.5 rounded-md flex items-center justify-center hover:brightness-125 transition-[filter]"
