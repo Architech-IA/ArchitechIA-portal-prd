@@ -54,13 +54,41 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   return parts
 }
 
-function renderBody(body: string, keyPrefix: string) {
-  const blocks = body.trim().split(/\n\s*\n/).filter(Boolean)
-  if (blocks.length === 0) {
-    return <p className="text-gray-600 text-sm italic">Sin contenido en esta sección.</p>
+interface Segment {
+  type: 'code' | 'text'
+  content: string
+}
+
+/** Separa bloques ```fenced``` (preservando indentación/saltos de línea) del resto del texto normal. */
+function splitFences(body: string): Segment[] {
+  const lines = body.split('\n')
+  const segments: Segment[] = []
+  let buffer: string[] = []
+  let fenceBuffer: string[] = []
+  let inFence = false
+
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      if (!inFence) {
+        if (buffer.length) segments.push({ type: 'text', content: buffer.join('\n') })
+        buffer = []
+        fenceBuffer = []
+        inFence = true
+      } else {
+        segments.push({ type: 'code', content: fenceBuffer.join('\n') })
+        inFence = false
+      }
+      continue
+    }
+    if (inFence) fenceBuffer.push(line)
+    else buffer.push(line)
   }
-  return blocks.map((block, bi) => {
-    const blockKey = `${keyPrefix}-b${bi}`
+  if (inFence && fenceBuffer.length) segments.push({ type: 'code', content: fenceBuffer.join('\n') })
+  if (buffer.length) segments.push({ type: 'text', content: buffer.join('\n') })
+  return segments
+}
+
+function renderTextBlock(block: string, blockKey: string) {
     const lines = block.split('\n').map(l => l.trim()).filter(Boolean)
     const isList = lines.length > 0 && lines.every(l => /^[-*]\s+/.test(l))
     const isOrdered = lines.length > 0 && lines.every(l => /^\d+\.\s+/.test(l))
@@ -106,6 +134,26 @@ function renderBody(body: string, keyPrefix: string) {
         {renderInline(lines.join(' '), blockKey)}
       </p>
     )
+}
+
+function renderBody(body: string, keyPrefix: string) {
+  const segments = splitFences(body)
+  const hasContent = segments.some(s => s.content.trim())
+  if (!hasContent) {
+    return <p className="text-gray-600 text-sm italic">Sin contenido en esta sección.</p>
+  }
+  return segments.map((seg, si) => {
+    const segKey = `${keyPrefix}-seg${si}`
+    if (seg.type === 'code') {
+      if (!seg.content.trim()) return null
+      return (
+        <pre key={segKey} className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2.5 my-2.5 overflow-x-auto">
+          <code className="text-[11px] text-cyan-200 font-mono whitespace-pre">{seg.content}</code>
+        </pre>
+      )
+    }
+    const blocks = seg.content.trim().split(/\n\s*\n/).filter(Boolean)
+    return blocks.map((block, bi) => renderTextBlock(block, `${segKey}-b${bi}`))
   })
 }
 
