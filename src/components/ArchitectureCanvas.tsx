@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  Monitor, Server, Database, Workflow, Brain, Clock, Zap, Globe2, Trash2, Plus, Upload, X,
+  Monitor, Server, Database, Workflow, Brain, Clock, Zap, Globe2, Trash2, Plus, Upload, X, Wand2,
 } from 'lucide-react'
 
 export interface ArchNode {
@@ -128,6 +128,61 @@ function parseMermaidImport(text: string): ImportResult | null {
   return { items, edges }
 }
 
+/**
+ * Acomoda los nodos en niveles según sus conexiones (estilo organigrama):
+ * las raíces (sin flechas entrantes) arriba, y cada nodo un nivel debajo
+ * del más profundo de sus padres. Los nodos sueltos quedan en el nivel 0.
+ */
+function autoLayout(nodes: ArchNode[], connections: ArchConnection[]): ArchNode[] {
+  if (nodes.length === 0) return nodes
+  const ids = new Set(nodes.map(n => n.id))
+  const children = new Map<string, string[]>()
+  const inDegree = new Map<string, number>()
+  nodes.forEach(n => { children.set(n.id, []); inDegree.set(n.id, 0) })
+  connections.forEach(c => {
+    if (!ids.has(c.from) || !ids.has(c.to) || c.from === c.to) return
+    children.get(c.from)!.push(c.to)
+    inDegree.set(c.to, (inDegree.get(c.to) || 0) + 1)
+  })
+
+  const level = new Map<string, number>()
+  const queue: string[] = []
+  nodes.forEach(n => { if ((inDegree.get(n.id) || 0) === 0) { level.set(n.id, 0); queue.push(n.id) } })
+  if (queue.length === 0) { level.set(nodes[0].id, 0); queue.push(nodes[0].id) }
+
+  let qi = 0
+  const guard = nodes.length * 6 + 10
+  while (qi < queue.length && qi < guard) {
+    const id = queue[qi++]
+    const lvl = level.get(id) ?? 0
+    for (const childId of children.get(id) || []) {
+      if ((level.get(childId) ?? -1) < lvl + 1) {
+        level.set(childId, lvl + 1)
+        queue.push(childId)
+      }
+    }
+  }
+  nodes.forEach(n => { if (!level.has(n.id)) level.set(n.id, 0) })
+
+  const byLevel = new Map<number, string[]>()
+  nodes.forEach(n => {
+    const lvl = level.get(n.id)!
+    if (!byLevel.has(lvl)) byLevel.set(lvl, [])
+    byLevel.get(lvl)!.push(n.id)
+  })
+
+  const GAP_X = NODE_W + 28
+  const GAP_Y = NODE_H + 44
+  const positioned = new Map<string, { x: number; y: number }>()
+  Array.from(byLevel.keys()).sort((a, b) => a - b).forEach((lvl, rowIdx) => {
+    byLevel.get(lvl)!.forEach((id, colIdx) => {
+      positioned.set(id, { x: 16 + colIdx * GAP_X, y: 16 + rowIdx * GAP_Y })
+    })
+  })
+
+  return nodes.map(n => ({ ...n, ...positioned.get(n.id)! }))
+}
+
 interface ArchitectureCanvasProps {
   nodes: ArchNode[]
   connections: ArchConnection[]
@@ -248,11 +303,15 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
       from: newIds[e.fromIdx],
       to: newIds[e.toIdx],
     }))
-    onChange([...nodes, ...newNodes], [...connections, ...newConnections])
+    const allNodes = [...nodes, ...newNodes]
+    const allConnections = [...connections, ...newConnections]
+    onChange(autoLayout(allNodes, allConnections), allConnections)
     setShowImport(false)
     setImportText('')
     setImportError('')
   }
+
+  const handleAutoOrganize = () => onChange(autoLayout(nodes, connections), connections)
 
   return (
     <div className="space-y-3">
@@ -275,6 +334,15 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
           )
         })}
         <span className="w-px h-5 bg-gray-700" />
+        <button
+          type="button"
+          onClick={handleAutoOrganize}
+          disabled={nodes.length === 0}
+          title="Reacomoda los componentes en niveles según sus conexiones"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          <Wand2 size={12} /> Organizar
+        </button>
         <button
           type="button"
           onClick={() => { setShowImport(true); setImportError('') }}
