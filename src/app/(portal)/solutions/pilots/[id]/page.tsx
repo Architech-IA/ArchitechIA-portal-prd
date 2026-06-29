@@ -83,7 +83,7 @@ export default function PocDetailPage() {
   const [draggingPlan, setDraggingPlan] = useState(false)
   const [planFileError, setPlanFileError] = useState('')
   const [planView, setPlanView] = useState<'markdown' | 'visual'>('visual')
-  const [cronogramaView, setCronogramaView] = useState<'lista' | 'linea'>('lista')
+  const [cronogramaView, setCronogramaView] = useState<'lista' | 'linea'>('linea')
   const planFileInputRef = useRef<HTMLInputElement>(null)
 
   useSetPageTitle(form.nombre || null)
@@ -268,7 +268,7 @@ export default function PocDetailPage() {
         </nav>
       </div>
 
-      <div className="p-4 md:p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-4">
       {/* Contenido */}
       <div className="card p-6 md:p-8 space-y-5">
         {/* ── Tab: General ───────────────────────────────────────── */}
@@ -448,7 +448,7 @@ export default function PocDetailPage() {
 
         {/* ── Tab: Cronograma ────────────────────────────────────── */}
         {activeTab === 'cronograma' && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-0.5 bg-gray-800 rounded-lg p-0.5">
                 <button type="button" onClick={() => setCronogramaView('lista')}
