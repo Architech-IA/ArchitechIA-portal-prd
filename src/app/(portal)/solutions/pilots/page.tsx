@@ -1,16 +1,13 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   FlaskConical, CheckCircle2, ArrowRight, Zap, Gauge,
-  Target, ShieldCheck, Plus, X, Loader2, FolderGit2, Sliders, LayoutGrid, Code2, ExternalLink,
-  FileText, Calendar, Trash2, Pencil, Upload, Eye, Code, Wand2, List, BarChart3,
+  Target, ShieldCheck, Plus, X, Loader2,
 } from 'lucide-react'
 import SolucionesList, { type Solucion } from '@/components/SolucionesList'
-import ArchitectureCanvas, { type ArchNode } from '@/components/ArchitectureCanvas'
-import PlanVisualView from '@/components/PlanVisualView'
-import CronogramaTimeline from '@/components/CronogramaTimeline'
 
 const benefits = [
   {
@@ -42,9 +39,6 @@ const deliverables = [
   { title: 'KPIs validados', desc: 'Resultados medibles contra los objetivos definidos.' },
 ]
 
-const ESTADOS = ['ACTIVO', 'EN_DESARROLLO', 'PENDIENTE', 'PAUSADO', 'FINALIZADO']
-const ESTADOS_FASE = ['PENDIENTE', 'EN_CURSO', 'COMPLETADA']
-
 interface LeadOption {
   id: string
   companyName: string
@@ -52,125 +46,22 @@ interface LeadOption {
   solucion: { id: string } | null
 }
 
-interface FaseCronograma {
-  id: string
-  fase: string
-  fechaInicio: string
-  fechaFin: string
-  estado: string
-}
-
-interface FormState {
-  nombre: string
-  descripcion: string
-  estado: string
-  valorEstimado: string
-  leadId: string
-  repositorio: string
-  planTrabajo: string
-}
-
-const defaultForm: FormState = {
-  nombre: '',
-  descripcion: '',
-  estado: 'ACTIVO',
-  valorEstimado: '0',
-  leadId: '',
-  repositorio: '',
-  planTrabajo: '',
-}
-
-type TabKey = 'general' | 'arquitectura' | 'plan' | 'cronograma' | 'codigo'
-
-const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
-  { key: 'general', label: 'General', icon: Sliders },
-  { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
-  { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
-  { key: 'cronograma', label: 'Cronograma', icon: Calendar },
-  { key: 'codigo', label: 'Código fuente', icon: Code2 },
-]
-
-function makeId() {
-  return Math.random().toString(36).slice(2, 10)
-}
-
-/** Busca una sección "Pasos de ejecución" (o similar) en el markdown y extrae su lista numerada.
- *  Si no encuentra esa sección, cae al primer bloque de lista numerada que encuentre en todo el documento. */
-function extractStepsFromPlan(markdown: string): string[] {
-  const lines = markdown.split('\n')
-  let inTarget = false
-  let foundSection = false
-  let collected: string[] = []
-
-  for (const line of lines) {
-    const heading = line.match(/^#{1,3}\s+(.*)/)
-    if (heading) {
-      if (/pasos|ejecuci[oó]n|roadmap|implementaci[oó]n/i.test(heading[1])) {
-        inTarget = true
-        foundSection = true
-        continue
-      } else if (inTarget) {
-        break
-      }
-    }
-    if (inTarget) {
-      const item = line.match(/^\s*\d+\.\s+(.*)/)
-      if (item) collected.push(item[1].trim())
-    }
-  }
-  if (foundSection && collected.length > 0) return collected.map(s => s.replace(/\*\*/g, ''))
-
-  // Fallback: primer bloque de lista numerada en todo el documento
-  collected = []
-  let collecting = false
-  for (const line of lines) {
-    const item = line.match(/^\s*\d+\.\s+(.*)/)
-    if (item) {
-      collecting = true
-      collected.push(item[1].trim())
-    } else if (collecting && line.trim() !== '') {
-      break
-    }
-  }
-  return collected.map(s => s.replace(/\*\*/g, ''))
-}
-
 export default function PocSolutionPage() {
+  const router = useRouter()
   const [showModal, setShowModal] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<TabKey>('general')
-  const [form, setForm] = useState<FormState>(defaultForm)
-  const [archNodes, setArchNodes] = useState<ArchNode[]>([])
-  const [fases, setFases] = useState<FaseCronograma[]>([])
+  const [leadId, setLeadId] = useState('')
+  const [nombre, setNombre] = useState('')
+  const [leads, setLeads] = useState<LeadOption[]>([])
+  const [loadingLeads, setLoadingLeads] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [leads, setLeads] = useState<LeadOption[]>([])
-  const [loadingLeads, setLoadingLeads] = useState(false)
-  const [draggingPlan, setDraggingPlan] = useState(false)
-  const [planFileError, setPlanFileError] = useState('')
-  const [planView, setPlanView] = useState<'markdown' | 'visual'>('visual')
-  const [cronogramaView, setCronogramaView] = useState<'lista' | 'linea'>('lista')
-  const planFileInputRef = useRef<HTMLInputElement>(null)
 
-  function importPlanFile(file: File | undefined) {
-    if (!file) return
-    const okExt = /\.(md|markdown|txt)$/i.test(file.name)
-    if (!okExt) {
-      setPlanFileError('Solo se aceptan archivos .md, .markdown o .txt.')
-      return
-    }
-    setPlanFileError('')
-    const reader = new FileReader()
-    reader.onload = () => {
-      const text = String(reader.result || '')
-      setForm(f => ({ ...f, planTrabajo: text }))
-    }
-    reader.onerror = () => setPlanFileError('No se pudo leer el archivo.')
-    reader.readAsText(file)
-  }
-
-  async function loadLeads() {
+  async function openCreateModal() {
+    setLeadId('')
+    setNombre('')
+    setError('')
+    setShowModal(true)
     setLoadingLeads(true)
     try {
       const res = await fetch('/api/leads')
@@ -183,130 +74,47 @@ export default function PocSolutionPage() {
     }
   }
 
-  async function openCreateModal() {
-    setEditingId(null)
-    setForm(defaultForm)
-    setArchNodes([])
-    setFases([])
-    setActiveTab('general')
-    setError('')
-    setShowModal(true)
-    await loadLeads()
-  }
-
-  async function openEditModal(solucion: Solucion) {
-    setEditingId(solucion.id)
-    setForm({
-      nombre: solucion.nombre,
-      descripcion: solucion.descripcion || '',
-      estado: solucion.estado,
-      valorEstimado: String(solucion.valorEstimado ?? 0),
-      leadId: solucion.leadId || '',
-      repositorio: solucion.repositorio || '',
-      planTrabajo: solucion.planTrabajo || '',
-    })
-    try {
-      setArchNodes(solucion.arquitectura ? JSON.parse(solucion.arquitectura) : [])
-    } catch {
-      setArchNodes([])
-    }
-    try {
-      setFases(solucion.cronograma ? JSON.parse(solucion.cronograma) : [])
-    } catch {
-      setFases([])
-    }
-    setActiveTab('general')
-    setError('')
-    setShowModal(true)
-    await loadLeads()
-  }
-
   function closeModal() {
     if (saving) return
     setShowModal(false)
   }
 
-  function handleLeadChange(leadId: string) {
-    const lead = leads.find(l => l.id === leadId)
-    setForm(f => ({
-      ...f,
-      leadId,
-      nombre: lead && !f.nombre.trim() ? `${lead.companyName} — Demo` : f.nombre,
-    }))
+  function handleLeadChange(value: string) {
+    setLeadId(value)
+    const lead = leads.find(l => l.id === value)
+    if (lead && !nombre.trim()) setNombre(`${lead.companyName} — Demo`)
   }
 
-  function addFase() {
-    setFases(prev => [...prev, { id: makeId(), fase: '', fechaInicio: '', fechaFin: '', estado: 'PENDIENTE' }])
-  }
-
-  function updateFase(id: string, patch: Partial<FaseCronograma>) {
-    setFases(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f))
-  }
-
-  function removeFase(id: string) {
-    setFases(prev => prev.filter(f => f.id !== id))
-  }
-
-  function generarCronogramaDesdePlan() {
-    const steps = extractStepsFromPlan(form.planTrabajo)
-    if (steps.length === 0) {
-      setError('No se encontraron pasos numerados en el Plan de Trabajo (buscá una sección "Pasos de ejecución" o una lista 1. 2. 3...).')
-      return
-    }
-    if (fases.length > 0 && !window.confirm(`Esto va a reemplazar las ${fases.length} fase(s) actuales por ${steps.length} fase(s) extraídas del plan. ¿Continuar?`)) {
-      return
-    }
-    setError('')
-    setFases(steps.map(s => ({ id: makeId(), fase: s, fechaInicio: '', fechaFin: '', estado: 'PENDIENTE' })))
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.leadId) {
-      setError('Selecciona un lead asociado.')
-      setActiveTab('general')
-      return
-    }
-    if (!form.nombre.trim()) {
-      setError('El nombre es obligatorio.')
-      setActiveTab('general')
-      return
-    }
+    if (!leadId) { setError('Selecciona un lead asociado.'); return }
+    if (!nombre.trim()) { setError('El nombre es obligatorio.'); return }
     setSaving(true)
     setError('')
     try {
-      const payload = {
-        nombre: form.nombre.trim(),
-        descripcion: form.descripcion.trim() || null,
-        tipo: 'DEMO',
-        estado: form.estado,
-        valorEstimado: parseFloat(form.valorEstimado) || 0,
-        leadId: form.leadId,
-        repositorio: form.repositorio.trim() || null,
-        arquitectura: JSON.stringify(archNodes),
-        planTrabajo: form.planTrabajo.trim() || null,
-        cronograma: JSON.stringify(fases),
-      }
-      const res = await fetch(editingId ? `/api/soluciones/${editingId}` : '/api/soluciones', {
-        method: editingId ? 'PUT' : 'POST',
+      const res = await fetch('/api/soluciones', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ nombre: nombre.trim(), tipo: 'DEMO', estado: 'ACTIVO', valorEstimado: 0, leadId }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || 'Error al guardar el PoC.')
+        throw new Error(data?.error || 'Error al crear el PoC.')
       }
-      setRefreshKey(k => k + 1)
+      const created = await res.json()
       setShowModal(false)
+      router.push(`/solutions/pilots/${created.id}`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error inesperado.')
-    } finally {
       setSaving(false)
     }
   }
 
-  // Leads sin solución asociada, más el lead actual de la PoC que se está editando (si aplica)
-  const availableLeads = leads.filter(l => !l.solucion || l.solucion.id === editingId)
+  function goToDetail(solucion: Solucion) {
+    router.push(`/solutions/pilots/${solucion.id}`)
+  }
+
+  const availableLeads = leads.filter(l => !l.solucion)
 
   const addButton = (
     <button
@@ -388,7 +196,7 @@ export default function PocSolutionPage() {
         hideIcon
         refreshKey={refreshKey}
         headerAction={addButton}
-        onSelect={openEditModal}
+        onSelect={goToDetail}
       />
 
       {/* CTA */}
@@ -413,438 +221,89 @@ export default function PocSolutionPage() {
         </Link>
       </div>
 
-      {/* Modal: Nueva/Editar PoC */}
+      {/* Modal mínimo: Nueva PoC (el resto se completa en su página) */}
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div className="relative w-full max-w-2xl bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-            {/* Header del modal */}
+          <div className="relative w-full max-w-md bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800 bg-gradient-to-r from-cyan-900/40 to-gray-900">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center">
-                  {editingId ? <Pencil className="text-cyan-400" size={16} /> : <Plus className="text-cyan-400" size={18} />}
+                  <Plus className="text-cyan-400" size={18} />
                 </div>
                 <div>
-                  <h2 className="text-white font-bold text-lg leading-none">{editingId ? 'Editar PoC' : 'Nueva PoC'}</h2>
+                  <h2 className="text-white font-bold text-lg leading-none">Nueva PoC</h2>
                   <p className="text-cyan-400/70 text-xs mt-0.5">Tipo: DEMO</p>
                 </div>
               </div>
-              <button
-                onClick={closeModal}
-                disabled={saving}
-                className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-50"
-              >
+              <button onClick={closeModal} disabled={saving}
+                className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-50">
                 <X size={16} />
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex items-center gap-1 px-6 pt-4 border-b border-gray-800 overflow-x-auto">
-              {TABS.map(t => {
-                const active = activeTab === t.key
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => setActiveTab(t.key)}
-                    className="relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors flex-shrink-0"
-                    style={{ color: active ? '#22d3ee' : '#64748b' }}
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                  Lead asociado <span className="text-cyan-400">*</span>
+                </label>
+                {loadingLeads ? (
+                  <div className="flex items-center gap-2 text-gray-500 text-sm py-3">
+                    <Loader2 size={14} className="animate-spin" /> Cargando leads…
+                  </div>
+                ) : (
+                  <select
+                    value={leadId}
+                    onChange={e => handleLeadChange(e.target.value)}
+                    disabled={saving}
+                    required
+                    className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
                   >
-                    <t.icon size={14} />
-                    {t.label}
-                    {active && (
-                      <span className="absolute left-0 right-0 -bottom-px h-0.5 rounded-full bg-cyan-400" />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Formulario */}
-            <form onSubmit={handleSubmit}>
-              <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
-
-                {/* ── Tab: General ───────────────────────────────────────── */}
-                {activeTab === 'general' && (
-                  <>
-                    {/* Lead asociado */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                        Lead asociado <span className="text-cyan-400">*</span>
-                      </label>
-                      {loadingLeads ? (
-                        <div className="flex items-center gap-2 text-gray-500 text-sm py-3">
-                          <Loader2 size={14} className="animate-spin" /> Cargando leads…
-                        </div>
-                      ) : (
-                        <select
-                          value={form.leadId}
-                          onChange={e => handleLeadChange(e.target.value)}
-                          disabled={saving}
-                          required
-                          className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
-                        >
-                          <option value="" disabled>Selecciona un lead…</option>
-                          {availableLeads.map(l => (
-                            <option key={l.id} value={l.id}>{l.companyName} — {l.contactName}</option>
-                          ))}
-                        </select>
-                      )}
-                      {!loadingLeads && availableLeads.length === 0 && (
-                        <p className="text-gray-600 text-xs mt-1.5">No hay leads sin PoC/solución asociada todavía. Crea o libera un lead primero.</p>
-                      )}
-                    </div>
-
-                    {/* Nombre */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                        Nombre <span className="text-cyan-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={form.nombre}
-                        onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                        placeholder="Ej. Empresa XYZ — Demo"
-                        disabled={saving}
-                        className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                      />
-                    </div>
-
-                    {/* Descripción */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                        Descripción <span className="text-gray-600 font-normal">(opcional)</span>
-                      </label>
-                      <textarea
-                        value={form.descripcion}
-                        onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
-                        placeholder="Describe el alcance del PoC..."
-                        rows={3}
-                        disabled={saving}
-                        className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm resize-none focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                      />
-                    </div>
-
-                    {/* Repositorio */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1.5 flex items-center gap-1.5">
-                        <FolderGit2 size={14} className="text-gray-500" />
-                        Repositorio <span className="text-gray-600 font-normal">(opcional)</span>
-                      </label>
-                      <input
-                        type="url"
-                        value={form.repositorio}
-                        onChange={e => setForm(f => ({ ...f, repositorio: e.target.value }))}
-                        placeholder="https://github.com/Architech-IA/..."
-                        disabled={saving}
-                        className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                      />
-                    </div>
-
-                    {/* Estado + Valor en fila */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1.5">Estado</label>
-                        <select
-                          value={form.estado}
-                          onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}
-                          disabled={saving}
-                          className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
-                        >
-                          {ESTADOS.map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1.5">Valor estimado ($)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={form.valorEstimado}
-                          onChange={e => setForm(f => ({ ...f, valorEstimado: e.target.value }))}
-                          disabled={saving}
-                          className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* ── Tab: Arquitectura ──────────────────────────────────── */}
-                {activeTab === 'arquitectura' && (
-                  <ArchitectureCanvas nodes={archNodes} onChange={setArchNodes} />
-                )}
-
-                {/* ── Tab: Plan de Trabajo ───────────────────────────────── */}
-                {activeTab === 'plan' && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-                      <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5">
-                        <FileText size={14} className="text-gray-500" />
-                        Plan de trabajo
-                      </label>
-                      <div className="flex items-center gap-2">
-                        {/* Toggle Markdown / Vista visual */}
-                        <div className="flex items-center gap-0.5 bg-gray-800 rounded-lg p-0.5">
-                          <button
-                            type="button"
-                            onClick={() => setPlanView('visual')}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                              planView === 'visual' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
-                            }`}
-                          >
-                            <Eye size={12} /> Vista visual
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPlanView('markdown')}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                              planView === 'markdown' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
-                            }`}
-                          >
-                            <Code size={12} /> Markdown
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => planFileInputRef.current?.click()}
-                          disabled={saving}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
-                        >
-                          <Upload size={12} />
-                          Subir archivo
-                        </button>
-                        <input
-                          ref={planFileInputRef}
-                          type="file"
-                          accept=".md,.markdown,.txt,text/markdown,text/plain"
-                          className="hidden"
-                          onChange={e => { importPlanFile(e.target.files?.[0]); e.target.value = '' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Dropzone — disponible en ambas vistas */}
-                    <div
-                      onDragOver={e => { e.preventDefault(); setDraggingPlan(true) }}
-                      onDragLeave={() => setDraggingPlan(false)}
-                      onDrop={e => {
-                        e.preventDefault()
-                        setDraggingPlan(false)
-                        importPlanFile(e.dataTransfer.files?.[0])
-                      }}
-                      className="rounded-xl border-2 border-dashed transition-colors mb-3 px-4 py-3 flex items-center gap-2.5"
-                      style={{
-                        borderColor: draggingPlan ? 'rgba(6,182,212,0.6)' : 'rgba(255,255,255,0.08)',
-                        background: draggingPlan ? 'rgba(6,182,212,0.06)' : 'transparent',
-                      }}
-                    >
-                      <Upload size={14} className="text-gray-500 flex-shrink-0" />
-                      <p className="text-gray-500 text-xs">Arrastrá acá un archivo <span className="text-gray-400">.md / .markdown / .txt</span> para importarlo, o usá el botón de arriba.</p>
-                    </div>
-                    {planFileError && (
-                      <p className="text-red-400 text-xs mb-2">{planFileError}</p>
-                    )}
-
-                    {planView === 'visual' ? (
-                      <PlanVisualView markdown={form.planTrabajo} />
-                    ) : (
-                      <>
-                        <textarea
-                          value={form.planTrabajo}
-                          onChange={e => setForm(f => ({ ...f, planTrabajo: e.target.value }))}
-                          placeholder={'# Plan de trabajo\n\n## Contexto\n...\n\n## Pasos de ejecución\n1. ...'}
-                          rows={14}
-                          disabled={saving}
-                          className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-xs font-mono leading-relaxed resize-none focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
-                        />
-                        <p className="text-gray-600 text-xs mt-1.5">Importar un archivo reemplaza el contenido actual de este campo. Los títulos <code className="bg-gray-800 px-1 rounded">#</code> y <code className="bg-gray-800 px-1 rounded">##</code> se usan para armar la Vista visual.</p>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Tab: Cronograma ────────────────────────────────────── */}
-                {activeTab === 'cronograma' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-0.5 bg-gray-800 rounded-lg p-0.5">
-                        <button
-                          type="button"
-                          onClick={() => setCronogramaView('lista')}
-                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                            cronogramaView === 'lista' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
-                          }`}
-                        >
-                          <List size={12} /> Lista
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCronogramaView('linea')}
-                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                            cronogramaView === 'linea' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:text-white'
-                          }`}
-                        >
-                          <BarChart3 size={12} /> Línea de tiempo
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={generarCronogramaDesdePlan}
-                        disabled={saving}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium transition-colors disabled:opacity-50"
-                      >
-                        <Wand2 size={12} />
-                        Generar desde el Plan
-                      </button>
-                    </div>
-
-                    {cronogramaView === 'linea' ? (
-                      <CronogramaTimeline fases={fases} />
-                    ) : (
-                      <>
-                    {fases.length === 0 && (
-                      <p className="text-gray-600 text-sm text-center py-4">Sin fases todavía. Agregá la primera abajo, o generalas desde el Plan de Trabajo.</p>
-                    )}
-                    {fases.map(f => (
-                      <div key={f.id} className="bg-gray-950 border border-gray-700 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={f.fase}
-                            onChange={e => updateFase(f.id, { fase: e.target.value })}
-                            placeholder="Nombre de la fase (ej. Scaffold + modelo de datos)"
-                            disabled={saving}
-                            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeFase(f.id)}
-                            disabled={saving}
-                            className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors disabled:opacity-50"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <input
-                            type="date"
-                            value={f.fechaInicio}
-                            onChange={e => updateFase(f.id, { fechaInicio: e.target.value })}
-                            disabled={saving}
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
-                          />
-                          <input
-                            type="date"
-                            value={f.fechaFin}
-                            onChange={e => updateFase(f.id, { fechaFin: e.target.value })}
-                            disabled={saving}
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
-                          />
-                          <select
-                            value={f.estado}
-                            onChange={e => updateFase(f.id, { estado: e.target.value })}
-                            disabled={saving}
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
-                          >
-                            {ESTADOS_FASE.map(es => <option key={es} value={es}>{es}</option>)}
-                          </select>
-                        </div>
-                      </div>
+                    <option value="" disabled>Selecciona un lead…</option>
+                    {availableLeads.map(l => (
+                      <option key={l.id} value={l.id}>{l.companyName} — {l.contactName}</option>
                     ))}
-                    <button
-                      type="button"
-                      onClick={addFase}
-                      disabled={saving}
-                      className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors disabled:opacity-50"
-                    >
-                      <Plus size={14} /> Agregar fase
-                    </button>
-                      </>
-                    )}
-                  </div>
+                  </select>
                 )}
-
-                {/* ── Tab: Código fuente ─────────────────────────────────── */}
-                {activeTab === 'codigo' && (
-                  <div className="space-y-3">
-                    {form.repositorio ? (
-                      <a
-                        href={form.repositorio}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 bg-gray-950 border border-gray-700 hover:border-cyan-500/40 rounded-xl px-4 py-3.5 transition-colors group"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-cyan-600/15 flex items-center justify-center flex-shrink-0">
-                          <FolderGit2 size={16} className="text-cyan-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-medium truncate">{form.repositorio}</p>
-                          <p className="text-gray-500 text-xs">Abrir repositorio</p>
-                        </div>
-                        <ExternalLink size={14} className="text-gray-500 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
-                      </a>
-                    ) : (
-                      <div className="text-center py-8">
-                        <FolderGit2 size={28} className="text-gray-700 mx-auto mb-2" />
-                        <p className="text-gray-500 text-sm">Todavía no registraste un repositorio.</p>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('general')}
-                          className="text-cyan-400 hover:text-cyan-300 text-xs mt-1.5 transition-colors"
-                        >
-                          Agregarlo en la pestaña General →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Error */}
-                {error && (
-                  <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-xl px-4 py-3">
-                    <X size={14} className="text-red-400 flex-shrink-0" />
-                    <p className="text-red-400 text-sm">{error}</p>
-                  </div>
+                {!loadingLeads && availableLeads.length === 0 && (
+                  <p className="text-gray-600 text-xs mt-1.5">No hay leads sin PoC/solución asociada todavía.</p>
                 )}
               </div>
 
-              {/* Acciones */}
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-800 bg-gray-900/60">
-                <button
-                  type="button"
-                  onClick={closeModal}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                  Nombre <span className="text-cyan-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={nombre}
+                  onChange={e => setNombre(e.target.value)}
+                  placeholder="Ej. Empresa XYZ — Demo"
                   disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors disabled:opacity-50"
-                >
+                  className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
+                />
+              </div>
+
+              <p className="text-gray-600 text-xs">Arquitectura, plan de trabajo, cronograma y código se completan después, en la página de la PoC.</p>
+
+              {error && (
+                <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-xl px-4 py-3">
+                  <X size={14} className="text-red-400 flex-shrink-0" />
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <button type="button" onClick={closeModal} disabled={saving}
+                  className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors disabled:opacity-50">
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white rounded-xl text-sm font-semibold transition-colors"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 size={15} className="animate-spin" />
-                      Guardando…
-                    </>
-                  ) : editingId ? (
-                    <>
-                      <CheckCircle2 size={15} />
-                      Guardar cambios
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={15} />
-                      Crear PoC
-                    </>
-                  )}
+                <button type="submit" disabled={saving}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white rounded-xl text-sm font-semibold transition-colors">
+                  {saving ? (<><Loader2 size={15} className="animate-spin" /> Creando…</>) : (<><Plus size={15} /> Crear y continuar</>)}
                 </button>
               </div>
             </form>
