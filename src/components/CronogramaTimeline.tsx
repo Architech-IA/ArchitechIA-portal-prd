@@ -20,17 +20,13 @@ const ESTADO_COLOR: Record<string, { bg: string; text: string }> = {
 }
 
 const DAY_MS = 86400000
-const TICKS = 6
+const DAY_COL_MIN = 56
 
 function fmt(d: string) {
   if (!d) return ''
   const date = new Date(d + 'T00:00:00')
   if (isNaN(date.getTime())) return d
   return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })
-}
-
-function fmtTs(ts: number) {
-  return fmt(new Date(ts).toISOString().slice(0, 10))
 }
 
 function fmtLarga(d: string) {
@@ -75,8 +71,9 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove }: Cronog
   const ends = completas.map(f => new Date(f.fechaFin + 'T00:00:00').getTime())
   const min = Math.min(...starts)
   const max = Math.max(...ends)
-  const span = Math.max(max - min, DAY_MS)
-  const ticks = Array.from({ length: TICKS }, (_, i) => min + (span * i) / (TICKS - 1))
+  const numDays = Math.round((max - min) / DAY_MS) + 1
+  const days = Array.from({ length: numDays }, (_, i) => new Date(min + i * DAY_MS))
+  const dayGridStyle = { gridTemplateColumns: `repeat(${numDays}, minmax(${DAY_COL_MIN}px, 1fr))` }
 
   return (
     <div className="space-y-3">
@@ -87,40 +84,33 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove }: Cronog
       )}
 
       <div className="border border-gray-800 rounded-xl overflow-x-auto">
-        <div className="min-w-[640px]">
-          {/* Eje de fechas compartido */}
+        <div className="min-w-max">
+          {/* Encabezado: un día por columna */}
           <div className="flex border-b border-gray-800 bg-gray-950/60">
             <div className="w-44 flex-shrink-0 border-r border-gray-800 px-3 py-2 text-[11px] text-gray-500 font-medium">Fase</div>
-            <div className="relative flex-1 h-9">
-              {ticks.map((t, i) => (
-                <span
-                  key={i}
-                  className="absolute top-1/2 text-[10px] text-gray-500 font-mono whitespace-nowrap"
-                  style={{
-                    left: `${(i / (TICKS - 1)) * 100}%`,
-                    transform: `translate(${i === 0 ? '0%' : i === TICKS - 1 ? '-100%' : '-50%'}, -50%)`,
-                  }}
-                >
-                  {fmtTs(t)}
-                </span>
+            <div className="grid flex-1" style={dayGridStyle}>
+              {days.map((d, i) => (
+                <div key={i} className="px-1 py-2 text-[10px] text-gray-500 font-mono text-center border-r border-gray-800/40 last:border-r-0">
+                  {d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Filas */}
+          {/* Filas: una por actividad, con franjas alternadas para distinguirlas */}
           <div className="divide-y divide-gray-800/60">
-            {completas.map(f => {
+            {completas.map((f, idx) => {
               const s = new Date(f.fechaInicio + 'T00:00:00').getTime()
               const e = new Date(f.fechaFin + 'T00:00:00').getTime()
-              const leftPct = ((s - min) / span) * 100
-              const widthPct = Math.max(((e - s) / span) * 100, 1.5)
+              const startIdx = Math.round((s - min) / DAY_MS)
+              const spanDays = Math.round((e - s) / DAY_MS) + 1
               const color = ESTADO_COLOR[f.estado] || ESTADO_COLOR.PENDIENTE
               return (
                 <button
                   key={f.id}
                   type="button"
                   onClick={() => setSelectedId(f.id)}
-                  className="flex items-stretch w-full text-left hover:bg-gray-900/40 transition-colors cursor-pointer"
+                  className={`flex items-stretch w-full text-left transition-colors hover:bg-gray-800/50 cursor-pointer ${idx % 2 === 0 ? 'bg-gray-900/30' : 'bg-transparent'}`}
                 >
                   <div className="w-44 flex-shrink-0 border-r border-gray-800 px-3 py-3 min-w-0">
                     <p className="text-sm text-gray-200 truncate" title={f.fase}>{f.fase || 'Sin nombre'}</p>
@@ -129,24 +119,25 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove }: Cronog
                       {f.estado}
                     </span>
                   </div>
-                  <div className="relative flex-1 py-3 px-2">
-                    {/* líneas guía verticales, alineadas con el eje de fechas */}
-                    {ticks.map((_, i) => (
-                      <span key={i} className="absolute top-0 bottom-0 w-px bg-gray-800/40"
-                        style={{ left: `${(i / (TICKS - 1)) * 100}%` }} />
-                    ))}
-                    <div className="relative h-6">
-                      <div
-                        className="absolute top-0 h-6 rounded-md hover:brightness-125 transition-[filter]"
-                        style={{ left: `${leftPct}%`, width: `${widthPct}%`, background: color.bg, boxShadow: `0 0 10px ${color.bg}60` }}
-                      />
-                      <span
-                        className="absolute top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-mono whitespace-nowrap"
-                        style={{ left: `calc(${leftPct + widthPct}% + 8px)` }}
-                      >
-                        {fmt(f.fechaInicio)} → {fmt(f.fechaFin)}
-                      </span>
-                    </div>
+                  <div className="grid flex-1" style={dayGridStyle}>
+                    {days.map((_, i) => {
+                      const inRange = i >= startIdx && i < startIdx + spanDays
+                      const isFirst = i === startIdx
+                      return (
+                        <div key={i} className="relative h-12 border-r border-gray-800/30 last:border-r-0 flex items-center justify-center">
+                          {inRange && (
+                            <div
+                              className="absolute inset-y-2.5 inset-x-0.5 rounded-md flex items-center justify-center hover:brightness-125 transition-[filter]"
+                              style={{ background: color.bg, boxShadow: `0 0 8px ${color.bg}60` }}
+                            >
+                              {isFirst && spanDays >= 3 && (
+                                <span className="text-[9px] text-white/80 font-mono px-1 truncate">{spanDays}d</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </button>
               )
