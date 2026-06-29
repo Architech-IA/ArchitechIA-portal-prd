@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CalendarRange, X, Trash2 } from 'lucide-react'
 
 export interface FaseCronograma {
@@ -146,8 +147,12 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove }: Cronog
         </div>
       </div>
 
-      {/* Popup con el detalle/edición de la fase seleccionada */}
-      {selected && (
+      {/* Popup con el detalle/edición de la fase seleccionada.
+          Va en un portal a document.body: si se renderiza en flujo normal,
+          algún ancestro con backdrop-filter/transform (típico del estilo
+          "glass" del portal) crea un containing block propio y el
+          position:fixed deja de centrarse contra la ventana del navegador. */}
+      {selected && typeof document !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
@@ -213,7 +218,8 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove }: Cronog
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
