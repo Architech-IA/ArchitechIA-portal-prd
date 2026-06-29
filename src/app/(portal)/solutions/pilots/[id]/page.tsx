@@ -249,22 +249,24 @@ export default function PocDetailPage() {
             <ArrowLeft size={15} /> Volver a Pilots
           </Link>
           <span className="w-px my-3 bg-gray-700 flex-shrink-0" />
-          {TABS.map(t => {
+          {TABS.map((t, i) => {
             const active = activeTab === t.key
             return (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setActiveTab(t.key)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px rounded-t-md transition-colors flex-shrink-0 ${
-                  active
-                    ? 'text-orange-400 border-orange-500 bg-orange-500/10'
-                    : 'text-gray-300 border-transparent hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <t.icon size={15} />
-                {t.label}
-              </button>
+              <span key={t.key} className="flex items-stretch flex-shrink-0">
+                {i > 0 && <span className="w-px my-3 bg-gray-700 flex-shrink-0" />}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(t.key)}
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px rounded-t-md transition-colors flex-shrink-0 ${
+                    active
+                      ? 'text-orange-400 border-orange-500 bg-orange-500/10'
+                      : 'text-gray-300 border-transparent hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <t.icon size={15} />
+                  {t.label}
+                </button>
+              </span>
             )
           })}
         </nav>
