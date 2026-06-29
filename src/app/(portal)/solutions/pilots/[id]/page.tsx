@@ -238,34 +238,37 @@ export default function PocDetailPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-5xl pb-24">
-      {/* Tabs (con "Volver a Pilots" integrado) */}
-      <div className="flex items-center gap-1 border-b border-gray-800 overflow-x-auto">
-        <Link
-          href="/solutions/pilots"
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-gray-500 hover:text-cyan-400 transition-colors flex-shrink-0"
-        >
-          <ArrowLeft size={14} /> Volver a Pilots
-        </Link>
-        <span className="w-px h-5 bg-gray-800 flex-shrink-0" />
-        {TABS.map(t => {
-          const active = activeTab === t.key
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setActiveTab(t.key)}
-              className="relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors flex-shrink-0"
-              style={{ color: active ? '#22d3ee' : '#64748b' }}
-            >
-              <t.icon size={14} />
-              {t.label}
-              {active && <span className="absolute left-0 right-0 -bottom-px h-0.5 rounded-full bg-cyan-400" />}
-            </button>
-          )
-        })}
+    <div>
+      {/* Tabs (con "Volver a Pilots" integrado) — mismo estilo visual que SolutionsTabs */}
+      <div className="border-b border-gray-800 px-4 md:px-8">
+        <nav className="flex gap-1 overflow-x-auto">
+          <Link
+            href="/solutions/pilots"
+            className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-400 border-b-2 border-transparent -mb-px hover:text-white transition-colors flex-shrink-0"
+          >
+            <ArrowLeft size={15} /> Volver a Pilots
+          </Link>
+          <span className="w-px my-3 bg-gray-800 flex-shrink-0" />
+          {TABS.map(t => {
+            const active = activeTab === t.key
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors flex-shrink-0 ${
+                  active ? 'text-orange-400 border-orange-500' : 'text-gray-400 border-transparent hover:text-white'
+                }`}
+              >
+                <t.icon size={15} />
+                {t.label}
+              </button>
+            )
+          })}
+        </nav>
       </div>
 
+      <div className="p-4 md:p-8 space-y-6 max-w-5xl pb-24">
       {/* Contenido */}
       <div className="card p-6 md:p-8 space-y-5">
         {/* ── Tab: General ───────────────────────────────────────── */}
@@ -551,6 +554,7 @@ export default function PocDetailPage() {
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {saving ? 'Guardando…' : 'Guardar cambios'}
         </button>
+      </div>
       </div>
     </div>
   )
