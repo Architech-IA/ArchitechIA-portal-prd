@@ -123,11 +123,11 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
       <div className="border border-gray-800 rounded-xl overflow-x-auto">
         <div className="min-w-max">
           {/* Encabezado: un día por columna */}
-          <div className="flex border-b border-gray-700 bg-gray-800">
-            <div className="w-44 flex-shrink-0 border-r border-gray-700 px-3 py-2 text-[11px] text-gray-300 font-semibold">Fase</div>
+          <div className="flex border-b border-cyan-800/50 bg-cyan-950/40">
+            <div className="w-44 flex-shrink-0 border-r border-cyan-800/40 px-3 py-2 text-[11px] text-cyan-200 font-semibold">Fase</div>
             <div className="grid flex-1" style={dayGridStyle}>
               {days.map((d, i) => (
-                <div key={i} className="px-1 py-2 text-[10px] text-gray-300 font-mono font-semibold text-center border-r border-gray-700/60 last:border-r-0">
+                <div key={i} className="px-1 py-2 text-[10px] text-cyan-200 font-mono font-semibold text-center border-r border-cyan-800/30 last:border-r-0">
                   {d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}
                 </div>
               ))}
