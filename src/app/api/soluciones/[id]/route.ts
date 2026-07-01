@@ -10,7 +10,7 @@ export async function GET(
     where: { id },
     include: { lead: { select: { id: true, companyName: true, contactName: true, status: true } } },
   });
-  if (!solucion) return NextResponse.json({ error: 'No encontrada' }, { status: 404 });
+  if (!solucion) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
   return NextResponse.json(solucion);
 }
 
@@ -20,7 +20,7 @@ export async function PUT(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, planTrabajo, cronograma } = body;
+  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, arquitecturaHtml, planTrabajo, cronograma } = body;
 
   try {
     const solucion = await prisma.solucion.update({
@@ -34,6 +34,7 @@ export async function PUT(
         leadId: leadId || null,
         ...(repositorio !== undefined ? { repositorio: repositorio || null } : {}),
         ...(arquitectura !== undefined ? { arquitectura: arquitectura || '[]' } : {}),
+        ...(arquitecturaHtml !== undefined ? { arquitecturaHtml: arquitecturaHtml || null } : {}),
         ...(planTrabajo !== undefined ? { planTrabajo: planTrabajo || null } : {}),
         ...(cronograma !== undefined ? { cronograma: cronograma || '[]' } : {}),
       },
