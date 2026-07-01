@@ -2,38 +2,47 @@
 
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown, ListChecks, X, Copy, Check, Terminal, ChevronRight } from 'lucide-react'
+import { ChevronDown, ListChecks, X, Copy, Check, ChevronRight } from 'lucide-react'
 
-interface Seccion {
-  title: string
-  body: string
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Seccion { title: string; body: string }
+interface SesionCard { numero: string; titulo: string; body: string }
+
+interface SesionFields {
+  objetivo: string
+  prerequisitos: string
+  prompt: string      // clean text inside ``` for copy/display
+  tareas: string
+  validacion: string
+  estado: string
 }
 
-interface SesionCard {
-  numero: string
-  titulo: string
-  body: string
-}
+const TABS = [
+  { key: 'objetivo',      label: 'Objetivo'      },
+  { key: 'prerequisitos', label: 'Prerequisitos' },
+  { key: 'prompt',        label: 'Prompt'        },
+  { key: 'tareas',        label: 'Tareas'        },
+  { key: 'validacion',    label: 'Validación'    },
+  { key: 'estado',        label: 'Estado'        },
+] as const
+
+type TabKey = typeof TABS[number]['key']
+
+// ─── Plan parser ──────────────────────────────────────────────────────────────
 
 function parsePlan(md: string): { titulo: string; secciones: Seccion[] } {
   const lines = md.split('\n')
-  let titulo = ''
-  let sawH1 = false
+  let titulo = '', sawH1 = false
   const secciones: Seccion[] = []
   let current: Seccion | null = null
-
   for (const raw of lines) {
     const h1 = raw.match(/^#\s+(.*)/)
     const h2 = raw.match(/^##\s+(.*)/)
-    if (h1 && !sawH1) {
-      titulo = h1[1].trim()
-      sawH1 = true
-      continue
-    }
+    if (h1 && !sawH1) { titulo = h1[1].trim(); sawH1 = true; continue }
     if (h2) {
       if (current && !(current.title === 'Resumen' && !current.body.trim())) secciones.push(current)
-      current = { title: h2[1].trim(), body: '' }
-      continue
+      current = { title: h2[1].trim(), body: '' }; continue
     }
     if (!current) current = { title: 'Resumen', body: '' }
     current.body += raw + '\n'
@@ -42,20 +51,19 @@ function parsePlan(md: string): { titulo: string; secciones: Seccion[] } {
   return { titulo, secciones }
 }
 
+// ─── Sesiones parsers ─────────────────────────────────────────────────────────
+
 function parseSesionesSection(body: string): { intro: string; sesiones: SesionCard[] } {
   const lines = body.split('\n')
-  let intro = ''
+  let intro = '', inIntro = true
   let current: SesionCard | null = null
   const sesiones: SesionCard[] = []
-  let inIntro = true
-
   for (const line of lines) {
     const h3 = line.match(/^###\s+Sesión\s+(\d+)\s*[—\-]+\s*(.+)/)
     if (h3) {
       if (current) sesiones.push(current)
       current = { numero: h3[1], titulo: h3[2].trim(), body: '' }
-      inIntro = false
-      continue
+      inIntro = false; continue
     }
     if (inIntro) intro += line + '\n'
     else if (current) current.body += line + '\n'
@@ -64,32 +72,64 @@ function parseSesionesSection(body: string): { intro: string; sesiones: SesionCa
   return { intro, sesiones }
 }
 
-function extractObjetivo(body: string): string {
-  const match = body.match(/\*\*Objetivo\*\*\s*:\s*([^\n]+)/)
-  return match ? match[1].trim() : ''
-}
+function parseSesionFields(body: string): SesionFields {
+  const FIELDS = [
+    { key: 'objetivo',      re: /^\*\*Objetivo\*\*\s*:/         },
+    { key: 'prerequisitos', re: /^\*\*Prerequisitos\*\*\s*:/    },
+    { key: 'prompt',        re: /^\*\*Prompt de inicio\*\*\s*:/ },
+    { key: 'tareas',        re: /^\*\*Tareas\*\*\s*:/           },
+    { key: 'validacion',    re: /^\*\*Validación\*\*\s*:/       },
+    { key: 'estado',        re: /^\*\*Estado al finalizar\*\*\s*:/ },
+  ]
+  const result: Record<string, string> = {}
+  let currentKey = '', buffer: string[] = []
+  const flush = () => { if (currentKey) result[currentKey] = buffer.join('\n').trim() }
 
-function extractPrompt(body: string): string {
-  const match = body.match(/\*\*Prompt de inicio\*\*[^`]*```[^\n]*\n([\s\S]*?)```/)
-  return match ? match[1].trim() : ''
-}
-
-function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
-  const parts: React.ReactNode[] = []
-  const regex = /(\*\*([^*]+)\*\*|`([^`]+)`)/g
-  let lastIndex = 0
-  let match: RegExpExecArray | null
-  let i = 0
-  while ((match = regex.exec(text))) {
-    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index))
-    if (match[2] !== undefined) {
-      parts.push(<strong key={`${keyPrefix}-${i++}`} className="text-white font-semibold">{match[2]}</strong>)
-    } else if (match[3] !== undefined) {
-      parts.push(<code key={`${keyPrefix}-${i++}`} className="bg-gray-800 text-cyan-300 px-1 py-0.5 rounded text-[11px]">{match[3]}</code>)
+  for (const line of body.split('\n')) {
+    let matched = false
+    for (const { key, re } of FIELDS) {
+      if (re.test(line)) {
+        flush(); currentKey = key
+        buffer = [line.replace(re, '').trim()]
+        matched = true; break
+      }
     }
-    lastIndex = regex.lastIndex
+    if (!matched && currentKey) buffer.push(line)
   }
-  if (lastIndex < text.length) parts.push(text.slice(lastIndex))
+  flush()
+
+  // Strip ``` fences from prompt so we get clean text for copy & display
+  const promptClean = (result['prompt'] || '')
+    .replace(/^```[^\n]*\n?/, '').replace(/\n?```\s*$/, '').trim()
+
+  return {
+    objetivo:      result['objetivo']      || '',
+    prerequisitos: result['prerequisitos'] || '',
+    prompt:        promptClean,
+    tareas:        result['tareas']        || '',
+    validacion:    result['validacion']    || '',
+    estado:        result['estado']        || '',
+  }
+}
+
+function extractObjetivo(body: string): string {
+  const m = body.match(/\*\*Objetivo\*\*\s*:\s*([^\n]+)/)
+  return m ? m[1].trim() : ''
+}
+
+// ─── Body renderer ────────────────────────────────────────────────────────────
+
+function renderInline(text: string, kp: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = []
+  const re = /(\*\*([^*]+)\*\*|`([^`]+)`)/g
+  let last = 0, i = 0; let m: RegExpExecArray | null
+  while ((m = re.exec(text))) {
+    if (m.index > last) parts.push(text.slice(last, m.index))
+    if (m[2]) parts.push(<strong key={`${kp}-${i++}`} className="text-white font-semibold">{m[2]}</strong>)
+    else if (m[3]) parts.push(<code key={`${kp}-${i++}`} className="bg-gray-800 text-cyan-300 px-1 py-0.5 rounded text-[11px]">{m[3]}</code>)
+    last = re.lastIndex
+  }
+  if (last < text.length) parts.push(text.slice(last))
   return parts
 }
 
@@ -97,110 +137,123 @@ interface Segment { type: 'code' | 'text'; content: string }
 
 function splitFences(body: string): Segment[] {
   const lines = body.split('\n')
-  const segments: Segment[] = []
-  let buffer: string[] = []
-  let fenceBuffer: string[] = []
-  let inFence = false
-
+  const segs: Segment[] = []
+  let buf: string[] = [], fence: string[] = [], inFence = false
   for (const line of lines) {
     if (/^\s*```/.test(line)) {
-      if (!inFence) {
-        if (buffer.length) segments.push({ type: 'text', content: buffer.join('\n') })
-        buffer = []
-        fenceBuffer = []
-        inFence = true
-      } else {
-        segments.push({ type: 'code', content: fenceBuffer.join('\n') })
-        inFence = false
-      }
+      if (!inFence) { if (buf.length) segs.push({ type: 'text', content: buf.join('\n') }); buf = []; fence = []; inFence = true }
+      else { segs.push({ type: 'code', content: fence.join('\n') }); inFence = false }
       continue
     }
-    if (inFence) fenceBuffer.push(line)
-    else buffer.push(line)
+    if (inFence) fence.push(line); else buf.push(line)
   }
-  if (inFence && fenceBuffer.length) segments.push({ type: 'code', content: fenceBuffer.join('\n') })
-  if (buffer.length) segments.push({ type: 'text', content: buffer.join('\n') })
-  return segments
+  if (inFence && fence.length) segs.push({ type: 'code', content: fence.join('\n') })
+  if (buf.length) segs.push({ type: 'text', content: buf.join('\n') })
+  return segs
 }
 
-function renderTextBlock(block: string, blockKey: string) {
+function renderTextBlock(block: string, bk: string) {
   const lines = block.split('\n').map(l => l.trim()).filter(Boolean)
-  const isList = lines.length > 0 && lines.every(l => /^[-*]\s+/.test(l))
+  const isList    = lines.length > 0 && lines.every(l => /^[-*]\s+/.test(l))
   const isOrdered = lines.length > 0 && lines.every(l => /^\d+\.\s+/.test(l))
-
-  if (isList) {
-    return (
-      <ul key={blockKey} className="space-y-1.5 my-2">
-        {lines.map((l, li) => (
-          <li key={li} className="flex gap-2 text-sm text-gray-300">
-            <span className="mt-2 w-1 h-1 rounded-full bg-cyan-500 flex-shrink-0" />
-            <span>{renderInline(l.replace(/^[-*]\s+/, ''), `${blockKey}-${li}`)}</span>
-          </li>
-        ))}
-      </ul>
-    )
-  }
-  if (isOrdered) {
-    return (
-      <ol key={blockKey} className="space-y-1.5 my-2">
-        {lines.map((l, li) => (
-          <li key={li} className="flex gap-2 text-sm text-gray-300">
-            <span className="text-cyan-400 font-mono text-xs flex-shrink-0 mt-0.5">{li + 1}.</span>
-            <span>{renderInline(l.replace(/^\d+\.\s+/, ''), `${blockKey}-${li}`)}</span>
-          </li>
-        ))}
-      </ol>
-    )
-  }
-
-  const subHeader = lines[0]?.match(/^###\s+(.*)/)
-  if (subHeader) {
-    const rest = lines.slice(1).join(' ')
-    return (
-      <div key={blockKey} className="my-2.5">
-        <p className="text-cyan-300 text-[11px] font-semibold uppercase tracking-wide mb-1">{subHeader[1]}</p>
-        {rest && <p className="text-sm text-gray-300 leading-relaxed">{renderInline(rest, `${blockKey}-r`)}</p>}
-      </div>
-    )
-  }
-
+  if (isList) return (
+    <ul key={bk} className="space-y-1.5 my-2">
+      {lines.map((l, li) => (
+        <li key={li} className="flex gap-2 text-sm text-gray-300">
+          <span className="mt-2 w-1 h-1 rounded-full bg-cyan-500 flex-shrink-0" />
+          <span>{renderInline(l.replace(/^[-*]\s+/, ''), `${bk}-${li}`)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+  if (isOrdered) return (
+    <ol key={bk} className="space-y-1.5 my-2">
+      {lines.map((l, li) => (
+        <li key={li} className="flex gap-2 text-sm text-gray-300">
+          <span className="text-cyan-400 font-mono text-xs flex-shrink-0 mt-0.5">{li + 1}.</span>
+          <span>{renderInline(l.replace(/^\d+\.\s+/, ''), `${bk}-${li}`)}</span>
+        </li>
+      ))}
+    </ol>
+  )
+  const sh = lines[0]?.match(/^###\s+(.*)/)
+  if (sh) return (
+    <div key={bk} className="my-2.5">
+      <p className="text-cyan-300 text-[11px] font-semibold uppercase tracking-wide mb-1">{sh[1]}</p>
+      {lines.slice(1).join(' ') && <p className="text-sm text-gray-300 leading-relaxed">{renderInline(lines.slice(1).join(' '), `${bk}-r`)}</p>}
+    </div>
+  )
   return (
-    <p key={blockKey} className="text-sm text-gray-300 leading-relaxed my-2">
-      {renderInline(lines.join(' '), blockKey)}
+    <p key={bk} className="text-sm text-gray-300 leading-relaxed my-2">
+      {renderInline(lines.join(' '), bk)}
     </p>
   )
 }
 
-function renderBody(body: string, keyPrefix: string) {
-  const segments = splitFences(body)
-  const hasContent = segments.some(s => s.content.trim())
-  if (!hasContent) {
-    return <p className="text-gray-600 text-sm italic">Sin contenido en esta sección.</p>
-  }
-  return segments.map((seg, si) => {
-    const segKey = `${keyPrefix}-seg${si}`
+function renderBody(body: string, kp: string) {
+  const segs = splitFences(body)
+  if (!segs.some(s => s.content.trim()))
+    return <p className="text-gray-600 text-sm italic">Sin contenido.</p>
+  return segs.map((seg, si) => {
+    const sk = `${kp}-seg${si}`
     if (seg.type === 'code') {
       if (!seg.content.trim()) return null
       return (
-        <pre key={segKey} className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2.5 my-2.5 overflow-x-auto">
+        <pre key={sk} className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2.5 my-2.5 overflow-x-auto">
           <code className="text-[11px] text-cyan-200 font-mono whitespace-pre">{seg.content}</code>
         </pre>
       )
     }
-    const blocks = seg.content.trim().split(/\n\s*\n/).filter(Boolean)
-    return blocks.map((block, bi) => renderTextBlock(block, `${segKey}-b${bi}`))
+    return seg.content.trim().split(/\n\s*\n/).filter(Boolean)
+      .map((bl, bi) => renderTextBlock(bl, `${sk}-b${bi}`))
   })
 }
 
+// ─── Session popup with tabs ──────────────────────────────────────────────────
+
 function SesionPopup({ sesion, onClose }: { sesion: SesionCard; onClose: () => void }) {
-  const [copied, setCopied] = useState(false)
-  const prompt = useMemo(() => extractPrompt(sesion.body), [sesion.body])
+  const [activeTab, setActiveTab] = useState<TabKey>('objetivo')
+  const [copied, setCopied]       = useState(false)
+  const fields = useMemo(() => parseSesionFields(sesion.body), [sesion.body])
 
   function copyPrompt() {
-    if (!prompt) return
-    navigator.clipboard.writeText(prompt)
+    if (!fields.prompt) return
+    navigator.clipboard.writeText(fields.prompt)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  function tabContent() {
+    switch (activeTab) {
+      case 'objetivo':
+        return <div className="py-1">{renderBody(fields.objetivo, 'tab-obj')}</div>
+      case 'prerequisitos':
+        return <div className="py-1">{renderBody(fields.prerequisitos, 'tab-pre')}</div>
+      case 'prompt':
+        return (
+          <div className="py-1 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-500">Copiá este prompt al iniciar la sesión en Claude Code.</p>
+              <button
+                onClick={copyPrompt}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/25 transition-colors flex-shrink-0"
+              >
+                {copied ? <Check size={11} /> : <Copy size={11} />}
+                {copied ? 'Copiado' : 'Copiar'}
+              </button>
+            </div>
+            <pre className="bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 overflow-x-auto max-h-72 overflow-y-auto">
+              <code className="text-[11px] text-cyan-200 font-mono whitespace-pre leading-relaxed">{fields.prompt}</code>
+            </pre>
+          </div>
+        )
+      case 'tareas':
+        return <div className="py-1">{renderBody(fields.tareas, 'tab-tar')}</div>
+      case 'validacion':
+        return <div className="py-1">{renderBody(fields.validacion, 'tab-val')}</div>
+      case 'estado':
+        return <div className="py-1">{renderBody(fields.estado, 'tab-est')}</div>
+    }
   }
 
   return createPortal(
@@ -228,24 +281,28 @@ function SesionPopup({ sesion, onClose }: { sesion: SesionCard; onClose: () => v
           </button>
         </div>
 
-        {/* Copy prompt bar */}
-        {prompt && (
-          <div className="flex items-center gap-2.5 px-5 py-2.5 bg-cyan-950/40 border-b border-cyan-800/30 flex-shrink-0">
-            <Terminal size={13} className="text-cyan-400 flex-shrink-0" />
-            <span className="text-xs text-cyan-300/80 flex-1">Prompt listo para iniciar esta sesión en Claude Code</span>
+        {/* Tab bar */}
+        <div className="flex border-b border-gray-800 overflow-x-auto flex-shrink-0 px-1 scrollbar-none">
+          {TABS.map(tab => (
             <button
-              onClick={copyPrompt}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/25 transition-colors flex-shrink-0"
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={[
+                'px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+                activeTab === tab.key
+                  ? 'text-cyan-300 border-cyan-400 bg-cyan-500/5'
+                  : 'text-gray-500 border-transparent hover:text-gray-300 hover:border-gray-700',
+              ].join(' ')}
             >
-              {copied ? <Check size={11} /> : <Copy size={11} />}
-              {copied ? 'Copiado' : 'Copiar prompt'}
+              {tab.label}
             </button>
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* Scrollable body */}
+        {/* Tab content */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          {renderBody(sesion.body, `pop-${sesion.numero}`)}
+          {tabContent()}
         </div>
       </div>
     </div>,
@@ -253,20 +310,17 @@ function SesionPopup({ sesion, onClose }: { sesion: SesionCard; onClose: () => v
   )
 }
 
+// ─── Sesiones section ─────────────────────────────────────────────────────────
+
 function SesionesView({ body, sectionIndex }: { body: string; sectionIndex: number }) {
   const { intro, sesiones } = useMemo(() => parseSesionesSection(body), [body])
   const [selected, setSelected] = useState<SesionCard | null>(null)
 
   return (
     <div>
-      {/* Intro text */}
       {intro.trim() && (
-        <div className="mb-4">
-          {renderBody(intro, `ses-intro-${sectionIndex}`)}
-        </div>
+        <div className="mb-4">{renderBody(intro, `ses-intro-${sectionIndex}`)}</div>
       )}
-
-      {/* Session cards grid */}
       <div className="space-y-2">
         {sesiones.map((s) => {
           const objetivo = extractObjetivo(s.body)
@@ -282,31 +336,24 @@ function SesionesView({ body, sectionIndex }: { body: string; sectionIndex: numb
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white leading-tight truncate">Sesión {s.numero} — {s.titulo}</p>
-                {objetivo && (
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">{objetivo}</p>
-                )}
+                {objetivo && <p className="text-xs text-gray-500 mt-0.5 truncate">{objetivo}</p>}
               </div>
               <ChevronRight size={14} className="text-gray-600 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
             </button>
           )
         })}
       </div>
-
-      {/* Popup */}
-      {selected && (
-        <SesionPopup sesion={selected} onClose={() => setSelected(null)} />
-      )}
+      {selected && <SesionPopup sesion={selected} onClose={() => setSelected(null)} />}
     </div>
   )
 }
 
+// ─── Main export ──────────────────────────────────────────────────────────────
+
 export default function PlanVisualView({ markdown }: { markdown: string }) {
   const { titulo, secciones } = useMemo(() => parsePlan(markdown), [markdown])
   const [open, setOpen] = useState<Record<number, boolean>>({ 0: true, 1: true })
-
-  function toggle(i: number) {
-    setOpen(prev => ({ ...prev, [i]: !prev[i] }))
-  }
+  const toggle = (i: number) => setOpen(prev => ({ ...prev, [i]: !prev[i] }))
 
   if (!markdown.trim()) {
     return (
@@ -320,11 +367,9 @@ export default function PlanVisualView({ markdown }: { markdown: string }) {
 
   return (
     <div className="space-y-3">
-      {titulo && (
-        <h3 className="text-white font-bold text-base mb-1">{titulo}</h3>
-      )}
+      {titulo && <h3 className="text-white font-bold text-base mb-1">{titulo}</h3>}
       {secciones.map((s, i) => {
-        const isOpen = !!open[i]
+        const isOpen     = !!open[i]
         const isSesiones = s.title.toLowerCase().includes('sesiones de trabajo')
         return (
           <div key={i} className="bg-gray-950 border border-gray-700 rounded-xl overflow-hidden">
