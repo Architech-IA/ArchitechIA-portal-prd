@@ -17,10 +17,12 @@ interface Seccion { title: string; body: string }
 
 function parsePlan(md: string): { titulo: string; secciones: Seccion[] } {
   const lines = md.split('\n')
-  let titulo = '', sawH1 = false
+  let titulo = '', sawH1 = false, inFence = false
   const secciones: Seccion[] = []
   let current: Seccion | null = null
   for (const raw of lines) {
+    if (/^\s*```/.test(raw)) inFence = !inFence
+    if (inFence) { if (current) current.body += raw + '\n'; continue }
     const h1 = raw.match(/^#\s+(.*)/)
     const h2 = raw.match(/^##\s+(.*)/)
     if (h1 && !sawH1) { titulo = h1[1].trim(); sawH1 = true; continue }
