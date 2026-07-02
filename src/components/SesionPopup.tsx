@@ -25,6 +25,9 @@ export interface ExtraTab {
   content: React.ReactNode
 }
 
+/** @deprecated use extraTabs (array) */
+// kept for back-compat in case other callers use the singular form
+
 // ─── Inline renderers ────────────────────────────────────────────────────────
 
 function renderInline(text: string, kp: string): React.ReactNode[] {
@@ -122,16 +125,17 @@ export function renderBody(body: string, kp: string) {
 interface SesionPopupProps {
   sesion: SesionCard
   onClose: () => void
-  /** Optional extra tab rendered after the 6 base tabs (e.g. "Gestión" with dates/state/backlog) */
-  extraTab?: ExtraTab
+  /** Extra tabs rendered after the 6 base tabs (Gestión, Resultado, etc.) */
+  extraTabs?: ExtraTab[]
   /** Which tab to open by default */
   defaultTab?: TabKey
 }
 
-export default function SesionPopup({ sesion, onClose, extraTab, defaultTab }: SesionPopupProps) {
-  const allTabs = extraTab
-    ? [...BASE_TABS, { key: extraTab.key, label: extraTab.label }]
-    : [...BASE_TABS]
+export default function SesionPopup({ sesion, onClose, extraTabs = [], defaultTab }: SesionPopupProps) {
+  const allTabs = [
+    ...BASE_TABS,
+    ...extraTabs.map(t => ({ key: t.key, label: t.label })),
+  ]
 
   const [activeTab, setActiveTab] = useState<TabKey>(defaultTab ?? 'objetivo')
   const [copied, setCopied]       = useState(false)
@@ -145,7 +149,8 @@ export default function SesionPopup({ sesion, onClose, extraTab, defaultTab }: S
   }
 
   function tabContent() {
-    if (extraTab && activeTab === extraTab.key) return <div className="py-1">{extraTab.content}</div>
+    const extra = extraTabs.find(t => t.key === activeTab)
+    if (extra) return <div className="py-1">{extra.content}</div>
     switch (activeTab as BaseTabKey) {
       case 'objetivo':
         return <div className="py-1">{renderBody(fields.objetivo, 'tab-obj')}</div>

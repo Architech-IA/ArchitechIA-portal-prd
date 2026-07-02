@@ -13,6 +13,8 @@ export interface FaseCronograma {
   fechaFin: string
   estado: string
   backlogItemId?: string
+  resultado?: string        // resumen de lo que se hizo, decisiones, links, pendientes
+  fechaEjecucion?: string   // fecha real en que se ejecutó la sesión (YYYY-MM-DD)
 }
 
 const ESTADO_A_BACKLOG: Record<string, string> = {
@@ -132,6 +134,41 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
   const numDays = Math.round((max - min) / DAY_MS) + 1
   const days = Array.from({ length: numDays }, (_, i) => new Date(min + i * DAY_MS))
   const dayGridStyle = { gridTemplateColumns: `repeat(${numDays}, minmax(${DAY_COL_MIN}px, 1fr))` }
+
+  // Resultado tab content
+  const resultadoContent = selected ? (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-xs font-medium text-gray-400 mb-1">Fecha de ejecución real</label>
+        <input
+          type="date"
+          value={selected.fechaEjecucion ?? ''}
+          onChange={e => onUpdate?.(selected.id, { fechaEjecucion: e.target.value })}
+          disabled={!onUpdate}
+          className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-400 mb-1">
+          Resumen de la sesión
+          <span className="ml-2 text-gray-600 font-normal normal-case">visible para el equipo y el agente siguiente</span>
+        </label>
+        <textarea
+          value={selected.resultado ?? ''}
+          onChange={e => onUpdate?.(selected.id, { resultado: e.target.value })}
+          disabled={!onUpdate}
+          rows={12}
+          placeholder={`## Qué se hizo\n- \n\n## Decisiones tomadas\n- \n\n## Links\n- \n\n## Pendiente para la próxima sesión\n- `}
+          className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-xs font-mono leading-relaxed focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60 resize-none placeholder:text-gray-700"
+        />
+      </div>
+      {selected.resultado?.trim() && (
+        <p className="text-[10px] text-gray-600">
+          Guardado automáticamente al escribir. El agente que inicie la próxima sesión verá este contenido en el plan.
+        </p>
+      )}
+    </div>
+  ) : null
 
   // Gestión tab content — rendered inside the SesionPopup as extraTab
   const gestionContent = selected ? (
@@ -289,11 +326,10 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
             sesion={matchedSesion}
             onClose={closePopup}
             defaultTab="objetivo"
-            extraTab={{
-              key: 'gestion',
-              label: 'Gestión',
-              content: gestionContent,
-            }}
+            extraTabs={[
+              { key: 'resultado', label: 'Resultado', content: resultadoContent },
+              { key: 'gestion',   label: 'Gestión',   content: gestionContent  },
+            ]}
           />
         ) : createPortal(
           <div
