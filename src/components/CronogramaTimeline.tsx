@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CalendarRange, X, Trash2, ListPlus, CheckCircle2, Loader2 } from 'lucide-react'
+import SesionPopup from '@/components/SesionPopup'
+import { parseSesionesFromMarkdown, sesionNumeroFromFase, type SesionCard } from '@/lib/sesionParser'
 
 export interface FaseCronograma {
   id: string
@@ -49,15 +51,29 @@ interface CronogramaTimelineProps {
   onUpdate?: (id: string, patch: Partial<FaseCronograma>) => void
   onRemove?: (id: string) => void
   solucionId?: string
+  planMarkdown?: string
 }
 
-export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucionId }: CronogramaTimelineProps) {
+export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucionId, planMarkdown }: CronogramaTimelineProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [cargandoBacklog, setCargandoBacklog] = useState(false)
   const [backlogError, setBacklogError] = useState('')
+
+  const sesiones = useMemo<SesionCard[]>(
+    () => (planMarkdown ? parseSesionesFromMarkdown(planMarkdown) : []),
+    [planMarkdown]
+  )
+
   const completas = fases.filter(f => f.fechaInicio && f.fechaFin)
   const incompletas = fases.length - completas.length
   const selected = fases.find(f => f.id === selectedId) || null
+
+  const matchedSesion = useMemo<SesionCard | null>(() => {
+    if (!selected || sesiones.length === 0) return null
+    const num = sesionNumeroFromFase(selected.fase)
+    if (!num) return null
+    return sesiones.find(s => s.numero === num) ?? null
+  }, [selected, sesiones])
 
   async function cargarEnBacklog(f: FaseCronograma) {
     if (!onUpdate || !solucionId) return
@@ -83,6 +99,11 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
     } finally {
       setCargandoBacklog(false)
     }
+  }
+
+  function closePopup() {
+    setSelectedId(null)
+    setBacklogError('')
   }
 
   if (fases.length === 0) {
@@ -112,6 +133,81 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
   const days = Array.from({ length: numDays }, (_, i) => new Date(min + i * DAY_MS))
   const dayGridStyle = { gridTemplateColumns: `repeat(${numDays}, minmax(${DAY_COL_MIN}px, 1fr))` }
 
+  // Gestión tab content — rendered inside the SesionPopup as extraTab
+  const gestionContent = selected ? (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-xs font-medium text-gray-400 mb-1">Estado</label>
+        <select
+          value={selected.estado}
+          onChange={e => onUpdate?.(selected.id, { estado: e.target.value })}
+          disabled={!onUpdate}
+          className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
+        >
+          {ESTADOS_FASE.map(es => <option key={es} value={es}>{es}</option>)}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-400 mb-1">Inicio</label>
+          <input
+            type="date"
+            value={selected.fechaInicio}
+            onChange={e => onUpdate?.(selected.id, { fechaInicio: e.target.value })}
+            disabled={!onUpdate}
+            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-400 mb-1">Fin</label>
+          <input
+            type="date"
+            value={selected.fechaFin}
+            onChange={e => onUpdate?.(selected.id, { fechaFin: e.target.value })}
+            disabled={!onUpdate}
+            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+          />
+        </div>
+      </div>
+
+      <p className="text-gray-500 text-xs">
+        {fmtLarga(selected.fechaInicio)} → {fmtLarga(selected.fechaFin)}
+      </p>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-400 mb-1">Backlog</label>
+        {selected.backlogItemId ? (
+          <div className="flex items-center gap-2 bg-emerald-900/20 border border-emerald-800/40 rounded-lg px-3 py-2">
+            <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
+            <p className="text-emerald-400 text-xs">Ya está cargada en el Backlog.</p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => cargarEnBacklog(selected)}
+            disabled={cargandoBacklog || !onUpdate || !solucionId}
+            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {cargandoBacklog ? <Loader2 size={14} className="animate-spin" /> : <ListPlus size={14} />}
+            {cargandoBacklog ? 'Cargando…' : 'Cargar al backlog'}
+          </button>
+        )}
+        {backlogError && <p className="text-red-400 text-xs mt-1.5">{backlogError}</p>}
+      </div>
+
+      {onRemove && (
+        <button
+          type="button"
+          onClick={() => { onRemove(selected.id); closePopup() }}
+          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
+        >
+          <Trash2 size={14} /> Eliminar fase
+        </button>
+      )}
+    </div>
+  ) : null
+
   return (
     <div className="space-y-3">
       {incompletas > 0 && (
@@ -122,7 +218,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
 
       <div className="border border-cyan-800/40 rounded-xl overflow-x-auto">
         <div className="min-w-max">
-          {/* Encabezado: un día por columna */}
+          {/* Header row */}
           <div className="flex border-b border-cyan-800/50 bg-cyan-950/40">
             <div className="w-44 flex-shrink-0 border-r border-cyan-800/40 px-3 py-2 text-[11px] text-cyan-200 font-semibold">Fase</div>
             <div className="grid flex-1" style={dayGridStyle}>
@@ -134,7 +230,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
             </div>
           </div>
 
-          {/* Filas: una por actividad, con franjas alternadas para distinguirlas */}
+          {/* Rows */}
           <div className="divide-y divide-cyan-800/25">
             {completas.map((f, idx) => {
               const s = new Date(f.fechaInicio + 'T00:00:00').getTime()
@@ -151,8 +247,10 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                 >
                   <div className="w-44 flex-shrink-0 border-r border-cyan-800/30 px-3 py-3 min-w-0">
                     <p className="text-sm text-gray-200 truncate" title={f.fase}>{f.fase || 'Sin nombre'}</p>
-                    <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                      style={{ background: `${color.bg}20`, color: color.text }}>
+                    <span
+                      className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                      style={{ background: `${color.bg}20`, color: color.text }}
+                    >
                       {f.estado}
                     </span>
                   </div>
@@ -183,100 +281,112 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
         </div>
       </div>
 
-      {/* Popup con el detalle/edición de la fase seleccionada.
-          Va en un portal a document.body: si se renderiza en flujo normal,
-          algún ancestro con backdrop-filter/transform (típico del estilo
-          "glass" del portal) crea un containing block propio y el
-          position:fixed deja de centrarse contra la ventana del navegador. */}
-      {selected && typeof document !== 'undefined' && createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setSelectedId(null) }}
-        >
-          <div className="relative w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-              <h3 className="text-white font-semibold text-sm truncate pr-2">{selected.fase || 'Sin nombre'}</h3>
-              <button onClick={() => { setSelectedId(null); setBacklogError('') }}
-                className="w-7 h-7 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors flex-shrink-0">
-                <X size={14} />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Estado</label>
-                <select
-                  value={selected.estado}
-                  onChange={e => onUpdate?.(selected.id, { estado: e.target.value })}
-                  disabled={!onUpdate}
-                  className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
+      {/* Popup — uses SesionPopup when there's a matching session, simple popup otherwise.
+          Always portaled to document.body to bypass backdrop-filter containing-block. */}
+      {selected && typeof document !== 'undefined' && (
+        matchedSesion ? (
+          <SesionPopup
+            sesion={matchedSesion}
+            onClose={closePopup}
+            defaultTab="objetivo"
+            extraTab={{
+              key: 'gestion',
+              label: 'Gestión',
+              content: gestionContent,
+            }}
+          />
+        ) : createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+            onClick={e => { if (e.target === e.currentTarget) closePopup() }}
+          >
+            <div className="relative w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+                <h3 className="text-white font-semibold text-sm truncate pr-2">{selected.fase || 'Sin nombre'}</h3>
+                <button
+                  onClick={closePopup}
+                  className="w-7 h-7 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors flex-shrink-0"
                 >
-                  {ESTADOS_FASE.map(es => <option key={es} value={es}>{es}</option>)}
-                </select>
+                  <X size={14} />
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="p-5 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Inicio</label>
-                  <input
-                    type="date"
-                    value={selected.fechaInicio}
-                    onChange={e => onUpdate?.(selected.id, { fechaInicio: e.target.value })}
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Estado</label>
+                  <select
+                    value={selected.estado}
+                    onChange={e => onUpdate?.(selected.id, { estado: e.target.value })}
                     disabled={!onUpdate}
-                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
-                  />
+                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
+                  >
+                    {ESTADOS_FASE.map(es => <option key={es} value={es}>{es}</option>)}
+                  </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Fin</label>
-                  <input
-                    type="date"
-                    value={selected.fechaFin}
-                    onChange={e => onUpdate?.(selected.id, { fechaFin: e.target.value })}
-                    disabled={!onUpdate}
-                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
-                  />
-                </div>
-              </div>
 
-              <p className="text-gray-500 text-xs">
-                {fmtLarga(selected.fechaInicio)} → {fmtLarga(selected.fechaFin)}
-              </p>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Backlog</label>
-                {selected.backlogItemId ? (
-                  <div className="flex items-center gap-2 bg-emerald-900/20 border border-emerald-800/40 rounded-lg px-3 py-2">
-                    <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
-                    <p className="text-emerald-400 text-xs">Ya está cargada en el Backlog.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Inicio</label>
+                    <input
+                      type="date"
+                      value={selected.fechaInicio}
+                      onChange={e => onUpdate?.(selected.id, { fechaInicio: e.target.value })}
+                      disabled={!onUpdate}
+                      className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+                    />
                   </div>
-                ) : (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">Fin</label>
+                    <input
+                      type="date"
+                      value={selected.fechaFin}
+                      onChange={e => onUpdate?.(selected.id, { fechaFin: e.target.value })}
+                      disabled={!onUpdate}
+                      className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-gray-500 text-xs">
+                  {fmtLarga(selected.fechaInicio)} → {fmtLarga(selected.fechaFin)}
+                </p>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Backlog</label>
+                  {selected.backlogItemId ? (
+                    <div className="flex items-center gap-2 bg-emerald-900/20 border border-emerald-800/40 rounded-lg px-3 py-2">
+                      <CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
+                      <p className="text-emerald-400 text-xs">Ya está cargada en el Backlog.</p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => cargarEnBacklog(selected)}
+                      disabled={cargandoBacklog || !onUpdate || !solucionId}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {cargandoBacklog ? <Loader2 size={14} className="animate-spin" /> : <ListPlus size={14} />}
+                      {cargandoBacklog ? 'Cargando…' : 'Cargar al backlog'}
+                    </button>
+                  )}
+                  {backlogError && <p className="text-red-400 text-xs mt-1.5">{backlogError}</p>}
+                </div>
+
+                {onRemove && (
                   <button
                     type="button"
-                    onClick={() => cargarEnBacklog(selected)}
-                    disabled={cargandoBacklog || !onUpdate || !solucionId}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors disabled:opacity-50"
+                    onClick={() => { onRemove(selected.id); closePopup() }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
                   >
-                    {cargandoBacklog ? <Loader2 size={14} className="animate-spin" /> : <ListPlus size={14} />}
-                    {cargandoBacklog ? 'Cargando…' : 'Cargar al backlog'}
+                    <Trash2 size={14} /> Eliminar fase
                   </button>
                 )}
-                {backlogError && <p className="text-red-400 text-xs mt-1.5">{backlogError}</p>}
               </div>
-
-              {onRemove && (
-                <button
-                  type="button"
-                  onClick={() => { onRemove(selected.id); setSelectedId(null) }}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
-                >
-                  <Trash2 size={14} /> Eliminar fase
-                </button>
-              )}
             </div>
-          </div>
-        </div>,
-        document.body
+          </div>,
+          document.body
+        )
       )}
     </div>
   )
