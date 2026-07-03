@@ -67,11 +67,11 @@ export default function AppsHubPage() {
   }), [apps, search, categoryFilter]);
 
   return (
-    <div className="px-6 pb-8 pt-6 md:px-8">
+    <div className="px-6 md:px-8 py-6 space-y-5">
 
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white tracking-tight">
+        <h1 className="text-xl font-bold text-white shrink-0">
           Catalogo de Apps
         </h1>
         <div className="relative">
@@ -83,14 +83,14 @@ export default function AppsHubPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="input-dark rounded-xl py-2 pl-9 pr-4 text-sm"
+            className="input-dark rounded-lg py-2 pl-8 pr-3 text-xs"
             style={{ width: '220px' }}
           />
         </div>
       </div>
 
       {/* Pills de categoria */}
-      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex items-center gap-1.5 mb-6 overflow-x-auto pb-0.5 no-scrollbar">
         {(['', ...categories] as string[]).map((cat) => {
           const meta = cat ? APP_CATEGORIES[cat] : null;
           const label = cat ? (meta?.label ?? cat) : 'Todas';
@@ -99,13 +99,11 @@ export default function AppsHubPage() {
             <button
               key={cat || '__all__'}
               onClick={() => setCategoryFilter(cat)}
-              className="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0"
-              style={active
-                ? { background: '#ffffff', color: '#0a0a16', border: '1px solid transparent' }
-                : { background: 'transparent', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)' }
-              }
-              onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = '#e2e8f0'; }}
-              onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = '#64748b'; }}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
+                active
+                  ? 'bg-white/[0.12] border-white/[0.25] text-white'
+                  : 'border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]'
+              }`}
             >
               {label}
             </button>
@@ -178,7 +176,7 @@ function AppCard({ app }: { app: AppInstance }) {
       </h3>
 
       {/* Descripcion */}
-      <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed flex-1 mb-4">
+      <p className="text-[11px] text-slate-500 line-clamp-3 leading-relaxed flex-1 mb-4">
         {app.description ?? 'Sin descripcion'}
       </p>
 
