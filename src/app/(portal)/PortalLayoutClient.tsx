@@ -366,7 +366,7 @@ export default function PortalLayoutClient({
     <div className="flex h-screen" style={{ background: 'transparent' }}>
       {!isMobile && (
         <aside
-          style={{ width: collapsed ? '64px' : '240px', minWidth: collapsed ? '64px' : '240px', background: 'rgba(8,8,26,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRight: '1px solid rgba(255,255,255,0.05)', transition: 'width 0.25s ease, min-width 0.25s ease', overflow: 'hidden' }}
+          style={{ width: collapsed ? '60px' : '200px', minWidth: collapsed ? '60px' : '200px', background: 'rgba(8,8,26,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRight: '1px solid rgba(255,255,255,0.05)', transition: 'width 0.25s ease, min-width 0.25s ease', overflow: 'hidden' }}
           className="flex flex-col flex-shrink-0"
         >
           {sidebarContent()}
