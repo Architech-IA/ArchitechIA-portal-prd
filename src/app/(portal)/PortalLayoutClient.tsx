@@ -423,7 +423,7 @@ export default function PortalLayoutClient({
       </div>
 
         <TopBar onMenuClick={() => setMobileOpen(true)} isMobile={isMobile} title={pageTitle} />
-        <main className="flex-1 overflow-y-auto relative" style={{ zIndex: 1 }} style={{ background: '#07070f' }}>
+        <main className="flex-1 overflow-y-auto relative" style={{ zIndex: 1, background: 'transparent' }}>
           {children}
         </main>
         <GlobalSearch />
