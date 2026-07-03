@@ -3,162 +3,130 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Plus, Search, LayoutGrid, List, Settings, Play,
-  Users, Layout, Globe, BarChart3, Box,
+  Search, Play, Box,
+  Users, Layout, Globe, BarChart3,
   Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban,
 } from 'lucide-react';
 import type { AppInstance } from '@/lib/app-types';
-import { APP_STATUS_LABELS, APP_CATEGORIES } from '@/lib/app-types';
+import { APP_CATEGORIES } from '@/lib/app-types';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Users,
-  Layout,
-  Globe,
-  BarChart3,
-  Bot,
-  FileText,
-  UserCircle,
-  Headphones,
-  Shield,
-  Plug,
-  Kanban,
+  Users, Layout, Globe, BarChart3, Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban,
 };
 
+const CAT_STYLE: Record<string, { color: string; bg: string; border: string }> = {
+  'text-orange-400':  { color: '#fb923c', bg: 'rgba(251,146,60,0.12)',  border: 'rgba(251,146,60,0.3)'  },
+  'text-blue-400':    { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)'  },
+  'text-green-400':   { color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)'  },
+  'text-cyan-400':    { color: '#22d3ee', bg: 'rgba(34,211,238,0.12)',  border: 'rgba(34,211,238,0.3)'  },
+  'text-purple-400':  { color: '#c084fc', bg: 'rgba(192,132,252,0.12)', border: 'rgba(192,132,252,0.3)' },
+  'text-pink-400':    { color: '#f472b6', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.3)' },
+  'text-yellow-400':  { color: '#facc15', bg: 'rgba(250,204,21,0.12)',  border: 'rgba(250,204,21,0.3)'  },
+  'text-red-400':     { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)' },
+  'text-emerald-400': { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.3)'  },
+  'text-indigo-400':  { color: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.3)' },
+  'text-violet-400':  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)' },
+  'text-teal-400':    { color: '#2dd4bf', bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.3)'  },
+  'text-fuchsia-400': { color: '#e879f9', bg: 'rgba(232,121,249,0.12)', border: 'rgba(232,121,249,0.3)' },
+  'text-rose-400':    { color: '#fb7185', bg: 'rgba(251,113,133,0.12)', border: 'rgba(251,113,133,0.3)' },
+  'text-amber-400':   { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)'  },
+  'text-lime-400':    { color: '#a3e635', bg: 'rgba(163,230,53,0.12)',  border: 'rgba(163,230,53,0.3)'  },
+};
+
+function getStyle(colorClass: string) {
+  return CAT_STYLE[colorClass] ?? { color: '#9ca3af', bg: 'rgba(156,163,175,0.12)', border: 'rgba(156,163,175,0.3)' };
+}
+
 export default function AppsHubPage() {
-  const router = useRouter();
   const [apps, setApps] = useState<AppInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     let cancelled = false;
     fetch('/api/apps')
-      .then((res) => res.json())
-      .then((data) => { if (!cancelled) setApps(Array.isArray(data) ? data : []); })
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setApps(Array.isArray(d) ? d : []); })
       .catch(() => { if (!cancelled) setApps([]); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
 
-  const filteredApps = useMemo(() => {
-    return apps.filter((app) => {
-      const matchesSearch =
-        search.trim() === '' ||
-        app.name.toLowerCase().includes(search.toLowerCase()) ||
-        (app.description ?? '').toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === '' || app.status === statusFilter;
-      const matchesCategory = categoryFilter === '' || app.appType.category === categoryFilter;
-      return matchesSearch && matchesStatus && matchesCategory;
-    });
-  }, [apps, search, statusFilter, categoryFilter]);
-
   const categories = useMemo(() => {
-    const map = new Map<string, string>();
-    apps.forEach((app) => map.set(app.appType.category, app.appType.category));
-    return Array.from(map.values());
+    const seen = new Set<string>();
+    return apps
+      .filter((a) => { const k = a.appType.category; if (seen.has(k)) return false; seen.add(k); return true; })
+      .map((a) => a.appType.category);
   }, [apps]);
 
-  const statusKeys = Object.keys(APP_STATUS_LABELS) as AppInstance['status'][];
-
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-orange-500" />
-      </div>
-    );
-  }
+  const filtered = useMemo(() => apps.filter((a) => {
+    const q = search.trim().toLowerCase();
+    return (!q || a.name.toLowerCase().includes(q) || (a.description ?? '').toLowerCase().includes(q))
+        && (!categoryFilter || a.appType.category === categoryFilter);
+  }), [apps, search, categoryFilter]);
 
   return (
-    <div className="px-6 pb-6 pt-2 md:px-8 md:pb-8 md:pt-4">
-      {/* Filters */}
-      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+    <div className="px-6 pb-8 pt-6 md:px-8">
+
+      {/* Encabezado */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-white tracking-tight">
+          Catalogo de Apps
+        </h1>
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500"
+          />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o descripción..."
-            className="input-dark rounded-xl py-2.5 pl-10 pr-4 text-xs"
+            placeholder="Buscar..."
+            className="input-dark rounded-xl py-2 pl-9 pr-4 text-sm"
+            style={{ width: '220px' }}
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="input-dark rounded-xl px-4 py-2.5 text-xs w-auto"
-        >
-          <option value="">Todos los estados</option>
-          {statusKeys.map((s) => (
-            <option key={s} value={s}>{APP_STATUS_LABELS[s].label}</option>
-          ))}
-        </select>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="input-dark rounded-xl px-4 py-2.5 text-xs w-auto"
-        >
-          <option value="">Todas las categorías</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>{APP_CATEGORIES[c]?.label ?? c}</option>
-          ))}
-        </select>
-        <div className="flex items-center gap-1 rounded-xl border border-gray-800 bg-gray-900 p-1">
-          <button
-            onClick={() => setView('grid')}
-            className={`rounded-lg p-2 ${view === 'grid' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className={`rounded-lg p-2 ${view === 'list' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
-        <button
-          onClick={() => router.push('/apps/catalogo')}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-xs font-normal text-white hover:from-orange-600 hover:to-orange-700"
-        >
-          <Plus className="h-4 w-4" />
-          Nueva app
-        </button>
       </div>
 
-      {/* Empty state */}
-      {filteredApps.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-800 bg-gray-900/50 p-12 text-center">
-          <div className="mb-4 flex justify-center">
-            <Box className="h-12 w-12 text-gray-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-white">No hay mini-apps aún</h3>
-          <p className="mt-1 text-sm text-gray-500">Crea tu primera app desde el catálogo de templates.</p>
-          <button
-            onClick={() => router.push('/apps/catalogo')}
-            className="mt-4 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
-          >
-            Explorar catálogo
-          </button>
-        </div>
-      )}
+      {/* Pills de categoria */}
+      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1 scrollbar-hide">
+        {(['', ...categories] as string[]).map((cat) => {
+          const meta = cat ? APP_CATEGORIES[cat] : null;
+          const label = cat ? (meta?.label ?? cat) : 'Todas';
+          const active = categoryFilter === cat;
+          return (
+            <button
+              key={cat || '__all__'}
+              onClick={() => setCategoryFilter(cat)}
+              className="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0"
+              style={active
+                ? { background: '#ffffff', color: '#0a0a16', border: '1px solid transparent' }
+                : { background: 'transparent', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)' }
+              }
+              onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = '#e2e8f0'; }}
+              onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = '#64748b'; }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Grid view */}
-      {view === 'grid' && filteredApps.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredApps.map((app) => (
+      {/* Contenido */}
+      {loading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-orange-500" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed p-12 text-center" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <Box className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">No se encontraron apps</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((app) => (
             <AppCard key={app.id} app={app} />
-          ))}
-        </div>
-      )}
-
-      {/* List view */}
-      {view === 'list' && filteredApps.length > 0 && (
-        <div className="space-y-2">
-          {filteredApps.map((app) => (
-            <AppListRow key={app.id} app={app} />
           ))}
         </div>
       )}
@@ -169,97 +137,55 @@ export default function AppsHubPage() {
 function AppCard({ app }: { app: AppInstance }) {
   const router = useRouter();
   const Icon = ICON_MAP[app.appType.icon] ?? Box;
-  const status = APP_STATUS_LABELS[app.status];
   const category = APP_CATEGORIES[app.appType.category];
+  const cs = getStyle(category?.color ?? 'text-gray-400');
 
   return (
-    <div className="group relative card card-hover p-5">
-      <div className="mb-4 flex items-start justify-between">
+    <div
+      className="relative rounded-2xl p-5 border transition-all duration-200 flex flex-col"
+      style={{ background: 'var(--bg-card)', borderColor: 'rgba(255,255,255,0.06)' }}
+      onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'}
+      onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'}
+    >
+      {/* Icono + badge categoria */}
+      <div className="flex items-start justify-between mb-4">
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${app.appType.color} text-white shadow-lg`}
+          className={`h-12 w-12 flex items-center justify-center rounded-xl bg-gradient-to-br ${app.appType.color} text-white shadow-lg flex-shrink-0`}
         >
           <Icon className="h-6 w-6" />
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-normal ${status.chip}`}>
-            <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${status.dot}`} />
-            {status.label}
-          </span>
-          <div className="relative">
-            <button
-              onClick={() => router.push(`/apps/${app.slug}/config`)}
-              className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-800 hover:text-white"
-              title="Configurar"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-      <h3 className="mb-1 text-base font-normal text-white">{app.name}</h3>
-      <p className="mb-4 line-clamp-2 text-xs font-normal text-gray-500">{app.description ?? 'Sin descripción'}</p>
-      <div className="mb-4 flex items-center gap-3 text-[10px] font-normal text-gray-500">
-        <span className={category?.color ?? 'text-gray-400'}>{category?.label ?? app.appType.category}</span>
-        <span>•</span>
-        <span>{app.appType.name}</span>
-        <span>•</span>
-        <span>{app.owner.name}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => router.push(`/apps/${app.slug}`)}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-600 py-2 text-xs font-normal text-white hover:bg-orange-700"
+        <span
+          className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0 ml-2"
+          style={{ color: cs.color, background: cs.bg, border: `1px solid ${cs.border}` }}
         >
-          <Play className="h-4 w-4" />
-          Abrir
-        </button>
-        <button
-          onClick={() => router.push(`/apps/${app.slug}/config`)}
-          className="rounded-lg border border-gray-700 px-3 py-2 text-xs font-normal text-gray-300 hover:bg-gray-800 hover:text-white"
-        >
-          Configurar
-        </button>
+          {category?.label ?? app.appType.category}
+        </span>
       </div>
-    </div>
-  );
-}
 
-function AppListRow({ app }: { app: AppInstance }) {
-  const router = useRouter();
-  const Icon = ICON_MAP[app.appType.icon] ?? Box;
-  const status = APP_STATUS_LABELS[app.status];
-  const category = APP_CATEGORIES[app.appType.category];
+      {/* Titulo */}
+      <h3
+        className="text-sm font-bold mb-2 leading-snug"
+        style={{ color: cs.color }}
+      >
+        {app.name}
+      </h3>
 
-  return (
-    <div className="flex items-center gap-4 card card-hover p-4">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${app.appType.color} text-white`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate font-medium text-white">{app.name}</h3>
-        <p className="truncate text-xs text-gray-500">
-          {category?.label ?? app.appType.category} • {app.appType.name} • {app.owner.name}
-        </p>
-      </div>
-      <span className={`rounded-full border px-2 py-0.5 text-xs ${status.chip}`}>
-        {status.label}
-      </span>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => router.push(`/apps/${app.slug}`)}
-          className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white"
-          title="Abrir"
-        >
-          <Play className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => router.push(`/apps/${app.slug}/config`)}
-          className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white"
-          title="Configurar"
-        >
-          <Settings className="h-4 w-4" />
-        </button>
-      </div>
+      {/* Descripcion */}
+      <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed flex-1 mb-5">
+        {app.description ?? 'Sin descripcion'}
+      </p>
+
+      {/* Boton Abrir */}
+      <button
+        onClick={() => router.push(`/apps/${app.slug}`)}
+        className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-semibold text-white transition-colors"
+        style={{ background: '#ea580c' }}
+        onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = '#c2410c'}
+        onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = '#ea580c'}
+      >
+        <Play className="h-3.5 w-3.5" />
+        Abrir
+      </button>
     </div>
   );
 }
