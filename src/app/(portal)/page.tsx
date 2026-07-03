@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArrowUpRight } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PersonalDashboard from '@/components/PersonalDashboard';
 import { SkeletonKPI, SkeletonCard } from '@/components/SkeletonCard';
@@ -57,6 +58,31 @@ function SectionHeader({ icon, color, title, badge }: { icon: string; color: str
       </div>
       {badge}
     </div>
+  );
+}
+
+function Sparkline({ data, color = '#7C3AED' }: { data: number[]; color?: string }) {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const W = 80, H = 28;
+  const pts = data.map((v, i) =>
+    `${(i / (data.length - 1)) * W},${H - ((v - min) / range) * (H * 0.8) - H * 0.1}`
+  );
+  const lastY = H - ((data[data.length - 1] - min) / range) * (H * 0.8) - H * 0.1;
+  return (
+    <svg width={W} height={H} className="flex-shrink-0">
+      <defs>
+        <linearGradient id={`g-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`M${pts.join(' L')} L${W},${H} L0,${H} Z`} fill={`url(#g-${color.replace('#', '')})`} />
+      <path d={`M${pts.join(' L')}`} stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={W} cy={lastY} r="2.5" fill={color} />
+    </svg>
   );
 }
 
@@ -193,24 +219,37 @@ export default function Home() {
       {/* KPIs principales */}
       {widgets.kpis && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Leads',     value: data?.counts.leads ?? 0,     sub: `$${(data?.totalEstimatedValue ?? 0).toLocaleString()} en pipeline`, accent: '#3B82F6', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
-          { label: 'Propuestas',      value: data?.counts.proposals ?? 0, sub: 'En seguimiento activo',                                              accent: '#8B5CF6', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-          { label: 'Tasa Conversión', value: `${data?.conversionRate ?? 0}%`, sub: `${data?.leadsGanados ?? 0} leads ganados`,                      accent: '#22C55E', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
-          { label: 'Proyectos',       value: data?.counts.projects ?? 0,  sub: 'En desarrollo y completados',                                        accent: '#FF5A00', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
+          { label: 'Total Leads',     value: data?.counts.leads ?? 0,        sub: `$${(data?.totalEstimatedValue ?? 0).toLocaleString()} en pipeline`, color: '#3B82F6', link: '/leads',     icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', spark: [3,5,4,6,5,7, data?.counts.leads ?? 6] },
+          { label: 'Propuestas',      value: data?.counts.proposals ?? 0,    sub: 'En seguimiento activo',                                              color: '#8B5CF6', link: '/proposals', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',  spark: [2,3,2,4,3,4, data?.counts.proposals ?? 3] },
+          { label: 'Tasa Conversión', value: `${data?.conversionRate ?? 0}%`, sub: `${data?.leadsGanados ?? 0} leads ganados`,                         color: '#22C55E', link: '/leads',     icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',                                                                                                        spark: [1,3,2,4,3,5, data?.conversionRate ?? 4] },
+          { label: 'Proyectos',       value: data?.counts.projects ?? 0,     sub: 'En desarrollo y completados',                                        color: '#FF5A00', link: '/projects',  icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z',                                                          spark: [4,6,5,7,6,8, data?.counts.projects ?? 6] },
         ].map((k) => (
-          <div key={k.label} className="card card-hover p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: `${k.accent}1f`, border: `1px solid ${k.accent}33` }}>
-                <svg className="w-[18px] h-[18px]" style={{ color: k.accent }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={k.icon} />
-                </svg>
+          <a key={k.label} href={k.link}
+            className="group relative rounded-2xl p-4 border border-white/[0.06] overflow-hidden transition-all duration-200"
+            style={{ background: 'var(--bg-card)' }}
+          >
+            <div
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"
+              style={{ background: `radial-gradient(circle at top left, ${k.color}18 0%, transparent 60%)` }}
+            />
+            <div className="relative">
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
+                  style={{ background: `${k.color}18`, borderColor: `${k.color}33` }}>
+                  <svg className="w-[14px] h-[14px]" style={{ color: k.color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={k.icon} />
+                  </svg>
+                </div>
+                <Sparkline data={k.spark} color={k.color} />
+              </div>
+              <p className="text-xl md:text-2xl font-bold text-white tracking-tight tabular-nums">{k.value}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{k.label}</p>
+              <div className="flex items-center gap-1 mt-2 text-[10px] text-slate-700 group-hover:text-slate-500 transition-colors">
+                <span className="truncate">{k.sub}</span>
+                <ArrowUpRight size={9} className="flex-shrink-0" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-white tabular-nums">{k.value}</p>
-            <p className="text-sm text-gray-400 mt-1 truncate">{k.label}</p>
-            <p className="text-[11px] text-gray-600 mt-0.5 truncate">{k.sub}</p>
-          </div>
+          </a>
         ))}
       </div>}
 
@@ -656,3 +695,4 @@ function translateStatus(status: string): string {
   };
   return t[status] || status;
 }
+
