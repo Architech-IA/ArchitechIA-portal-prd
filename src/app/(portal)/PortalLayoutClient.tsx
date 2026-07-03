@@ -246,14 +246,7 @@ export default function PortalLayoutClient({
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: '#FF5A00', boxShadow: '0 0 16px rgba(255,90,0,0.5)' }}
-              >
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
+                            <img src="/icon.png" alt="ArchiTechIA" className="w-8 h-8 rounded-lg flex-shrink-0 object-cover" style={{ boxShadow: '0 0 16px rgba(255,90,0,0.4)' }} />
               <span
                 className="text-base font-bold tracking-tight truncate"
                 style={{ background: 'linear-gradient(135deg, #FF7A2F 0%, #FF7A2F 50%, #fb923c 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
@@ -265,14 +258,7 @@ export default function PortalLayoutClient({
               </svg>
             </button>
           ) : (
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center mx-auto"
-              style={{ background: '#FF5A00', boxShadow: '0 0 16px rgba(255,90,0,0.5)' }}
-            >
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
+                        <img src="/icon.png" alt="ArchiTechIA" className="w-9 h-9 rounded-xl mx-auto object-cover" style={{ boxShadow: '0 0 16px rgba(255,90,0,0.4)' }} />
           )}
 
           {!isCollapsed && !isMobile && (
