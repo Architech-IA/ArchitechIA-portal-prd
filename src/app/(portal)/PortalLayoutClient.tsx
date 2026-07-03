@@ -366,10 +366,10 @@ export default function PortalLayoutClient({
   }
 
   return (
-    <div className="flex h-screen" style={{ background: '#07070f' }}>
+    <div className="flex h-screen" style={{ background: 'transparent' }}>
       {!isMobile && (
         <aside
-          style={{ width: collapsed ? '64px' : '240px', minWidth: collapsed ? '64px' : '240px', background: 'linear-gradient(180deg, #08081a 0%, #0b0b1f 100%)', borderRight: '1px solid rgba(255,90,0,0.12)', transition: 'width 0.25s ease, min-width 0.25s ease', overflow: 'hidden' }}
+          style={{ width: collapsed ? '64px' : '240px', minWidth: collapsed ? '64px' : '240px', background: 'rgba(8,8,20,0.65)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRight: '1px solid rgba(255,90,0,0.12)', transition: 'width 0.25s ease, min-width 0.25s ease', overflow: 'hidden' }}
           className="flex flex-col flex-shrink-0"
         >
           {sidebarContent()}
@@ -383,27 +383,47 @@ export default function PortalLayoutClient({
       {isMobile && (
         <aside
           className="fixed top-0 left-0 h-full z-50 flex flex-col"
-          style={{ width: '260px', background: 'linear-gradient(180deg, #08081a 0%, #0b0b1f 100%)', borderRight: '1px solid rgba(255,90,0,0.15)', transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 0.25s ease' }}
+          style={{ width: '260px', background: 'rgba(8,8,20,0.65)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderRight: '1px solid rgba(255,90,0,0.15)', transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 0.25s ease' }}
         >
           {sidebarContent(true)}
         </aside>
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <TopBar onMenuClick={() => setMobileOpen(true)} isMobile={isMobile} title={pageTitle} />
+      {/* ── Blobs liquid glass identicos a GD-DATOSHUB (inline styles para Tailwind v4) */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <div className="absolute" style={{
+          top: '-40px', right: '5%',
+          width: '480px', height: '420px',
+          background: 'rgba(99,102,241,0.22)',
+          filter: 'blur(120px)',
+          borderRadius: '62% 38% 45% 55% / 55% 45% 60% 40%',
+        }} />
+        <div className="absolute" style={{
+          top: '22%', left: '28%',
+          width: '380px', height: '340px',
+          background: 'rgba(14,165,233,0.18)',
+          filter: 'blur(110px)',
+          borderRadius: '40% 60% 55% 45% / 45% 55% 40% 60%',
+        }} />
+        <div className="absolute" style={{
+          top: '2%', left: '8%',
+          width: '340px', height: '380px',
+          background: 'rgba(148,163,184,0.08)',
+          filter: 'blur(120px)',
+          borderRadius: '55% 45% 60% 40% / 40% 60% 45% 55%',
+        }} />
+        <div className="absolute" style={{
+          top: '48%', right: '18%',
+          width: '320px', height: '300px',
+          background: 'rgba(45,212,191,0.16)',
+          filter: 'blur(110px)',
+          borderRadius: '45% 55% 40% 60% / 60% 40% 55% 45%',
+        }} />
+      </div>
 
-        {/* Blobs decorativos — efecto liquid glass identico a GD-DATOSHUB */}
-        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute -top-10 right-[5%] w-[480px] h-[420px] bg-indigo-500/25 blur-[120px]"
-            style={{ borderRadius: '62% 38% 45% 55% / 55% 45% 60% 40%' }} />
-          <div className="absolute top-[22%] left-[28%] w-[380px] h-[340px] bg-sky-500/20 blur-[110px]"
-            style={{ borderRadius: '40% 60% 55% 45% / 45% 55% 40% 60%' }} />
-          <div className="absolute top-[2%] left-[8%] w-[340px] h-[380px] bg-slate-300/10 blur-[120px]"
-            style={{ borderRadius: '55% 45% 60% 40% / 40% 60% 45% 55%' }} />
-          <div className="absolute top-[48%] right-[18%] w-[320px] h-[300px] bg-teal-400/20 blur-[110px]"
-            style={{ borderRadius: '45% 55% 40% 60% / 60% 40% 55% 45%' }} />
-        </div>
-        <main className="flex-1 overflow-y-auto" style={{ background: '#07070f' }}>
+        <TopBar onMenuClick={() => setMobileOpen(true)} isMobile={isMobile} title={pageTitle} />
+        <main className="flex-1 overflow-y-auto relative" style={{ zIndex: 1 }} style={{ background: '#07070f' }}>
           {children}
         </main>
         <GlobalSearch />
