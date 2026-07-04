@@ -180,7 +180,8 @@ export default function PortalLayoutClient({
   const visibleSections = sections.filter(s => isSuperAdmin || !s.superAdmin);
 
   // Pantalla completa para demos runtime de Mini-Apps (oculta sidebar y navbar)
-  const isAppRuntime = pathname && /^\/apps\/[^/]+$/.test(pathname);
+  const APP_STATIC_ROUTES = new Set(['/apps/catalogo', '/apps/nueva/crm', '/apps/nueva/landing']);
+  const isAppRuntime = pathname && /^\/apps\/[^/]+$/.test(pathname) && !APP_STATIC_ROUTES.has(pathname);
 
   // Item de navegación reutilizable (modo expandido / colapsado / subitem)
   const NavLink = ({ item, isCollapsed, sub = false }: { item: NavItem; isCollapsed: boolean; sub?: boolean }) => {
