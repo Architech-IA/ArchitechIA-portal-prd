@@ -241,10 +241,10 @@ export default function MeetingsPage() {
   );
 
   return (
-    <div className="p-8">
+    <div className="page-wrap">
       {/* Tabs + botón nueva reunión */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-1 bg-gray-800 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 rounded-lg p-1 w-fit" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
           <button onClick={() => setTab('calendario')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'calendario' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Mes</button>
           <button onClick={() => setTab('semana')}     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'semana'     ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Semana</button>
           <button onClick={() => setTab('lista')}      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'lista'      ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Lista</button>
@@ -271,7 +271,7 @@ export default function MeetingsPage() {
             return d >= start && d < end;
           }).length, color: 'text-orange-400' },
         ].map(k => (
-          <div key={k.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+          <div key={k.label} className="card p-4">
             <p className="text-xs text-gray-400 mb-1">{k.label}</p>
             <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
           </div>
@@ -281,8 +281,8 @@ export default function MeetingsPage() {
       {tab === 'calendario' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendario */}
-          <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="lg:col-span-2 card overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
               <button onClick={() => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else setViewMonth(viewMonth - 1); }}
                 className="p-1 text-gray-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -293,7 +293,7 @@ export default function MeetingsPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
             </div>
-            <div className="grid grid-cols-7 text-center border-b border-gray-800">
+            <div className="grid grid-cols-7 text-center border-b border-white/[0.06]">
               {DAYS.map(d => (
                 <div key={d} className="py-2 text-xs font-medium text-gray-500">{d}</div>
               ))}
@@ -303,7 +303,7 @@ export default function MeetingsPage() {
                 <div
                   key={i}
                   onClick={() => d && setSelectedDay(d.date)}
-                  className={`min-h-[80px] p-1.5 border-b border-r border-gray-800/50 cursor-pointer hover:bg-gray-800/30 transition-colors ${
+                  className={`min-h-[80px] p-1.5 border-b border-r border-white/[0.04] cursor-pointer hover:bg-white/[0.03] transition-colors ${
                     d && d.date === selectedDay ? 'bg-orange-600/10 ring-1 ring-inset ring-orange-500/30' : ''
                   } ${d?.isToday ? 'bg-blue-600/5' : ''}`}
                 >
@@ -330,7 +330,7 @@ export default function MeetingsPage() {
           </div>
 
           {/* Panel del día / semana */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div className="card p-5">
             {selectedDay ? (
               <>
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
@@ -341,7 +341,7 @@ export default function MeetingsPage() {
                 )}
                 <div className="space-y-3">
                   {dayMeetings.map(m => (
-                    <div key={m.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                    <div key={m.id} className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h4 className="text-sm font-semibold text-white">{m.title}</h4>
                         <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[m.status]}`}>
@@ -355,7 +355,7 @@ export default function MeetingsPage() {
                         {m.location && <p>📍 {m.location}</p>}
                         {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 block">🔗 Enlace</a>}
                         {m.attendees && <p>👥 {resolveAttendees(m.attendees, users)}</p>}
-                        {m.notes && <p className="text-gray-500 mt-1 italic border-t border-gray-700 pt-1">📝 {m.notes.slice(0, 150)}{m.notes.length > 150 ? '...' : ''}</p>}
+                        {m.notes && <p className="text-gray-500 mt-1 italic border-t border-white/[0.06] pt-1">📝 {m.notes.slice(0, 150)}{m.notes.length > 150 ? '...' : ''}</p>}
                         {m.actaFile && (
                           <a href={m.actaFile} download={m.actaFileName || 'acta'} className="text-xs text-orange-400 hover:text-orange-300 mt-1 block">
                             📎 Descargar {m.actaFileName || 'acta'}
@@ -393,7 +393,7 @@ export default function MeetingsPage() {
                           </h4>
                           <div className="space-y-2">
                             {dayMts.map(m => (
-                              <div key={m.id} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+                              <div key={m.id} className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                                 <div className="flex items-start justify-between gap-2 mb-1.5">
                                   <div>
                                     <h5 className="text-sm font-medium text-white leading-tight">{m.title}</h5>
@@ -455,9 +455,9 @@ export default function MeetingsPage() {
         })();
 
         return (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="card overflow-hidden">
             {/* Navegación semana */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-800">
+            <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.06]">
               <button onClick={() => setWeekOffset(w => w - 1)} className="p-1.5 text-gray-400 hover:text-white transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
               </button>
@@ -475,8 +475,8 @@ export default function MeetingsPage() {
             <div className="overflow-x-auto">
               <div className="flex" style={{ minWidth: '640px' }}>
                 {/* Columna de horas */}
-                <div className="w-14 flex-shrink-0 border-r border-gray-800">
-                  <div className="h-10 border-b border-gray-800" />
+                <div className="w-14 flex-shrink-0 border-r border-white/[0.06]">
+                  <div className="h-10 border-b border-white/[0.06]" />
                   {HOURS.map(h => (
                     <div key={h} style={{ height: '56px' }} className="relative flex items-start justify-end pr-2 pt-1">
                       <span className="text-[10px] text-gray-600 tabular-nums">{String(h).padStart(2,'0')}:00</span>
@@ -495,9 +495,9 @@ export default function MeetingsPage() {
                   });
 
                   return (
-                    <div key={di} className="flex-1 border-r border-gray-800 last:border-r-0 min-w-0">
+                    <div key={di} className="flex-1 border-r border-white/[0.06] last:border-r-0 min-w-0">
                       {/* Header día */}
-                      <div className={`h-10 border-b border-gray-800 flex flex-col items-center justify-center ${isToday ? 'bg-orange-500/10' : ''}`}>
+                      <div className={`h-10 border-b border-white/[0.06] flex flex-col items-center justify-center ${isToday ? 'bg-orange-500/10' : ''}`}>
                         <span className="text-[10px] text-gray-500">{WEEK_DAYS[di]}</span>
                         <span className={`text-sm font-semibold ${isToday ? 'text-orange-400' : 'text-gray-300'}`}>{date.getDate()}</span>
                       </div>
@@ -506,7 +506,7 @@ export default function MeetingsPage() {
                       <div className="relative" style={{ height: `${HOURS.length * 56}px` }}>
                         {/* Líneas de hora */}
                         {HOURS.map((_, hi) => (
-                          <div key={hi} style={{ top: `${hi * 56}px` }} className="absolute inset-x-0 border-t border-gray-800/50 pointer-events-none" />
+                          <div key={hi} style={{ top: `${hi * 56}px` }} className="absolute inset-x-0 border-t border-white/[0.04] pointer-events-none" />
                         ))}
                         {/* Línea de "ahora" */}
                         {isToday && (() => {
@@ -563,12 +563,12 @@ export default function MeetingsPage() {
       })() : (
         <>
           {/* Filtros lista */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 mb-6 flex gap-3 flex-wrap items-center">
+          <div className="card p-4 mb-6 flex gap-3 flex-wrap items-center">
             <input type="text" placeholder="Buscar por título o asistentes..." value={search} onChange={e => setSearch(e.target.value)}
-              className="flex-1 min-w-48 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:ring-2 focus:ring-orange-500" />
+              className="flex-1 min-w-48 px-4 py-2 rounded-lg text-sm text-white focus:ring-2 focus:ring-orange-500 focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }} />
             {['', 'INTERNAL_DAILY', 'INTERNAL_WORKSHOP', 'COMMERCIAL', 'ADVISORY', 'PROVIDER'].map(t => (
               <button key={t} onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${filterType === t ? 'bg-orange-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
+                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${filterType === t ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`} style={filterType !== t ? { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' } : undefined}>
                 {t === '' ? 'Todas' : TYPE_LABELS[t]}
               </button>
             ))}
@@ -580,7 +580,7 @@ export default function MeetingsPage() {
           {/* Lista */}
           <div className="space-y-3">
             {filtered.map(m => (
-              <div key={m.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition-colors">
+              <div key={m.id} className="card p-5 transition-colors" style={{ cursor: 'default' }}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${m.status === 'COMPLETED' ? 'bg-green-900/30 text-green-400' : m.status === 'CANCELLED' ? 'bg-red-900/30 text-red-400' : 'bg-orange-900/30 text-orange-400'}`}>
@@ -609,7 +609,7 @@ export default function MeetingsPage() {
                   <p>👤 {m.user.name}</p>
                 </div>
                 {m.notes && (
-                  <p className="text-sm text-gray-500 mt-3 border-t border-gray-800 pt-3 italic">📝 {m.notes.slice(0, 200)}{m.notes.length > 200 ? '...' : ''}</p>
+                  <p className="text-sm text-gray-500 mt-3 border-t border-white/[0.06] pt-3 italic">📝 {m.notes.slice(0, 200)}{m.notes.length > 200 ? '...' : ''}</p>
                 )}
                 {m.actaFile && (
                   <a href={m.actaFile} download={m.actaFileName || 'acta'} className="inline-flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 mt-2">
@@ -632,7 +632,7 @@ export default function MeetingsPage() {
       {/* Modal crear / editar */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
+          <div className="rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ background: 'rgba(10,10,28,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-white">{editMeeting ? 'Editar Evento' : 'Nuevo Evento'}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white">
@@ -644,7 +644,7 @@ export default function MeetingsPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Título</label>
                   <input type="text" required value={form.title} onChange={e => setForm({...form, title: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" />
+                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Tipo</label>
@@ -652,7 +652,7 @@ export default function MeetingsPage() {
                     const t = e.target.value;
                     setForm({...form, type: t, link: t === 'INTERNAL_DAILY' ? 'https://meet.google.com/usz-ysto-pcq' : (form.type === 'INTERNAL_DAILY' ? '' : form.link)});
                   }}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm">
+                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <option value="INTERNAL_DAILY">Reunión Interna - Daily</option>
                     <option value="INTERNAL_WORKSHOP">Reunión Interna - Workshop</option>
                     <option value="COMMERCIAL">Comercial</option>
@@ -675,7 +675,7 @@ export default function MeetingsPage() {
                           const time = form.date ? form.date.slice(11, 16) : '09:00';
                           setForm({...form, date: `${e.target.value}T${time}`});
                         }}
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm [color-scheme:dark]" />
+                        className="w-full pl-10 pr-4 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm [color-scheme:dark]" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
                     </div>
                     <div className="flex gap-2 items-center">
                       <select value={form.date ? form.date.slice(11, 13) : '09'}
@@ -684,7 +684,7 @@ export default function MeetingsPage() {
                           const min = form.date ? form.date.slice(14, 16) : '00';
                           setForm({...form, date: `${date}T${e.target.value}:${min}`});
                         }}
-                        className="w-16 px-2 py-2.5 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center">
+                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
                       </select>
                       <span className="text-gray-500 text-sm">:</span>
@@ -694,7 +694,7 @@ export default function MeetingsPage() {
                           const hour = form.date ? form.date.slice(11, 13) : '09';
                           setForm({...form, date: `${date}T${hour}:${e.target.value}`});
                         }}
-                        className="w-16 px-2 py-2.5 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center">
+                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         {['00','15','30','45'].map(m => <option key={m} value={m}>{m}</option>)}
                       </select>
                       <span className="text-xs text-gray-500 ml-1">hrs</span>
@@ -743,7 +743,7 @@ export default function MeetingsPage() {
                             const time = form.endDate.slice(11, 16) || '10:00';
                             setForm({...form, endDate: `${e.target.value}T${time}`});
                           }}
-                          className="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm [color-scheme:dark]" />
+                          className="w-full pl-10 pr-4 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm [color-scheme:dark]" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
                       </div>
                       <select value={form.endDate.slice(11, 13) || '10'}
                         onChange={e => {
@@ -751,7 +751,7 @@ export default function MeetingsPage() {
                           const min = form.endDate.slice(14, 16) || '00';
                           setForm({...form, endDate: `${date}T${e.target.value}:${min}`});
                         }}
-                        className="w-16 px-2 py-2.5 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center">
+                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
                       </select>
                       <span className="text-gray-500 text-sm self-center">:</span>
@@ -761,7 +761,7 @@ export default function MeetingsPage() {
                           const hour = form.endDate.slice(11, 13) || '10';
                           setForm({...form, endDate: `${date}T${hour}:${e.target.value}`});
                         }}
-                        className="w-16 px-2 py-2.5 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center">
+                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         {['00','15','30','45'].map(m => <option key={m} value={m}>{m}</option>)}
                       </select>
                     </div>
@@ -785,7 +785,7 @@ export default function MeetingsPage() {
                             const endM = totalMin % 60;
                             setForm({...form, endDate: `${startDate}T${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`});
                           }}
-                          className="px-3 py-1.5 text-xs bg-gray-800 border border-gray-700 text-gray-400 rounded-lg hover:border-orange-500/50 hover:text-orange-400 transition-colors"
+                          className="px-3 py-1.5 text-xs text-gray-400 rounded-lg hover:text-orange-400 transition-colors" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                         >
                           {p.label}
                         </button>
@@ -800,7 +800,7 @@ export default function MeetingsPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Ubicación</label>
                   <select value={form.location} onChange={e => setForm({...form, location: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm">
+                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <option value="">Seleccionar...</option>
                     <option value="Presencial">Presencial</option>
                     <option value="Virtual">Virtual</option>
@@ -816,18 +816,19 @@ export default function MeetingsPage() {
                       onChange={e => setForm({...form, link: e.target.value})}
                       placeholder="https://meet.google.com/..."
                       readOnly={form.type === 'INTERNAL_DAILY'}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none ${
+                      className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none ${
                         form.type === 'INTERNAL_DAILY'
-                          ? 'bg-gray-800/50 border-gray-700 text-gray-400 cursor-not-allowed select-none'
-                          : 'bg-gray-800 border-gray-600 text-white focus:ring-2 focus:ring-orange-500 placeholder-gray-500'
+                          ? 'text-gray-400 cursor-not-allowed select-none'
+                          : 'text-white focus:ring-2 focus:ring-orange-500 placeholder-gray-500'
                       }`}
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
                     />
                     {form.type === 'INTERNAL_DAILY' && (
                       <a
                         href={form.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900/80 text-orange-400 text-xs font-medium gap-1.5"
+                        className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-orange-400 text-xs font-medium gap-1.5" style={{ background: 'rgba(8,8,26,0.85)' }}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                         Abrir enlace
@@ -878,7 +879,7 @@ export default function MeetingsPage() {
                       }
                     }}
                     placeholder="Nombre o email y presiona Enter..."
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm placeholder-gray-500" />
+                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm placeholder-gray-500" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
                   {attendeeInput.trim() && (() => {
                     const q = attendeeInput.trim().toLowerCase();
                     const suggestions = users.filter(u =>
@@ -889,7 +890,7 @@ export default function MeetingsPage() {
                     ).slice(0, 5);
                     if (suggestions.length === 0) return null;
                     return (
-                      <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg overflow-hidden">
+                      <div className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden" style={{ background: 'rgba(10,10,28,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)' }}>
                         {suggestions.map(u => (
                           <button
                             key={u.id}
@@ -940,16 +941,16 @@ export default function MeetingsPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Descripción</label>
                   <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={2}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" />
+                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
                 </div>
               )}
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Acta / Notas de reunión</label>
                 <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={4}
                   placeholder="Puntos tratados, acuerdos, tareas pendientes..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm placeholder-gray-500" />
+                  className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm placeholder-gray-500" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
                 <div className="mt-2 flex items-center gap-3">
-                  <label className="px-3 py-1.5 bg-gray-800 border border-gray-600 text-gray-400 rounded-lg cursor-pointer hover:border-gray-500 text-xs flex items-center gap-1.5">
+                  <label className="px-3 py-1.5 text-gray-400 rounded-lg cursor-pointer text-xs flex items-center gap-1.5" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                     {actaFileNameState ? actaFileNameState : 'Adjuntar documento (PDF, DOCX, etc.)'}
                     <input type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" onChange={handleActaUpload} className="hidden" />
@@ -963,7 +964,7 @@ export default function MeetingsPage() {
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Estado</label>
                 <select value={form.status} onChange={e => setForm({...form, status: e.target.value})}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm">
+                  className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <option value="SCHEDULED">Programada</option>
                   <option value="COMPLETED">Completada</option>
                   <option value="CANCELLED">Cancelada</option>
@@ -987,7 +988,7 @@ export default function MeetingsPage() {
       {/* Modal eliminar */}
       {confirmDel && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-md border border-gray-700">
+          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'rgba(10,10,28,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
@@ -998,7 +999,7 @@ export default function MeetingsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setConfirmDel(null)} className="px-4 py-2 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-800">Cancelar</button>
+              <button onClick={() => setConfirmDel(null)} className="px-4 py-2 rounded-lg text-gray-300 transition-colors" style={{ border: '1px solid rgba(255,255,255,0.1)' }} onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.06)'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='transparent'}>Cancelar</button>
               <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60 flex items-center gap-2">
                 {deleting && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}Eliminar
               </button>
