@@ -103,7 +103,7 @@ export default function AppsHubPage() {
           />
         </div>
         <button
-          onClick={() => router.push('/apps/catalogo')}
+          onClick={() => { router.push('/apps/catalogo'); }}
           className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white hover:opacity-90 transition-opacity"
           style={{ background: '#FF5A00' }}
         >
