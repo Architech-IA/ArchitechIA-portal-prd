@@ -71,9 +71,8 @@ export default function WorkflowsPage() {
     <div className="page-wrap" style={{ minHeight: 'calc(100vh - 52px)', background: '#070716' }}>
 
       {/* ── Header ── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-          <div />
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '16px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setShowCreate(true)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: '9px', padding: '8px 16px', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
