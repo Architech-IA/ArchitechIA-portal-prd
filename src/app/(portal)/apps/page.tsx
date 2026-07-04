@@ -38,6 +38,7 @@ function getStyle(colorClass: string) {
 }
 
 export default function AppsHubPage() {
+  const router = useRouter();
   const [apps, setApps] = useState<AppInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
