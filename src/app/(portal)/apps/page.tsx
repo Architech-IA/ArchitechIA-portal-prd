@@ -69,46 +69,39 @@ export default function AppsHubPage() {
   return (
     <div className="px-6 md:px-8 py-6 space-y-5">
 
-      {/* Encabezado */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-white shrink-0">
-          Catalogo de Apps
-        </h1>
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500"
-          />
+      {/* Filtros: pills + search en una sola fila */}
+      <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-1.5 flex-1 overflow-x-auto pb-0.5 no-scrollbar">
+          {(['', ...categories] as string[]).map((cat) => {
+            const meta = cat ? APP_CATEGORIES[cat] : null;
+            const label = cat ? (meta?.label ?? cat) : 'Todas';
+            const active = categoryFilter === cat;
+            return (
+              <button
+                key={cat || '__all__'}
+                onClick={() => setCategoryFilter(cat)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
+                  active
+                    ? 'bg-white/[0.12] border-white/[0.25] text-white'
+                    : 'border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative flex-shrink-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
             className="input-dark rounded-lg py-2 pl-8 pr-3 text-xs"
-            style={{ width: '220px' }}
+            style={{ width: '200px' }}
           />
         </div>
-      </div>
-
-      {/* Pills de categoria */}
-      <div className="flex items-center gap-1.5 mb-6 overflow-x-auto pb-0.5 no-scrollbar">
-        {(['', ...categories] as string[]).map((cat) => {
-          const meta = cat ? APP_CATEGORIES[cat] : null;
-          const label = cat ? (meta?.label ?? cat) : 'Todas';
-          const active = categoryFilter === cat;
-          return (
-            <button
-              key={cat || '__all__'}
-              onClick={() => setCategoryFilter(cat)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
-                active
-                  ? 'bg-white/[0.12] border-white/[0.25] text-white'
-                  : 'border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]'
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
       </div>
 
       {/* Contenido */}
