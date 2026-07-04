@@ -68,7 +68,7 @@ export default function WorkflowsPage() {
   const areas     = Object.keys(AREAS) as Area[];
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 52px)', background: '#070716', padding: '7px 20px 20px' }}>
+    <div style={{ minHeight: 'calc(100vh - 52px)', background: '#070716', padding: '5px 20px 20px' }}>
 
       {/* ── Filter + action row ── */}
       <div style={{ marginBottom: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
