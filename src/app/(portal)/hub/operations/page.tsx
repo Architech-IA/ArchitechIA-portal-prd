@@ -788,9 +788,24 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
         {/* Resources detail */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recursos</p>
-          <UsageBar pct={data.cpu.percent}  color={cpuColor}  label="CPU"   val={`${data.cpu.percent}%`} />
-          <UsageBar pct={data.ram.percent}  color={ramColor}  label="RAM"   val={`${data.ram.used_mb} / ${data.ram.total_mb} MB`} />
-          <UsageBar pct={data.disk.percent} color={diskColor} label="Disco" val={`${data.disk.used_gb} / ${data.disk.total_gb} GB`} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {[
+              { label: 'CPU',   val: `${data.cpu.percent}%`,  sub: `${data.cpu.count} núcleos`,                                                color: cpuColor },
+              { label: 'RAM',   val: `${data.ram.percent}%`,  sub: `${(data.ram.used_mb / 1024).toFixed(2)} / ${(data.ram.total_mb / 1024).toFixed(2)} GB`, color: ramColor },
+              { label: 'Disco', val: `${data.disk.percent}%`, sub: `${data.disk.used_gb} / ${data.disk.total_gb} GB`,                            color: diskColor },
+            ].map(r => (
+              <div key={r.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 11px', borderRadius: '9px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '4px', height: '26px', borderRadius: '2px', background: r.color }} />
+                  <div>
+                    <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569' }}>{r.label}</p>
+                    <p style={{ margin: '1px 0 0', fontSize: '10px', color: '#334155' }}>{r.sub}</p>
+                  </div>
+                </div>
+                <p style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: r.color }}>{r.val}</p>
+              </div>
+            ))}
+          </div>
           <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Load average</p>
             <div style={{ display: 'flex', gap: '8px' }}>
