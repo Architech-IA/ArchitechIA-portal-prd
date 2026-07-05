@@ -675,9 +675,9 @@ function TopDiskConsumers({ disk }: { disk: VpsMetrics['disk'] }) {
   ).sort((a, b) => b.used_gb - a.used_gb).slice(0, 5);
 
   return (
-    <div style={{ ...G.card, alignSelf: 'start' }}>
+    <div style={{ ...G.card, display: 'flex', flexDirection: 'column' }}>
       <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top apps/componentes (disco)</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
         {items.length === 0 && (
           <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de desglose de disco</p>
         )}
@@ -739,9 +739,9 @@ function TopRamProcesses({ procs }: { procs: VpsMetrics['top_procs'] }) {
 function TopProcsToggle({ procs }: { procs: VpsMetrics['top_procs'] }) {
   const sorted = [...procs].sort((a, b) => b.cpu - a.cpu).slice(0, 5);
   return (
-    <div style={{ ...G.card }}>
+    <div style={{ ...G.card, display: 'flex', flexDirection: 'column' }}>
       <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos (CPU)</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
         {sorted.length === 0 && (
           <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de procesos</p>
         )}
@@ -1169,7 +1169,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         <TopDiskConsumers disk={data.disk} />
         {/* Docker inline */}
-        <div style={{ ...G.card }}>
+        <div style={{ ...G.card, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Docker</p>
             {data.docker && (
@@ -1181,7 +1181,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           {(!data.docker || data.docker.length === 0) ? (
             <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin contenedores detectados</p>
           ) : (
-            <div style={{ overflowY: 'auto', maxHeight: '284px', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '2px' }}>
+            <div className="vps-docker-scroll" style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
               {data.docker.map(c => {
                 const isUp = c.status.toLowerCase().startsWith('up');
                 return (
