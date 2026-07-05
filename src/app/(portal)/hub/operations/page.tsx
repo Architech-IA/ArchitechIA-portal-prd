@@ -1329,6 +1329,19 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         </div>
       </div>
 
+      {/* Row D: Gráficas avanzadas */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+        <CpuCoreHeatmap perCore={data.cpu.per_core ?? []} />
+        <DiskIOChart
+          readHist={diskReadHist}
+          writeHist={diskWriteHist}
+          currentRead={data.disk_io?.read_mbps ?? 0}
+          currentWrite={data.disk_io?.write_mbps ?? 0}
+        />
+        <DiskCategoryDonut categories={data.disk.categories ?? []} usedGb={data.disk.used_gb} />
+        <TcpConnChart history={connHist} current={data.connections?.established ?? 0} listening={data.connections?.listening ?? 0} />
+      </div>
+
       {/* Row B: Top disco · Docker contenedores · Top procesos CPU */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         <TopDiskConsumers disk={data.disk} />
@@ -1395,19 +1408,6 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         </div>
         <TenMinSummary cpuHist={cpuHist} ramHist={ramHist} rxHist={rxHist} txHist={txHist} data={data} />
         <DiskPrediction diskHist={diskHist} totalGb={data.disk.total_gb} currentPct={data.disk.percent} />
-      </div>
-
-      {/* Row D: Gráficas avanzadas */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-        <CpuCoreHeatmap perCore={data.cpu.per_core ?? []} />
-        <DiskIOChart
-          readHist={diskReadHist}
-          writeHist={diskWriteHist}
-          currentRead={data.disk_io?.read_mbps ?? 0}
-          currentWrite={data.disk_io?.write_mbps ?? 0}
-        />
-        <DiskCategoryDonut categories={data.disk.categories ?? []} usedGb={data.disk.used_gb} />
-        <TcpConnChart history={connHist} current={data.connections?.established ?? 0} listening={data.connections?.listening ?? 0} />
       </div>
 
       <LogsPanel />
