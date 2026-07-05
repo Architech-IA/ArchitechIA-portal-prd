@@ -11,12 +11,18 @@ interface DiskPartition {
   percent: number;
 }
 
+interface DiskCategory {
+  path: string;
+  label: string;
+  used_gb: number;
+}
+
 interface VpsMetrics {
   ts: string;
   uptime_s: number;
   cpu: { percent: number; load_avg: number[]; count: number };
   ram: { total_mb: number; used_mb: number; avail_mb: number; percent: number };
-  disk: { total_gb: number; used_gb: number; free_gb: number; percent: number; breakdown?: DiskPartition[] };
+  disk: { total_gb: number; used_gb: number; free_gb: number; percent: number; breakdown?: DiskPartition[]; categories?: DiskCategory[] };
   net: { rx_mbps: number; tx_mbps: number };
   services: { name: string; active: boolean; status: string }[];
   top_procs: { pid: number; name: string; cpu: number; mem: number }[];
@@ -193,12 +199,20 @@ function DiskDonut({ used, total, color, size = 110 }: { used: number; total: nu
 }
 
 // ── Disk Panel + Modal ────────────────────────────────────────────────────────
+const CAT_COLORS = ['#60a5fa', '#a78bfa', '#34d399', '#fbbf24', '#f87171', '#22d3ee', '#fb923c', '#f472b6'];
+
 function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
   const [open, setOpen] = useState(false);
   const color = statusColor(disk.percent);
   const breakdown = disk.breakdown ?? [];
+  const categories = disk.categories ?? [];
+  const catTotal = categories.reduce((s, c) => s + c.used_gb, 0);
+  const otherGb = Math.max(0, disk.used_gb - catTotal);
+  const allCats: DiskCategory[] = otherGb > 0.05
+    ? [...categories, { path: 'other', label: 'Otro', used_gb: parseFloat(otherGb.toFixed(2)) }]
+    : categories;
 
-  const SEGMENT_COLORS = ['#34d399', '#60a5fa', '#a78bfa', '#fbbf24', '#f87171', '#22d3ee', '#fb923c'];
+  const SEGMENT_COLORS = CAT_COLORS;
 
   return (
     <>
@@ -244,9 +258,9 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
                 <p style={{ margin: '1px 0 0', fontSize: '9px', color: '#334155' }}>total</p>
               </div>
             </div>
-            {breakdown.length > 1 && (
+            {categories.length > 0 && (
               <p style={{ margin: '8px 0 0', fontSize: '10px', color: '#334155' }}>
-                {breakdown.length} partición{breakdown.length !== 1 ? 'es' : ''} · click para ver breakdown
+                {categories.length} categorías · click para ver desglose
               </p>
             )}
           </div>
@@ -281,19 +295,18 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen global</p>
                   {[
-                    { label: 'Total',      val: `${disk.total_gb} GB`, color: '#94a3b8' },
-                    { label: 'Usado',      val: `${disk.used_gb} GB`,  color },
-                    { label: 'Disponible', val: `${disk.free_gb} GB`,  color: '#34d399' },
+                    { label: 'Total',      val: `${disk.total_gb} GB`, clr: '#94a3b8' },
+                    { label: 'Usado',      val: `${disk.used_gb} GB`,  clr: color },
+                    { label: 'Disponible', val: `${disk.free_gb} GB`,  clr: '#34d399' },
                   ].map((r, i) => (
                     <div key={r.label}>
                       {i > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '7px 0' }} />}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '12px', color: '#475569' }}>{r.label}</span>
-                        <span style={{ fontSize: '15px', fontWeight: 800, color: r.color }}>{r.val}</span>
+                        <span style={{ fontSize: '15px', fontWeight: 800, color: r.clr }}>{r.val}</span>
                       </div>
                     </div>
                   ))}
-                  {/* Health badge */}
                   <div style={{ marginTop: '12px', padding: '7px 12px', borderRadius: '8px', background: `${color}12`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
                     <span style={{ fontSize: '11px', fontWeight: 700, color }}>
@@ -304,45 +317,70 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
                 </div>
               </div>
 
-              {/* Breakdown por partición */}
-              {breakdown.length > 0 && (
+              {/* Barra segmentada tipo Storage (solo si hay categorías) */}
+              {allCats.length > 0 && (
                 <>
                   <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Particiones ({breakdown.length})
+                    Qué ocupa el espacio
                   </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto' }}>
-                    {breakdown.map((p, i) => {
-                      const c = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
-                      const sc = statusColor(p.percent);
+
+                  {/* Barra horizontal segmentada */}
+                  <div style={{ display: 'flex', height: '14px', borderRadius: '7px', overflow: 'hidden', background: 'rgba(255,255,255,0.06)', marginBottom: '14px', gap: '1px' }}>
+                    {allCats.map((cat, i) => {
+                      const pct = disk.used_gb > 0 ? (cat.used_gb / disk.used_gb) * 100 : 0;
                       return (
-                        <div key={p.path} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '10px 14px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: c, flexShrink: 0 }} />
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', fontFamily: 'monospace' }}>{p.path}</span>
+                        <div key={cat.path} title={`${cat.label}: ${cat.used_gb} GB`}
+                          style={{ width: `${pct}%`, background: SEGMENT_COLORS[i % SEGMENT_COLORS.length], minWidth: pct > 1 ? '3px' : 0, transition: 'width 0.6s ease' }} />
+                      );
+                    })}
+                    {/* Libre */}
+                    <div style={{ flex: 1, background: 'rgba(255,255,255,0.04)' }} />
+                  </div>
+
+                  {/* Leyenda + filas */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', maxHeight: '260px', overflowY: 'auto' }}>
+                    {allCats.map((cat, i) => {
+                      const c = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+                      const pct = disk.used_gb > 0 ? (cat.used_gb / disk.used_gb) * 100 : 0;
+                      return (
+                        <div key={cat.path} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: c, flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                              <div>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0' }}>{cat.label}</span>
+                                <span style={{ fontSize: '10px', color: '#334155', marginLeft: '6px', fontFamily: 'monospace' }}>{cat.path}</span>
+                              </div>
+                              <span style={{ fontSize: '12px', fontWeight: 800, color: c, flexShrink: 0 }}>{cat.used_gb} GB</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <span style={{ fontSize: '11px', color: '#475569' }}>{p.used_gb} / {p.total_gb} GB</span>
-                              <span style={{ fontSize: '11px', fontWeight: 800, color: sc }}>{p.percent.toFixed(1)}%</span>
+                            <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.06)' }}>
+                              <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: '2px', background: c, transition: 'width 0.5s ease' }} />
                             </div>
                           </div>
-                          <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
-                            <div style={{ height: '100%', width: `${p.percent}%`, borderRadius: '3px', background: sc, transition: 'width 0.5s' }} />
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                            <span style={{ fontSize: '10px', color: '#334155' }}>Libre: {p.free_gb} GB</span>
-                            <span style={{ fontSize: '10px', color: '#334155' }}>Total: {p.total_gb} GB</span>
-                          </div>
+                          <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0, width: '36px', textAlign: 'right' }}>{pct.toFixed(1)}%</span>
                         </div>
                       );
                     })}
+                    {/* Libre */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '2px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', color: '#334155' }}>Disponible</span>
+                          <span style={{ fontSize: '12px', fontWeight: 800, color: '#34d399' }}>{disk.free_gb} GB</span>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '10px', color: '#334155', flexShrink: 0, width: '36px', textAlign: 'right' }}>
+                        {disk.total_gb > 0 ? ((disk.free_gb / disk.total_gb) * 100).toFixed(1) : 0}%
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
 
-              {breakdown.length === 0 && (
+              {allCats.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '20px', color: '#334155', fontSize: '12px' }}>
-                  Actualizá el agente en la VPS para ver el desglose por partición.
+                  Reiniciá el agente en la VPS para ver el desglose por categoría.
                 </div>
               )}
             </div>

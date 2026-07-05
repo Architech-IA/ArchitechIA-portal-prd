@@ -84,6 +84,38 @@ def disk_breakdown() -> list:
     return result
 
 
+def disk_categories() -> list:
+    """Tamaño real de directorios clave usando `du -sb`. Muestra qué ocupa espacio."""
+    DIRS = [
+        ("/usr",      "Sistema OS"),
+        ("/var/lib",  "Datos de apps"),
+        ("/var/log",  "Logs"),
+        ("/opt",      "Aplicaciones"),
+        ("/home",     "Usuarios"),
+        ("/tmp",      "Temporales"),
+        ("/root",     "Root"),
+    ]
+    result = []
+    for path, label in DIRS:
+        try:
+            out = subprocess.run(
+                ["du", "-sb", path],
+                capture_output=True, text=True, timeout=15
+            )
+            if out.returncode == 0 and out.stdout.strip():
+                bytes_used = int(out.stdout.split()[0])
+                if bytes_used > 0:
+                    result.append({
+                        "path":    path,
+                        "label":   label,
+                        "used_gb": round(bytes_used / 1_073_741_824, 2),
+                    })
+        except Exception:
+            pass
+    result.sort(key=lambda x: x["used_gb"], reverse=True)
+    return result
+
+
 def collect() -> dict:
     """Recopila todas las métricas del sistema."""
     boot_time = psutil.boot_time()
@@ -130,7 +162,8 @@ def collect() -> dict:
             "used_gb":  round(disk.used  / 1_073_741_824, 1),
             "free_gb":  round(disk.free  / 1_073_741_824, 1),
             "percent":  disk.percent,
-            "breakdown": disk_breakdown(),
+            "breakdown":  disk_breakdown(),
+            "categories": disk_categories(),
         },
         "net": net,
         "services": [service_status(s) for s in SERVICES],
