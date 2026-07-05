@@ -245,6 +245,7 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
   const [fCentro,  setFCentro]  = useState('');
   const [fEstado,  setFEstado]  = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [selMov, setSelMov] = useState<Movimiento | null>(null);
   const [form, setForm] = useState({ fecha:'', tipo:'ingreso', concepto:'', monto:'', centroCostoId:'', categoria:'', estado:'confirmado', referencia:'', notas:'' });
 
   const filtered = useMemo(() => movs.filter(m => {
@@ -330,8 +331,8 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
             ) : filtered.map((m,i) => {
               const c = cc(m.centroCostoId);
               return (
-                <tr key={m.id} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', transition:'background 0.1s' }}
-                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.03)'}
+                <tr key={m.id} onClick={()=>setSelMov(m)} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', transition:'background 0.1s', cursor:'pointer' }}
+                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(52,211,153,0.04)'}
                   onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}
                 >
                   <td style={{ padding:'12px 16px', fontSize:'12px', color:'#64748b', whiteSpace:'nowrap' }}>{new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})}</td>
@@ -382,6 +383,60 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
           </div>
         </Modal>
       )}
+
+      {selMov && (() => {
+        const c = cc(selMov.centroCostoId);
+        const color = selMov.tipo === 'ingreso' ? '#34d399' : '#f87171';
+        return (
+          <Modal title="Detalle del Movimiento" onClose={()=>setSelMov(null)} width={520}>
+            {/* Monto hero */}
+            <div style={{ textAlign:'center', padding:'20px 0 24px', borderBottom:'1px solid rgba(255,255,255,0.07)', marginBottom:'24px' }}>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'10px', background:`${color}10`, border:`1px solid ${color}30`, borderRadius:'12px', padding:'10px 22px', marginBottom:'12px' }}>
+                <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:color, boxShadow:`0 0 8px ${color}` }} />
+                <span style={{ fontSize:'11px', fontWeight:700, color, textTransform:'uppercase', letterSpacing:'0.07em' }}>{selMov.tipo}</span>
+              </div>
+              <p style={{ margin:0, fontSize:'38px', fontWeight:900, color, letterSpacing:'-0.03em', lineHeight:1 }}>
+                {selMov.tipo==='ingreso'?'+':'-'}{fmt(selMov.monto)}
+              </p>
+              <p style={{ margin:'8px 0 0', fontSize:'15px', fontWeight:600, color:'#e2e8f0' }}>{selMov.concepto}</p>
+            </div>
+            {/* Fields grid */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'20px' }}>
+              {[
+                { label:'Fecha', val:new Date(selMov.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) },
+                { label:'Centro de Costo', val:c?.nombre ?? '—' },
+                { label:'Categoría', val:selMov.categoria||'—' },
+                { label:'Estado', val:selMov.estado },
+                { label:'Conciliado', val:selMov.conciliado?'Sí':'No' },
+                { label:'Referencia', val:selMov.referencia||'—' },
+              ].map(f=>(
+                <div key={f.label} style={{ ...G.panel, padding:'12px 14px' }}>
+                  <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{f.label}</p>
+                  <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{f.val}</p>
+                </div>
+              ))}
+            </div>
+            {selMov.notas && (
+              <div style={{ ...G.panel, padding:'12px 14px', marginBottom:'20px' }}>
+                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Notas</p>
+                <p style={{ margin:0, fontSize:'13px', color:'#94a3b8' }}>{selMov.notas}</p>
+              </div>
+            )}
+            {/* Actions */}
+            <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end' }}>
+              <button onClick={()=>{ onSave(movs.map(m=>m.id===selMov.id?{...m,conciliado:!m.conciliado}:m)); setSelMov({...selMov,conciliado:!selMov.conciliado}); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:`1px solid ${selMov.conciliado?'rgba(255,255,255,0.1)':'rgba(52,211,153,0.3)'}`, background:selMov.conciliado?'rgba(255,255,255,0.04)':'rgba(52,211,153,0.1)', color:selMov.conciliado?'#475569':'#34d399', cursor:'pointer' }}>
+                {selMov.conciliado?'Marcar pendiente':'✓ Conciliar'}
+              </button>
+              <button onClick={()=>{ onSave(movs.filter(m=>m.id!==selMov.id)); setSelMov(null); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.08)', color:'#f87171', cursor:'pointer' }}>
+                Eliminar
+              </button>
+              <button onClick={()=>setSelMov(null)} style={{ padding:'8px 18px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'none', background:'linear-gradient(135deg,#34d399,#059669)', color:'#fff', cursor:'pointer' }}>
+                Cerrar
+              </button>
+            </div>
+          </Modal>
+        );
+      })()}
     </>
   );
 }
@@ -389,6 +444,7 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
 // ── Tab 2: Centros de Costo ───────────────────────────────────────────────
 function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto[]; movs: Movimiento[]; presups: Presupuesto[]; onSave: (v: CentroCosto[]) => void }) {
   const [showModal, setShowModal] = useState(false);
+  const [selCentro, setSelCentro] = useState<CentroCosto | null>(null);
   const [form, setForm] = useState({ nombre:'', codigo:'', area:'operacion' as Area, color:'#60a5fa' });
 
   const COLORES = ['#60a5fa','#a78bfa','#22d3ee','#f472b6','#fbbf24','#34d399','#f97316','#f87171'];
@@ -437,7 +493,10 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
           const pct     = presup>0 ? Math.min(100,Math.round((gasto/presup)*100)) : 0;
           const alerta  = pct>=90;
           return (
-            <div key={c.id} style={{ ...G.card, padding:'20px', opacity:c.activo?1:0.5, position:'relative', overflow:'hidden' }}>
+            <div key={c.id} onClick={()=>setSelCentro(c)} style={{ ...G.card, padding:'20px', opacity:c.activo?1:0.5, position:'relative', overflow:'hidden', cursor:'pointer', transition:'border-color 0.15s, transform 0.15s' }}
+              onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.borderColor=`${c.color}50`; (e.currentTarget as HTMLElement).style.transform='translateY(-2px)'; }}
+              onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.08)'; (e.currentTarget as HTMLElement).style.transform='translateY(0)'; }}
+            >
               {/* color accent top border */}
               <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:`linear-gradient(90deg,${c.color},${c.color}60)`, borderRadius:'14px 14px 0 0' }} />
               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'16px', paddingTop:'4px' }}>
@@ -511,6 +570,92 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
           </div>
         </Modal>
       )}
+
+      {selCentro && (() => {
+        const c = selCentro;
+        const centroMovs = movs.filter(m => m.centroCostoId === c.id).sort((a,b) => b.fecha.localeCompare(a.fecha));
+        const gasto   = centroMovs.filter(m=>m.tipo==='egreso').reduce((s,m)=>s+m.monto,0);
+        const ingreso = centroMovs.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+m.monto,0);
+        const presupTotal = presups.filter(p=>p.centroCostoId===c.id&&p.tipo==='egreso').reduce((s,p)=>s+p.monto,0);
+        const pct = presupTotal>0?Math.min(100,Math.round((gasto/presupTotal)*100)):0;
+        const catMap: Record<string,number> = {};
+        centroMovs.filter(m=>m.tipo==='egreso').forEach(m=>{ catMap[m.categoria]=(catMap[m.categoria]||0)+m.monto; });
+        const topCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        return (
+          <Modal title={`Centro: ${c.nombre}`} onClose={()=>setSelCentro(null)} width={600}>
+            {/* Header badge */}
+            <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'16px 20px', background:`${c.color}0d`, borderRadius:'12px', border:`1px solid ${c.color}25`, marginBottom:'20px' }}>
+              <div style={{ width:'46px', height:'46px', borderRadius:'12px', background:`${c.color}18`, border:`1px solid ${c.color}35`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c.color} strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d={AREA_ICON[c.area]}/></svg>
+              </div>
+              <div>
+                <p style={{ margin:0, fontSize:'17px', fontWeight:800, color:'#f1f5f9' }}>{c.nombre}</p>
+                <p style={{ margin:'2px 0 0', fontSize:'12px', color:'#475569', textTransform:'capitalize' }}>{c.area} · <span style={{ fontFamily:'monospace', color:c.color }}>{c.codigo}</span> · {c.activo?'Activo':'Inactivo'}</p>
+              </div>
+              <div style={{ marginLeft:'auto', textAlign:'right' }}>
+                <p style={{ margin:0, fontSize:'22px', fontWeight:900, color:ingreso-gasto>=0?'#34d399':'#f87171' }}>{fmt(ingreso-gasto)}</p>
+                <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>SALDO NETO</p>
+              </div>
+            </div>
+            {/* KPI row */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginBottom:'20px' }}>
+              {[
+                { label:'Ingresos', val:fmt(ingreso), color:'#34d399' },
+                { label:'Egresos',  val:fmt(gasto),   color:'#f87171' },
+                { label:'Movimientos', val:centroMovs.length, color:'#94a3b8' },
+              ].map(k=>(
+                <div key={k.label} style={{ ...G.panel, padding:'12px 14px', textAlign:'center' }}>
+                  <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{k.label}</p>
+                  <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:k.color }}>{k.val}</p>
+                </div>
+              ))}
+            </div>
+            {/* Budget bar */}
+            {presupTotal>0 && (
+              <div style={{ ...G.panel, padding:'14px 16px', marginBottom:'20px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
+                  <span style={{ fontSize:'12px', fontWeight:700, color:'#e2e8f0' }}>Ejecución Presupuestal</span>
+                  <span style={{ fontSize:'13px', fontWeight:800, color:pct>=90?'#f87171':pct>=70?'#fbbf24':c.color }}>{pct}%</span>
+                </div>
+                <div style={{ height:'8px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
+                  <div style={{ height:'100%', width:`${pct}%`, borderRadius:'4px', background:pct>=90?'linear-gradient(90deg,#f97316,#f87171)':pct>=70?'linear-gradient(90deg,#fbbf24,#f97316)':`linear-gradient(90deg,${c.color},${c.color}90)`, transition:'width 0.5s' }} />
+                </div>
+                <p style={{ margin:'6px 0 0', fontSize:'11px', color:'#475569' }}>Ejecutado {fmt(gasto)} de {fmt(presupTotal)} presupuestados</p>
+              </div>
+            )}
+            {/* Top categorías */}
+            {topCats.length>0 && (
+              <div style={{ marginBottom:'20px' }}>
+                <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Top categorías de gasto</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                  {topCats.map(([cat,monto])=>(
+                    <div key={cat} style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                      <span style={{ fontSize:'12px', color:'#94a3b8', minWidth:'130px' }}>{cat}</span>
+                      <div style={{ flex:1, height:'6px', borderRadius:'3px', background:'rgba(255,255,255,0.06)' }}>
+                        <div style={{ height:'100%', width:`${Math.round((monto/gasto)*100)}%`, borderRadius:'3px', background:`${c.color}cc` }} />
+                      </div>
+                      <span style={{ fontSize:'12px', fontWeight:700, color:'#e2e8f0', minWidth:'90px', textAlign:'right' }}>{fmt(monto)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Últimos movimientos */}
+            <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Últimos movimientos</p>
+            <div style={{ maxHeight:'200px', overflowY:'auto' }}>
+              {centroMovs.slice(0,8).map(m=>(
+                <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', borderBottom:'1px solid rgba(255,255,255,0.04)', gap:'12px' }}>
+                  <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:m.tipo==='ingreso'?'#34d399':'#f87171', flexShrink:0 }} />
+                  <span style={{ flex:1, fontSize:'12px', color:'#e2e8f0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.concepto}</span>
+                  <span style={{ fontSize:'11px', color:'#475569', whiteSpace:'nowrap' }}>{m.fecha}</span>
+                  <span style={{ fontSize:'13px', fontWeight:700, color:m.tipo==='ingreso'?'#34d399':'#f87171', whiteSpace:'nowrap' }}>{m.tipo==='ingreso'?'+':'-'}{fmt(m.monto)}</span>
+                </div>
+              ))}
+              {centroMovs.length===0 && <p style={{ padding:'20px', textAlign:'center', color:'#334155', fontSize:'13px' }}>Sin movimientos registrados</p>}
+            </div>
+          </Modal>
+        );
+      })()}
     </>
   );
 }
@@ -519,6 +664,7 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
 function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto[]; centros: CentroCosto[]; movs: Movimiento[]; onSave: (v: Presupuesto[]) => void }) {
   const [periodo, setPeriodo] = useState('2025-Q2');
   const [showModal, setShowModal] = useState(false);
+  const [selPres, setSelPres] = useState<Presupuesto | null>(null);
   const [form, setForm] = useState({ nombre:'', periodo:'2025-Q2', centroCostoId:'', tipo:'egreso', categoria:'', monto:'' });
 
   const filtrados = presups.filter(p=>p.periodo===periodo);
@@ -589,8 +735,8 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
               const pct   = p.monto>0?Math.round((real/p.monto)*100):0;
               const ok    = variacion>=0;
               return (
-                <tr key={p.id} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', transition:'background 0.1s' }}
-                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.03)'}
+                <tr key={p.id} onClick={()=>setSelPres(p)} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', transition:'background 0.1s', cursor:'pointer' }}
+                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(52,211,153,0.03)'}
                   onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}
                 >
                   <td style={{ padding:'12px 16px', fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{p.nombre}</td>
@@ -627,6 +773,84 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
         </table>
       </div>
 
+      {selPres && (() => {
+        const p = selPres;
+        const centro = centros.find(c=>c.id===p.centroCostoId);
+        const real = realPorPresup(p);
+        const variacion = p.tipo==='egreso'?p.monto-real:real-p.monto;
+        const pct = p.monto>0?Math.round((real/p.monto)*100):0;
+        const ok = variacion>=0;
+        const matchingMovs = movs.filter(m=>{
+          if (m.centroCostoId!==p.centroCostoId||m.tipo!==p.tipo||m.categoria!==p.categoria) return false;
+          const [y,q] = p.periodo.split('-Q');
+          const mes=new Date(m.fecha).getMonth()+1, year=new Date(m.fecha).getFullYear();
+          if (year!==Number(y)) return false;
+          if(q){const qn=Number(q); if(mes<(qn-1)*3+1||mes>qn*3) return false;}
+          return true;
+        }).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+        const color = p.tipo==='ingreso'?'#34d399':'#f87171';
+        return (
+          <Modal title="Detalle de Partida" onClose={()=>setSelPres(null)} width={580}>
+            {/* Hero */}
+            <div style={{ display:'flex', alignItems:'center', gap:'14px', padding:'16px 20px', background:`${color}0c`, borderRadius:'12px', border:`1px solid ${color}25`, marginBottom:'20px' }}>
+              <div>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
+                  <span style={{ fontSize:'11px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:`${color}18`, color }}>{p.tipo}</span>
+                  <span style={{ fontSize:'11px', color:'#475569' }}>{p.periodo}</span>
+                  {centro && <span style={{ padding:'2px 8px', fontSize:'11px', borderRadius:'12px', background:centro.color+'18', color:centro.color, fontWeight:700 }}>{centro.nombre}</span>}
+                </div>
+                <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:'#f1f5f9' }}>{p.nombre}</p>
+                <p style={{ margin:'2px 0 0', fontSize:'12px', color:'#475569' }}>{p.categoria}</p>
+              </div>
+              <div style={{ marginLeft:'auto', textAlign:'right' }}>
+                <p style={{ margin:0, fontSize:'11px', color:'#475569' }}>PRESUPUESTADO</p>
+                <p style={{ margin:0, fontSize:'24px', fontWeight:900, color:'#94a3b8' }}>{fmt(p.monto)}</p>
+              </div>
+            </div>
+            {/* Execution */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginBottom:'18px' }}>
+              {[
+                { label:'Ejecutado', val:fmt(real), color:'#e2e8f0' },
+                { label:'Variación', val:(ok?'+':'')+fmt(Math.abs(variacion)), color:ok?'#34d399':'#f87171' },
+                { label:'% Ejecución', val:`${pct}%`, color:pct>100?'#f87171':pct>70?'#fbbf24':'#34d399' },
+              ].map(k=>(
+                <div key={k.label} style={{ ...G.panel, padding:'12px 14px', textAlign:'center' }}>
+                  <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{k.label}</p>
+                  <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:k.color }}>{k.val}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...G.panel, padding:'12px 16px', marginBottom:'20px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'7px' }}>
+                <span style={{ fontSize:'12px', color:'#94a3b8' }}>Ejecución</span>
+                <span style={{ fontSize:'12px', fontWeight:700, color:pct>100?'#f87171':pct>70?'#fbbf24':'#34d399' }}>{pct}%</span>
+              </div>
+              <div style={{ height:'8px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
+                <div style={{ height:'100%', width:`${Math.min(pct,100)}%`, borderRadius:'4px', background:pct>100?'linear-gradient(90deg,#f97316,#f87171)':pct>70?'linear-gradient(90deg,#fbbf24,#f97316)':'linear-gradient(90deg,#34d399,#059669)', transition:'width 0.5s' }} />
+              </div>
+            </div>
+            {/* Matching movs */}
+            <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Movimientos que impactan esta partida ({matchingMovs.length})</p>
+            <div style={{ maxHeight:'220px', overflowY:'auto', ...G.panel, borderRadius:'10px' }}>
+              {matchingMovs.length===0 && <p style={{ padding:'20px', textAlign:'center', color:'#334155', fontSize:'13px' }}>Sin movimientos en este período</p>}
+              {matchingMovs.map(m=>(
+                <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,0.04)', gap:'12px' }}>
+                  <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:m.tipo==='ingreso'?'#34d399':'#f87171', flexShrink:0 }} />
+                  <span style={{ flex:1, fontSize:'12px', color:'#e2e8f0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.concepto}</span>
+                  <span style={{ fontSize:'11px', color:'#475569', whiteSpace:'nowrap' }}>{m.fecha}</span>
+                  <span style={{ fontSize:'11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24' }}>{m.estado}</span>
+                  <span style={{ fontSize:'13px', fontWeight:700, color:m.tipo==='ingreso'?'#34d399':'#f87171', whiteSpace:'nowrap' }}>{fmt(m.monto)}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:'flex', justifyContent:'flex-end', gap:'8px', marginTop:'18px' }}>
+              <button onClick={()=>{ onSave(presups.filter(x=>x.id!==p.id)); setSelPres(null); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.08)', color:'#f87171', cursor:'pointer' }}>Eliminar partida</button>
+              <button onClick={()=>setSelPres(null)} style={{ padding:'8px 18px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'none', background:'linear-gradient(135deg,#34d399,#059669)', color:'#fff', cursor:'pointer' }}>Cerrar</button>
+            </div>
+          </Modal>
+        );
+      })()}
+
       {showModal && (
         <Modal title="Nueva Partida Presupuestaria" onClose={()=>setShowModal(false)} width={480}>
           <div style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
@@ -655,6 +879,7 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
 function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: CentroCosto[]; onSave: (v: Movimiento[]) => void }) {
   const [filtro, setFiltro] = useState<'todos'|'pendiente'|'conciliado'>('pendiente');
   const [fTipo,  setFTipo]  = useState('');
+  const [selMov, setSelMov] = useState<Movimiento | null>(null);
 
   const filtered = useMemo(()=>movs.filter(m=>{
     if (filtro==='pendiente'  && m.conciliado)  return false;
@@ -734,8 +959,8 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
             ) : filtered.map((m,i)=>{
               const c = centros.find(cc=>cc.id===m.centroCostoId);
               return (
-                <tr key={m.id} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', background:m.conciliado?'rgba(52,211,153,0.015)':'transparent', opacity:m.conciliado?0.7:1, transition:'all 0.1s' }}
-                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background=m.conciliado?'rgba(52,211,153,0.04)':'rgba(255,255,255,0.03)'}
+                <tr key={m.id} onClick={()=>setSelMov(m)} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', background:m.conciliado?'rgba(52,211,153,0.015)':'transparent', opacity:m.conciliado?0.7:1, transition:'all 0.1s', cursor:'pointer' }}
+                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background=m.conciliado?'rgba(52,211,153,0.06)':'rgba(52,211,153,0.04)'}
                   onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background=m.conciliado?'rgba(52,211,153,0.015)':'transparent'}
                 >
                   <td style={{ padding:'10px 14px' }}>
@@ -756,7 +981,7 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
                     </span>
                   </td>
                   <td style={{ padding:'10px 14px' }}>
-                    <button onClick={()=>toggle(m.id)} style={{ padding:'4px 12px', fontSize:'11px', fontWeight:700, borderRadius:'7px', border:`1px solid ${m.conciliado?'rgba(52,211,153,0.3)':'rgba(255,255,255,0.1)'}`, background:m.conciliado?'rgba(52,211,153,0.1)':'rgba(255,255,255,0.05)', color:m.conciliado?'#34d399':'#64748b', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
+                    <button onClick={e=>{e.stopPropagation();toggle(m.id);}} style={{ padding:'4px 12px', fontSize:'11px', fontWeight:700, borderRadius:'7px', border:`1px solid ${m.conciliado?'rgba(52,211,153,0.3)':'rgba(255,255,255,0.1)'}`, background:m.conciliado?'rgba(52,211,153,0.1)':'rgba(255,255,255,0.05)', color:m.conciliado?'#34d399':'#64748b', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s' }}>
                       {m.conciliado?'✓ Conciliado':'Conciliar'}
                     </button>
                   </td>
@@ -766,6 +991,45 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
           </tbody>
         </table>
       </div>
+
+      {selMov && (() => {
+        const m = selMov;
+        const c = centros.find(x=>x.id===m.centroCostoId);
+        const color = m.tipo==='ingreso'?'#34d399':'#f87171';
+        return (
+          <Modal title="Detalle — Conciliación" onClose={()=>setSelMov(null)} width={500}>
+            <div style={{ textAlign:'center', padding:'18px 0 22px', borderBottom:'1px solid rgba(255,255,255,0.07)', marginBottom:'22px' }}>
+              <p style={{ margin:'0 0 6px', fontSize:'38px', fontWeight:900, color, letterSpacing:'-0.03em', lineHeight:1 }}>{m.tipo==='ingreso'?'+':'-'}{fmt(m.monto)}</p>
+              <p style={{ margin:0, fontSize:'15px', fontWeight:600, color:'#e2e8f0' }}>{m.concepto}</p>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginTop:'10px' }}>
+                <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:`${color}18`, color }}>{m.tipo}</span>
+                <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24' }}>{m.estado}</span>
+                <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:m.conciliado?'rgba(52,211,153,0.1)':'rgba(248,113,113,0.1)', color:m.conciliado?'#34d399':'#f87171' }}>{m.conciliado?'✓ Conciliado':'Pendiente conciliación'}</span>
+              </div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'20px' }}>
+              {[
+                { label:'Fecha', val:new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) },
+                { label:'Centro de Costo', val:c?.nombre??'—' },
+                { label:'Categoría', val:m.categoria||'—' },
+                { label:'Referencia', val:m.referencia||'—' },
+              ].map(f=>(
+                <div key={f.label} style={{ ...G.panel, padding:'11px 14px' }}>
+                  <p style={{ margin:'0 0 3px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{f.label}</p>
+                  <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{f.val}</p>
+                </div>
+              ))}
+            </div>
+            {m.notas && <div style={{ ...G.panel, padding:'11px 14px', marginBottom:'20px' }}><p style={{ margin:'0 0 3px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Notas</p><p style={{ margin:0, fontSize:'13px', color:'#94a3b8' }}>{m.notas}</p></div>}
+            <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end' }}>
+              <button onClick={()=>{ onSave(movs.map(x=>x.id===m.id?{...x,conciliado:!x.conciliado}:x)); setSelMov({...m,conciliado:!m.conciliado}); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:`1px solid ${m.conciliado?'rgba(255,255,255,0.1)':'rgba(52,211,153,0.3)'}`, background:m.conciliado?'rgba(255,255,255,0.04)':'rgba(52,211,153,0.1)', color:m.conciliado?'#475569':'#34d399', cursor:'pointer' }}>
+                {m.conciliado?'Marcar pendiente':'✓ Conciliar'}
+              </button>
+              <button onClick={()=>setSelMov(null)} style={{ padding:'8px 18px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'none', background:'linear-gradient(135deg,#34d399,#059669)', color:'#fff', cursor:'pointer' }}>Cerrar</button>
+            </div>
+          </Modal>
+        );
+      })()}
     </>
   );
 }
@@ -1650,6 +1914,7 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
   const [filtro, setFiltro]     = useState<'todas' | 'pendientes' | 'vencidas' | 'pagadas'>('todas');
   const [showModal, setShow]    = useState(false);
   const [editing, setEditing]   = useState<Factura | null>(null);
+  const [selFac, setSelFac]     = useState<Factura | null>(null);
   const [form, setForm]         = useState<Omit<Factura, 'id'>>(EMPTY_FAC);
   const [search, setSearch]     = useState('');
 
@@ -1786,7 +2051,10 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
                 const bucket = agingOf(f.vencimiento);
                 const estadoColor = f.estado === 'pagada' ? '#34d399' : f.estado === 'vencida' ? '#f87171' : '#fbbf24';
                 return (
-                  <tr key={f.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent', opacity: f.estado === 'anulada' ? 0.4 : 1 }}>
+                  <tr key={f.id} onClick={()=>setSelFac(f)} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent', opacity: f.estado === 'anulada' ? 0.4 : 1, cursor:'pointer', transition:'background 0.1s' }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(52,211,153,0.05)'}
+                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background=i%2===0?'rgba(255,255,255,0.01)':'transparent'}
+                  >
                     <td style={{ padding: '9px 12px', color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace', fontSize: '11px', whiteSpace: 'nowrap' }}>{f.numero}</td>
                     <td style={{ padding: '9px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
@@ -1811,10 +2079,10 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
                     <td style={{ padding: '9px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
                         {f.estado !== 'pagada' && f.estado !== 'anulada' && (
-                          <button onClick={() => marcarPagada(f)} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Cobrada</button>
+                          <button onClick={e=>{e.stopPropagation();marcarPagada(f);}} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Cobrada</button>
                         )}
-                        <button onClick={() => openEdit(f)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
-                        <button onClick={() => eliminar(f)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
+                        <button onClick={e=>{e.stopPropagation();openEdit(f);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={e=>{e.stopPropagation();eliminar(f);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
                       </div>
                     </td>
                   </tr>
@@ -1833,6 +2101,78 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
           </table>
         </div>
       </div>
+
+      {/* ── Detalle factura CxC ── */}
+      {selFac && (() => {
+        const f = selFac;
+        const sal = saldo(f);
+        const bucket = agingOf(f.vencimiento);
+        const bInfo = AGING_BUCKETS.find(b=>b.key===bucket)!;
+        const estadoColor = f.estado==='pagada'?'#34d399':f.estado==='vencida'?'#f87171':'#fbbf24';
+        const pctCobrado = f.monto>0?Math.min(100,Math.round((f.pagado/f.monto)*100)):0;
+        const diasVencimiento = diasDesde(f.vencimiento);
+        return (
+          <Modal title="Detalle de Factura CxC" onClose={()=>setSelFac(null)} width={560}>
+            {/* Hero */}
+            <div style={{ padding:'18px 20px', background:'rgba(255,255,255,0.03)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.07)', marginBottom:'18px' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'10px' }}>
+                <div>
+                  <p style={{ margin:'0 0 4px', fontFamily:'monospace', fontSize:'12px', color:'#475569' }}>{f.numero}</p>
+                  <p style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#f1f5f9' }}>{f.cliente}</p>
+                  <p style={{ margin:'4px 0 0', fontSize:'13px', color:'#94a3b8' }}>{f.concepto}</p>
+                </div>
+                <div style={{ textAlign:'right' }}>
+                  <p style={{ margin:'0 0 4px', fontSize:'11px', color:'#475569' }}>MONTO TOTAL</p>
+                  <p style={{ margin:0, fontSize:'28px', fontWeight:900, color:'#e2e8f0', letterSpacing:'-0.02em' }}>{fmt(f.monto)}</p>
+                  <div style={{ display:'flex', gap:'6px', justifyContent:'flex-end', marginTop:'6px' }}>
+                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${estadoColor}18`, color:estadoColor }}>{f.estado}</span>
+                    {f.estado!=='pagada' && <AgingChip bucket={bucket} />}
+                  </div>
+                </div>
+              </div>
+              {/* Payment progress */}
+              <div style={{ marginTop:'12px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                  <span style={{ fontSize:'11px', color:'#475569' }}>Progreso de cobro</span>
+                  <span style={{ fontSize:'11px', fontWeight:700, color:pctCobrado===100?'#34d399':'#94a3b8' }}>{pctCobrado}% cobrado</span>
+                </div>
+                <div style={{ height:'8px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
+                  <div style={{ height:'100%', width:`${pctCobrado}%`, borderRadius:'4px', background:'linear-gradient(90deg,#34d399,#059669)', transition:'width 0.5s' }} />
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between', marginTop:'5px' }}>
+                  <span style={{ fontSize:'11px', color:'#34d399' }}>Cobrado: {fmt(f.pagado)}</span>
+                  <span style={{ fontSize:'11px', color:sal>0?bInfo.color:'#334155', fontWeight:700 }}>Saldo: {fmt(sal)}</span>
+                </div>
+              </div>
+            </div>
+            {/* Dates + aging */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginBottom:'18px' }}>
+              <div style={{ ...G.panel, padding:'12px 14px' }}>
+                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Fecha emisión</p>
+                <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{f.emitida}</p>
+              </div>
+              <div style={{ ...G.panel, padding:'12px 14px' }}>
+                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Vencimiento</p>
+                <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:bucket!=='corriente'?bInfo.color:'#e2e8f0' }}>{f.vencimiento}</p>
+              </div>
+              <div style={{ ...G.panel, padding:'12px 14px', background:bInfo.bg }}>
+                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Antigüedad</p>
+                <p style={{ margin:0, fontSize:'13px', fontWeight:700, color:bInfo.color }}>
+                  {diasVencimiento < 0 ? `Vence en ${Math.abs(diasVencimiento)}d` : diasVencimiento===0 ? 'Vence hoy' : `${diasVencimiento}d vencida`}
+                </p>
+              </div>
+            </div>
+            {/* Actions */}
+            <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end' }}>
+              {f.estado!=='pagada' && f.estado!=='anulada' && (
+                <button onClick={()=>{ marcarPagada(f); setSelFac({...f,estado:'pagada',pagado:f.monto}); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(52,211,153,0.3)', background:'rgba(52,211,153,0.1)', color:'#34d399', cursor:'pointer' }}>✓ Marcar cobrada</button>
+              )}
+              <button onClick={()=>{ setSelFac(null); openEdit(f); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.04)', color:'#94a3b8', cursor:'pointer' }}>Editar</button>
+              <button onClick={()=>setSelFac(null)} style={{ padding:'8px 18px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'none', background:'linear-gradient(135deg,#34d399,#059669)', color:'#fff', cursor:'pointer' }}>Cerrar</button>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {/* ── Modal nueva/editar factura ── */}
       {showModal && (
@@ -1886,6 +2226,7 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
   const [filtro, setFiltro]   = useState<'todas' | 'pendientes' | 'vencidas' | 'pagadas'>('todas');
   const [showModal, setShow]  = useState(false);
   const [editing, setEditing] = useState<FacturaProv | null>(null);
+  const [selProv, setSelProv] = useState<FacturaProv | null>(null);
   const [form, setForm]       = useState<Omit<FacturaProv, 'id'>>(EMPTY_PROV);
   const [search, setSearch]   = useState('');
 
@@ -2037,7 +2378,10 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
                 const pc = PRIORIDAD_COLORS[p.prioridad];
                 const estadoColor = p.estado === 'pagada' ? '#34d399' : p.estado === 'vencida' ? '#f87171' : '#fbbf24';
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+                  <tr key={p.id} onClick={()=>setSelProv(p)} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent', cursor:'pointer', transition:'background 0.1s' }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(248,113,113,0.05)'}
+                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background=i%2===0?'rgba(255,255,255,0.01)':'transparent'}
+                  >
                     <td style={{ padding: '9px 12px', color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace', fontSize: '11px', whiteSpace: 'nowrap' }}>{p.numero}</td>
                     <td style={{ padding: '9px 12px' }}>
                       <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: pc.bg, color: pc.color }}>{p.prioridad}</span>
@@ -2060,10 +2404,10 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
                     <td style={{ padding: '9px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
                         {p.estado !== 'pagada' && (
-                          <button onClick={() => marcarPagada(p)} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Pagada</button>
+                          <button onClick={e=>{e.stopPropagation();marcarPagada(p);}} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Pagada</button>
                         )}
-                        <button onClick={() => openEdit(p)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
-                        <button onClick={() => eliminar(p)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
+                        <button onClick={e=>{e.stopPropagation();openEdit(p);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={e=>{e.stopPropagation();eliminar(p);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
                       </div>
                     </td>
                   </tr>
@@ -2082,6 +2426,89 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
           </table>
         </div>
       </div>
+
+      {/* ── Detalle factura proveedor CxP ── */}
+      {selProv && (() => {
+        const p = selProv;
+        const sal = saldo(p);
+        const bucket = agingOf(p.vencimiento);
+        const bInfo = AGING_BUCKETS.find(b=>b.key===bucket)!;
+        const pc = PRIORIDAD_COLORS[p.prioridad];
+        const estadoColor = p.estado==='pagada'?'#34d399':p.estado==='vencida'?'#f87171':'#fbbf24';
+        const pctPagado = p.monto>0?Math.min(100,Math.round((p.pagado/p.monto)*100)):0;
+        const diasV = diasDesde(p.vencimiento);
+        const urgencia = p.prioridad==='alta'&&bucket!=='corriente';
+        return (
+          <Modal title="Detalle de Factura CxP" onClose={()=>setSelProv(null)} width={560}>
+            {/* Hero */}
+            <div style={{ padding:'18px 20px', background:urgencia?'rgba(248,113,113,0.05)':'rgba(255,255,255,0.03)', borderRadius:'12px', border:`1px solid ${urgencia?'rgba(248,113,113,0.2)':'rgba(255,255,255,0.07)'}`, marginBottom:'18px' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'10px' }}>
+                <div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'7px', marginBottom:'6px' }}>
+                    <p style={{ margin:0, fontFamily:'monospace', fontSize:'12px', color:'#475569' }}>{p.numero}</p>
+                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:pc.bg, color:pc.color }}>{p.prioridad}</span>
+                  </div>
+                  <p style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#f1f5f9' }}>{p.proveedor}</p>
+                  <p style={{ margin:'4px 0 0', fontSize:'13px', color:'#94a3b8' }}>{p.concepto}</p>
+                </div>
+                <div style={{ textAlign:'right' }}>
+                  <p style={{ margin:'0 0 4px', fontSize:'11px', color:'#475569' }}>MONTO TOTAL</p>
+                  <p style={{ margin:0, fontSize:'28px', fontWeight:900, color:'#e2e8f0', letterSpacing:'-0.02em' }}>{fmt(p.monto)}</p>
+                  <div style={{ display:'flex', gap:'6px', justifyContent:'flex-end', marginTop:'6px' }}>
+                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${estadoColor}18`, color:estadoColor }}>{p.estado}</span>
+                    {p.estado!=='pagada' && <AgingChip bucket={bucket} />}
+                  </div>
+                </div>
+              </div>
+              {/* Payment progress */}
+              <div style={{ marginTop:'10px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
+                  <span style={{ fontSize:'11px', color:'#475569' }}>Progreso de pago</span>
+                  <span style={{ fontSize:'11px', fontWeight:700, color:pctPagado===100?'#34d399':'#94a3b8' }}>{pctPagado}% pagado</span>
+                </div>
+                <div style={{ height:'8px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
+                  <div style={{ height:'100%', width:`${pctPagado}%`, borderRadius:'4px', background:'linear-gradient(90deg,#34d399,#059669)', transition:'width 0.5s' }} />
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between', marginTop:'5px' }}>
+                  <span style={{ fontSize:'11px', color:'#34d399' }}>Pagado: {fmt(p.pagado)}</span>
+                  <span style={{ fontSize:'11px', fontWeight:700, color:sal>0?'#f87171':'#334155' }}>Pendiente: {fmt(sal)}</span>
+                </div>
+              </div>
+            </div>
+            {/* Dates + urgencia */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginBottom:'18px' }}>
+              <div style={{ ...G.panel, padding:'12px 14px' }}>
+                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Recibida</p>
+                <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{p.recibida}</p>
+              </div>
+              <div style={{ ...G.panel, padding:'12px 14px' }}>
+                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Vencimiento</p>
+                <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:bucket!=='corriente'?bInfo.color:'#e2e8f0' }}>{p.vencimiento}</p>
+              </div>
+              <div style={{ ...G.panel, padding:'12px 14px', background:bInfo.bg }}>
+                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Estado</p>
+                <p style={{ margin:0, fontSize:'13px', fontWeight:700, color:bInfo.color }}>
+                  {diasV < 0 ? `Vence en ${Math.abs(diasV)}d` : diasV===0 ? 'Vence hoy' : `${diasV}d vencida`}
+                </p>
+              </div>
+            </div>
+            {urgencia && (
+              <div style={{ padding:'10px 14px', background:'rgba(248,113,113,0.06)', borderRadius:'9px', border:'1px solid rgba(248,113,113,0.2)', marginBottom:'16px', display:'flex', alignItems:'center', gap:'8px' }}>
+                <span style={{ fontSize:'14px' }}>⚠</span>
+                <p style={{ margin:0, fontSize:'12px', fontWeight:600, color:'#f87171' }}>Prioridad alta y vencida — se recomienda pago inmediato</p>
+              </div>
+            )}
+            {/* Actions */}
+            <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end' }}>
+              {p.estado!=='pagada' && (
+                <button onClick={()=>{ marcarPagada(p); setSelProv({...p,estado:'pagada',pagado:p.monto}); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(52,211,153,0.3)', background:'rgba(52,211,153,0.1)', color:'#34d399', cursor:'pointer' }}>✓ Registrar pago</button>
+              )}
+              <button onClick={()=>{ setSelProv(null); openEdit(p); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.04)', color:'#94a3b8', cursor:'pointer' }}>Editar</button>
+              <button onClick={()=>setSelProv(null)} style={{ padding:'8px 18px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'none', background:'linear-gradient(135deg,#f87171,#dc2626)', color:'#fff', cursor:'pointer' }}>Cerrar</button>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {/* ── Modal nueva/editar factura proveedor ── */}
       {showModal && (
