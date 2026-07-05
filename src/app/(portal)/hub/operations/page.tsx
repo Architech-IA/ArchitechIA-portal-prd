@@ -176,8 +176,8 @@ function Skeleton() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', marginBottom: '12px' }}>
         {box(180)}{box(180)}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-        {[0, 1, 2].map(i => <div key={i}>{box(260)}</div>)}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
+        {[0, 1, 2, 3].map(i => <div key={i}>{box(260)}</div>)}
       </div>
     </div>
   );
@@ -649,6 +649,50 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
   );
 }
 
+// ── Top disk consumers ────────────────────────────────────────────────────────
+function TopDiskConsumers({ disk }: { disk: VpsMetrics['disk'] }) {
+  const totalUsed = disk.used_gb;
+  const items = (disk.categories ?? []).flatMap((cat, i) =>
+    (cat.children ?? []).map(child => ({
+      ...child,
+      category: cat.label,
+      catColor: CAT_COLORS[i % CAT_COLORS.length],
+    }))
+  ).sort((a, b) => b.used_gb - a.used_gb).slice(0, 10);
+
+  return (
+    <div style={{ ...G.card }}>
+      <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top apps/componentes (disco)</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {items.length === 0 && (
+          <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de desglose de disco</p>
+        )}
+        {items.map((item, i) => {
+          const pct = totalUsed > 0 ? (item.used_gb / totalUsed) * 100 : 0;
+          return (
+            <div key={item.path}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#334155', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                  <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>{item.category}</span>
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: 800, color: item.catColor, flexShrink: 0, marginLeft: '8px' }}>{item.used_gb} GB</span>
+              </div>
+              <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: '3px', background: item.catColor, transition: 'width 0.6s ease' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
+                <span style={{ fontSize: '10px', color: '#334155' }}>{pct.toFixed(1)}% del uso total</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
   data: VpsMetrics; cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[];
@@ -711,8 +755,8 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
         </div>
       </div>
 
-      {/* Resources · Services · Top procs */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+      {/* Resources · Services · Top procs · Top disk consumers */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
         {/* Resources detail */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recursos</p>
@@ -794,6 +838,9 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
             ))}
           </div>
         </div>
+
+        {/* Top disk consumers */}
+        <TopDiskConsumers disk={data.disk} />
       </div>
 
       <p style={{ margin: '10px 0 0', fontSize: '10px', color: '#1e293b', textAlign: 'right' }}>
