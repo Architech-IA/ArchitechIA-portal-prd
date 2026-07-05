@@ -1426,7 +1426,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           {(!data.docker || data.docker.length === 0) ? (
             <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin contenedores detectados</p>
           ) : (
-            <div className="vps-docker-scroll" style={{ overflowY: 'auto', maxHeight: '220px', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
+            <div className="vps-docker-scroll" style={{ overflowY: 'auto', maxHeight: '300px', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
               {data.docker.map(c => {
                 const isUp = c.status.toLowerCase().startsWith('up');
                 return (
