@@ -176,8 +176,8 @@ function Skeleton() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', marginBottom: '12px' }}>
         {box(180)}{box(180)}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
-        {[0, 1, 2, 3].map(i => <div key={i}>{box(260)}</div>)}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '12px' }}>
+        {[0, 1, 2, 3, 4].map(i => <div key={i}>{box(260)}</div>)}
       </div>
     </div>
   );
@@ -693,6 +693,34 @@ function TopDiskConsumers({ disk }: { disk: VpsMetrics['disk'] }) {
   );
 }
 
+// ── Top RAM processes ─────────────────────────────────────────────────────────
+function TopRamProcesses({ procs }: { procs: VpsMetrics['top_procs'] }) {
+  const items = [...procs].sort((a, b) => b.mem - a.mem).slice(0, 5);
+  return (
+    <div style={{ ...G.card, alignSelf: 'start' }}>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos (RAM)</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {items.length === 0 && (
+          <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de procesos</p>
+        )}
+        {items.map((proc, i) => (
+          <div key={proc.pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', background: i === 0 ? 'rgba(168,85,247,0.05)' : 'rgba(255,255,255,0.02)' }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: '#334155', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proc.name}</p>
+              <p style={{ margin: 0, fontSize: '10px', color: '#334155' }}>PID {proc.pid}</p>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: statusColor(proc.mem) }}>{proc.mem}% RAM</p>
+              <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{proc.cpu}% CPU</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
   data: VpsMetrics; cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[];
@@ -755,8 +783,8 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
         </div>
       </div>
 
-      {/* Resources · Services · Top procs · Top disk consumers */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
+      {/* Resources · Services · Top procs · Top RAM · Top disk */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '12px' }}>
         {/* Resources detail */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recursos</p>
@@ -838,6 +866,9 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
             ))}
           </div>
         </div>
+
+        {/* Top RAM processes */}
+        <TopRamProcesses procs={data.top_procs} />
 
         {/* Top disk consumers */}
         <TopDiskConsumers disk={data.disk} />
