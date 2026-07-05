@@ -261,6 +261,137 @@ function Skeleton() {
   );
 }
 
+// ── CPU Core Heatmap ─────────────────────────────────────────────────────────
+function CpuCoreHeatmap({ perCore }: { perCore: number[] }) {
+  const cols = perCore.length <= 4 ? 2 : 4;
+  return (
+    <div style={{ ...G.card }}>
+      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CPU · Por núcleo</p>
+      {perCore.length === 0 ? (
+        <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de núcleos</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '6px' }}>
+          {perCore.map((pct, i) => {
+            const color = statusColor(pct);
+            const bg = pct < 10 ? '18' : pct < 30 ? '28' : pct < 60 ? '42' : pct < 85 ? '68' : 'bb';
+            return (
+              <div key={i} title={`Core ${i}: ${pct}%`} style={{ borderRadius: '7px', background: `${color}${bg}`, border: `1px solid ${color}40`, padding: '7px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', transition: 'background 0.5s' }}>
+                <span style={{ fontSize: '9px', color: '#475569', fontWeight: 600 }}>C{i}</span>
+                <span style={{ fontSize: '11px', fontWeight: 800, color }}>{pct}%</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Disk I/O dual-line chart ──────────────────────────────────────────────────
+function DiskIOChart({ readHist, writeHist, currentRead, currentWrite }: {
+  readHist: number[]; writeHist: number[]; currentRead: number; currentWrite: number;
+}) {
+  const RC = '#fb923c', WC = '#f472b6';
+  return (
+    <div style={{ ...G.card }}>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Disco I/O</p>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        {[{ color: RC, label: '↓ Lectura', val: currentRead, peak: maxVal(readHist) },
+          { color: WC, label: '↑ Escritura', val: currentWrite, peak: maxVal(writeHist) }].map(s => (
+          <div key={s.label} style={{ flex: 1, ...G.panel, padding: '8px 10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
+              <div style={{ width: '10px', height: '3px', borderRadius: '2px', background: s.color }} />
+              <span style={{ fontSize: '10px', color: '#475569' }}>{s.label}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: s.color }}>{s.val} <span style={{ fontSize: '10px', fontWeight: 400 }}>MB/s</span></p>
+            <p style={{ margin: '1px 0 0', fontSize: '9px', color: '#334155' }}>pico: {s.peak.toFixed(2)}</p>
+          </div>
+        ))}
+      </div>
+      <DualSparkline h1={readHist} h2={writeHist} c1={RC} c2={WC} height={72} />
+    </div>
+  );
+}
+
+// ── Disk Category Donut ───────────────────────────────────────────────────────
+function DiskCategoryDonut({ categories, usedGb }: { categories: DiskCategory[]; usedGb: number }) {
+  const items = (categories ?? []).filter(c => c.used_gb > 0.01).slice(0, 7);
+  const total = items.reduce((s, c) => s + c.used_gb, 0);
+  const SIZE = 108, cx = 54, cy = 54, R = 38, SW = 14;
+  const circ = 2 * Math.PI * R;
+  let cum = 0;
+  const slices = items.map((cat, i) => {
+    const pct = total > 0 ? cat.used_gb / total : 0;
+    const start = cum; cum += pct;
+    return { ...cat, pct, start, color: CAT_COLORS[i % CAT_COLORS.length] };
+  });
+  return (
+    <div style={{ ...G.card }}>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Disco · Categorías</p>
+      {items.length === 0 ? (
+        <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de categorías</p>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <svg viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ width: SIZE, height: SIZE, flexShrink: 0 }}>
+            <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={SW} />
+            {slices.map((s, i) => (
+              <circle key={i} cx={cx} cy={cy} r={R} fill="none" stroke={s.color} strokeWidth={SW}
+                strokeDasharray={`${(s.pct * circ).toFixed(2)} ${circ.toFixed(2)}`}
+                transform={`rotate(${-90 + s.start * 360} ${cx} ${cy})`}
+                style={{ transition: 'stroke-dasharray 0.6s ease' }}
+              />
+            ))}
+            <text x={cx} y={cy - 4} textAnchor="middle" fontSize="13" fontWeight="800" fill="#e2e8f0">{usedGb.toFixed(1)}</text>
+            <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9" fill="#475569">GB usados</text>
+          </svg>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px', minWidth: 0 }}>
+            {slices.map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: s.color, flexShrink: 0 }} />
+                <span style={{ fontSize: '10px', color: '#94a3b8', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
+                <span style={{ fontSize: '10px', fontWeight: 800, color: s.color, flexShrink: 0 }}>{s.used_gb}G</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TCP Connections Chart ─────────────────────────────────────────────────────
+function TcpConnChart({ history, current, listening }: { history: number[]; current: number; listening: number }) {
+  const color = '#34d399';
+  return (
+    <div style={{ ...G.card }}>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Conexiones TCP</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+        <div>
+          <p style={{ margin: 0, fontSize: '30px', fontWeight: 900, color, lineHeight: 1 }}>{current}</p>
+          <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#475569' }}>establecidas</p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <div style={{ ...G.panel, padding: '5px 10px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#60a5fa' }}>{listening}</p>
+            <p style={{ margin: 0, fontSize: '9px', color: '#334155' }}>listen</p>
+          </div>
+        </div>
+      </div>
+      {history.length > 1 ? (
+        <>
+          <Sparkline history={history} color={color} height={48} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+            <span style={{ fontSize: '10px', color: '#334155' }}>pico <strong style={{ color: '#e2e8f0' }}>{maxVal(history)}</strong></span>
+            <span style={{ fontSize: '10px', color: '#334155' }}>avg <strong style={{ color: '#e2e8f0' }}>{avg(history).toFixed(0)}</strong></span>
+          </div>
+        </>
+      ) : (
+        <p style={{ margin: '10px 0 0', fontSize: '11px', color: '#334155', textAlign: 'center' }}>Recolectando datos...</p>
+      )}
+    </div>
+  );
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 // ── Disk donut chart ──────────────────────────────────────────────────────────
 function DiskDonut({ used, total, color, size = 110 }: { used: number; total: number; color: string; size?: number }) {
@@ -928,10 +1059,10 @@ function LogsPanel() {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist, diskReadHist, diskWriteHist }: {
+function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist, diskReadHist, diskWriteHist, connHist }: {
   data: VpsMetrics;
   cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[]; diskHist: number[];
-  swapHist: number[]; diskReadHist: number[]; diskWriteHist: number[];
+  swapHist: number[]; diskReadHist: number[]; diskWriteHist: number[]; connHist: number[];
 }) {
   const [netModal,       setNetModal]       = useState(false);
   const [ramProcsModal,  setRamProcsModal]  = useState(false);
@@ -1251,6 +1382,19 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         <DiskPrediction diskHist={diskHist} totalGb={data.disk.total_gb} currentPct={data.disk.percent} />
       </div>
 
+      {/* Row D: Gráficas avanzadas */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+        <CpuCoreHeatmap perCore={data.cpu.per_core ?? []} />
+        <DiskIOChart
+          readHist={diskReadHist}
+          writeHist={diskWriteHist}
+          currentRead={data.disk_io?.read_mbps ?? 0}
+          currentWrite={data.disk_io?.write_mbps ?? 0}
+        />
+        <DiskCategoryDonut categories={data.disk.categories ?? []} usedGb={data.disk.used_gb} />
+        <TcpConnChart history={connHist} current={data.connections?.established ?? 0} listening={data.connections?.listening ?? 0} />
+      </div>
+
       <LogsPanel />
 
       <p style={{ margin: '10px 0 0', fontSize: '10px', color: '#1e293b', textAlign: 'right' }}>
@@ -1434,6 +1578,7 @@ export default function OperationsPage() {
   const swapHist     = useRef<number[]>([]);
   const diskReadHist  = useRef<number[]>([]);
   const diskWriteHist = useRef<number[]>([]);
+  const connHist      = useRef<number[]>([]);
 
   const push = (ref: React.MutableRefObject<number[]>, val: number) => {
     ref.current = [...ref.current, val].slice(-MAX_HISTORY);
@@ -1458,6 +1603,7 @@ export default function OperationsPage() {
       push(swapHist,     m.swap?.percent        ?? 0);
       push(diskReadHist,  m.disk_io?.read_mbps  ?? 0);
       push(diskWriteHist, m.disk_io?.write_mbps ?? 0);
+      push(connHist,     m.connections?.established ?? 0);
       setError(null);
       setErrorSince(null);
       setNotConf(false);
@@ -1531,6 +1677,7 @@ export default function OperationsPage() {
           swapHist={swapHist.current}
           diskReadHist={diskReadHist.current}
           diskWriteHist={diskWriteHist.current}
+          connHist={connHist.current}
         />
       )}
     </div>
