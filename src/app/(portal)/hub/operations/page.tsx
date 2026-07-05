@@ -355,12 +355,12 @@ function DiskCategoryDonut({ categories, usedGb, totalGb }: { categories: DiskCa
   const diskPct = totalGb > 0 ? (usedGb / totalGb) * 100 : 0;
   const diskColor = statusColor(diskPct);
   return (
-    <div style={{ ...G.card }}>
-      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Disco · Categorías</p>
+    <div style={{ ...G.card, display: 'flex', flexDirection: 'column' }}>
+      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Disco · Categorías</p>
       {items.length === 0 ? (
         <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de categorías</p>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '14px' }}>
           <svg viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ width: SIZE, height: SIZE, flexShrink: 0 }}>
             <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={SW} />
             {slices.map((s, i) => (
@@ -819,7 +819,7 @@ function CatRows({ cats, diskUsed, colors }: { cats: DiskCategory[]; diskUsed: n
 }
 
 // ── Colors ─────────────────────────────────────────────────────────────────
-const CAT_COLORS = ['#60a5fa', '#a78bfa', '#34d399', '#fbbf24', '#f87171', '#22d3ee', '#fb923c', '#f472b6'];
+const CAT_COLORS = ['#4ade80', '#a78bfa', '#34d399', '#fbbf24', '#f87171', '#22d3ee', '#fb923c', '#f472b6'];
 
 
 // ── Top disk consumers ────────────────────────────────────────────────────────
