@@ -30,9 +30,10 @@ interface VpsMetrics {
   cpu: { percent: number; load_avg: number[]; count: number };
   ram: { total_mb: number; used_mb: number; avail_mb: number; percent: number };
   disk: { total_gb: number; used_gb: number; free_gb: number; percent: number; breakdown?: DiskPartition[]; categories?: DiskCategory[] };
-  net: { rx_mbps: number; tx_mbps: number };
-  services: { name: string; active: boolean; status: string }[];
-  top_procs: { pid: number; name: string; cpu: number; mem: number }[];
+  net:         { rx_mbps: number; tx_mbps: number };
+  connections?: { total: number; established: number; listening: number };
+  services:    { name: string; active: boolean; status: string }[];
+  top_procs:   { pid: number; name: string; cpu: number; mem: number }[];
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -117,6 +118,46 @@ function Sparkline({ history, color, height = 36 }: { history: number[]; color: 
       <path d={areaPath} fill={`url(#${gradId})`} />
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
       <circle cx={lastX} cy={lastY} r="2.5" fill={color} />
+    </svg>
+  );
+}
+
+// ── Dual sparkline (RX + TX) ──────────────────────────────────────────────────
+function DualSparkline({ h1, h2, c1, c2, height = 80 }: {
+  h1: number[]; h2: number[]; c1: string; c2: string; height?: number;
+}) {
+  const W = 240;
+  const maxV = Math.max(...h1, ...h2, 0.001);
+  const len = Math.max(h1.length, h2.length, 2);
+  const pts = (hist: number[]) => hist.map((v, i) => {
+    const x = (i / (len - 1)) * W;
+    const y = height - (v / maxV) * (height - 8) - 4;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const area = (hist: number[]) => {
+    if (hist.length < 2) return '';
+    const p = hist.map((v, i) => {
+      const x = (i / (len - 1)) * W;
+      const y = height - (v / maxV) * (height - 8) - 4;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const lx = ((hist.length - 1) / (len - 1)) * W;
+    return `M0,${height} L${p.join(' L')} L${lx.toFixed(1)},${height} Z`;
+  };
+  return (
+    <svg viewBox={`0 0 ${W} ${height}`} style={{ width: '100%', height, display: 'block' }} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="drx" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={c1} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={c1} stopOpacity="0.01" />
+        </linearGradient>
+        <linearGradient id="dtx" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={c2} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={c2} stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+      {h1.length >= 2 && <><path d={area(h1)} fill="url(#drx)" /><polyline points={pts(h1)} fill="none" stroke={c1} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" /></>}
+      {h2.length >= 2 && <><path d={area(h2)} fill="url(#dtx)" /><polyline points={pts(h2)} fill="none" stroke={c2} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" /></>}
     </svg>
   );
 }
@@ -414,6 +455,62 @@ function DiskModal({ disk, color, onClose }: { disk: VpsMetrics['disk']; color: 
         <div style={{ textAlign: 'center', padding: '20px', color: '#334155', fontSize: '12px' }}>
           Reiniciá el agente en la VPS para ver el desglose por categoría.
         </div>
+      )}
+    </ModalShell>
+  );
+}
+
+// ── Net Modal ─────────────────────────────────────────────────────────────────
+function NetModal({ rxHist, txHist, data, onClose }: {
+  rxHist: number[]; txHist: number[]; data: VpsMetrics; onClose: () => void;
+}) {
+  const RX = '#60a5fa', TX = '#a78bfa';
+  const stats = [
+    { label: 'RX actual',   val: `${data.net.rx_mbps.toFixed(3)} MB/s`, color: RX },
+    { label: 'TX actual',   val: `${data.net.tx_mbps.toFixed(3)} MB/s`, color: TX },
+    { label: 'RX pico',     val: `${maxVal(rxHist).toFixed(3)} MB/s`,   color: RX },
+    { label: 'TX pico',     val: `${maxVal(txHist).toFixed(3)} MB/s`,   color: TX },
+    { label: 'RX promedio', val: `${avg(rxHist).toFixed(3)} MB/s`,      color: '#94a3b8' },
+    { label: 'TX promedio', val: `${avg(txHist).toFixed(3)} MB/s`,      color: '#94a3b8' },
+  ];
+  return (
+    <ModalShell onClose={onClose} title="Red" sub={`Historial · últimas ${MAX_HISTORY} lecturas`}
+      icon="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" color={RX}>
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '14px', marginBottom: '8px' }}>
+          {[{ color: RX, label: '↓ RX recibido' }, { color: TX, label: '↑ TX enviado' }].map(l => (
+            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '14px', height: '3px', borderRadius: '2px', background: l.color }} />
+              <span style={{ fontSize: '11px', color: '#475569' }}>{l.label}</span>
+            </div>
+          ))}
+        </div>
+        <DualSparkline h1={rxHist} h2={txHist} c1={RX} c2={TX} height={100} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
+        {stats.map(s => (
+          <div key={s.label} style={{ ...G.panel, padding: '10px 12px' }}>
+            <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{s.label}</p>
+            <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800, color: s.color }}>{s.val}</p>
+          </div>
+        ))}
+      </div>
+      {data.connections && (
+        <>
+          <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Conexiones TCP activas</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            {[
+              { label: 'Establecidas', val: data.connections.established, color: '#34d399' },
+              { label: 'Escuchando',   val: data.connections.listening,   color: RX },
+              { label: 'Total',        val: data.connections.total,        color: '#94a3b8' },
+            ].map(c => (
+              <div key={c.label} style={{ ...G.panel, textAlign: 'center', padding: '10px 8px' }}>
+                <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: c.color }}>{c.val}</p>
+                <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#475569' }}>{c.label}</p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </ModalShell>
   );
@@ -747,10 +844,66 @@ function DiskPrediction({ diskHist, totalGb, currentPct }: { diskHist: number[];
   );
 }
 
+// ── Logs panel ────────────────────────────────────────────────────────────────
+function LogsPanel() {
+  const [lines, setLines] = useState<string[]>([]);
+  const [open, setOpen]   = useState(false);
+  const [busy, setBusy]   = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  const fetchLogs = useCallback(async () => {
+    setBusy(true);
+    try {
+      const res  = await fetch('/api/vps/logs', { cache: 'no-store' });
+      const json = await res.json();
+      if (Array.isArray(json.lines)) setLines(json.lines);
+    } catch {} finally { setBusy(false); }
+  }, []);
+
+  useEffect(() => { if (open) fetchLogs(); }, [open, fetchLogs]);
+  useEffect(() => {
+    if (!open) return;
+    const id = setInterval(fetchLogs, 10_000);
+    return () => clearInterval(id);
+  }, [open, fetchLogs]);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [lines]);
+
+  const lineColor = (l: string) =>
+    l.includes('ERROR') ? '#f87171' : l.includes('WARN') ? '#fbbf24' : '#64748b';
+
+  return (
+    <div style={{ ...G.card, marginTop: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Logs del agente</p>
+          {open && busy && <span style={{ fontSize: '10px', color: '#334155' }}>actualizando...</span>}
+          {open && !busy && <span style={{ fontSize: '10px', color: '#334155' }}>· cada 10s</span>}
+        </div>
+        <button onClick={() => setOpen(o => !o)}
+          style={{ padding: '4px 12px', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
+          {open ? 'Ocultar' : 'Ver logs'}
+        </button>
+      </div>
+
+      {open && (
+        <div style={{ marginTop: '12px', background: '#060612', borderRadius: '8px', padding: '10px 14px', height: '220px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.7, border: '1px solid rgba(255,255,255,0.06)' }}>
+          {lines.length === 0 && <span style={{ color: '#334155' }}>Sin logs disponibles — asegurate que el agente esté corriendo.</span>}
+          {lines.map((line, i) => (
+            <div key={i} style={{ color: lineColor(line), whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{line}</div>
+          ))}
+          <div ref={endRef} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
   data: VpsMetrics; cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[]; diskHist: number[];
 }) {
+  const [netModal, setNetModal] = useState(false);
   const cpuColor  = statusColor(data.cpu.percent);
   const ramColor  = statusColor(data.ram.percent);
   const diskColor = statusColor(data.disk.percent);
@@ -796,14 +949,17 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
           <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Historial (últimas {MAX_HISTORY} lecturas · cada 30s)</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             {[
-              { label: 'CPU %',      history: cpuHist, color: cpuColor,   val: `${data.cpu.percent}%` },
-              { label: 'RAM %',      history: ramHist, color: ramColor,   val: `${data.ram.percent}%` },
-              { label: 'Red ↓ MB/s', history: rxHist,  color: '#60a5fa', val: `${data.net.rx_mbps} MB/s` },
-              { label: 'Red ↑ MB/s', history: txHist,  color: '#a78bfa', val: `${data.net.tx_mbps} MB/s` },
+              { label: 'CPU %', history: cpuHist, color: cpuColor,   val: `${data.cpu.percent}%`,    net: false },
+              { label: 'RAM %', history: ramHist, color: ramColor,   val: `${data.ram.percent}%`,    net: false },
+              { label: 'Red ↓', history: rxHist,  color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`, net: true },
+              { label: 'Red ↑', history: txHist,  color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`, net: true },
             ].map(s => (
-              <div key={s.label}>
+              <div key={s.label} onClick={s.net ? () => setNetModal(true) : undefined}
+                style={{ cursor: s.net ? 'pointer' : 'default', borderRadius: '7px', padding: '4px', background: s.net ? 'rgba(96,165,250,0.03)' : 'transparent', transition: 'background 0.15s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>{s.label}</span>
+                  <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
+                    {s.label}{s.net && <span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>}
+                  </span>
                   <span style={{ fontSize: '11px', fontWeight: 800, color: s.color }}>{s.val}</span>
                 </div>
                 <Sparkline history={s.history} color={s.color} height={38} />
@@ -844,6 +1000,26 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
               </div>
             </div>
           </div>
+
+          {data.connections && (
+            <div>
+              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Conexiones TCP</p>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#34d399' }}>{data.connections.established}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Activas</p>
+                </div>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#60a5fa' }}>{data.connections.listening}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Listen</p>
+                </div>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#94a3b8' }}>{data.connections.total}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Total</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <div style={{ ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
@@ -898,9 +1074,13 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
         </div>
       </div>
 
+      <LogsPanel />
+
       <p style={{ margin: '10px 0 0', fontSize: '10px', color: '#1e293b', textAlign: 'right' }}>
         Datos de la VPS al {new Date(data.ts).toLocaleString('es-ES')}
       </p>
+
+      {netModal && <NetModal rxHist={rxHist} txHist={txHist} data={data} onClose={() => setNetModal(false)} />}
     </>
   );
 }

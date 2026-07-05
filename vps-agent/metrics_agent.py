@@ -112,6 +112,19 @@ def disk_children(path: str, limit: int = 10) -> list:
         return []
 
 
+def net_connections() -> dict:
+    """Conexiones de red activas via psutil."""
+    try:
+        conns = psutil.net_connections()
+        return {
+            "total":       len(conns),
+            "established": sum(1 for c in conns if c.status == "ESTABLISHED"),
+            "listening":   sum(1 for c in conns if c.status == "LISTEN"),
+        }
+    except Exception:
+        return {"total": 0, "established": 0, "listening": 0}
+
+
 def disk_categories() -> list:
     """Tamaño real de directorios clave usando `du -sb`. Muestra qué ocupa espacio."""
     DIRS = [
@@ -199,6 +212,7 @@ def collect() -> dict:
             "categories": disk_categories(),
         },
         "net": net,
+        "connections": net_connections(),
         "services": [service_status(s) for s in SERVICES],
         "top_procs": procs,
     }
@@ -216,7 +230,7 @@ class MetricsHandler(http.server.BaseHTTPRequestHandler):
         return auth == f"Bearer {TOKEN}"
 
     def do_GET(self):
-        if self.path not in ("/metrics", "/metrics/"):
+        if self.path not in ("/metrics", "/metrics/", "/logs", "/logs/"):
             self.send_error(404)
             return
 
@@ -227,14 +241,36 @@ class MetricsHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b'{"error":"unauthorized"}')
             return
 
+        if self.path in ("/logs", "/logs/"):
+            try:
+                log_path = "/tmp/agent.log"
+                try:
+                    with open(log_path, "r", errors="replace") as f:
+                        all_lines = f.readlines()
+                    lines = [l.rstrip() for l in all_lines[-100:]]
+                except FileNotFoundError:
+                    lines = ["(archivo de log no encontrado — iniciá el agente con nohup ... > /tmp/agent.log 2>&1)"]
+                body = json.dumps({"lines": lines}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_error(500, str(e))
+            return
+
         try:
+            t0   = time.time()
             data = collect()
+            ms   = round((time.time() - t0) * 1000)
             body = json.dumps(data).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(body)
+            print(f"{datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')} GET /metrics 200 {ms}ms cpu={data['cpu']['percent']}% ram={data['ram']['percent']}%", flush=True)
         except Exception as e:
             self.send_error(500, str(e))
 
