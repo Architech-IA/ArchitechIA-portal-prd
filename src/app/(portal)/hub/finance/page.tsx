@@ -18,6 +18,18 @@ interface Presupuesto {
   id: string; nombre: string; periodo: string; centroCostoId: string;
   tipo: 'ingreso' | 'egreso'; categoria: string; monto: number;
 }
+interface Factura {
+  id: string; numero: string; cliente: string; concepto: string;
+  monto: number; emitida: string; vencimiento: string;
+  estado: 'pendiente' | 'pagada' | 'vencida' | 'anulada';
+  pagado: number;
+}
+interface FacturaProv {
+  id: string; numero: string; proveedor: string; concepto: string;
+  monto: number; recibida: string; vencimiento: string;
+  estado: 'pendiente' | 'pagada' | 'vencida';
+  pagado: number; prioridad: 'alta' | 'media' | 'baja';
+}
 
 // ── Seed data ──────────────────────────────────────────────────────────────
 const SEED_CENTROS: CentroCosto[] = [
@@ -40,6 +52,25 @@ const SEED_MOV: Movimiento[] = [
   { id: 'm9',  fecha: '2025-07-01', tipo: 'ingreso', concepto: 'Pago Smartlex - Fase 2',        monto: 5200000, centroCostoId: 'cc1', categoria: 'Facturación',       estado: 'pendiente',  conciliado: false, referencia: 'FAC-003' },
   { id: 'm10', fecha: '2025-07-03', tipo: 'egreso',  concepto: 'Nómina julio',                  monto: 2100000, centroCostoId: 'cc4', categoria: 'Nómina',            estado: 'pendiente',  conciliado: false },
 ];
+const SEED_FACTURAS: Factura[] = [
+  { id: 'f1', numero:'FAC-2026-001', cliente:'Smartlex',          concepto:'Desarrollo plataforma - Fase 1', monto:4500000, emitida:'2026-01-15', vencimiento:'2026-03-01', estado:'vencida',   pagado:0       },
+  { id: 'f2', numero:'FAC-2026-002', cliente:'FB Ingenieros',     concepto:'Consultoría BIM - Módulo 2',     monto:8200000, emitida:'2026-03-01', vencimiento:'2026-05-05', estado:'vencida',   pagado:0       },
+  { id: 'f3', numero:'FAC-2026-003', cliente:'Grupo ABC',         concepto:'Retención mensual mayo',         monto:2100000, emitida:'2026-05-01', vencimiento:'2026-06-10', estado:'vencida',   pagado:0       },
+  { id: 'f4', numero:'FAC-2026-004', cliente:'Constructora Norte',concepto:'Desarrollo app interna',         monto:6500000, emitida:'2026-06-01', vencimiento:'2026-07-15', estado:'pendiente', pagado:0       },
+  { id: 'f5', numero:'FAC-2026-005', cliente:'Smartlex',          concepto:'Desarrollo plataforma - Fase 2', monto:3800000, emitida:'2026-06-15', vencimiento:'2026-08-01', estado:'pendiente', pagado:0       },
+  { id: 'f6', numero:'FAC-2026-006', cliente:'Distribuidora Sur', concepto:'Análisis de datos Q1',           monto:1900000, emitida:'2026-02-01', vencimiento:'2026-03-15', estado:'pagada',    pagado:1900000 },
+  { id: 'f7', numero:'FAC-2026-007', cliente:'Tech Solutions',    concepto:'Integración API pagos',          monto:5100000, emitida:'2026-02-20', vencimiento:'2026-04-20', estado:'vencida',   pagado:2500000 },
+];
+const SEED_PROV: FacturaProv[] = [
+  { id: 'p1', numero:'PROV-001', proveedor:'AWS / Cloud',           concepto:'Infraestructura cloud junio',  monto:780000,  recibida:'2026-05-28', vencimiento:'2026-06-20', estado:'vencida',   pagado:0,       prioridad:'alta'  },
+  { id: 'p2', numero:'PROV-002', proveedor:'Stack Software',        concepto:'Licencias suite desarrollo',   monto:1200000, recibida:'2026-06-01', vencimiento:'2026-07-10', estado:'pendiente', pagado:0,       prioridad:'alta'  },
+  { id: 'p3', numero:'PROV-003', proveedor:'Contadores & Asociados',concepto:'Honorarios contabilidad mayo', monto:450000,  recibida:'2026-04-30', vencimiento:'2026-05-15', estado:'vencida',   pagado:0,       prioridad:'media' },
+  { id: 'p4', numero:'PROV-004', proveedor:'Inmobiliaria Central',  concepto:'Arriendo oficina julio',       monto:2800000, recibida:'2026-06-25', vencimiento:'2026-07-15', estado:'pendiente', pagado:0,       prioridad:'alta'  },
+  { id: 'p5', numero:'PROV-005', proveedor:'Estudio Jurídico Mora', concepto:'Asesoría contratos Q1',        monto:1600000, recibida:'2026-01-15', vencimiento:'2026-03-30', estado:'vencida',   pagado:0,       prioridad:'media' },
+  { id: 'p6', numero:'PROV-006', proveedor:'Office Supplies Co.',   concepto:'Material oficina julio',       monto:380000,  recibida:'2026-06-28', vencimiento:'2026-08-05', estado:'pendiente', pagado:0,       prioridad:'baja'  },
+  { id: 'p7', numero:'PROV-007', proveedor:'Hostinger VPS',         concepto:'Servidores VPS sem. anual',    monto:960000,  recibida:'2026-01-01', vencimiento:'2026-01-31', estado:'pagada',    pagado:960000,  prioridad:'alta'  },
+];
+
 const SEED_PRES: Presupuesto[] = [
   { id: 'p1', nombre: 'Facturación Q2',   periodo: '2025-Q2', centroCostoId: 'cc1', tipo: 'ingreso', categoria: 'Facturación',     monto: 12000000 },
   { id: 'p2', nombre: 'Nómina Q2',        periodo: '2025-Q2', centroCostoId: 'cc4', tipo: 'egreso',  categoria: 'Nómina',          monto: 6300000  },
@@ -83,8 +114,10 @@ const TAB_ICONS: Record<number,string> = {
   3: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
   4: 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
   5: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z',
+  6: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z',
+  7: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
 };
-const TABS = ['Flujo de Caja','Centros de Costo','Presupuestos','Conciliación','Reportes','Forecast'];
+const TABS = ['Flujo de Caja','Centros de Costo','Presupuestos','Conciliación','Reportes','Forecast','CxC','CxP'];
 
 // ── Area icons ─────────────────────────────────────────────────────────────
 const AREA_ICON: Record<Area,string> = {
@@ -139,21 +172,27 @@ function Modal({ title, onClose, children, width = 560 }: { title: string; onClo
 // ── Main ───────────────────────────────────────────────────────────────────
 export default function FinancePage() {
   const [tab, setTab]       = useState(0);
-  const [centros, setCentros] = useState<CentroCosto[]>([]);
-  const [movs, setMovs]       = useState<Movimiento[]>([]);
-  const [presups, setPresups] = useState<Presupuesto[]>([]);
+  const [centros, setCentros]   = useState<CentroCosto[]>([]);
+  const [movs, setMovs]         = useState<Movimiento[]>([]);
+  const [presups, setPresups]   = useState<Presupuesto[]>([]);
+  const [facturas, setFacturas] = useState<Factura[]>([]);
+  const [provs, setProvs]       = useState<FacturaProv[]>([]);
   const [ready, setReady]     = useState(false);
 
   useEffect(() => {
     setCentros(loadLS('fin-centros-v1', SEED_CENTROS));
     setMovs(loadLS('fin-movs-v1', SEED_MOV));
     setPresups(loadLS('fin-pres-v1', SEED_PRES));
+    setFacturas(loadLS('fin-facturas-v1', SEED_FACTURAS));
+    setProvs(loadLS('fin-provs-v1', SEED_PROV));
     setReady(true);
   }, []);
 
-  const saveCentros = (v: CentroCosto[]) => { setCentros(v); saveLS('fin-centros-v1', v); };
-  const saveMovs    = (v: Movimiento[])  => { setMovs(v);    saveLS('fin-movs-v1', v); };
-  const savePresups = (v: Presupuesto[]) => { setPresups(v); saveLS('fin-pres-v1', v); };
+  const saveCentros  = (v: CentroCosto[])  => { setCentros(v);  saveLS('fin-centros-v1', v); };
+  const saveMovs     = (v: Movimiento[])   => { setMovs(v);     saveLS('fin-movs-v1', v); };
+  const savePresups  = (v: Presupuesto[])  => { setPresups(v);  saveLS('fin-pres-v1', v); };
+  const saveFacturas = (v: Factura[])      => { setFacturas(v); saveLS('fin-facturas-v1', v); };
+  const saveProvs    = (v: FacturaProv[])  => { setProvs(v);    saveLS('fin-provs-v1', v); };
 
   if (!ready) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh' }}>
@@ -193,6 +232,8 @@ export default function FinancePage() {
       {tab === 3 && <Conciliacion movs={movs}  centros={centros} onSave={saveMovs} />}
       {tab === 4 && <Reportes    movs={movs}   centros={centros} presups={presups} />}
       {tab === 5 && <Forecast    movs={movs} />}
+      {tab === 6 && <CxC facturas={facturas} onSave={saveFacturas} />}
+      {tab === 7 && <CxP provs={provs} onSave={saveProvs} />}
     </div>
   );
 }
@@ -1540,6 +1581,550 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
           })}
         </div>
       </div>
+    </>
+  );
+}
+
+// ── Helpers compartidos CxC / CxP ─────────────────────────────────────────
+const TODAY = new Date();
+TODAY.setHours(0, 0, 0, 0);
+
+function diasDesde(fechaISO: string): number {
+  const d = new Date(fechaISO + 'T00:00:00');
+  return Math.floor((TODAY.getTime() - d.getTime()) / 86400000);
+}
+
+type AgingBucket = 'corriente' | '0-30' | '31-60' | '61-90' | '+90';
+const AGING_BUCKETS: { key: AgingBucket; label: string; color: string; bg: string }[] = [
+  { key: 'corriente', label: 'En plazo',  color: '#34d399', bg: 'rgba(52,211,153,0.1)'  },
+  { key: '0-30',      label: '0–30 días', color: '#fbbf24', bg: 'rgba(251,191,36,0.1)'  },
+  { key: '31-60',     label: '31–60 días',color: '#fb923c', bg: 'rgba(251,146,60,0.1)'  },
+  { key: '61-90',     label: '61–90 días',color: '#f87171', bg: 'rgba(248,113,113,0.1)' },
+  { key: '+90',       label: '+90 días',  color: '#dc2626', bg: 'rgba(220,38,38,0.1)'   },
+];
+
+function agingOf(vencimientoISO: string): AgingBucket {
+  const dias = diasDesde(vencimientoISO);
+  if (dias < 0)  return 'corriente';
+  if (dias <= 30) return '0-30';
+  if (dias <= 60) return '31-60';
+  if (dias <= 90) return '61-90';
+  return '+90';
+}
+
+function AgingChip({ bucket }: { bucket: AgingBucket }) {
+  const b = AGING_BUCKETS.find(x => x.key === bucket)!;
+  return (
+    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: b.bg, color: b.color, whiteSpace: 'nowrap' }}>
+      {b.label}
+    </span>
+  );
+}
+
+function SemaforoCliente({ facturas }: { facturas: Factura[] }) {
+  const worst = facturas.reduce<AgingBucket>((acc, f) => {
+    if (f.estado === 'pagada' || f.estado === 'anulada') return acc;
+    const a = agingOf(f.vencimiento);
+    const order: AgingBucket[] = ['corriente', '0-30', '31-60', '61-90', '+90'];
+    return order.indexOf(a) > order.indexOf(acc) ? a : acc;
+  }, 'corriente');
+  const b = AGING_BUCKETS.find(x => x.key === worst)!;
+  return <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: b.color, boxShadow: `0 0 6px ${b.color}80`, flexShrink: 0 }} title={b.label} />;
+}
+
+const EMPTY_FAC: Omit<Factura, 'id'> = {
+  numero: '', cliente: '', concepto: '', monto: 0,
+  emitida: new Date().toISOString().slice(0, 10),
+  vencimiento: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+  estado: 'pendiente', pagado: 0,
+};
+const EMPTY_PROV: Omit<FacturaProv, 'id'> = {
+  numero: '', proveedor: '', concepto: '', monto: 0,
+  recibida: new Date().toISOString().slice(0, 10),
+  vencimiento: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+  estado: 'pendiente', pagado: 0, prioridad: 'media',
+};
+
+// ── Tab 7: Cuentas por Cobrar (CxC) ──────────────────────────────────────
+function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[]) => void }) {
+  const [filtro, setFiltro]     = useState<'todas' | 'pendientes' | 'vencidas' | 'pagadas'>('todas');
+  const [showModal, setShow]    = useState(false);
+  const [editing, setEditing]   = useState<Factura | null>(null);
+  const [form, setForm]         = useState<Omit<Factura, 'id'>>(EMPTY_FAC);
+  const [search, setSearch]     = useState('');
+
+  const saldo = (f: Factura) => f.monto - f.pagado;
+
+  // ── Aging buckets ──────────────────────────────────────────────────────────
+  const activas = facturas.filter(f => f.estado !== 'anulada');
+  const pendientes = activas.filter(f => f.estado !== 'pagada');
+
+  const bucketTotals = AGING_BUCKETS.map(b => ({
+    ...b,
+    total:  pendientes.filter(f => agingOf(f.vencimiento) === b.key).reduce((s, f) => s + saldo(f), 0),
+    count:  pendientes.filter(f => agingOf(f.vencimiento) === b.key).length,
+  }));
+
+  const totalCxC     = pendientes.reduce((s, f) => s + saldo(f), 0);
+  const totalVencido = pendientes.filter(f => agingOf(f.vencimiento) !== 'corriente').reduce((s, f) => s + saldo(f), 0);
+  const totalCorriente = totalCxC - totalVencido;
+
+  // DSO: saldo total / (total facturado últimos 90d / 90) — simplificado
+  const hoy90 = new Date(TODAY.getTime() - 90 * 86400000).toISOString().slice(0, 10);
+  const facturado90 = activas.filter(f => f.emitida >= hoy90).reduce((s, f) => s + f.monto, 0);
+  const dso = facturado90 > 0 ? Math.round((totalCxC / (facturado90 / 90))) : null;
+
+  // ── Semáforo por cliente ───────────────────────────────────────────────────
+  const clientes = [...new Set(pendientes.map(f => f.cliente))];
+
+  // ── Tabla filtrada ─────────────────────────────────────────────────────────
+  const visible = facturas.filter(f => {
+    if (search && !f.cliente.toLowerCase().includes(search.toLowerCase()) && !f.numero.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filtro === 'pendientes') return f.estado === 'pendiente';
+    if (filtro === 'vencidas')   return f.estado === 'vencida';
+    if (filtro === 'pagadas')    return f.estado === 'pagada';
+    return true;
+  }).sort((a, b) => {
+    if (a.estado === 'pagada' && b.estado !== 'pagada') return 1;
+    if (b.estado === 'pagada' && a.estado !== 'pagada') return -1;
+    return new Date(a.vencimiento).getTime() - new Date(b.vencimiento).getTime();
+  });
+
+  const openNew    = () => { setEditing(null); setForm(EMPTY_FAC); setShow(true); };
+  const openEdit   = (f: Factura) => { setEditing(f); setForm({ numero: f.numero, cliente: f.cliente, concepto: f.concepto, monto: f.monto, emitida: f.emitida, vencimiento: f.vencimiento, estado: f.estado, pagado: f.pagado }); setShow(true); };
+  const save       = () => {
+    if (!form.numero || !form.cliente || !form.monto) return;
+    if (editing) onSave(facturas.map(f => f.id === editing.id ? { ...form, id: editing.id } : f));
+    else         onSave([{ ...form, id: uid() }, ...facturas]);
+    setShow(false);
+  };
+  const marcarPagada = (f: Factura) => onSave(facturas.map(x => x.id === f.id ? { ...x, estado: 'pagada', pagado: x.monto } : x));
+  const eliminar     = (f: Factura) => onSave(facturas.filter(x => x.id !== f.id));
+
+  return (
+    <>
+      {/* ── KPIs ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '14px' }}>
+        {[
+          { label: 'Total CxC',      val: fmt(totalCxC),       sub: `${pendientes.length} facturas abiertas`,          color: '#34d399' },
+          { label: 'Vencido',        val: fmt(totalVencido),   sub: `${pendientes.filter(f => agingOf(f.vencimiento) !== 'corriente').length} facturas vencidas`, color: totalVencido > 0 ? '#f87171' : '#34d399' },
+          { label: 'En plazo',       val: fmt(totalCorriente), sub: 'dentro del vencimiento',                            color: '#60a5fa' },
+          { label: 'DSO',            val: dso !== null ? `${dso} días` : 'N/A', sub: 'días promedio de cobro',          color: dso && dso > 60 ? '#f87171' : dso && dso > 30 ? '#fbbf24' : '#34d399' },
+        ].map(k => (
+          <div key={k.label} style={{ ...G.card, padding: '15px 17px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 100% 0%, ${k.color}0e, transparent 55%)`, pointerEvents: 'none' }} />
+            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
+            <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: k.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{k.val}</p>
+            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#334155' }}>{k.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Aging buckets ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '10px', marginBottom: '14px' }}>
+        {bucketTotals.map(b => (
+          <div key={b.key} style={{ ...G.panel, padding: '12px 14px', borderLeft: `3px solid ${b.color}`, cursor: 'pointer' }} onClick={() => setFiltro(b.key === 'corriente' ? 'pendientes' : 'vencidas')}>
+            <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: b.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{b.label}</p>
+            <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: b.count > 0 ? b.color : '#334155' }}>{fmt(b.total)}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#475569' }}>{b.count} factura{b.count !== 1 ? 's' : ''}</p>
+            {b.total > 0 && totalCxC > 0 && (
+              <div style={{ marginTop: '7px', height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ height: '100%', width: `${(b.total / totalCxC) * 100}%`, background: b.color, borderRadius: '2px' }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Semáforo por cliente + controles ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
+          {clientes.map(cliente => {
+            const facsCli = pendientes.filter(f => f.cliente === cliente);
+            const totalCli = facsCli.reduce((s, f) => s + saldo(f), 0);
+            return (
+              <div key={cliente} style={{ ...G.panel, padding: '7px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <SemaforoCliente facturas={facsCli} />
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>{cliente}</p>
+                  <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{facsCli.length} factura{facsCli.length !== 1 ? 's' : ''} · {fmt(totalCli)}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente / n°..." style={{ ...G.input, width: '180px', fontSize: '12px', padding: '6px 10px' }} />
+          {(['todas','pendientes','vencidas','pagadas'] as const).map(f => (
+            <button key={f} onClick={() => setFiltro(f)} style={{ padding: '5px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '7px', border: 'none', cursor: 'pointer', background: filtro === f ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.05)', color: filtro === f ? '#34d399' : '#475569', textTransform: 'capitalize', transition: 'all 0.15s' }}>
+              {f}
+            </button>
+          ))}
+          <button onClick={openNew} style={{ padding: '6px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#34d399,#059669)', color: '#fff' }}>
+            + Factura
+          </button>
+        </div>
+      </div>
+
+      {/* ── Tabla de facturas ── */}
+      <div style={{ ...G.card, overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+                {['N° Factura','Cliente','Concepto','Emitida','Vencimiento','Monto','Cobrado','Saldo','Aging','Estado',''].map((h, i) => (
+                  <th key={h+i} style={{ padding: '9px 12px', textAlign: i >= 5 ? 'right' : 'left', fontWeight: 700, fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {visible.length === 0 && (
+                <tr><td colSpan={11} style={{ padding: '32px', textAlign: 'center', color: '#334155', fontSize: '13px' }}>Sin facturas para mostrar</td></tr>
+              )}
+              {visible.map((f, i) => {
+                const sal = saldo(f);
+                const bucket = agingOf(f.vencimiento);
+                const estadoColor = f.estado === 'pagada' ? '#34d399' : f.estado === 'vencida' ? '#f87171' : '#fbbf24';
+                return (
+                  <tr key={f.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent', opacity: f.estado === 'anulada' ? 0.4 : 1 }}>
+                    <td style={{ padding: '9px 12px', color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace', fontSize: '11px', whiteSpace: 'nowrap' }}>{f.numero}</td>
+                    <td style={{ padding: '9px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        <SemaforoCliente facturas={[f]} />
+                        <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{f.cliente}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '9px 12px', color: '#94a3b8', maxWidth: '180px' }}>
+                      <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.concepto}</p>
+                    </td>
+                    <td style={{ padding: '9px 12px', color: '#475569', whiteSpace: 'nowrap' }}>{f.emitida}</td>
+                    <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: bucket === 'corriente' ? '#94a3b8' : AGING_BUCKETS.find(b => b.key === bucket)!.color, fontWeight: bucket !== 'corriente' ? 700 : 400 }}>{f.vencimiento}</span>
+                    </td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 600 }}>{fmt(f.monto)}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#34d399' }}>{f.pagado > 0 ? fmt(f.pagado) : '—'}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: sal > 0 ? (bucket !== 'corriente' ? '#f87171' : '#e2e8f0') : '#334155' }}>{sal > 0 ? fmt(sal) : '—'}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>{f.estado !== 'pagada' && <AgingChip bucket={bucket} />}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: `${estadoColor}18`, color: estadoColor, textTransform: 'capitalize' }}>{f.estado}</span>
+                    </td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
+                        {f.estado !== 'pagada' && f.estado !== 'anulada' && (
+                          <button onClick={() => marcarPagada(f)} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Cobrada</button>
+                        )}
+                        <button onClick={() => openEdit(f)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={() => eliminar(f)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+                <td colSpan={5} style={{ padding: '8px 12px', fontWeight: 700, fontSize: '11px', color: '#475569' }}>TOTAL VISIBLE ({visible.length})</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#e2e8f0' }}>{fmt(visible.reduce((s, f) => s + f.monto, 0))}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#34d399' }}>{fmt(visible.reduce((s, f) => s + f.pagado, 0))}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#f87171' }}>{fmt(visible.reduce((s, f) => s + saldo(f), 0))}</td>
+                <td colSpan={3} />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Modal nueva/editar factura ── */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)' }}>
+          <div style={{ ...G.modal, width: '100%', maxWidth: '500px', padding: '0' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>{editing ? 'Editar factura' : 'Nueva factura CxC'}</p>
+              <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '18px' }}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div><label style={lbl}>N° Factura</label><input value={form.numero} onChange={e => setForm({...form, numero: e.target.value})} placeholder="FAC-2026-001" style={G.input} /></div>
+                <div><label style={lbl}>Cliente</label><input value={form.cliente} onChange={e => setForm({...form, cliente: e.target.value})} placeholder="Nombre del cliente" style={G.input} /></div>
+              </div>
+              <div><label style={lbl}>Concepto</label><input value={form.concepto} onChange={e => setForm({...form, concepto: e.target.value})} placeholder="Descripción del servicio" style={G.input} /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div><label style={lbl}>Monto</label><input type="number" value={form.monto} onChange={e => setForm({...form, monto: Number(e.target.value)})} style={G.input} /></div>
+                <div><label style={lbl}>Cobrado</label><input type="number" value={form.pagado} onChange={e => setForm({...form, pagado: Number(e.target.value)})} style={G.input} /></div>
+                <div><label style={lbl}>Estado</label>
+                  <select value={form.estado} onChange={e => setForm({...form, estado: e.target.value as Factura['estado']})} style={G.input}>
+                    {(['pendiente','pagada','vencida','anulada'] as const).map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div><label style={lbl}>Fecha emisión</label><input type="date" value={form.emitida} onChange={e => setForm({...form, emitida: e.target.value})} style={G.input} /></div>
+                <div><label style={lbl}>Vencimiento</label><input type="date" value={form.vencimiento} onChange={e => setForm({...form, vencimiento: e.target.value})} style={G.input} /></div>
+              </div>
+            </div>
+            <div style={{ padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => setShow(false)} style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
+              <button onClick={save} style={{ padding: '7px 18px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#34d399,#059669)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                {editing ? 'Guardar' : 'Crear factura'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── Tab 8: Cuentas por Pagar (CxP) ───────────────────────────────────────
+const PRIORIDAD_COLORS: Record<'alta' | 'media' | 'baja', { color: string; bg: string }> = {
+  alta:  { color: '#f87171', bg: 'rgba(248,113,113,0.1)' },
+  media: { color: '#fbbf24', bg: 'rgba(251,191,36,0.1)'  },
+  baja:  { color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'  },
+};
+
+function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[]) => void }) {
+  const [filtro, setFiltro]   = useState<'todas' | 'pendientes' | 'vencidas' | 'pagadas'>('todas');
+  const [showModal, setShow]  = useState(false);
+  const [editing, setEditing] = useState<FacturaProv | null>(null);
+  const [form, setForm]       = useState<Omit<FacturaProv, 'id'>>(EMPTY_PROV);
+  const [search, setSearch]   = useState('');
+
+  const saldo = (p: FacturaProv) => p.monto - p.pagado;
+
+  const pendientes = provs.filter(p => p.estado !== 'pagada');
+
+  const bucketTotals = AGING_BUCKETS.map(b => ({
+    ...b,
+    total: pendientes.filter(p => agingOf(p.vencimiento) === b.key).reduce((s, p) => s + saldo(p), 0),
+    count: pendientes.filter(p => agingOf(p.vencimiento) === b.key).length,
+  }));
+
+  const totalCxP      = pendientes.reduce((s, p) => s + saldo(p), 0);
+  const totalVencido  = pendientes.filter(p => agingOf(p.vencimiento) !== 'corriente').reduce((s, p) => s + saldo(p), 0);
+  const totalCorriente = totalCxP - totalVencido;
+
+  // Próximos a vencer en 15 días
+  const proximos15 = pendientes.filter(p => {
+    const dias = diasDesde(p.vencimiento);
+    return dias >= -15 && dias <= 0;
+  });
+  const totalProximos = proximos15.reduce((s, p) => s + saldo(p), 0);
+
+  // DPO simplificado
+  const hoy90 = new Date(TODAY.getTime() - 90 * 86400000).toISOString().slice(0, 10);
+  const compras90 = provs.filter(p => p.recibida >= hoy90).reduce((s, p) => s + p.monto, 0);
+  const dpo = compras90 > 0 ? Math.round(totalCxP / (compras90 / 90)) : null;
+
+  // Tabla filtrada + ordenada (alta prioridad vencidas primero)
+  const visible = provs.filter(p => {
+    if (search && !p.proveedor.toLowerCase().includes(search.toLowerCase()) && !p.numero.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filtro === 'pendientes') return p.estado === 'pendiente';
+    if (filtro === 'vencidas')   return p.estado === 'vencida';
+    if (filtro === 'pagadas')    return p.estado === 'pagada';
+    return true;
+  }).sort((a, b) => {
+    if (a.estado === 'pagada' && b.estado !== 'pagada') return 1;
+    if (b.estado === 'pagada' && a.estado !== 'pagada') return -1;
+    const prioOrd = { alta: 0, media: 1, baja: 2 };
+    if (prioOrd[a.prioridad] !== prioOrd[b.prioridad]) return prioOrd[a.prioridad] - prioOrd[b.prioridad];
+    return new Date(a.vencimiento).getTime() - new Date(b.vencimiento).getTime();
+  });
+
+  const openNew  = () => { setEditing(null); setForm(EMPTY_PROV); setShow(true); };
+  const openEdit = (p: FacturaProv) => { setEditing(p); setForm({ numero: p.numero, proveedor: p.proveedor, concepto: p.concepto, monto: p.monto, recibida: p.recibida, vencimiento: p.vencimiento, estado: p.estado, pagado: p.pagado, prioridad: p.prioridad }); setShow(true); };
+  const save     = () => {
+    if (!form.numero || !form.proveedor || !form.monto) return;
+    if (editing) onSave(provs.map(p => p.id === editing.id ? { ...form, id: editing.id } : p));
+    else         onSave([{ ...form, id: uid() }, ...provs]);
+    setShow(false);
+  };
+  const marcarPagada = (p: FacturaProv) => onSave(provs.map(x => x.id === p.id ? { ...x, estado: 'pagada', pagado: x.monto } : x));
+  const eliminar     = (p: FacturaProv) => onSave(provs.filter(x => x.id !== p.id));
+
+  return (
+    <>
+      {/* ── KPIs ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '14px' }}>
+        {[
+          { label: 'Total CxP',        val: fmt(totalCxP),       sub: `${pendientes.length} facturas abiertas`,              color: '#f87171' },
+          { label: 'Vencido',          val: fmt(totalVencido),   sub: `${pendientes.filter(p => agingOf(p.vencimiento) !== 'corriente').length} facturas vencidas`, color: totalVencido > 0 ? '#dc2626' : '#34d399' },
+          { label: 'Vence en 15 días', val: fmt(totalProximos),  sub: `${proximos15.length} facturas por vencer`,             color: '#fbbf24' },
+          { label: 'DPO',              val: dpo !== null ? `${dpo} días` : 'N/A', sub: 'días promedio de pago',               color: dpo && dpo > 60 ? '#34d399' : dpo && dpo > 30 ? '#fbbf24' : '#60a5fa' },
+        ].map(k => (
+          <div key={k.label} style={{ ...G.card, padding: '15px 17px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 100% 0%, ${k.color}0e, transparent 55%)`, pointerEvents: 'none' }} />
+            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
+            <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: k.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{k.val}</p>
+            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#334155' }}>{k.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Aging buckets ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '10px', marginBottom: '14px' }}>
+        {bucketTotals.map(b => (
+          <div key={b.key} style={{ ...G.panel, padding: '12px 14px', borderLeft: `3px solid ${b.color}`, cursor: 'pointer' }} onClick={() => setFiltro(b.key === 'corriente' ? 'pendientes' : 'vencidas')}>
+            <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: b.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{b.label}</p>
+            <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: b.count > 0 ? b.color : '#334155' }}>{fmt(b.total)}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#475569' }}>{b.count} factura{b.count !== 1 ? 's' : ''}</p>
+            {b.total > 0 && totalCxP > 0 && (
+              <div style={{ marginTop: '7px', height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ height: '100%', width: `${(b.total / totalCxP) * 100}%`, background: b.color, borderRadius: '2px' }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Alertas de vencimientos próximos ── */}
+      {proximos15.length > 0 && (
+        <div style={{ ...G.panel, padding: '14px 18px', marginBottom: '14px', borderLeft: '3px solid #fbbf24', background: 'rgba(251,191,36,0.04)' }}>
+          <p style={{ margin: '0 0 10px', fontSize: '12px', fontWeight: 700, color: '#fbbf24' }}>⚠ Próximos vencimientos — próximos 15 días</p>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {proximos15.map(p => {
+              const diasV = -diasDesde(p.vencimiento);
+              const pc = PRIORIDAD_COLORS[p.prioridad];
+              return (
+                <div key={p.id} style={{ ...G.panel, padding: '8px 12px', background: 'rgba(255,255,255,0.02)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: pc.bg, color: pc.color }}>{p.prioridad}</span>
+                    <span style={{ fontSize: '10px', color: '#475569' }}>vence en {diasV}d</span>
+                  </div>
+                  <p style={{ margin: '0 0 2px', fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>{p.proveedor}</p>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#fbbf24' }}>{fmt(saldo(p))}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Controles tabla ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {(['todas','pendientes','vencidas','pagadas'] as const).map(f => (
+            <button key={f} onClick={() => setFiltro(f)} style={{ padding: '5px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '7px', border: 'none', cursor: 'pointer', background: filtro === f ? 'rgba(248,113,113,0.15)' : 'rgba(255,255,255,0.05)', color: filtro === f ? '#f87171' : '#475569', textTransform: 'capitalize', transition: 'all 0.15s' }}>
+              {f}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar proveedor / n°..." style={{ ...G.input, width: '190px', fontSize: '12px', padding: '6px 10px' }} />
+          <button onClick={openNew} style={{ padding: '6px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#f87171,#dc2626)', color: '#fff' }}>
+            + Factura proveedor
+          </button>
+        </div>
+      </div>
+
+      {/* ── Tabla ── */}
+      <div style={{ ...G.card, overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+                {['N° Doc.','Prioridad','Proveedor','Concepto','Recibida','Vencimiento','Monto','Pagado','Saldo','Aging','Estado',''].map((h, i) => (
+                  <th key={h+i} style={{ padding: '9px 12px', textAlign: i >= 6 ? 'right' : 'left', fontWeight: 700, fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {visible.length === 0 && (
+                <tr><td colSpan={12} style={{ padding: '32px', textAlign: 'center', color: '#334155', fontSize: '13px' }}>Sin facturas para mostrar</td></tr>
+              )}
+              {visible.map((p, i) => {
+                const sal = saldo(p);
+                const bucket = agingOf(p.vencimiento);
+                const pc = PRIORIDAD_COLORS[p.prioridad];
+                const estadoColor = p.estado === 'pagada' ? '#34d399' : p.estado === 'vencida' ? '#f87171' : '#fbbf24';
+                return (
+                  <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+                    <td style={{ padding: '9px 12px', color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace', fontSize: '11px', whiteSpace: 'nowrap' }}>{p.numero}</td>
+                    <td style={{ padding: '9px 12px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: pc.bg, color: pc.color }}>{p.prioridad}</span>
+                    </td>
+                    <td style={{ padding: '9px 12px', color: '#e2e8f0', fontWeight: 600 }}>{p.proveedor}</td>
+                    <td style={{ padding: '9px 12px', color: '#94a3b8', maxWidth: '160px' }}>
+                      <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.concepto}</p>
+                    </td>
+                    <td style={{ padding: '9px 12px', color: '#475569', whiteSpace: 'nowrap' }}>{p.recibida}</td>
+                    <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: bucket === 'corriente' ? '#94a3b8' : AGING_BUCKETS.find(b => b.key === bucket)!.color, fontWeight: bucket !== 'corriente' ? 700 : 400 }}>{p.vencimiento}</span>
+                    </td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 600 }}>{fmt(p.monto)}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#34d399' }}>{p.pagado > 0 ? fmt(p.pagado) : '—'}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: sal > 0 ? (bucket !== 'corriente' ? '#f87171' : '#e2e8f0') : '#334155' }}>{sal > 0 ? fmt(sal) : '—'}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>{p.estado !== 'pagada' && <AgingChip bucket={bucket} />}</td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: `${estadoColor}18`, color: estadoColor, textTransform: 'capitalize' }}>{p.estado}</span>
+                    </td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
+                        {p.estado !== 'pagada' && (
+                          <button onClick={() => marcarPagada(p)} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Pagada</button>
+                        )}
+                        <button onClick={() => openEdit(p)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={() => eliminar(p)} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+                <td colSpan={6} style={{ padding: '8px 12px', fontWeight: 700, fontSize: '11px', color: '#475569' }}>TOTAL VISIBLE ({visible.length})</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#e2e8f0' }}>{fmt(visible.reduce((s, p) => s + p.monto, 0))}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#34d399' }}>{fmt(visible.reduce((s, p) => s + p.pagado, 0))}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#f87171' }}>{fmt(visible.reduce((s, p) => s + saldo(p), 0))}</td>
+                <td colSpan={3} />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Modal nueva/editar factura proveedor ── */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)' }}>
+          <div style={{ ...G.modal, width: '100%', maxWidth: '500px', padding: '0' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>{editing ? 'Editar factura proveedor' : 'Nueva factura CxP'}</p>
+              <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '18px' }}>×</button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div><label style={lbl}>N° Documento</label><input value={form.numero} onChange={e => setForm({...form, numero: e.target.value})} placeholder="PROV-001" style={G.input} /></div>
+                <div><label style={lbl}>Proveedor</label><input value={form.proveedor} onChange={e => setForm({...form, proveedor: e.target.value})} placeholder="Nombre del proveedor" style={G.input} /></div>
+              </div>
+              <div><label style={lbl}>Concepto</label><input value={form.concepto} onChange={e => setForm({...form, concepto: e.target.value})} placeholder="Descripción del gasto" style={G.input} /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div><label style={lbl}>Monto</label><input type="number" value={form.monto} onChange={e => setForm({...form, monto: Number(e.target.value)})} style={G.input} /></div>
+                <div><label style={lbl}>Pagado</label><input type="number" value={form.pagado} onChange={e => setForm({...form, pagado: Number(e.target.value)})} style={G.input} /></div>
+                <div><label style={lbl}>Prioridad</label>
+                  <select value={form.prioridad} onChange={e => setForm({...form, prioridad: e.target.value as FacturaProv['prioridad']})} style={G.input}>
+                    {(['alta','media','baja'] as const).map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div><label style={lbl}>Recibida</label><input type="date" value={form.recibida} onChange={e => setForm({...form, recibida: e.target.value})} style={G.input} /></div>
+                <div><label style={lbl}>Vencimiento</label><input type="date" value={form.vencimiento} onChange={e => setForm({...form, vencimiento: e.target.value})} style={G.input} /></div>
+                <div><label style={lbl}>Estado</label>
+                  <select value={form.estado} onChange={e => setForm({...form, estado: e.target.value as FacturaProv['estado']})} style={G.input}>
+                    {(['pendiente','pagada','vencida'] as const).map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => setShow(false)} style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
+              <button onClick={save} style={{ padding: '7px 18px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#f87171,#dc2626)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                {editing ? 'Guardar' : 'Registrar factura'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
