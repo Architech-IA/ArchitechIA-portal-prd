@@ -3,12 +3,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+interface DiskPartition {
+  path: string;
+  total_gb: number;
+  used_gb: number;
+  free_gb: number;
+  percent: number;
+}
+
 interface VpsMetrics {
   ts: string;
   uptime_s: number;
   cpu: { percent: number; load_avg: number[]; count: number };
   ram: { total_mb: number; used_mb: number; avail_mb: number; percent: number };
-  disk: { total_gb: number; used_gb: number; free_gb: number; percent: number };
+  disk: { total_gb: number; used_gb: number; free_gb: number; percent: number; breakdown?: DiskPartition[] };
   net: { rx_mbps: number; tx_mbps: number };
   services: { name: string; active: boolean; status: string }[];
   top_procs: { pid: number; name: string; cpu: number; mem: number }[];
@@ -163,6 +171,195 @@ function Skeleton() {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
+// ── Disk donut chart ──────────────────────────────────────────────────────────
+function DiskDonut({ used, total, color, size = 110 }: { used: number; total: number; color: string; size?: number }) {
+  const r = size * 0.38, cx = size / 2, cy = size / 2, sw = size * 0.11;
+  const circ = 2 * Math.PI * r;
+  const pct  = total > 0 ? used / total : 0;
+  const dash  = pct * circ;
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size, display: 'block' }}>
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={sw} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={sw}
+        strokeDasharray={`${dash.toFixed(2)} ${circ.toFixed(2)}`}
+        strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ transition: 'stroke-dasharray 0.7s ease' }}
+      />
+      <text x={cx} y={cy - 6} textAnchor="middle" fontSize={size * 0.16} fontWeight="800" fill={color}>{used.toFixed(1)}</text>
+      <text x={cx} y={cy + 10} textAnchor="middle" fontSize={size * 0.09} fill="#475569">de {total} GB</text>
+      <text x={cx} y={cy + 22} textAnchor="middle" fontSize={size * 0.1} fontWeight="700" fill={color}>{(pct * 100).toFixed(1)}%</text>
+    </svg>
+  );
+}
+
+// ── Disk Panel + Modal ────────────────────────────────────────────────────────
+function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
+  const [open, setOpen] = useState(false);
+  const color = statusColor(disk.percent);
+  const breakdown = disk.breakdown ?? [];
+
+  const SEGMENT_COLORS = ['#34d399', '#60a5fa', '#a78bfa', '#fbbf24', '#f87171', '#22d3ee', '#fb923c'];
+
+  return (
+    <>
+      {/* Card clickeable */}
+      <button
+        onClick={() => setOpen(true)}
+        style={{ ...G.card, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'block', padding: '16px 20px', position: 'relative', overflow: 'hidden', transition: 'border-color 0.15s, transform 0.15s' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${color}40`; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
+      >
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 80% 20%, ${color}0e, transparent 55%)`, pointerEvents: 'none' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/></svg>
+            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Disco</p>
+          </div>
+          <span style={{ fontSize: '10px', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Ver detalle
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </span>
+        </div>
+
+        {/* Mini donut + stats */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <DiskDonut used={disk.used_gb} total={disk.total_gb} color={color} size={90} />
+          <div style={{ flex: 1 }}>
+            <div style={{ marginBottom: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <span style={{ fontSize: '10px', color: '#475569' }}>Usado</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color }}>{disk.used_gb} GB</span>
+              </div>
+              <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ height: '100%', width: `${disk.percent}%`, borderRadius: '3px', background: color, transition: 'width 0.6s' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ flex: 1, textAlign: 'center', ...G.panel, padding: '6px 4px' }}>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#34d399' }}>{disk.free_gb} GB</p>
+                <p style={{ margin: '1px 0 0', fontSize: '9px', color: '#334155' }}>libre</p>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center', ...G.panel, padding: '6px 4px' }}>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#94a3b8' }}>{disk.total_gb} GB</p>
+                <p style={{ margin: '1px 0 0', fontSize: '9px', color: '#334155' }}>total</p>
+              </div>
+            </div>
+            {breakdown.length > 1 && (
+              <p style={{ margin: '8px 0 0', fontSize: '10px', color: '#334155' }}>
+                {breakdown.length} partición{breakdown.length !== 1 ? 'es' : ''} · click para ver breakdown
+              </p>
+            )}
+          </div>
+        </div>
+      </button>
+
+      {/* Modal detalle */}
+      {open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(6px)' }}
+          onClick={() => setOpen(false)}>
+          <div style={{ width: '100%', maxWidth: '540px', background: 'rgba(9,9,24,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${color}15`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/></svg>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#f1f5f9' }}>Espacio en Disco</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#475569' }}>Desglose por partición</p>
+                </div>
+              </div>
+              <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>×</button>
+            </div>
+
+            <div style={{ padding: '20px 22px' }}>
+              {/* Hero donut + totales */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '20px' }}>
+                <DiskDonut used={disk.used_gb} total={disk.total_gb} color={color} size={130} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen global</p>
+                  {[
+                    { label: 'Total',      val: `${disk.total_gb} GB`, color: '#94a3b8' },
+                    { label: 'Usado',      val: `${disk.used_gb} GB`,  color },
+                    { label: 'Disponible', val: `${disk.free_gb} GB`,  color: '#34d399' },
+                  ].map((r, i) => (
+                    <div key={r.label}>
+                      {i > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '7px 0' }} />}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', color: '#475569' }}>{r.label}</span>
+                        <span style={{ fontSize: '15px', fontWeight: 800, color: r.color }}>{r.val}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Health badge */}
+                  <div style={{ marginTop: '12px', padding: '7px 12px', borderRadius: '8px', background: `${color}12`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+                    <span style={{ fontSize: '11px', fontWeight: 700, color }}>
+                      {disk.percent < 60 ? 'Espacio saludable' : disk.percent < 85 ? 'Espacio moderado' : '¡Espacio crítico!'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#475569', marginLeft: 'auto' }}>{disk.percent.toFixed(1)}% usado</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Breakdown por partición */}
+              {breakdown.length > 0 && (
+                <>
+                  <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Particiones ({breakdown.length})
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto' }}>
+                    {breakdown.map((p, i) => {
+                      const c = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+                      const sc = statusColor(p.percent);
+                      return (
+                        <div key={p.path} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '10px 14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: c, flexShrink: 0 }} />
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', fontFamily: 'monospace' }}>{p.path}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ fontSize: '11px', color: '#475569' }}>{p.used_gb} / {p.total_gb} GB</span>
+                              <span style={{ fontSize: '11px', fontWeight: 800, color: sc }}>{p.percent.toFixed(1)}%</span>
+                            </div>
+                          </div>
+                          <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
+                            <div style={{ height: '100%', width: `${p.percent}%`, borderRadius: '3px', background: sc, transition: 'width 0.5s' }} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                            <span style={{ fontSize: '10px', color: '#334155' }}>Libre: {p.free_gb} GB</span>
+                            <span style={{ fontSize: '10px', color: '#334155' }}>Total: {p.total_gb} GB</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {breakdown.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#334155', fontSize: '12px' }}>
+                  Actualizá el agente en la VPS para ver el desglose por partición.
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setOpen(false)} style={{ padding: '7px 20px', borderRadius: '9px', border: 'none', background: `linear-gradient(135deg, ${color}, #059669)`, color: '#0f172a', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
   data: VpsMetrics; cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[];
 }) {
@@ -233,9 +430,10 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
         {/* Resources detail */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recursos</p>
-          <UsageBar pct={data.cpu.percent}  color={cpuColor}  label="CPU"   val={`${data.cpu.percent}%`} />
-          <UsageBar pct={data.ram.percent}  color={ramColor}  label="RAM"   val={`${data.ram.used_mb} / ${data.ram.total_mb} MB`} />
-          <UsageBar pct={data.disk.percent} color={diskColor} label="Disco" val={`${data.disk.used_gb} / ${data.disk.total_gb} GB`} />
+          <UsageBar pct={data.cpu.percent} color={cpuColor} label="CPU" val={`${data.cpu.percent}%`} />
+          <UsageBar pct={data.ram.percent} color={ramColor} label="RAM" val={`${data.ram.used_mb} / ${data.ram.total_mb} MB`} />
+          {/* Disco interactivo */}
+          <DiskPanel disk={data.disk} />
           <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Load average</p>
             <div style={{ display: 'flex', gap: '8px' }}>

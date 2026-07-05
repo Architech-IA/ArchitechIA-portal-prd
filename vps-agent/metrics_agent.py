@@ -14,6 +14,7 @@ Como servicio systemd (recomendado):
 import http.server
 import json
 import os
+import shutil
 import time
 import subprocess
 from datetime import datetime, timezone
@@ -57,6 +58,30 @@ def net_io_mbps() -> dict:
     rx = (s2.bytes_recv - s1.bytes_recv) / elapsed / 1_048_576
     tx = (s2.bytes_sent - s1.bytes_sent) / elapsed / 1_048_576
     return {"rx_mbps": round(rx, 3), "tx_mbps": round(tx, 3)}
+
+
+def disk_breakdown() -> list:
+    """Uso de disco por directorio clave. Evita duplicar particiones."""
+    DIRS = ["/", "/var", "/var/log", "/opt", "/home", "/tmp", "/var/lib"]
+    seen_totals: set = set()
+    result = []
+    for d in DIRS:
+        try:
+            u = shutil.disk_usage(d)
+            key = round(u.total / 1_073_741_824, 1)
+            if key in seen_totals:
+                continue
+            seen_totals.add(key)
+            result.append({
+                "path":     d,
+                "total_gb": round(u.total / 1_073_741_824, 1),
+                "used_gb":  round(u.used  / 1_073_741_824, 1),
+                "free_gb":  round(u.free  / 1_073_741_824, 1),
+                "percent":  round(u.used / u.total * 100, 1) if u.total > 0 else 0,
+            })
+        except Exception:
+            pass
+    return result
 
 
 def collect() -> dict:
@@ -105,6 +130,7 @@ def collect() -> dict:
             "used_gb":  round(disk.used  / 1_073_741_824, 1),
             "free_gb":  round(disk.free  / 1_073_741_824, 1),
             "percent":  disk.percent,
+            "breakdown": disk_breakdown(),
         },
         "net": net,
         "services": [service_status(s) for s in SERVICES],
