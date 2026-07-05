@@ -206,11 +206,12 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
   const color = statusColor(disk.percent);
   const breakdown = disk.breakdown ?? [];
   const categories = disk.categories ?? [];
-  const catTotal = categories.reduce((s, c) => s + c.used_gb, 0);
+  const visibleCats = categories.filter(c => c.used_gb > 0.01);
+  const catTotal = visibleCats.reduce((s, c) => s + c.used_gb, 0);
   const otherGb = Math.max(0, disk.used_gb - catTotal);
   const allCats: DiskCategory[] = otherGb > 0.05
-    ? [...categories, { path: 'other', label: 'Otro', used_gb: parseFloat(otherGb.toFixed(2)) }]
-    : categories;
+    ? [...visibleCats, { path: 'other', label: 'Otro', used_gb: parseFloat(otherGb.toFixed(2)) }]
+    : visibleCats;
 
   const SEGMENT_COLORS = CAT_COLORS;
 
@@ -271,7 +272,7 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
       {open && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(6px)' }}
           onClick={() => setOpen(false)}>
-          <div style={{ width: '100%', maxWidth: '540px', background: 'rgba(9,9,24,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden' }}
+          <div style={{ width: '100%', maxWidth: '540px', maxHeight: 'calc(100vh - 40px)', background: 'rgba(9,9,24,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}>
 
             {/* Header */}
@@ -282,28 +283,28 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
                 </div>
                 <div>
                   <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#f1f5f9' }}>Espacio en Disco</p>
-                  <p style={{ margin: 0, fontSize: '11px', color: '#475569' }}>Desglose por partición</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#475569' }}>Desglose por categoría</p>
                 </div>
               </div>
               <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>×</button>
             </div>
 
-            <div style={{ padding: '20px 22px' }}>
+            <div style={{ padding: '16px 22px 20px', overflowY: 'auto', flex: 1 }}>
               {/* Hero donut + totales */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '20px' }}>
-                <DiskDonut used={disk.used_gb} total={disk.total_gb} color={color} size={130} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px' }}>
+                <DiskDonut used={disk.used_gb} total={disk.total_gb} color={color} size={110} />
                 <div style={{ flex: 1 }}>
-                  <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen global</p>
+                  <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen global</p>
                   {[
                     { label: 'Total',      val: `${disk.total_gb} GB`, clr: '#94a3b8' },
                     { label: 'Usado',      val: `${disk.used_gb} GB`,  clr: color },
                     { label: 'Disponible', val: `${disk.free_gb} GB`,  clr: '#34d399' },
                   ].map((r, i) => (
                     <div key={r.label}>
-                      {i > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '7px 0' }} />}
+                      {i > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '5px 0' }} />}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '12px', color: '#475569' }}>{r.label}</span>
-                        <span style={{ fontSize: '15px', fontWeight: 800, color: r.clr }}>{r.val}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: r.clr }}>{r.val}</span>
                       </div>
                     </div>
                   ))}
@@ -338,7 +339,7 @@ function DiskPanel({ disk }: { disk: VpsMetrics['disk'] }) {
                   </div>
 
                   {/* Leyenda + filas */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', maxHeight: '260px', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {allCats.map((cat, i) => {
                       const c = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
                       const pct = disk.used_gb > 0 ? (cat.used_gb / disk.used_gb) * 100 : 0;
