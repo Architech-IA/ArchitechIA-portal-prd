@@ -85,10 +85,10 @@ def disk_breakdown() -> list:
 
 
 def disk_children(path: str, limit: int = 10) -> list:
-    """Subdirectorios de un path ordenados por tamaño (du -sb --max-depth=1)."""
+    """Subdirectorios de un path ordenados por tamaño (du -b --max-depth=1)."""
     try:
         out = subprocess.run(
-            ["du", "-sb", "--max-depth=1", path],
+            ["du", "-b", "--max-depth=1", path],
             capture_output=True, text=True, timeout=20
         )
         if out.returncode != 0:
