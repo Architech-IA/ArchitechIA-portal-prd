@@ -24,6 +24,12 @@ interface DiskCategory {
   children?: DiskChild[];
 }
 
+interface HistSnapshot {
+  ts: string;
+  cpu: number; ram: number; disk: number;
+  rx: number; tx: number; swap: number;
+}
+
 interface VpsMetrics {
   ts: string;
   uptime_s: number;
@@ -1081,14 +1087,16 @@ function LogsPanel() {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist, diskReadHist, diskWriteHist, connHist }: {
+function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist, diskReadHist, diskWriteHist, connHist, histSnapshots }: {
   data: VpsMetrics;
   cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[]; diskHist: number[];
   swapHist: number[]; diskReadHist: number[]; diskWriteHist: number[]; connHist: number[];
+  histSnapshots: HistSnapshot[];
 }) {
   const [netModal,       setNetModal]       = useState(false);
   const [ramProcsModal,  setRamProcsModal]  = useState(false);
   const [loadAvgModal,   setLoadAvgModal]   = useState(false);
+  const [histRange,      setHistRange]      = useState<'live' | '1d' | '7d'>('live');
   const [procsModal,     setProcsModal]     = useState(false);
   const [uptimeModal,    setUptimeModal]    = useState(false);
   const [svcsModal,      setSvcsModal]      = useState(false);
@@ -1132,30 +1140,79 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Uso actual · <span style={{ color: '#334155', fontWeight: 400, textTransform: 'none' }}>click para detalle</span></p>
           <GaugeSection data={data} cpuColor={cpuColor} ramColor={ramColor} diskColor={diskColor} />
         </div>
-        <div style={{ ...G.card }}>
-          <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Historial (últimas {MAX_HISTORY} lecturas · cada 30s)</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-            {[
-              { label: 'CPU %',   history: cpuHist,      color: cpuColor,  val: `${data.cpu.percent}%`,                  net: false },
-              { label: 'RAM %',   history: ramHist,      color: ramColor,  val: `${data.ram.percent}%`,                  net: false },
-              { label: 'Swap %',  history: swapHist,     color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`,           net: false },
-              { label: 'Red ↓',   history: rxHist,       color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`,              net: true  },
-              { label: 'Red ↑',   history: txHist,       color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`,              net: true  },
-              { label: 'Disco R', history: diskReadHist, color: '#fb923c', val: `${data.disk_io?.read_mbps ?? 0} MB/s`,  net: false },
-            ].map(s => (
-              <div key={s.label} onClick={s.net ? () => setNetModal(true) : undefined}
-                style={{ cursor: s.net ? 'pointer' : 'default', borderRadius: '7px', padding: '4px', background: s.net ? 'rgba(96,165,250,0.03)' : 'transparent', transition: 'background 0.15s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
-                    {s.label}{s.net && <span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>}
-                  </span>
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: s.color }}>{s.val}</span>
+        {(() => {
+          // ── Historial: agrega snapshots según rango ────────────────────────
+          const bucketed = (key: keyof HistSnapshot, hours: number, n: number): number[] => {
+            const now = Date.now(), cutoff = now - hours * 3_600_000;
+            const filtered = histSnapshots.filter(s => new Date(s.ts).getTime() >= cutoff);
+            if (filtered.length === 0) return [];
+            const bSize = (hours * 3_600_000) / n;
+            const result: number[] = [];
+            for (let i = 0; i < n; i++) {
+              const lo = cutoff + i * bSize, hi = lo + bSize;
+              const vals = filtered.filter(s => { const t = new Date(s.ts).getTime(); return t >= lo && t < hi; }).map(s => s[key] as number);
+              if (vals.length > 0) result.push(vals.reduce((a, b) => a + b, 0) / vals.length);
+            }
+            return result;
+          };
+          const isLive = histRange === 'live';
+          const h = histRange === '7d' ? 168 : 24;
+          const n = histRange === '7d' ? 42  : 24;
+          const subtitle = isLive
+            ? `últimas ${MAX_HISTORY} lecturas · cada 30s`
+            : histRange === '1d' ? 'últimas 24 horas · promedio por hora'
+            : 'últimos 7 días · promedio cada 4h';
+          const series = [
+            { label: 'CPU %',   history: isLive ? cpuHist      : bucketed('cpu',  h, n), color: cpuColor,  val: `${data.cpu.percent}%`,                 net: false },
+            { label: 'RAM %',   history: isLive ? ramHist      : bucketed('ram',  h, n), color: ramColor,  val: `${data.ram.percent}%`,                 net: false },
+            { label: 'Swap %',  history: isLive ? swapHist     : bucketed('swap', h, n), color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`,          net: false },
+            { label: 'Red ↓',   history: isLive ? rxHist       : bucketed('rx',   h, n), color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`,             net: true  },
+            { label: 'Red ↑',   history: isLive ? txHist       : bucketed('tx',   h, n), color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`,             net: true  },
+            { label: 'Disco',   history: isLive ? diskReadHist : bucketed('disk', h, n), color: '#fb923c', val: `${data.disk.percent}%`,                net: false },
+          ];
+          const RANGES: { k: typeof histRange; label: string }[] = [
+            { k: 'live', label: 'Live' },
+            { k: '1d',   label: '1D'  },
+            { k: '7d',   label: '7D'  },
+          ];
+          return (
+            <div style={{ ...G.card }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Historial</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>{subtitle}</p>
                 </div>
-                <Sparkline history={s.history} color={s.color} height={38} />
+                <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px' }}>
+                  {RANGES.map(r => (
+                    <button key={r.k} onClick={() => setHistRange(r.k)}
+                      style={{ padding: '3px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 700, transition: 'all 0.15s',
+                        background: histRange === r.k ? (r.k === 'live' ? '#34d399' : ORANGE) : 'transparent',
+                        color: histRange === r.k ? '#0f172a' : '#475569' }}>
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+                {series.map(s => (
+                  <div key={s.label} onClick={s.net ? () => setNetModal(true) : undefined}
+                    style={{ cursor: s.net ? 'pointer' : 'default', borderRadius: '7px', padding: '4px', background: s.net ? 'rgba(96,165,250,0.03)' : 'transparent', transition: 'background 0.15s' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
+                        {s.label}{s.net && <span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>}
+                      </span>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: s.color }}>{s.val}</span>
+                    </div>
+                    {!isLive && s.history.length === 0
+                      ? <p style={{ margin: 0, fontSize: '10px', color: '#334155', textAlign: 'center', padding: '8px 0' }}>Recolectando...</p>
+                      : <Sparkline history={s.history} color={s.color} height={38} />
+                    }
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Row A: CPU · Memoria · Red (agrupado por recurso) */}
@@ -1589,8 +1646,9 @@ export default function OperationsPage() {
   const [lastFetch,  setLastFetch] = useState<Date | null>(null);
   const [nextIn,     setNextIn]    = useState(30);
   const [latencyMs,  setLatencyMs] = useState<number | null>(null);
-  const [errorSince, setErrorSince] = useState<Date | null>(null);
-  const [now,        setNow]       = useState(() => new Date());
+  const [errorSince,     setErrorSince]     = useState<Date | null>(null);
+  const [now,            setNow]           = useState(() => new Date());
+  const [histSnapshots,  setHistSnapshots] = useState<HistSnapshot[]>([]);
 
   const cpuHist      = useRef<number[]>([]);
   const ramHist      = useRef<number[]>([]);
@@ -1638,6 +1696,13 @@ export default function OperationsPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/vps/history', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d.snapshots)) setHistSnapshots(d.snapshots); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
@@ -1700,6 +1765,7 @@ export default function OperationsPage() {
           diskReadHist={diskReadHist.current}
           diskWriteHist={diskWriteHist.current}
           connHist={connHist.current}
+          histSnapshots={histSnapshots}
         />
       )}
     </div>

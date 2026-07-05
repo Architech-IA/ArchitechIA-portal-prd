@@ -17,6 +17,7 @@ import os
 import shutil
 import time
 import subprocess
+import threading
 from datetime import datetime, timezone
 
 try:
@@ -25,8 +26,10 @@ except ImportError:
     raise SystemExit("Falta psutil: ejecutá  pip install psutil")
 
 # ── Configuración ────────────────────────────────────────────────────────────
-PORT  = int(os.environ.get("METRICS_PORT", "9100"))
-TOKEN = os.environ.get("METRICS_TOKEN", "")          # Obligatorio en producción
+PORT         = int(os.environ.get("METRICS_PORT", "9100"))
+TOKEN        = os.environ.get("METRICS_TOKEN", "")   # Obligatorio en producción
+HISTORY_FILE = "/tmp/metrics_history.jsonl"
+MAX_SNAPSHOTS = 7 * 24 * 12                          # 7 días a 5 min = 2016 entradas
 
 # Servicios a monitorear (ajustá a los que corren en tu VPS)
 SERVICES = [
@@ -284,6 +287,68 @@ def collect() -> dict:
     }
 
 
+# ── Historial de métricas ─────────────────────────────────────────────────────
+def save_snapshot() -> None:
+    """Guarda un snapshot mínimo de métricas en el historial JSONL."""
+    try:
+        mem  = psutil.virtual_memory()
+        disk = psutil.disk_usage("/")
+        swap = psutil.swap_memory()
+        n1   = psutil.net_io_counters()
+        time.sleep(1)
+        n2   = psutil.net_io_counters()
+        snap = {
+            "ts":   datetime.now(timezone.utc).isoformat(),
+            "cpu":  round(psutil.cpu_percent(interval=None), 1),
+            "ram":  round(mem.percent, 1),
+            "disk": round(disk.percent, 1),
+            "rx":   round((n2.bytes_recv - n1.bytes_recv) / 1_048_576, 3),
+            "tx":   round((n2.bytes_sent - n1.bytes_sent) / 1_048_576, 3),
+            "swap": round(swap.percent, 1),
+        }
+        lines: list[str] = []
+        try:
+            with open(HISTORY_FILE, "r") as f:
+                lines = f.readlines()
+        except FileNotFoundError:
+            pass
+        lines.append(json.dumps(snap) + "\n")
+        if len(lines) > MAX_SNAPSHOTS:
+            lines = lines[-MAX_SNAPSHOTS:]
+        with open(HISTORY_FILE, "w") as f:
+            f.writelines(lines)
+    except Exception as e:
+        print(f"[history] Error saving snapshot: {e}", flush=True)
+
+
+def _history_loop() -> None:
+    """Hilo daemon: guarda un snapshot cada 5 minutos."""
+    # Primera captura al arrancar
+    time.sleep(10)
+    save_snapshot()
+    while True:
+        time.sleep(300)
+        save_snapshot()
+
+
+def read_history() -> list:
+    """Lee el historial JSONL y devuelve lista de snapshots."""
+    try:
+        with open(HISTORY_FILE, "r") as f:
+            lines = f.readlines()
+        result = []
+        for line in lines:
+            line = line.strip()
+            if line:
+                try:
+                    result.append(json.loads(line))
+                except Exception:
+                    pass
+        return result
+    except FileNotFoundError:
+        return []
+
+
 # ── HTTP handler ───────────────────────────────────────────────────────────────
 class MetricsHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
@@ -296,7 +361,7 @@ class MetricsHandler(http.server.BaseHTTPRequestHandler):
         return auth == f"Bearer {TOKEN}"
 
     def do_GET(self):
-        if self.path not in ("/metrics", "/metrics/", "/logs", "/logs/"):
+        if self.path not in ("/metrics", "/metrics/", "/logs", "/logs/", "/history", "/history/"):
             self.send_error(404)
             return
 
@@ -305,6 +370,18 @@ class MetricsHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(b'{"error":"unauthorized"}')
+            return
+
+        if self.path in ("/history", "/history/"):
+            try:
+                body = json.dumps({"snapshots": read_history()}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_error(500, str(e))
             return
 
         if self.path in ("/logs", "/logs/"):
@@ -345,5 +422,7 @@ if __name__ == "__main__":
     if not TOKEN:
         print("⚠  METRICS_TOKEN no configurado — el endpoint es público")
     print(f"✓  Metrics agent corriendo en http://0.0.0.0:{PORT}/metrics")
+    print(f"✓  Historial en /history (snapshots cada 5 min → {HISTORY_FILE})")
+    threading.Thread(target=_history_loop, daemon=True, name="history").start()
     srv = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), MetricsHandler)
     srv.serve_forever()
