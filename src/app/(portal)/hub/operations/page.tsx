@@ -785,30 +785,14 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
 
       {/* Resources · Services · Top procs · Top RAM · Top disk */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '12px' }}>
-        {/* Resources detail */}
-        <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recursos</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {[
-              { label: 'CPU',   val: `${data.cpu.percent}%`,  sub: `${data.cpu.count} núcleos`,                                                color: cpuColor },
-              { label: 'RAM',   val: `${data.ram.percent}%`,  sub: `${(data.ram.used_mb / 1024).toFixed(2)} / ${(data.ram.total_mb / 1024).toFixed(2)} GB`, color: ramColor },
-              { label: 'Disco', val: `${data.disk.percent}%`, sub: `${data.disk.used_gb} / ${data.disk.total_gb} GB`,                            color: diskColor },
-            ].map(r => (
-              <div key={r.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 11px', borderRadius: '9px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '4px', height: '26px', borderRadius: '2px', background: r.color }} />
-                  <div>
-                    <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569' }}>{r.label}</p>
-                    <p style={{ margin: '1px 0 0', fontSize: '10px', color: '#334155' }}>{r.sub}</p>
-                  </div>
-                </div>
-                <p style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: r.color }}>{r.val}</p>
-              </div>
-            ))}
-          </div>
-          <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Load average</p>
-            <div style={{ display: 'flex', gap: '8px' }}>
+        {/* System metrics */}
+        <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sistema</p>
+
+          {/* Load average */}
+          <div>
+            <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Load average</p>
+            <div style={{ display: 'flex', gap: '6px' }}>
               {['1m', '5m', '15m'].map((t, i) => (
                 <div key={t} style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: statusColor((data.cpu.load_avg[i] / data.cpu.count) * 100) }}>{data.cpu.load_avg[i]}</p>
@@ -817,9 +801,11 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
               ))}
             </div>
           </div>
+
+          {/* Network */}
           <div>
-            <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Red</p>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Red</p>
+            <div style={{ display: 'flex', gap: '6px' }}>
               <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                 <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#60a5fa' }}>↓ {data.net.rx_mbps}</p>
                 <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s RX</p>
@@ -828,6 +814,18 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist }: {
                 <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#a78bfa' }}>↑ {data.net.tx_mbps}</p>
                 <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s TX</p>
               </div>
+            </div>
+          </div>
+
+          {/* Extras */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            <div style={{ ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+              <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#34d399' }}>{fmtUptime(data.uptime_s)}</p>
+              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Uptime</p>
+            </div>
+            <div style={{ ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+              <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: allOk ? '#34d399' : '#f87171' }}>{activeServices}/{totalServices}</p>
+              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Servicios</p>
             </div>
           </div>
         </div>
