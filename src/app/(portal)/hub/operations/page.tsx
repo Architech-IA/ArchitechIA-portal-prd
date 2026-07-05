@@ -933,8 +933,12 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
   cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[]; diskHist: number[];
   swapHist: number[]; diskReadHist: number[]; diskWriteHist: number[];
 }) {
-  const [netModal,      setNetModal]      = useState(false);
-  const [ramProcsModal, setRamProcsModal] = useState(false);
+  const [netModal,       setNetModal]       = useState(false);
+  const [ramProcsModal,  setRamProcsModal]  = useState(false);
+  const [loadAvgModal,   setLoadAvgModal]   = useState(false);
+  const [procsModal,     setProcsModal]     = useState(false);
+  const [uptimeModal,    setUptimeModal]    = useState(false);
+  const [svcsModal,      setSvcsModal]      = useState(false);
   const cpuColor  = statusColor(data.cpu.percent);
   const ramColor  = statusColor(data.ram.percent);
   const diskColor = statusColor(data.disk.percent);
@@ -1007,8 +1011,12 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         {/* CPU & Sistema */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CPU & Sistema</p>
-          <div>
-            <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Load average</p>
+
+          {/* Load average — clickeable */}
+          <div onClick={() => setLoadAvgModal(true)} style={{ cursor: 'pointer', borderRadius: '8px', padding: '6px', margin: '-6px', transition: 'background 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)') }
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Load average <span style={{ fontSize: '9px', color: '#334155', fontWeight: 400, textTransform: 'none' }}>· ver detalle →</span></p>
             <div style={{ display: 'flex', gap: '6px' }}>
               {['1m', '5m', '15m'].map((t, i) => (
                 <div key={t} style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
@@ -1018,9 +1026,13 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               ))}
             </div>
           </div>
+
+          {/* Procesos — clickeable */}
           {data.procs && (
-            <div>
-              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Procesos</p>
+            <div onClick={() => setProcsModal(true)} style={{ cursor: 'pointer', borderRadius: '8px', padding: '6px', margin: '-6px', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Procesos <span style={{ fontSize: '9px', color: '#334155', fontWeight: 400, textTransform: 'none' }}>· ver detalle →</span></p>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#94a3b8' }}>{data.procs.total}</p>
@@ -1033,14 +1045,20 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               </div>
             </div>
           )}
+
+          {/* Uptime + Servicios — cada uno clickeable */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-            <div style={{ ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+            <div onClick={() => setUptimeModal(true)} style={{ ...G.panel, textAlign: 'center', padding: '8px 4px', cursor: 'pointer', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = (G.panel as React.CSSProperties).background as string)}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#34d399' }}>{fmtUptime(data.uptime_s)}</p>
-              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Uptime</p>
+              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Uptime ↗</p>
             </div>
-            <div style={{ ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+            <div onClick={() => setSvcsModal(true)} style={{ ...G.panel, textAlign: 'center', padding: '8px 4px', cursor: 'pointer', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = (G.panel as React.CSSProperties).background as string)}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: allOk ? '#34d399' : '#f87171' }}>{activeServices}/{totalServices}</p>
-              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Servicios</p>
+              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Servicios ↗</p>
             </div>
           </div>
         </div>
@@ -1240,6 +1258,129 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       </p>
 
       {netModal && <NetModal rxHist={rxHist} txHist={txHist} data={data} onClose={() => setNetModal(false)} />}
+
+      {/* Load Average modal */}
+      {loadAvgModal && (
+        <ModalShell onClose={() => setLoadAvgModal(false)} title="Load Average" sub={`${data.cpu.count} núcleos lógicos`} icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" color={cpuColor}>
+          <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#475569', lineHeight: 1.6 }}>
+            Promedio de procesos en espera de CPU. Un valor igual a <strong style={{ color: '#e2e8f0' }}>{data.cpu.count}</strong> = 100% de carga.
+            Por encima de {data.cpu.count} indica saturación.
+          </p>
+          {['1 minuto', '5 minutos', '15 minutos'].map((label, i) => {
+            const val = data.cpu.load_avg[i];
+            const pct = Math.min(100, (val / data.cpu.count) * 100);
+            const sc  = statusColor(pct);
+            const state = pct < 60 ? 'Normal' : pct < 85 ? 'Elevado' : 'Crítico';
+            return (
+              <div key={label} style={{ marginBottom: i < 2 ? '14px' : 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{label}</span>
+                    <span style={{ marginLeft: '8px', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: `${sc}18`, color: sc }}>{state}</span>
+                  </div>
+                  <span style={{ fontSize: '18px', fontWeight: 900, color: sc }}>{val.toFixed(2)}</span>
+                </div>
+                <div style={{ height: '6px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, borderRadius: '4px', background: sc, transition: 'width 0.5s' }} />
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#334155' }}>{pct.toFixed(1)}% de capacidad · umbral crítico: {data.cpu.count.toFixed(1)}</p>
+              </div>
+            );
+          })}
+        </ModalShell>
+      )}
+
+      {/* Procesos modal */}
+      {procsModal && data.procs && (
+        <ModalShell onClose={() => setProcsModal(false)} title="Procesos del sistema" sub={`${data.procs.total} procesos activos`} icon="M4 6h16M4 12h16M4 18h7" color="#94a3b8">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            {[
+              { label: 'Total',    val: data.procs.total,   clr: '#94a3b8', desc: 'Procesos en ejecución' },
+              { label: 'Zombies', val: data.procs.zombies,  clr: data.procs.zombies > 0 ? '#f87171' : '#34d399', desc: data.procs.zombies > 0 ? 'Procesos a limpiar' : 'Sin procesos zombie' },
+            ].map(r => (
+              <div key={r.label} style={{ textAlign: 'center', padding: '16px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <p style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: r.clr }}>{r.val}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{r.label}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#334155' }}>{r.desc}</p>
+              </div>
+            ))}
+          </div>
+          {data.procs.zombies > 0 && (
+            <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)' }}>
+              <p style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#f87171' }}>¿Qué son los procesos zombie?</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#475569', lineHeight: 1.6 }}>
+                Procesos que terminaron pero cuyo proceso padre no recogió su estado de salida. No consumen CPU pero sí una entrada en la tabla de procesos. En general son inofensivos salvo que sean muchos.
+              </p>
+            </div>
+          )}
+          <p style={{ margin: '16px 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top por CPU ahora</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {[...data.top_procs].sort((a, b) => b.cpu - a.cpu).slice(0, 5).map((p, i) => (
+              <div key={p.pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ fontSize: '10px', color: '#334155', width: '18px', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                <span style={{ flex: 1, fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                <span style={{ fontSize: '10px', color: '#334155', flexShrink: 0 }}>PID {p.pid}</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: statusColor(p.cpu), flexShrink: 0 }}>{p.cpu}% CPU</span>
+              </div>
+            ))}
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Uptime modal */}
+      {uptimeModal && (() => {
+        const d = Math.floor(data.uptime_s / 86400);
+        const h = Math.floor((data.uptime_s % 86400) / 3600);
+        const m = Math.floor((data.uptime_s % 3600) / 60);
+        const bootDate = new Date(Date.now() - data.uptime_s * 1000);
+        const stability = data.uptime_s > 30 * 86400 ? 'Excelente' : data.uptime_s > 7 * 86400 ? 'Buena' : data.uptime_s > 86400 ? 'Normal' : 'Reciente';
+        const stabColor = data.uptime_s > 7 * 86400 ? '#34d399' : data.uptime_s > 86400 ? '#fbbf24' : '#f87171';
+        return (
+          <ModalShell onClose={() => setUptimeModal(false)} title="Uptime del servidor" sub="Tiempo desde el último reinicio" icon="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" color="#34d399">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+              {[{ label: 'Días', val: d }, { label: 'Horas', val: h }, { label: 'Minutos', val: m }].map(r => (
+                <div key={r.label} style={{ textAlign: 'center', padding: '16px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: '#34d399' }}>{r.val}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <p style={{ margin: '0 0 4px', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>Inicio del servidor</p>
+                <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>{bootDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>{bootDate.toLocaleTimeString('es-ES')}</p>
+              </div>
+              <div style={{ padding: '12px 14px', borderRadius: '10px', background: `${stabColor}0d`, border: `1px solid ${stabColor}25` }}>
+                <p style={{ margin: '0 0 4px', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>Estabilidad</p>
+                <p style={{ margin: 0, fontSize: '18px', fontWeight: 900, color: stabColor }}>{stability}</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>{data.uptime_s.toLocaleString('es-ES')} segundos</p>
+              </div>
+            </div>
+          </ModalShell>
+        );
+      })()}
+
+      {/* Servicios modal */}
+      {svcsModal && (
+        <ModalShell onClose={() => setSvcsModal(false)} title="Servicios" sub={allOk ? 'Todos operativos' : `${totalServices - activeServices} servicio(s) caído(s)`} icon="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" color={allOk ? '#34d399' : '#f87171'}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {data.services.length === 0 && <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '20px' }}>Sin servicios configurados en el agente</p>}
+            {data.services.map(svc => (
+              <div key={svc.name} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', background: svc.active ? 'rgba(52,211,153,0.04)' : 'rgba(248,113,113,0.06)', border: `1px solid ${svc.active ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.2)'}` }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: svc.active ? '#34d399' : '#f87171', boxShadow: `0 0 8px ${svc.active ? '#34d399' : '#f87171'}`, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: svc.active ? '#e2e8f0' : '#f87171' }}>{svc.name}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>{svc.status}</p>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '6px', background: svc.active ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', color: svc.active ? '#34d399' : '#f87171' }}>
+                  {svc.active ? 'active' : 'down'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </ModalShell>
+      )}
       {ramProcsModal && (
         <ModalShell onClose={() => setRamProcsModal(false)} title="Top procesos por RAM" sub={`${data.ram.used_mb} MB usados · ${data.ram.total_mb} MB total`} icon="M4 6h16M4 10h16M4 14h16M4 18h16" color={ramColor}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
