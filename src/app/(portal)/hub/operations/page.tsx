@@ -27,13 +27,17 @@ interface DiskCategory {
 interface VpsMetrics {
   ts: string;
   uptime_s: number;
-  cpu: { percent: number; load_avg: number[]; count: number };
-  ram: { total_mb: number; used_mb: number; avail_mb: number; percent: number };
-  disk: { total_gb: number; used_gb: number; free_gb: number; percent: number; breakdown?: DiskPartition[]; categories?: DiskCategory[] };
-  net:         { rx_mbps: number; tx_mbps: number };
+  cpu:          { percent: number; load_avg: number[]; count: number; per_core?: number[] };
+  ram:          { total_mb: number; used_mb: number; avail_mb: number; percent: number };
+  swap?:        { total_mb: number; used_mb: number; percent: number };
+  disk:         { total_gb: number; used_gb: number; free_gb: number; percent: number; breakdown?: DiskPartition[]; categories?: DiskCategory[] };
+  disk_io?:     { read_mbps: number; write_mbps: number };
+  net:          { rx_mbps: number; tx_mbps: number };
   connections?: { total: number; established: number; listening: number };
-  services:    { name: string; active: boolean; status: string }[];
-  top_procs:   { pid: number; name: string; cpu: number; mem: number }[];
+  procs?:       { total: number; zombies: number };
+  docker?:      { id: string; name: string; image: string; status: string; ports: string }[];
+  services:     { name: string; active: boolean; status: string }[];
+  top_procs:    { pid: number; name: string; cpu: number; mem: number }[];
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -335,6 +339,28 @@ function CpuModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
           })}
         </div>
       </div>
+      {/* Per-core */}
+      {data.cpu.per_core && data.cpu.per_core.length > 0 && (
+        <>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Por núcleo</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+            {data.cpu.per_core.map((pct, i) => {
+              const sc = statusColor(pct);
+              return (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                    <span style={{ fontSize: '11px', color: '#475569' }}>Core {i}</span>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: sc }}>{pct}%</span>
+                  </div>
+                  <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, borderRadius: '3px', background: sc, transition: 'width 0.5s' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
       {/* Top procesos */}
       {data.top_procs.length > 0 && (
         <>
@@ -386,7 +412,7 @@ function RamModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
       </div>
       {/* En MB */}
       <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>En detalle</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
         {[
           { label: 'Total',      val: `${ram.total_mb} MB`, clr: '#94a3b8' },
           { label: 'Usado',      val: `${ram.used_mb} MB`,  clr: color },
@@ -398,6 +424,24 @@ function RamModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
           </div>
         ))}
       </div>
+      {/* Swap */}
+      {data.swap && data.swap.total_mb > 0 && (
+        <>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Swap</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            {[
+              { label: 'Total',  val: `${data.swap.total_mb} MB`, clr: '#94a3b8' },
+              { label: 'Usado',  val: `${data.swap.used_mb} MB`,  clr: statusColor(data.swap.percent) },
+              { label: 'Uso %',  val: `${data.swap.percent.toFixed(1)}%`, clr: statusColor(data.swap.percent) },
+            ].map(r => (
+              <div key={r.label} style={{ textAlign: 'center', padding: '10px 8px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: r.clr }}>{r.val}</p>
+                <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#334155' }}>{r.label}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </ModalShell>
   );
 }
@@ -844,6 +888,54 @@ function DiskPrediction({ diskHist, totalGb, currentPct }: { diskHist: number[];
   );
 }
 
+// ── Docker panel ──────────────────────────────────────────────────────────────
+function DockerPanel({ containers }: { containers: VpsMetrics['docker'] }) {
+  const [open, setOpen] = useState(false);
+  if (!containers) return null;
+  const running = containers.filter(c => c.status.toLowerCase().startsWith('up')).length;
+  return (
+    <div style={{ ...G.card, marginTop: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z" /><path strokeLinecap="round" strokeLinejoin="round" d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" /></svg>
+          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Docker</p>
+          <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: '5px', background: running > 0 ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.04)', color: running > 0 ? '#34d399' : '#475569' }}>
+            {containers.length === 0 ? 'sin contenedores' : `${running}/${containers.length} activos`}
+          </span>
+        </div>
+        <button onClick={() => setOpen(o => !o)}
+          style={{ padding: '4px 12px', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
+          {open ? 'Ocultar' : 'Ver contenedores'}
+        </button>
+      </div>
+
+      {open && (
+        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {containers.length === 0 && (
+            <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Docker no disponible o sin contenedores</p>
+          )}
+          {containers.map(c => {
+            const isUp = c.status.toLowerCase().startsWith('up');
+            return (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', background: isUp ? 'rgba(52,211,153,0.04)' : 'rgba(248,113,113,0.04)', border: `1px solid ${isUp ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.15)'}` }}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: isUp ? '#34d399' : '#f87171', flexShrink: 0, boxShadow: `0 0 5px ${isUp ? '#34d399' : '#f87171'}` }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: isUp ? '#e2e8f0' : '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
+                  <p style={{ margin: 0, fontSize: '10px', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.image}</p>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{c.status}</p>
+                  {c.ports && <p style={{ margin: 0, fontSize: '10px', color: '#334155', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.ports}</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Logs panel ────────────────────────────────────────────────────────────────
 function LogsPanel() {
   const [lines, setLines] = useState<string[]>([]);
@@ -900,8 +992,10 @@ function LogsPanel() {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
-  data: VpsMetrics; cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[]; diskHist: number[];
+function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist, diskReadHist, diskWriteHist }: {
+  data: VpsMetrics;
+  cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[]; diskHist: number[];
+  swapHist: number[]; diskReadHist: number[]; diskWriteHist: number[];
 }) {
   const [netModal, setNetModal] = useState(false);
   const cpuColor  = statusColor(data.cpu.percent);
@@ -947,12 +1041,14 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
 
         <div style={{ ...G.card }}>
           <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Historial (últimas {MAX_HISTORY} lecturas · cada 30s)</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
             {[
-              { label: 'CPU %', history: cpuHist, color: cpuColor,   val: `${data.cpu.percent}%`,    net: false },
-              { label: 'RAM %', history: ramHist, color: ramColor,   val: `${data.ram.percent}%`,    net: false },
-              { label: 'Red ↓', history: rxHist,  color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`, net: true },
-              { label: 'Red ↑', history: txHist,  color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`, net: true },
+              { label: 'CPU %',    history: cpuHist,      color: cpuColor,   val: `${data.cpu.percent}%`,             net: false },
+              { label: 'RAM %',    history: ramHist,      color: ramColor,   val: `${data.ram.percent}%`,             net: false },
+              { label: 'Swap %',   history: swapHist,     color: '#22d3ee',  val: `${data.swap?.percent ?? 0}%`,      net: false },
+              { label: 'Red ↓',    history: rxHist,       color: '#60a5fa',  val: `${data.net.rx_mbps} MB/s`,         net: true  },
+              { label: 'Red ↑',    history: txHist,       color: '#a78bfa',  val: `${data.net.tx_mbps} MB/s`,         net: true  },
+              { label: 'Disco R',  history: diskReadHist,  color: '#fb923c', val: `${data.disk_io?.read_mbps ?? 0} MB/s`, net: false },
             ].map(s => (
               <div key={s.label} onClick={s.net ? () => setNetModal(true) : undefined}
                 style={{ cursor: s.net ? 'pointer' : 'default', borderRadius: '7px', padding: '4px', background: s.net ? 'rgba(96,165,250,0.03)' : 'transparent', transition: 'background 0.15s' }}>
@@ -1021,6 +1117,58 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
             </div>
           )}
 
+          {data.swap && data.swap.total_mb > 0 && (
+            <div>
+              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Swap</p>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: statusColor(data.swap.percent) }}>{data.swap.percent.toFixed(1)}%</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Uso</p>
+                </div>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#22d3ee' }}>{data.swap.used_mb}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB usados</p>
+                </div>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#94a3b8' }}>{data.swap.total_mb}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB total</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {data.disk_io && (
+            <div>
+              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Disco I/O</p>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#fb923c' }}>↓ {data.disk_io.read_mbps}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s R</p>
+                </div>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#f472b6' }}>↑ {data.disk_io.write_mbps}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s W</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {data.procs && (
+            <div>
+              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Procesos</p>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#94a3b8' }}>{data.procs.total}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Total</p>
+                </div>
+                <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: data.procs.zombies > 0 ? '#f87171' : '#34d399' }}>{data.procs.zombies}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Zombies</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <div style={{ ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#34d399' }}>{fmtUptime(data.uptime_s)}</p>
@@ -1074,6 +1222,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist }: {
         </div>
       </div>
 
+      <DockerPanel containers={data.docker} />
       <LogsPanel />
 
       <p style={{ margin: '10px 0 0', fontSize: '10px', color: '#1e293b', textAlign: 'right' }}>
@@ -1097,11 +1246,14 @@ export default function OperationsPage() {
   const [errorSince, setErrorSince] = useState<Date | null>(null);
   const [now,        setNow]       = useState(() => new Date());
 
-  const cpuHist  = useRef<number[]>([]);
-  const ramHist  = useRef<number[]>([]);
-  const rxHist   = useRef<number[]>([]);
-  const txHist   = useRef<number[]>([]);
-  const diskHist = useRef<number[]>([]);
+  const cpuHist      = useRef<number[]>([]);
+  const ramHist      = useRef<number[]>([]);
+  const rxHist       = useRef<number[]>([]);
+  const txHist       = useRef<number[]>([]);
+  const diskHist     = useRef<number[]>([]);
+  const swapHist     = useRef<number[]>([]);
+  const diskReadHist  = useRef<number[]>([]);
+  const diskWriteHist = useRef<number[]>([]);
 
   const push = (ref: React.MutableRefObject<number[]>, val: number) => {
     ref.current = [...ref.current, val].slice(-MAX_HISTORY);
@@ -1118,11 +1270,14 @@ export default function OperationsPage() {
       if (json.error) { setError(json.error); setErrorSince(prev => prev ?? new Date()); setLoading(false); return; }
       const m = json as VpsMetrics;
       setData(m);
-      push(cpuHist,  m.cpu.percent);
-      push(ramHist,  m.ram.percent);
-      push(rxHist,   m.net.rx_mbps);
-      push(txHist,   m.net.tx_mbps);
-      push(diskHist, m.disk.percent);
+      push(cpuHist,      m.cpu.percent);
+      push(ramHist,      m.ram.percent);
+      push(rxHist,       m.net.rx_mbps);
+      push(txHist,       m.net.tx_mbps);
+      push(diskHist,     m.disk.percent);
+      push(swapHist,     m.swap?.percent        ?? 0);
+      push(diskReadHist,  m.disk_io?.read_mbps  ?? 0);
+      push(diskWriteHist, m.disk_io?.write_mbps ?? 0);
       setError(null);
       setErrorSince(null);
       setNotConf(false);
@@ -1193,6 +1348,9 @@ export default function OperationsPage() {
           rxHist={rxHist.current}
           txHist={txHist.current}
           diskHist={diskHist.current}
+          swapHist={swapHist.current}
+          diskReadHist={diskReadHist.current}
+          diskWriteHist={diskWriteHist.current}
         />
       )}
     </div>

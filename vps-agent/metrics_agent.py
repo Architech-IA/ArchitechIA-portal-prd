@@ -49,15 +49,71 @@ def service_status(name: str) -> dict:
         return {"name": name, "active": False, "status": "unknown"}
 
 
-def net_io_mbps() -> dict:
-    """Calcula velocidad de red (MB/s) con dos lecturas separadas 0.5s."""
-    s1 = psutil.net_io_counters()
+def io_rates() -> dict:
+    """Velocidades de red y disco en un único sleep de 0.5s."""
+    n1 = psutil.net_io_counters()
+    d1 = psutil.disk_io_counters()
     time.sleep(0.5)
-    s2 = psutil.net_io_counters()
-    elapsed = 0.5
-    rx = (s2.bytes_recv - s1.bytes_recv) / elapsed / 1_048_576
-    tx = (s2.bytes_sent - s1.bytes_sent) / elapsed / 1_048_576
-    return {"rx_mbps": round(rx, 3), "tx_mbps": round(tx, 3)}
+    n2 = psutil.net_io_counters()
+    d2 = psutil.disk_io_counters()
+    e  = 0.5
+    dr = ((d2.read_bytes  - d1.read_bytes)  / e / 1_048_576) if d1 and d2 else 0
+    dw = ((d2.write_bytes - d1.write_bytes) / e / 1_048_576) if d1 and d2 else 0
+    return {
+        "net": {
+            "rx_mbps": round((n2.bytes_recv - n1.bytes_recv) / e / 1_048_576, 3),
+            "tx_mbps": round((n2.bytes_sent - n1.bytes_sent) / e / 1_048_576, 3),
+        },
+        "disk_io": {
+            "read_mbps":  round(dr, 3),
+            "write_mbps": round(dw, 3),
+        },
+    }
+
+
+def swap_info() -> dict:
+    """Uso de memoria swap."""
+    s = psutil.swap_memory()
+    return {
+        "total_mb": round(s.total / 1_048_576),
+        "used_mb":  round(s.used  / 1_048_576),
+        "percent":  s.percent,
+    }
+
+
+def proc_stats() -> dict:
+    """Total de procesos y zombies."""
+    try:
+        all_procs = list(psutil.process_iter(["status"]))
+        return {
+            "total":   len(all_procs),
+            "zombies": sum(1 for p in all_procs if p.info.get("status") == psutil.STATUS_ZOMBIE),
+        }
+    except Exception:
+        return {"total": 0, "zombies": 0}
+
+
+def docker_containers() -> list:
+    """Contenedores Docker corriendo (requiere que docker esté instalado)."""
+    try:
+        fmt = '{"id":"{{.ID}}","name":"{{.Names}}","image":"{{.Image}}","status":"{{.Status}}","ports":"{{.Ports}}"}'
+        out = subprocess.run(
+            ["docker", "ps", "--format", fmt],
+            capture_output=True, text=True, timeout=5
+        )
+        if out.returncode != 0:
+            return []
+        result = []
+        for line in out.stdout.strip().split("\n"):
+            line = line.strip()
+            if line:
+                try:
+                    result.append(json.loads(line))
+                except Exception:
+                    pass
+        return result
+    except Exception:
+        return []
 
 
 def disk_breakdown() -> list:
@@ -169,20 +225,25 @@ def collect() -> dict:
 
     mem  = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
-    cpu  = psutil.cpu_percent(interval=0.5)
-    net  = net_io_mbps()
 
-    # Carga del sistema (1, 5, 15 min) — solo en Linux
+    # Baseline CPU antes del sleep
+    psutil.cpu_percent(percpu=False)
+    psutil.cpu_percent(percpu=True)
+
+    # Un solo sleep de 0.5s cubre red, disco y CPU
+    rates     = io_rates()
+    cpu       = psutil.cpu_percent(percpu=False)
+    cpu_cores = psutil.cpu_percent(percpu=True)
+
     try:
         load_avg = list(os.getloadavg())
     except AttributeError:
         load_avg = [0, 0, 0]
 
-    # Top 5 procesos por CPU
-    procs = []
+    top_procs = []
     for p in sorted(psutil.process_iter(["pid", "name", "cpu_percent", "memory_percent"]),
                     key=lambda p: p.info.get("cpu_percent") or 0, reverse=True)[:5]:
-        procs.append({
+        top_procs.append({
             "pid":  p.info["pid"],
             "name": p.info["name"],
             "cpu":  round(p.info.get("cpu_percent") or 0, 1),
@@ -190,31 +251,36 @@ def collect() -> dict:
         })
 
     return {
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts":       datetime.now(timezone.utc).isoformat(),
         "uptime_s": uptime_s,
         "cpu": {
-            "percent": round(cpu, 1),
+            "percent":  round(cpu, 1),
             "load_avg": [round(x, 2) for x in load_avg],
-            "count": psutil.cpu_count(logical=True),
+            "count":    psutil.cpu_count(logical=True),
+            "per_core": [round(p, 1) for p in cpu_cores],
         },
         "ram": {
-            "total_mb":  round(mem.total   / 1_048_576),
-            "used_mb":   round(mem.used    / 1_048_576),
-            "avail_mb":  round(mem.available / 1_048_576),
-            "percent":   mem.percent,
+            "total_mb": round(mem.total    / 1_048_576),
+            "used_mb":  round(mem.used     / 1_048_576),
+            "avail_mb": round(mem.available / 1_048_576),
+            "percent":  mem.percent,
         },
+        "swap":    swap_info(),
         "disk": {
-            "total_gb": round(disk.total / 1_073_741_824, 1),
-            "used_gb":  round(disk.used  / 1_073_741_824, 1),
-            "free_gb":  round(disk.free  / 1_073_741_824, 1),
-            "percent":  disk.percent,
+            "total_gb":  round(disk.total / 1_073_741_824, 1),
+            "used_gb":   round(disk.used  / 1_073_741_824, 1),
+            "free_gb":   round(disk.free  / 1_073_741_824, 1),
+            "percent":   disk.percent,
             "breakdown":  disk_breakdown(),
             "categories": disk_categories(),
         },
-        "net": net,
+        "disk_io":     rates["disk_io"],
+        "net":         rates["net"],
         "connections": net_connections(),
-        "services": [service_status(s) for s in SERVICES],
-        "top_procs": procs,
+        "procs":       proc_stats(),
+        "docker":      docker_containers(),
+        "services":    [service_status(s) for s in SERVICES],
+        "top_procs":   top_procs,
     }
 
 
