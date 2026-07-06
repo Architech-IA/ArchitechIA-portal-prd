@@ -16,6 +16,7 @@ export interface FaseCronograma {
   resultado?: string
   fechaEjecucion?: string
   horaEjecucion?: string
+  horaFin?: string
 }
 
 const ESTADO_A_BACKLOG: Record<string, string> = {
@@ -127,7 +128,10 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
     const endTimeMap = new Map<string, string>()
     phasesByDay.forEach(arr => {
       arr.forEach((f, j) => {
-        if (j + 1 < arr.length) {
+        if (f.horaFin) {
+          // horaFin explícita tiene prioridad
+          endTimeMap.set(f.id, f.horaFin)
+        } else if (j + 1 < arr.length) {
           endTimeMap.set(f.id, arr[j + 1].horaEjecucion!)
         } else {
           const [h, m] = f.horaEjecucion!.split(':').map(Number)
@@ -208,12 +212,13 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
     <div className="space-y-4">
       <div>
         <label className="block text-xs font-medium text-gray-400 mb-1">Fecha y hora de ejecución real</label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <input
             type="date"
             value={selected.fechaEjecucion ?? ''}
             onChange={e => onUpdate?.(selected.id, { fechaEjecucion: e.target.value })}
             disabled={!onUpdate}
+            title="Fecha de ejecución"
             className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
           />
           <input
@@ -221,8 +226,24 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
             value={selected.horaEjecucion ?? ''}
             onChange={e => onUpdate?.(selected.id, { horaEjecucion: e.target.value })}
             disabled={!onUpdate}
+            title="Hora de inicio"
+            placeholder="Inicio"
             className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
           />
+          <input
+            type="time"
+            value={selected.horaFin ?? ''}
+            onChange={e => onUpdate?.(selected.id, { horaFin: e.target.value })}
+            disabled={!onUpdate}
+            title="Hora de fin"
+            placeholder="Fin"
+            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+          />
+        </div>
+        <div className="flex gap-2 mt-1">
+          <span className="text-[9px] text-gray-600 flex-1 text-center">Fecha</span>
+          <span className="text-[9px] text-gray-600 flex-1 text-center">Inicio</span>
+          <span className="text-[9px] text-gray-600 flex-1 text-center">Fin</span>
         </div>
       </div>
       <div>
@@ -426,7 +447,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                           </span>
                           {f.horaEjecucion && (
                             <p className="mt-0.5 text-[9px] text-cyan-400/70 font-mono truncate">
-                              ✓ {f.fechaEjecucion ? fmt(f.fechaEjecucion) : fmt(f.fechaInicio)} {f.horaEjecucion}
+                              ✓ {f.fechaEjecucion ? fmt(f.fechaEjecucion) : fmt(f.fechaInicio)} {f.horaEjecucion}{f.horaFin ? `–${f.horaFin}` : ''}
                             </p>
                           )}
                         </div>
