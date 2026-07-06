@@ -1407,7 +1407,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       </div>
 
       {/* Rows B+C: Top disco (span 2 filas) · Docker · Top procesos · Servicios · Resumen */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '300px 300px', gap: '12px', marginBottom: '12px' }}>
         {/* TopDiskConsumers: ocupa fila 1 y 2 */}
         <div style={{ gridRow: '1 / 3', display: 'flex', flexDirection: 'column' }}>
           <TopDiskConsumers disk={data.disk} />
