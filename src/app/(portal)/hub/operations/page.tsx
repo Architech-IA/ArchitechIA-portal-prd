@@ -191,6 +191,21 @@ function DualSparkline({ h1, h2, c1, c2, height = 80 }: {
   );
 }
 
+// ── Time axis labels ─────────────────────────────────────────────────────────
+function TimeAxis({ points, intervalSec = 30 }: { points: number; intervalSec?: number }) {
+  if (points < 2) return null;
+  const totalSec = (points - 1) * intervalSec;
+  const fmt = (s: number) => s === 0 ? 'Ahora' : s < 60 ? `-${s}s` : `-${Math.round(s / 60)}m`;
+  const labels = [0, 0.25, 0.5, 0.75, 1].map(f => fmt(Math.round((1 - f) * totalSec)));
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 2px 0', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
+      {labels.map((l, i) => (
+        <span key={i} style={{ fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{l}</span>
+      ))}
+    </div>
+  );
+}
+
 // ── Circular gauge ────────────────────────────────────────────────────────────
 function CircleGauge({ pct, color, label, sub }: { pct: number; color: string; label: string; sub: string }) {
   const r = 30, cx = 40, cy = 40, stroke = 7;
@@ -1538,6 +1553,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           <ModalShell onClose={() => setDiskIOModal(false)} title="Disco I/O" sub="Velocidad de lectura y escritura en tiempo real" icon="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" color={RC}>
             <div style={{ marginBottom: '20px' }}>
               <DualSparkline h1={diskReadHist} h2={diskWriteHist} c1={RC} c2={WC} height={120} />
+              <TimeAxis points={Math.max(diskReadHist.length, diskWriteHist.length)} />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <div style={{ width: '12px', height: '3px', background: RC, borderRadius: '2px' }} />
@@ -1616,6 +1632,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             ))}
           </div>
           <Sparkline history={connHist} color="#34d399" height={100} />
+          <TimeAxis points={connHist.length} />
           {connHist.length > 1 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '14px' }}>
               {[
