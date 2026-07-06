@@ -519,11 +519,11 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                             return (
                               <div
                                 key={i}
-                                className="relative h-12 border-r border-cyan-800/20 last:border-r-0 flex items-center"
+                                className={`relative h-12 flex items-center ${(inBar && !isLast) || inDayRange ? 'border-r-0' : 'border-r border-cyan-800/20 last:border-r-0'}`}
                               >
                                 {showBar && (
                                   <div
-                                    className="absolute inset-y-2.5 rounded-md flex items-center overflow-hidden hover:brightness-125 transition-[filter]"
+                                    className={`absolute inset-y-2.5 flex items-center overflow-hidden hover:brightness-125 transition-[filter] ${isSingle || inDayRange ? 'rounded-md' : isFirst ? 'rounded-l-md' : isLast ? 'rounded-r-md' : 'rounded-none'}`}
                                     style={{
                                       left: leftStyle,
                                       right: rightStyle,
