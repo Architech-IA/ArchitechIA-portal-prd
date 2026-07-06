@@ -287,10 +287,10 @@ function Skeleton() {
 }
 
 // ── CPU Core Heatmap ─────────────────────────────────────────────────────────
-function CpuCoreHeatmap({ perCore }: { perCore: number[] }) {
+function CpuCoreHeatmap({ perCore, onOpen }: { perCore: number[]; onOpen?: () => void }) {
   const cols = perCore.length <= 4 ? 2 : 4;
   return (
-    <div style={{ ...G.card }}>
+    <div style={{ ...G.card, cursor: 'pointer' }} onClick={onOpen}>
       <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CPU · Por núcleo</p>
       {perCore.length === 0 ? (
         <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de núcleos</p>
@@ -313,12 +313,12 @@ function CpuCoreHeatmap({ perCore }: { perCore: number[] }) {
 }
 
 // ── Disk I/O dual-line chart ──────────────────────────────────────────────────
-function DiskIOChart({ readHist, writeHist, currentRead, currentWrite }: {
-  readHist: number[]; writeHist: number[]; currentRead: number; currentWrite: number;
+function DiskIOChart({ readHist, writeHist, currentRead, currentWrite, onOpen }: {
+  readHist: number[]; writeHist: number[]; currentRead: number; currentWrite: number; onOpen?: () => void;
 }) {
   const RC = '#fb923c', WC = '#f472b6';
   return (
-    <div style={{ ...G.card }}>
+    <div style={{ ...G.card, cursor: 'pointer' }} onClick={onOpen}>
       <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Disco I/O</p>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
         {[{ color: RC, label: '↓ Lectura', val: currentRead, peak: maxVal(readHist) },
@@ -339,7 +339,7 @@ function DiskIOChart({ readHist, writeHist, currentRead, currentWrite }: {
 }
 
 // ── Disk Category Donut ───────────────────────────────────────────────────────
-function DiskCategoryDonut({ categories, usedGb, totalGb }: { categories: DiskCategory[]; usedGb: number; totalGb: number }) {
+function DiskCategoryDonut({ categories, usedGb, totalGb, onOpen }: { categories: DiskCategory[]; usedGb: number; totalGb: number; onOpen?: () => void }) {
   const items = (categories ?? []).filter(c => c.used_gb > 0.01).slice(0, 7);
   const total = items.reduce((s, c) => s + c.used_gb, 0);
   const SIZE = 118, cx = 59, cy = 59, R = 42, SW = 13;
@@ -355,7 +355,7 @@ function DiskCategoryDonut({ categories, usedGb, totalGb }: { categories: DiskCa
   const diskPct = totalGb > 0 ? (usedGb / totalGb) * 100 : 0;
   const diskColor = statusColor(diskPct);
   return (
-    <div style={{ ...G.card, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...G.card, display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={onOpen}>
       <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Disco · Categorías</p>
       {items.length === 0 ? (
         <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de categorías</p>
@@ -392,10 +392,10 @@ function DiskCategoryDonut({ categories, usedGb, totalGb }: { categories: DiskCa
 }
 
 // ── TCP Connections Chart ─────────────────────────────────────────────────────
-function TcpConnChart({ history, current, listening }: { history: number[]; current: number; listening: number }) {
+function TcpConnChart({ history, current, listening, onOpen }: { history: number[]; current: number; listening: number; onOpen?: () => void }) {
   const color = '#34d399';
   return (
-    <div style={{ ...G.card }}>
+    <div style={{ ...G.card, cursor: 'pointer' }} onClick={onOpen}>
       <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Conexiones TCP</p>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div>
@@ -1100,6 +1100,10 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
   const [procsModal,     setProcsModal]     = useState(false);
   const [uptimeModal,    setUptimeModal]    = useState(false);
   const [svcsModal,      setSvcsModal]      = useState(false);
+  const [cpuCoreModal,   setCpuCoreModal]   = useState(false);
+  const [diskIOModal,    setDiskIOModal]    = useState(false);
+  const [diskCatModal,   setDiskCatModal]   = useState(false);
+  const [tcpModal,       setTcpModal]       = useState(false);
   const cpuColor  = statusColor(data.cpu.percent);
   const ramColor  = statusColor(data.ram.percent);
   const diskColor = statusColor(data.disk.percent);
@@ -1395,15 +1399,16 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
 
       {/* Row D: Gráficas avanzadas */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-        <CpuCoreHeatmap perCore={data.cpu.per_core ?? []} />
+        <CpuCoreHeatmap perCore={data.cpu.per_core ?? []} onOpen={() => setCpuCoreModal(true)} />
         <DiskIOChart
           readHist={diskReadHist}
           writeHist={diskWriteHist}
           currentRead={data.disk_io?.read_mbps ?? 0}
           currentWrite={data.disk_io?.write_mbps ?? 0}
+          onOpen={() => setDiskIOModal(true)}
         />
-        <DiskCategoryDonut categories={data.disk.categories ?? []} usedGb={data.disk.used_gb} totalGb={data.disk.total_gb} />
-        <TcpConnChart history={connHist} current={data.connections?.established ?? 0} listening={data.connections?.listening ?? 0} />
+        <DiskCategoryDonut categories={data.disk.categories ?? []} usedGb={data.disk.used_gb} totalGb={data.disk.total_gb} onOpen={() => setDiskCatModal(true)} />
+        <TcpConnChart history={connHist} current={data.connections?.established ?? 0} listening={data.connections?.listening ?? 0} onOpen={() => setTcpModal(true)} />
       </div>
 
       {/* Rows B+C: Top disco (span 2 filas) · Docker · Top procesos · Servicios · Resumen */}
@@ -1485,6 +1490,148 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       </p>
 
       {netModal && <NetModal rxHist={rxHist} txHist={txHist} data={data} onClose={() => setNetModal(false)} />}
+
+      {/* CPU Core modal */}
+      {cpuCoreModal && (
+        <ModalShell onClose={() => setCpuCoreModal(false)} title="CPU · Por núcleo" sub={`${data.cpu.per_core?.length ?? 0} núcleos lógicos · carga global ${data.cpu.percent}%`} icon="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" color={cpuColor}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' }}>
+            {(data.cpu.per_core ?? []).map((pct, i) => {
+              const c = statusColor(pct);
+              return (
+                <div key={i} style={{ borderRadius: '10px', background: `${c}15`, border: `1px solid ${c}40`, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '10px', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>Core {i}</span>
+                  <span style={{ fontSize: '22px', fontWeight: 900, color: c, lineHeight: 1 }}>{pct}%</span>
+                  <div style={{ width: '100%', height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, borderRadius: '3px', background: c, transition: 'width 0.5s' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+            {[
+              { label: 'Promedio', val: `${avg(data.cpu.per_core ?? []).toFixed(1)}%`, color: cpuColor },
+              { label: 'Máximo', val: `${maxVal(data.cpu.per_core ?? [])}%`, color: statusColor(maxVal(data.cpu.per_core ?? [])) },
+              { label: 'Mínimo', val: `${Math.min(...(data.cpu.per_core ?? [0]))}%`, color: '#34d399' },
+            ].map(r => (
+              <div key={r.label} style={{ textAlign: 'center', padding: '14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <p style={{ margin: 0, fontSize: '24px', fontWeight: 900, color: r.color }}>{r.val}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
+              </div>
+            ))}
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Disco I/O modal */}
+      {diskIOModal && (() => {
+        const RC = '#fb923c', WC = '#f472b6';
+        const stats = [
+          { label: 'Lectura actual', val: `${data.disk_io?.read_mbps ?? 0} MB/s`, color: RC },
+          { label: 'Escritura actual', val: `${data.disk_io?.write_mbps ?? 0} MB/s`, color: WC },
+          { label: 'Pico lectura', val: `${maxVal(diskReadHist).toFixed(2)} MB/s`, color: RC },
+          { label: 'Pico escritura', val: `${maxVal(diskWriteHist).toFixed(2)} MB/s`, color: WC },
+          { label: 'Avg lectura', val: `${avg(diskReadHist).toFixed(2)} MB/s`, color: RC },
+          { label: 'Avg escritura', val: `${avg(diskWriteHist).toFixed(2)} MB/s`, color: WC },
+        ];
+        return (
+          <ModalShell onClose={() => setDiskIOModal(false)} title="Disco I/O" sub="Velocidad de lectura y escritura en tiempo real" icon="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" color={RC}>
+            <div style={{ marginBottom: '20px' }}>
+              <DualSparkline h1={diskReadHist} h2={diskWriteHist} c1={RC} c2={WC} height={120} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '12px', height: '3px', background: RC, borderRadius: '2px' }} />
+                  <span style={{ fontSize: '11px', color: '#475569' }}>Lectura</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '12px', height: '3px', background: WC, borderRadius: '2px' }} />
+                  <span style={{ fontSize: '11px', color: '#475569' }}>Escritura</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+              {stats.map(s => (
+                <div key={s.label} style={{ padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: s.color }}>{s.val}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </ModalShell>
+        );
+      })()}
+
+      {/* Disco Categorías modal */}
+      {diskCatModal && (() => {
+        const cats = (data.disk.categories ?? []).filter(c => c.used_gb > 0.01);
+        const total = cats.reduce((s, c) => s + c.used_gb, 0);
+        return (
+          <ModalShell onClose={() => setDiskCatModal(false)} title="Disco · Categorías" sub={`${data.disk.used_gb} GB usados de ${data.disk.total_gb} GB · ${data.disk.percent}%`} icon="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" color="#4ade80">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {cats.map((cat, i) => {
+                const color = CAT_COLORS[i % CAT_COLORS.length];
+                const pct = total > 0 ? (cat.used_gb / total) * 100 : 0;
+                return (
+                  <div key={cat.path}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: color, boxShadow: `0 0 6px ${color}80`, flexShrink: 0 }} />
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', flex: 1 }}>{cat.label}</span>
+                      <span style={{ fontSize: '11px', color: '#475569' }}>{cat.path}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 900, color }}>{cat.used_gb.toFixed(2)} GB</span>
+                      <span style={{ fontSize: '11px', color: '#475569', width: '36px', textAlign: 'right' }}>{pct.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', marginBottom: cat.children?.length ? '8px' : '4px' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, borderRadius: '3px', background: color, boxShadow: `0 0 8px ${color}60`, transition: 'width 0.6s' }} />
+                    </div>
+                    {cat.children && cat.children.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px', paddingLeft: '20px' }}>
+                        {cat.children.slice(0, 6).map(child => (
+                          <div key={child.path} style={{ padding: '3px 8px', borderRadius: '5px', background: `${color}12`, border: `1px solid ${color}30`, fontSize: '10px', color: '#94a3b8' }}>
+                            <span style={{ fontWeight: 700, color }}>{child.name}</span> · {child.used_gb} GB
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ModalShell>
+        );
+      })()}
+
+      {/* TCP Connections modal */}
+      {tcpModal && (
+        <ModalShell onClose={() => setTcpModal(false)} title="Conexiones TCP" sub="Estado de conexiones de red en tiempo real" icon="M13 10V3L4 14h7v7l9-11h-7z" color="#34d399">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            {[
+              { label: 'Establecidas', val: data.connections?.established ?? 0, color: '#34d399' },
+              { label: 'En escucha', val: data.connections?.listening ?? 0, color: '#60a5fa' },
+              { label: 'Total', val: data.connections?.total ?? 0, color: '#94a3b8' },
+            ].map(r => (
+              <div key={r.label} style={{ textAlign: 'center', padding: '16px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <p style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: r.color }}>{r.val}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{r.label}</p>
+              </div>
+            ))}
+          </div>
+          <Sparkline history={connHist} color="#34d399" height={100} />
+          {connHist.length > 1 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '14px' }}>
+              {[
+                { label: 'Pico', val: maxVal(connHist) },
+                { label: 'Promedio', val: avg(connHist).toFixed(1) },
+                { label: 'Actual', val: connHist[connHist.length - 1] ?? 0 },
+              ].map(r => (
+                <div key={r.label} style={{ textAlign: 'center', padding: '10px', borderRadius: '8px', background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.15)' }}>
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 900, color: '#34d399' }}>{r.val}</p>
+                  <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </ModalShell>
+      )}
 
       {/* Load Average modal */}
       {loadAvgModal && (
