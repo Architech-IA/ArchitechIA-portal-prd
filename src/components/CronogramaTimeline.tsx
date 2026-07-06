@@ -15,6 +15,7 @@ export interface FaseCronograma {
   backlogItemId?: string
   resultado?: string        // resumen de lo que se hizo, decisiones, links, pendientes
   fechaEjecucion?: string   // fecha real en que se ejecutó la sesión (YYYY-MM-DD)
+  horaEjecucion?: string    // hora real de la sesión (HH:MM)
 }
 
 const ESTADO_A_BACKLOG: Record<string, string> = {
@@ -139,14 +140,23 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
   const resultadoContent = selected ? (
     <div className="space-y-4">
       <div>
-        <label className="block text-xs font-medium text-gray-400 mb-1">Fecha de ejecución real</label>
-        <input
-          type="date"
-          value={selected.fechaEjecucion ?? ''}
-          onChange={e => onUpdate?.(selected.id, { fechaEjecucion: e.target.value })}
-          disabled={!onUpdate}
-          className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
-        />
+        <label className="block text-xs font-medium text-gray-400 mb-1">Fecha y hora de ejecución real</label>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            value={selected.fechaEjecucion ?? ''}
+            onChange={e => onUpdate?.(selected.id, { fechaEjecucion: e.target.value })}
+            disabled={!onUpdate}
+            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+          />
+          <input
+            type="time"
+            value={selected.horaEjecucion ?? ''}
+            onChange={e => onUpdate?.(selected.id, { horaEjecucion: e.target.value })}
+            disabled={!onUpdate}
+            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-60"
+          />
+        </div>
       </div>
       <div>
         <label className="block text-xs font-medium text-gray-400 mb-1">
@@ -275,6 +285,14 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
               const startIdx = Math.round((s - min) / DAY_MS)
               const spanDays = Math.round((e - s) / DAY_MS) + 1
               const color = ESTADO_COLOR[f.estado] || ESTADO_COLOR.PENDIENTE
+
+              const execIdx = f.fechaEjecucion
+                ? Math.round((new Date(f.fechaEjecucion + 'T00:00:00').getTime() - min) / DAY_MS)
+                : null
+              const execLabel = f.fechaEjecucion
+                ? `Ejecutado: ${fmt(f.fechaEjecucion)}${f.horaEjecucion ? ' ' + f.horaEjecucion : ''}`
+                : null
+
               return (
                 <button
                   key={f.id}
@@ -290,11 +308,17 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                     >
                       {f.estado}
                     </span>
+                    {f.fechaEjecucion && (
+                      <p className="mt-0.5 text-[9px] text-cyan-400/70 font-mono truncate">
+                        ✓ {fmt(f.fechaEjecucion)}{f.horaEjecucion ? ' ' + f.horaEjecucion : ''}
+                      </p>
+                    )}
                   </div>
                   <div className="grid flex-1" style={dayGridStyle}>
                     {days.map((_, i) => {
                       const inRange = i >= startIdx && i < startIdx + spanDays
                       const isFirst = i === startIdx
+                      const isExec = execIdx !== null && i === execIdx
                       return (
                         <div key={i} className="relative h-12 border-r border-cyan-800/20 last:border-r-0 flex items-center justify-center">
                           {inRange && (
@@ -304,6 +328,20 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                             >
                               {isFirst && spanDays >= 3 && (
                                 <span className="text-[9px] text-white/80 font-mono px-1 truncate">{spanDays}d</span>
+                              )}
+                            </div>
+                          )}
+                          {isExec && (
+                            <div
+                              className="absolute inset-y-1 w-0.5 left-1/2 -translate-x-1/2 rounded-full z-10 group"
+                              style={{ background: '#ffffff', boxShadow: '0 0 4px #fff8' }}
+                              title={execLabel ?? undefined}
+                            >
+                              <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow" />
+                              {f.horaEjecucion && (
+                                <span className="absolute top-3 left-2 text-[8px] text-white/90 font-mono whitespace-nowrap bg-gray-900/80 px-1 rounded pointer-events-none">
+                                  {f.horaEjecucion}
+                                </span>
                               )}
                             </div>
                           )}
