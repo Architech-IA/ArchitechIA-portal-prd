@@ -2,9 +2,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const encoder = new TextEncoder();
+  let interval: ReturnType<typeof setInterval>;
+  let keepAlive: ReturnType<typeof setInterval>;
+
   const stream = new ReadableStream({
     start(controller) {
-      const interval = setInterval(async () => {
+      const send = async () => {
         try {
           const { prisma } = await import('@/lib/prisma');
           const notifications = await prisma.notification.findMany({
@@ -14,16 +17,17 @@ export async function GET() {
           });
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(notifications)}\n\n`));
         } catch {}
-      }, 10000);
-
-      const keepAlive = setInterval(() => {
-        controller.enqueue(encoder.encode(': keepalive\n\n'));
-      }, 30000);
-
-      return () => {
-        clearInterval(interval);
-        clearInterval(keepAlive);
       };
+
+      send();
+      interval  = setInterval(send, 10000);
+      keepAlive = setInterval(() => {
+        try { controller.enqueue(encoder.encode(': keepalive\n\n')); } catch {}
+      }, 30000);
+    },
+    cancel() {
+      clearInterval(interval);
+      clearInterval(keepAlive);
     },
   });
 

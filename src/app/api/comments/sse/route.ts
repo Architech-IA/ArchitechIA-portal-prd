@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
   const entityId   = searchParams.get('entityId') ?? '';
 
   const encoder = new TextEncoder();
+  let interval: ReturnType<typeof setInterval>;
+  let keepAlive: ReturnType<typeof setInterval>;
 
   const stream = new ReadableStream({
     start(controller) {
@@ -26,16 +28,18 @@ export async function GET(request: NextRequest) {
             orderBy: { createdAt: 'asc' },
           });
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(comments)}\n\n`));
-        } catch { /* silenciar errores de DB */ }
+        } catch {}
       };
 
       send();
-      const interval = setInterval(send, 4000);
-      const keepAlive = setInterval(() => {
-        controller.enqueue(encoder.encode(': keepalive\n\n'));
+      interval  = setInterval(send, 4000);
+      keepAlive = setInterval(() => {
+        try { controller.enqueue(encoder.encode(': keepalive\n\n')); } catch {}
       }, 25000);
-
-      return () => { clearInterval(interval); clearInterval(keepAlive); };
+    },
+    cancel() {
+      clearInterval(interval);
+      clearInterval(keepAlive);
     },
   });
 

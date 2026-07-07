@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
 
+let cache: { data: unknown; ts: number } | null = null;
+const CACHE_TTL = 30_000;
+
 export async function GET(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   const userId = (token as { sub?: string })?.sub;
+
+  if (cache && Date.now() - cache.ts < CACHE_TTL) {
+    return NextResponse.json(cache.data, {
+      headers: { 'X-Cache': 'HIT' },
+    });
+  }
+
   const hoy = new Date();
   const hace7dias  = new Date(hoy); hace7dias.setDate(hoy.getDate() - 7);
   const hace5dias  = new Date(hoy); hace5dias.setDate(hoy.getDate() - 5);
@@ -14,96 +24,99 @@ export async function GET(request: NextRequest) {
   const inicioMes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`;
   const finMes    = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-31`;
 
-  // Una sola ronda de queries en paralelo
-  const [allLeads, allProposals, allProjects, activityCount, topSocios, registros, recentActivities] =
-    await Promise.all([
-      prisma.lead.findMany({
-        select: { id: true, companyName: true, status: true, estimatedValue: true,
-                  updatedAt: true, source: true, createdAt: true },
-      }),
-      prisma.proposal.findMany({
-        select: { id: true, title: true, status: true, amount: true, sentDate: true, createdAt: true },
-      }),
-      prisma.project.findMany({
-        select: { id: true, name: true, status: true, priority: true,
-                  progress: true, endDate: true, createdAt: true },
-      }),
-      prisma.activity.count(),
-      prisma.user.findMany({
-        select: { id: true, name: true, role: true,
-          _count: { select: { leads: true, proposals: true, projects: true } } },
-        orderBy: { leads: { _count: 'desc' } },
-        take: 4,
-      }),
-      prisma.registroFinanciero.findMany({
-        where: { tipo: 'ingreso', estado: { not: 'cancelado' },
-          fecha: { gte: `${hace6meses.getFullYear()}-${String(hace6meses.getMonth() + 1).padStart(2, '0')}-01` } },
-        select: { id: true, concepto: true, monto: true, moneda: true, tipo: true, fecha: true, estado: true },
-      }),
-      prisma.activity.findMany({
-        take: 8, orderBy: { createdAt: 'desc' },
-        include: { user: { select: { name: true } } },
-      }),
-    ]);
+  // Ronda 1: todas las queries independientes en paralelo
+  const myDayQueries = userId ? [
+    prisma.lead.findMany({
+      where: { userId, status: { in: ['NEW', 'CONTACTED'] } },
+      select: { id: true, companyName: true, contactName: true, status: true, updatedAt: true },
+      orderBy: { updatedAt: 'asc' }, take: 5,
+    }),
+    prisma.proposal.findMany({
+      where: { userId, status: { in: ['DRAFT', 'SENT', 'UNDER_REVIEW'] } },
+      select: { id: true, title: true, status: true, amount: true, createdAt: true },
+      orderBy: { createdAt: 'desc' }, take: 5,
+    }),
+  ] : [Promise.resolve([]), Promise.resolve([])];
 
-  // ── Backlog stats ──
-  const [backlogItems, sprint] = await Promise.all([
+  const [
+    allLeads, allProposals, allProjects, activityCount,
+    topSocios, registros, recentActivities,
+    backlogItems, sprint,
+    registrosPendientes,
+    myLeads, myProposals,
+  ] = await Promise.all([
+    prisma.lead.findMany({
+      select: { id: true, companyName: true, status: true, estimatedValue: true,
+                updatedAt: true, source: true, createdAt: true },
+    }),
+    prisma.proposal.findMany({
+      select: { id: true, title: true, status: true, amount: true, sentDate: true, createdAt: true },
+    }),
+    prisma.project.findMany({
+      select: { id: true, name: true, status: true, priority: true,
+                progress: true, endDate: true, createdAt: true },
+    }),
+    prisma.activity.count(),
+    prisma.user.findMany({
+      select: { id: true, name: true, role: true,
+        _count: { select: { leads: true, proposals: true, projects: true } } },
+      orderBy: { leads: { _count: 'desc' } },
+      take: 4,
+    }),
+    prisma.registroFinanciero.findMany({
+      where: { tipo: 'ingreso', estado: { not: 'cancelado' },
+        fecha: { gte: `${hace6meses.getFullYear()}-${String(hace6meses.getMonth() + 1).padStart(2, '0')}-01` } },
+      select: { id: true, concepto: true, monto: true, moneda: true, tipo: true, fecha: true, estado: true },
+    }),
+    prisma.activity.findMany({
+      take: 8, orderBy: { createdAt: 'desc' },
+      include: { user: { select: { name: true } } },
+    }),
     prisma.backlogItem.findMany({ select: { status: true, type: true, points: true } }),
     prisma.sprint.findFirst({ where: { status: 'ACTIVE' }, select: { id: true, name: true, endDate: true } }),
+    prisma.registroFinanciero.findMany({
+      where: { estado: 'pendiente' },
+      select: { id: true, concepto: true, monto: true, moneda: true, tipo: true },
+      take: 5,
+    }),
+    ...myDayQueries,
   ]);
-  const sprintItems = sprint ? await prisma.backlogItem.findMany({ where: { sprintId: sprint.id } }) : [];
+
+  // Ronda 2: solo sprintItems depende del resultado anterior
+  const sprintItems = sprint
+    ? await prisma.backlogItem.findMany({ where: { sprintId: sprint.id } })
+    : [];
+
+  // Backlog stats
   const backlogStats = {
     total: backlogItems.length,
-    pendientes: backlogItems.filter(i => i.status === 'BACKLOG').length,
-    enProgreso: backlogItems.filter(i => i.status === 'IN_PROGRESS').length,
-    completados: backlogItems.filter(i => i.status === 'DONE').length,
-    puntosTotales: backlogItems.reduce((a, i) => a + (i.points || 0), 0),
+    pendientes: backlogItems.filter((i: any) => i.status === 'BACKLOG').length,
+    enProgreso: backlogItems.filter((i: any) => i.status === 'IN_PROGRESS').length,
+    completados: backlogItems.filter((i: any) => i.status === 'DONE').length,
+    puntosTotales: backlogItems.reduce((a: number, i: any) => a + (i.points || 0), 0),
     sprintActivo: sprint ? { name: sprint.name, endDate: sprint.endDate, items: sprintItems.length } : null,
-    sprintBurndown: sprint ? sprintItems.map(i => ({ status: i.status, points: i.points || 0 })) : [],
+    sprintBurndown: sprint ? sprintItems.map((i: any) => ({ status: i.status, points: i.points || 0 })) : [],
   };
 
-  // ── Registros pendientes (del array ya cargado)
-  const registrosPendientes = await prisma.registroFinanciero.findMany({
-    where: { estado: 'pendiente' },
-    select: { id: true, concepto: true, monto: true, moneda: true, tipo: true },
-    take: 5,
-  });
+  const myDay = {
+    leadsContactar: (myLeads as any[]).map(l => ({ id: l.id, companyName: l.companyName, contactName: l.contactName, status: l.status, updatedAt: l.updatedAt })),
+    propuestasPendientes: (myProposals as any[]).map(p => ({ id: p.id, title: p.title, status: p.status, amount: p.amount })),
+    tareasVencidas: [],
+  };
 
-  // ── "Lo que debo hacer hoy" para el usuario actual
-  let myDay = { leadsContactar: [] as any[], propuestasPendientes: [] as any[], tareasVencidas: [] as any[] };
-  if (userId) {
-    const [myLeads, myProposals] = await Promise.all([
-      prisma.lead.findMany({
-        where: { userId, status: { in: ['NEW', 'CONTACTED'] } },
-        select: { id: true, companyName: true, contactName: true, status: true, updatedAt: true },
-        orderBy: { updatedAt: 'asc' }, take: 5,
-      }),
-      prisma.proposal.findMany({
-        where: { userId, status: { in: ['DRAFT', 'SENT', 'UNDER_REVIEW'] } },
-        select: { id: true, title: true, status: true, amount: true, createdAt: true },
-        orderBy: { createdAt: 'desc' }, take: 5,
-      }),
-    ]);
-    myDay.leadsContactar = myLeads.map(l => ({ id: l.id, companyName: l.companyName, contactName: l.contactName, status: l.status, updatedAt: l.updatedAt }));
-    myDay.propuestasPendientes = myProposals.map(p => ({ id: p.id, title: p.title, status: p.status, amount: p.amount }));
-  }
-
-  // ── Conteos y agrupaciones desde JS (sin más DB calls)
-  const leads      = allLeads.length;
-  const proposals  = allProposals.length;
-  const projects   = allProjects.length;
+  const leads     = allLeads.length;
+  const proposals = allProposals.length;
+  const projects  = allProjects.length;
 
   const totalEstimatedValue = allLeads.reduce((a, l) => a + l.estimatedValue, 0);
   const leadsGanados        = allLeads.filter(l => l.status === 'WON').length;
   const conversionRate      = leads > 0 ? Math.round((leadsGanados / leads) * 100) : 0;
 
-  const leadsByStatus    = groupCount(allLeads,    'status');
+  const leadsByStatus     = groupCount(allLeads,     'status');
   const proposalsByStatus = groupCount(allProposals, 'status');
   const projectsByStatus  = groupCount(allProjects,  'status');
+  const industriaLeads    = groupCount(allLeads,     'source');
 
-  const industriaLeads = groupCount(allLeads, 'source');
-
-  // ── Alertas
   const leadsInactivos = allLeads
     .filter(l => !['WON', 'LOST'].includes(l.status) && l.updatedAt < hace7dias)
     .slice(0, 5)
@@ -120,7 +133,6 @@ export async function GET(request: NextRequest) {
     .slice(0, 5)
     .map(p => ({ id: p.id, name: p.name, endDate: p.endDate, progress: p.progress, priority: p.priority }));
 
-  // ── Embudo desde JS
   const ETAPAS_EMBUDO = ['NEW','CONTACTED','DIAGNOSIS','QUALIFIED','DEMO_VALIDATION','PROPOSAL_SENT','NEGOTIATION','WON'];
   const embudo = ETAPAS_EMBUDO.map(status => ({
     status,
@@ -128,11 +140,9 @@ export async function GET(request: NextRequest) {
     valor: allLeads.filter(l => l.status === status).reduce((a, l) => a + l.estimatedValue, 0),
   }));
 
-  // ── Ingresos del mes
-  const ingresosMes  = registros.filter(r => r.fecha >= inicioMes && r.fecha <= finMes).reduce((a, r) => a + r.monto, 0);
-  const metaMensual  = 30000;
+  const ingresosMes = registros.filter(r => r.fecha >= inicioMes && r.fecha <= finMes).reduce((a, r) => a + r.monto, 0);
+  const metaMensual = 30000;
 
-  // ── Tendencias últimos 6 meses desde JS
   const tendencias = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(hoy);
     d.setMonth(hoy.getMonth() - (5 - i));
@@ -148,28 +158,21 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({
+  const result = {
     counts: { leads, proposals, projects, activities: activityCount },
-    leadsByStatus,
-    proposalsByStatus,
-    projectsByStatus,
-    totalEstimatedValue,
-    conversionRate,
-    leadsGanados,
-    leadsInactivos,
-    propuestasSinRespuesta,
-    proximosDeadlines,
-    topSocios,
-    embudo,
-    industriaLeads,
-    metaMensual,
-    ingresosMes,
-    registrosPendientes,
-    recentActivities,
-    tendencias,
-    myDay,
-    staleLeads: leadsInactivos,
-    backlogStats,
+    leadsByStatus, proposalsByStatus, projectsByStatus,
+    totalEstimatedValue, conversionRate, leadsGanados,
+    leadsInactivos, propuestasSinRespuesta, proximosDeadlines,
+    topSocios, embudo, industriaLeads,
+    metaMensual, ingresosMes, registrosPendientes,
+    recentActivities, tendencias, myDay,
+    staleLeads: leadsInactivos, backlogStats,
+  };
+
+  cache = { data: result, ts: Date.now() };
+
+  return NextResponse.json(result, {
+    headers: { 'X-Cache': 'MISS' },
   });
 }
 
