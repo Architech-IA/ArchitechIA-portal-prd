@@ -2142,7 +2142,11 @@ function ServerMiniCard({ vps, metrics, metricsLoading, docker, onSelect }: {
         </div>
       </div>
 
-      {metricsLoading && <div style={{ height: '80px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', animation: 'pulse 1.5s infinite' }} />}
+      {metricsLoading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+          {[0,1,2].map(i => <div key={i} style={{ height: '20px', borderRadius: '4px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite', animationDelay: i*0.15+'s' }} />)}
+        </div>
+      )}
       {metrics && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
           {([
@@ -2254,7 +2258,7 @@ function RightPanel({ m1, m2, events }: {
                 })}
               </div>
             ) : (
-              <div style={{ height: '38px', borderRadius: '7px', background: 'rgba(255,255,255,0.02)', animation: 'pulse 1.5s infinite' }} />
+              <div style={{ display: 'flex', gap: '5px' }}>{[0,1,2].map(i => <div key={i} style={{ flex:1, height:'38px', borderRadius:'7px', background:'rgba(255,255,255,0.02)', animation:'pulse 1.5s infinite', animationDelay:i*0.1+'s' }} />)}</div>
             )}
           </div>
         ))}
@@ -2419,13 +2423,13 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
   const totalAgents = [...agents1, ...agents2].filter(a => !EXCLUDE.has(a.file)).length;
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden', margin: '0 -32px -16px -32px' }}>
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
       {/* ── Main area ── */}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 24px', background: 'rgba(0,0,0,0.12)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 20px', background: 'rgba(10,10,28,0.95)', flexShrink: 0, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
           {TABS.map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
               style={{ padding: '11px 18px 12px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? '#f1f5f9' : '#475569', background: 'none', borderBottom: activeTab === t.key ? '2px solid #60a5fa' : '2px solid transparent', marginBottom: '-1px', transition: 'color 0.15s, border-color 0.15s', letterSpacing: '0.01em' }}>
@@ -2439,17 +2443,17 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
         </div>
 
         {/* Tab content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
 
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div>
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '28px' }}>
+              <div style={{ display: 'flex', gap: '14px', marginBottom: '20px' }}>
                 <ServerMiniCard vps={VPS_LIST[0]} metrics={m1} metricsLoading={ml1} docker={docker1} onSelect={() => onSelect('vps1')} />
                 <ServerMiniCard vps={VPS_LIST[1]} metrics={m2} metricsLoading={ml2} docker={docker2} onSelect={() => onSelect('vps2')} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '32px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' }}>
                 {([
                   { label: 'Servicios activos', val: docker1.filter(c => c.status.startsWith('Up')).length + docker2.filter(c => c.status.startsWith('Up')).length, color: '#34d399' },
                   { label: 'Agentes IA', val: totalAgents, color: '#60a5fa' },
@@ -2527,7 +2531,7 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
       </div>
 
       {/* ── Right panel ── */}
-      <div style={{ width: '272px', flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '20px 16px 20px 18px', overflowY: 'auto', background: 'rgba(0,0,0,0.08)' }}>
+      <div style={{ width: '268px', flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '18px 14px 20px 16px', overflowY: 'auto', background: 'rgba(0,0,0,0.1)', height: '100%', boxSizing: 'border-box' }}>
         <RightPanel m1={m1} m2={m2} events={events} />
       </div>
 
