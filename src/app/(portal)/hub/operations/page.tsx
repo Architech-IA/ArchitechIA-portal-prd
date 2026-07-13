@@ -2109,10 +2109,208 @@ function RepoCard({ r }: { r: GhRepo }) {
   );
 }
 
+// ── Command Center types ──────────────────────────────────────────────────────
+type CCTab = 'overview' | 'agents' | 'services' | 'github';
+type TimelineEvent = { ts: Date; msg: string; level: 'info' | 'warn' | 'crit' };
+
+// ── Server mini-card (Overview) ───────────────────────────────────────────────
+function ServerMiniCard({ vps, metrics, metricsLoading, docker, onSelect }: {
+  vps: { key: 'vps1' | 'vps2'; label: string; ip: string; color: string; specs: string };
+  metrics: { cpu: number; ram: number; disk: number; uptime_s: number } | null;
+  metricsLoading: boolean;
+  docker: DockerContainer[];
+  onSelect: () => void;
+}) {
+  const upCount = docker.filter(c => c.status.startsWith('Up')).length;
+  return (
+    <div onClick={onSelect} role="button" tabIndex={0}
+      style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '20px', cursor: 'pointer', transition: 'all 0.2s' }}
+      onMouseEnter={e => { const el = e.currentTarget; el.style.background = 'rgba(255,255,255,0.055)'; el.style.borderColor = vps.color + '45'; el.style.boxShadow = '0 0 24px ' + vps.color + '18'; el.style.transform = 'translateY(-2px)'; }}
+      onMouseLeave={e => { const el = e.currentTarget; el.style.background = 'rgba(255,255,255,0.03)'; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.boxShadow = 'none'; el.style.transform = 'translateY(0)'; }}>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399' }} />
+            <span style={{ fontSize: '16px', fontWeight: 800, color: '#f1f5f9' }}>{vps.label}</span>
+          </div>
+          <span style={{ fontSize: '11px', color: vps.color, fontFamily: 'monospace', fontWeight: 600 }}>{vps.ip}</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end' }}>
+          <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: vps.color + '15', color: vps.color, border: '1px solid ' + vps.color + '30' }}>{upCount} servicios</span>
+          {metrics && <span style={{ fontSize: '10px', color: '#475569' }}>↑ {fmtUptime(metrics.uptime_s)}</span>}
+        </div>
+      </div>
+
+      {metricsLoading && <div style={{ height: '80px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', animation: 'pulse 1.5s infinite' }} />}
+      {metrics && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+          {([
+            { label: 'CPU', pct: metrics.cpu },
+            { label: 'RAM', pct: metrics.ram },
+            { label: 'Disco', pct: metrics.disk },
+          ] as { label: string; pct: number }[]).map(m => {
+            const col = statusColor(m.pct);
+            return (
+              <div key={m.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '10px', color: '#475569', fontWeight: 600 }}>{m.label}</span>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: col }}>{m.pct.toFixed(1)}%</span>
+                </div>
+                <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.06)' }}>
+                  <div style={{ height: '100%', width: `${Math.min(100, m.pct)}%`, borderRadius: '2px', background: col, transition: 'width 0.6s ease' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '16px', color: vps.color, fontSize: '11px', fontWeight: 600 }}>
+        Ver dashboard completo
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" /></svg>
+      </div>
+    </div>
+  );
+}
+
+// ── Overview agents grid ──────────────────────────────────────────────────────
+function OverviewAgentsGrid({ agents1, agents2 }: { agents1: AgentDef[]; agents2: AgentDef[] }) {
+  const EXCLUDE = new Set(['metrics_agent.py', 'base_agent.py']);
+  const all = [
+    ...agents1.filter(a => !EXCLUDE.has(a.file)).map(a => ({ ...a, server: 'KVM2', serverColor: ORANGE })),
+    ...agents2.filter(a => !EXCLUDE.has(a.file)).map(a => ({ ...a, server: 'KVM1', serverColor: '#60a5fa' })),
+  ];
+  if (all.length === 0) return null;
+  return (
+    <div>
+      <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        Agentes IA <span style={{ color: '#334155', fontWeight: 500 }}>· {all.length} activos</span>
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
+        {all.map(a => {
+          const col = AREA_COLORS[a.area] ?? '#64748b';
+          return (
+            <div key={a.server + a.file} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: col, boxShadow: '0 0 5px ' + col + '80', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</p>
+                <p style={{ margin: 0, fontSize: '9px', color: '#475569' }}>{a.project}</p>
+              </div>
+              <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: a.serverColor + '18', color: a.serverColor, border: '1px solid ' + a.serverColor + '30' }}>{a.server}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Right panel ───────────────────────────────────────────────────────────────
+function RightPanel({ m1, m2, events }: {
+  m1: { cpu: number; ram: number; disk: number } | null;
+  m2: { cpu: number; ram: number; disk: number } | null;
+  events: TimelineEvent[];
+}) {
+  const alerts: { server: string; msg: string; color: string }[] = [];
+  if (m1) {
+    if (m1.cpu > 85)   alerts.push({ server: 'KVM2', msg: `CPU ${m1.cpu.toFixed(0)}%`, color: '#f87171' });
+    else if (m1.cpu > 70) alerts.push({ server: 'KVM2', msg: `CPU ${m1.cpu.toFixed(0)}%`, color: '#fbbf24' });
+    if (m1.ram > 85)   alerts.push({ server: 'KVM2', msg: `RAM ${m1.ram.toFixed(0)}%`, color: '#f87171' });
+    if (m1.disk > 80)  alerts.push({ server: 'KVM2', msg: `Disco ${m1.disk.toFixed(0)}%`, color: '#fbbf24' });
+  }
+  if (m2) {
+    if (m2.cpu > 85)   alerts.push({ server: 'KVM1', msg: `CPU ${m2.cpu.toFixed(0)}%`, color: '#f87171' });
+    else if (m2.cpu > 70) alerts.push({ server: 'KVM1', msg: `CPU ${m2.cpu.toFixed(0)}%`, color: '#fbbf24' });
+    if (m2.ram > 85)   alerts.push({ server: 'KVM1', msg: `RAM ${m2.ram.toFixed(0)}%`, color: '#f87171' });
+    if (m2.disk > 80)  alerts.push({ server: 'KVM1', msg: `Disco ${m2.disk.toFixed(0)}%`, color: '#fbbf24' });
+  }
+
+  return (
+    <>
+      {/* Server health */}
+      <div style={{ marginBottom: '24px' }}>
+        <p style={{ margin: '0 0 12px', fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Estado Servidores</p>
+        {([
+          { label: 'KVM2', ip: '177.7.46.87', color: ORANGE, m: m1 },
+          { label: 'KVM1', ip: '2.25.201.131', color: '#60a5fa', m: m2 },
+        ] as { label: string; ip: string; color: string; m: { cpu: number; ram: number; disk: number } | null }[]).map(s => (
+          <div key={s.label} style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: s.m ? '9px' : 0 }}>
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 5px #34d399', flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', flex: 1 }}>{s.label}</span>
+              <span style={{ fontSize: '10px', color: s.color, fontFamily: 'monospace' }}>{s.ip}</span>
+            </div>
+            {s.m ? (
+              <div style={{ display: 'flex', gap: '5px' }}>
+                {([{ k: 'CPU', v: s.m.cpu }, { k: 'RAM', v: s.m.ram }, { k: 'DSK', v: s.m.disk }] as { k: string; v: number }[]).map(x => {
+                  const c = statusColor(x.v);
+                  return (
+                    <div key={x.k} style={{ flex: 1, textAlign: 'center', padding: '5px 2px', borderRadius: '7px', background: c + '12', border: '1px solid ' + c + '25' }}>
+                      <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: c }}>{x.v.toFixed(0)}%</p>
+                      <p style={{ margin: 0, fontSize: '8px', color: '#475569', fontWeight: 700, letterSpacing: '0.03em' }}>{x.k}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ height: '38px', borderRadius: '7px', background: 'rgba(255,255,255,0.02)', animation: 'pulse 1.5s infinite' }} />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Alerts */}
+      <div style={{ marginBottom: '24px' }}>
+        <p style={{ margin: '0 0 12px', fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Alertas</p>
+        {alerts.length === 0 ? (
+          <div style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.15)', display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 600 }}>Todo operativo</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {alerts.map((a, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', background: a.color + '08', border: '1px solid ' + a.color + '28' }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: a.color + '18', color: a.color, flexShrink: 0 }}>{a.server}</span>
+                <span style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>{a.msg}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Event timeline */}
+      <div>
+        <p style={{ margin: '0 0 12px', fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Eventos Recientes</p>
+        {events.length === 0 ? (
+          <p style={{ fontSize: '11px', color: '#334155', margin: 0 }}>Esperando datos...</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {events.slice(0, 25).map((ev, i) => {
+              const col = ev.level === 'crit' ? '#f87171' : ev.level === 'warn' ? '#fbbf24' : '#334155';
+              return (
+                <div key={i} style={{ display: 'flex', gap: '10px', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ flexShrink: 0, width: '3px', borderRadius: '2px', background: col, alignSelf: 'stretch', minHeight: '16px' }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: 1.3 }}>{ev.msg}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{ev.ts.toLocaleTimeString('es-ES')}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ── Command Center (VpsSelector) ──────────────────────────────────────────────
 function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
-  const [repos, setRepos] = useState<GhRepo[]>([]);
-  const [reposLoading, setReposLoading] = useState(true);
-  const [reposError, setReposError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<CCTab>('overview');
+
   const [docker1, setDocker1] = useState<DockerContainer[]>([]);
   const [docker2, setDocker2] = useState<DockerContainer[]>([]);
   const [skills1, setSkills1] = useState<Skill[]>([]);
@@ -2126,91 +2324,213 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
   const [dockerError1, setDockerError1] = useState<string | null>(null);
   const [dockerError2, setDockerError2] = useState<string | null>(null);
 
+  const [m1, setM1] = useState<{ cpu: number; ram: number; disk: number; uptime_s: number } | null>(null);
+  const [m2, setM2] = useState<{ cpu: number; ram: number; disk: number; uptime_s: number } | null>(null);
+  const [ml1, setMl1] = useState(true);
+  const [ml2, setMl2] = useState(true);
+
+  const [repos, setRepos] = useState<GhRepo[]>([]);
+  const [reposLoading, setReposLoading] = useState(true);
+  const [reposError, setReposError] = useState<string | null>(null);
+
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+
+  const addEvent = useCallback((msg: string, level: 'info' | 'warn' | 'crit') => {
+    setEvents(prev => [{ ts: new Date(), msg, level }, ...prev].slice(0, 50));
+  }, []);
+
+  const prevM1 = useRef<{ cpu: number; ram: number; disk: number } | null>(null);
+  const prevM2 = useRef<{ cpu: number; ram: number; disk: number } | null>(null);
+
+  const fetchMetrics = useCallback(() => {
+    fetch('/api/vps/stats', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.error) {
+          const nm = { cpu: d.cpu.percent, ram: d.ram.percent, disk: d.disk.percent, uptime_s: d.uptime_s };
+          setM1(nm); setMl1(false);
+          const prev = prevM1.current;
+          if (prev) {
+            if (nm.cpu > 85 && prev.cpu <= 85) addEvent('KVM2: CPU supera 85%', 'crit');
+            else if (nm.cpu > 70 && prev.cpu <= 70) addEvent('KVM2: CPU supera 70%', 'warn');
+            if (nm.cpu <= 70 && prev.cpu > 70) addEvent('KVM2: CPU volvió a normal', 'info');
+            if (nm.ram > 85 && prev.ram <= 85) addEvent('KVM2: RAM supera 85%', 'crit');
+            if (nm.disk > 80 && prev.disk <= 80) addEvent('KVM2: Disco supera 80%', 'warn');
+          } else {
+            addEvent(`KVM2 online · CPU ${nm.cpu.toFixed(0)}% · RAM ${nm.ram.toFixed(0)}%`, 'info');
+          }
+          prevM1.current = nm;
+        }
+      }).catch(() => {});
+
+    fetch('/api/vps2/stats', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.error) {
+          const nm = { cpu: d.cpu.percent, ram: d.ram.percent, disk: d.disk.percent, uptime_s: d.uptime_s };
+          setM2(nm); setMl2(false);
+          const prev = prevM2.current;
+          if (prev) {
+            if (nm.cpu > 85 && prev.cpu <= 85) addEvent('KVM1: CPU supera 85%', 'crit');
+            else if (nm.cpu > 70 && prev.cpu <= 70) addEvent('KVM1: CPU supera 70%', 'warn');
+            if (nm.cpu <= 70 && prev.cpu > 70) addEvent('KVM1: CPU volvió a normal', 'info');
+            if (nm.ram > 85 && prev.ram <= 85) addEvent('KVM1: RAM supera 85%', 'crit');
+            if (nm.disk > 80 && prev.disk <= 80) addEvent('KVM1: Disco supera 80%', 'warn');
+          } else {
+            addEvent(`KVM1 online · CPU ${nm.cpu.toFixed(0)}% · RAM ${nm.ram.toFixed(0)}%`, 'info');
+          }
+          prevM2.current = nm;
+        }
+      }).catch(() => {});
+  }, [addEvent]);
+
   useEffect(() => {
+    fetch('/api/vps/docker')
+      .then(r => r.json())
+      .then(d => { if (!d.error) { setDocker1(d.docker ?? []); setSkills1(d.skills ?? []); setAgentSkills1(d.agent_skills ?? []); setAgents1(d.agents ?? []); } })
+      .catch(() => setDockerError1('Sin conexión'))
+      .finally(() => setDockerLoading1(false));
+
+    fetch('/api/vps2/docker')
+      .then(r => r.json())
+      .then(d => { if (!d.error) { setDocker2(d.docker ?? []); setSkills2(d.skills ?? []); setAgentSkills2(d.agent_skills ?? []); setAgents2(d.agents ?? []); } })
+      .catch(() => setDockerError2('Sin conexión'))
+      .finally(() => setDockerLoading2(false));
+
     fetch('/api/github/repos')
       .then(r => r.json())
       .then(d => { if (d.error) setReposError(d.error); else setRepos(d.repos ?? []); })
       .catch(() => setReposError('Error al cargar repositorios'))
       .finally(() => setReposLoading(false));
 
-    fetch('/api/vps/docker')
-      .then(r => r.json())
-      .then(d => { if (d.error) setDockerError1(d.error); else { setDocker1(d.docker ?? []); setSkills1(d.skills ?? []); setAgentSkills1(d.agent_skills ?? []); setAgents1(d.agents ?? []); } })
-      .catch(() => setDockerError1('Sin conexión'))
-      .finally(() => setDockerLoading1(false));
+    fetchMetrics();
+    const id = setInterval(fetchMetrics, 30_000);
+    return () => clearInterval(id);
+  }, [fetchMetrics]);
 
-    fetch('/api/vps2/docker')
-      .then(r => r.json())
-      .then(d => { if (d.error) setDockerError2(d.error); else { setDocker2(d.docker ?? []); setSkills2(d.skills ?? []); setAgentSkills2(d.agent_skills ?? []); setAgents2(d.agents ?? []); } })
-      .catch(() => setDockerError2('Sin conexión'))
-      .finally(() => setDockerLoading2(false));
-  }, []);
+  const TABS: { key: CCTab; label: string }[] = [
+    { key: 'overview',  label: 'Overview'  },
+    { key: 'agents',    label: 'Agentes'   },
+    { key: 'services',  label: 'Servicios' },
+    { key: 'github',    label: 'GitHub'    },
+  ];
+
+  const EXCLUDE = new Set(['metrics_agent.py', 'base_agent.py']);
+  const totalAgents = [...agents1, ...agents2].filter(a => !EXCLUDE.has(a.file)).length;
 
   return (
-    <div style={{ padding: '16px 32px', maxWidth: '1200px' }}>
-      {/* VPS Section */}
-      <div style={{ marginBottom: '40px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={1.5}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Servidores VPS</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', maxWidth: '620px' }}>
-          {VPS_LIST.map(vps => (
-            <button key={vps.key} onClick={() => onSelect(vps.key)}
-              style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', cursor: 'pointer', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = vps.color + '40'; e.currentTarget.style.boxShadow = '0 0 24px ' + vps.color + '18'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: vps.color + '15', border: '1px solid ' + vps.color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={vps.color} strokeWidth={1.5}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', borderRadius: '20px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)' }}>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399' }} />
-                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#34d399', letterSpacing: '0.04em' }}>Online</span>
-                </div>
-              </div>
-              <p style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: '#f1f5f9' }}>{vps.label}</p>
-              <p style={{ margin: '0 0 2px', fontSize: '12px', color: vps.color, fontFamily: 'monospace', fontWeight: 600 }}>{vps.ip}</p>
-              <p style={{ margin: '0 0 16px', fontSize: '11px', color: '#475569' }}>{vps.location}</p>
-              <p style={{ margin: 0, fontSize: '11px', color: '#334155', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>{vps.specs}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '16px', color: vps.color, fontSize: '12px', fontWeight: 600 }}>
-                Ver dashboard
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6"/></svg>
-              </div>
+    <div style={{ display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden', margin: '0 -32px -16px -32px' }}>
+
+      {/* ── Main area ── */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+        {/* Tab bar */}
+        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 24px', background: 'rgba(0,0,0,0.12)', flexShrink: 0 }}>
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setActiveTab(t.key)}
+              style={{ padding: '11px 18px 12px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: activeTab === t.key ? 700 : 500, color: activeTab === t.key ? '#f1f5f9' : '#475569', background: 'none', borderBottom: activeTab === t.key ? '2px solid #60a5fa' : '2px solid transparent', marginBottom: '-1px', transition: 'color 0.15s, border-color 0.15s', letterSpacing: '0.01em' }}>
+              {t.label}
             </button>
           ))}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '1px' }}>
+            {m1 && <span style={{ fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>KVM2 <span style={{ color: statusColor(m1.cpu), fontWeight: 700 }}>{m1.cpu.toFixed(0)}%</span> CPU</span>}
+            {m2 && <span style={{ fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>KVM1 <span style={{ color: statusColor(m2.cpu), fontWeight: 700 }}>{m2.cpu.toFixed(0)}%</span> CPU</span>}
+          </div>
+        </div>
+
+        {/* Tab content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+
+          {/* ── OVERVIEW ── */}
+          {activeTab === 'overview' && (
+            <div>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '28px' }}>
+                <ServerMiniCard vps={VPS_LIST[0]} metrics={m1} metricsLoading={ml1} docker={docker1} onSelect={() => onSelect('vps1')} />
+                <ServerMiniCard vps={VPS_LIST[1]} metrics={m2} metricsLoading={ml2} docker={docker2} onSelect={() => onSelect('vps2')} />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '32px' }}>
+                {([
+                  { label: 'Servicios activos', val: docker1.filter(c => c.status.startsWith('Up')).length + docker2.filter(c => c.status.startsWith('Up')).length, color: '#34d399' },
+                  { label: 'Agentes IA', val: totalAgents, color: '#60a5fa' },
+                  { label: 'Repos GitHub', val: repos.length, color: '#a78bfa' },
+                  { label: 'Skills totales', val: agentSkills1.length + agentSkills2.length, color: '#fb923c' },
+                ] as { label: string; val: number; color: string }[]).map(s => (
+                  <div key={s.label} style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
+                    <p style={{ margin: 0, fontSize: '30px', fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.val}</p>
+                    <p style={{ margin: '6px 0 0', fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <OverviewAgentsGrid agents1={agents1} agents2={agents2} />
+            </div>
+          )}
+
+          {/* ── AGENTS ── */}
+          {activeTab === 'agents' && (
+            <div>
+              {agents1.length > 0 && (
+                <div style={{ marginBottom: '32px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: ORANGE, boxShadow: '0 0 6px ' + ORANGE }} />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>KVM 2</span>
+                    <span style={{ fontSize: '11px', color: ORANGE, fontFamily: 'monospace' }}>177.7.46.87</span>
+                  </div>
+                  <AgentsPanel agents={agents1} />
+                  <AgentSkillsPanel agentSkills={agentSkills1} />
+                </div>
+              )}
+              {agents2.length > 0 && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 6px #60a5fa' }} />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>KVM 1</span>
+                    <span style={{ fontSize: '11px', color: '#60a5fa', fontFamily: 'monospace' }}>2.25.201.131</span>
+                  </div>
+                  <AgentsPanel agents={agents2} />
+                  <AgentSkillsPanel agentSkills={agentSkills2} />
+                </div>
+              )}
+              {agents1.length === 0 && agents2.length === 0 && (
+                <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Sin agentes detectados</p>
+              )}
+            </div>
+          )}
+
+          {/* ── SERVICES ── */}
+          {activeTab === 'services' && (
+            <div>
+              <ServerServicePanel vpsLabel="KVM 2 · 177.7.46.87" containers={docker1} skills={skills1} agentSkills={agentSkills1} agents={agents1} loading={dockerLoading1} error={dockerError1} />
+              <ServerServicePanel vpsLabel="KVM 1 · 2.25.201.131" containers={docker2} skills={skills2} agentSkills={agentSkills2} agents={agents2} loading={dockerLoading2} error={dockerError2} />
+            </div>
+          )}
+
+          {/* ── GITHUB ── */}
+          {activeTab === 'github' && (
+            <div>
+              {reposLoading && (
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {[1, 2, 3, 4].map(i => <div key={i} style={{ width: '280px', height: '90px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', animation: 'pulse 1.5s infinite' }} />)}
+                </div>
+              )}
+              {reposError && <p style={{ fontSize: '12px', color: '#f87171' }}>{reposError}</p>}
+              {!reposLoading && !reposError && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '10px' }}>
+                  {repos.map(r => <RepoCard key={r.id} r={r} />)}
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
 
-      {/* Docker Section */}
-      <div style={{ marginBottom: '40px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={1.5}><path d="M22 13a10 10 0 0 1-10 9 10 10 0 0 1-10-9 10 10 0 0 1 10-9 10 10 0 0 1 10 9z"/><path d="M4 13h16M13 2v11M8 2v8M18 2v8"/></svg>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Servicios por Servidor</span>
-        </div>
-        <ServerServicePanel vpsLabel="KVM 2 · 177.7.46.87" containers={docker1} skills={skills1} agentSkills={agentSkills1} agents={agents1} loading={dockerLoading1} error={dockerError1} />
-        <ServerServicePanel vpsLabel="KVM 1 · 2.25.201.131" containers={docker2} skills={skills2} agentSkills={agentSkills2} agents={agents2} loading={dockerLoading2} error={dockerError2} />
+      {/* ── Right panel ── */}
+      <div style={{ width: '272px', flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '20px 16px 20px 18px', overflowY: 'auto', background: 'rgba(0,0,0,0.08)' }}>
+        <RightPanel m1={m1} m2={m2} events={events} />
       </div>
 
-      {/* GitHub Section */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-          <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Repositorios GitHub</span>
-          {!reposLoading && repos.length > 0 && <span style={{ fontSize: '10px', color: '#334155', fontWeight: 600 }}>({repos.length})</span>}
-        </div>
-        {reposLoading && (
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {[1,2,3,4].map(i => <div key={i} style={{ width: '280px', height: '90px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />)}
-          </div>
-        )}
-        {reposError && <p style={{ fontSize: '12px', color: '#f87171' }}>{reposError}</p>}
-        {!reposLoading && !reposError && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '10px' }}>
-            {repos.map(r => <RepoCard key={r.id} r={r} />)}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
