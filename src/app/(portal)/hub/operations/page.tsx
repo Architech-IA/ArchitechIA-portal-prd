@@ -1860,6 +1860,41 @@ const VPS_LIST = [
   { key: 'vps2' as const, label: 'KVM 1', ip: '2.25.201.131', location: 'Hostinger - Secundaria', specs: '4 vCPU - 8 GB RAM - 100 GB NVMe',  color: '#60a5fa' },
 ];
 
+type DockerContainer = {
+  id: string; name: string; image: string; status: string; ports: string;
+};
+
+function DockerPanel({ vpsLabel, containers, loading, error }: { vpsLabel: string; containers: DockerContainer[]; loading: boolean; error: string | null }) {
+  return (
+    <div style={{ marginBottom: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+        <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569", letterSpacing: "0.06em" }}>{vpsLabel}</span>
+        {!loading && !error && <span style={{ fontSize: "10px", color: "#334155" }}>({containers.length})</span>}
+      </div>
+      {loading && <div style={{ height: "40px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }} />}
+      {error && <p style={{ margin: 0, fontSize: "11px", color: "#f87171" }}>{error}</p>}
+      {!loading && !error && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {containers.map(ct => {
+            const up = ct.status.startsWith("Up");
+            const port = ct.ports ? ct.ports.split(",")[0].trim() : "";
+            return (
+              <div key={ct.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0, background: up ? "#34d399" : "#f87171", boxShadow: up ? "0 0 5px #34d39980" : "none" }} />
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#cbd5e1", minWidth: "180px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ct.name}</span>
+                <span style={{ fontSize: "10px", color: "#334155", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ct.image}</span>
+                {port && <span style={{ fontSize: "10px", color: "#475569", fontFamily: "monospace", whiteSpace: "nowrap" }}>{port}</span>}
+                <span style={{ fontSize: "10px", color: up ? "#34d399" : "#f87171", whiteSpace: "nowrap", marginLeft: "auto" }}>{ct.status}</span>
+              </div>
+            );
+          })}
+          {containers.length === 0 && <p style={{ margin: 0, fontSize: "11px", color: "#334155" }}>Sin contenedores</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 type GhRepo = {
   id: number; name: string; full_name: string; description: string | null;
   private: boolean; language: string | null; url: string; updated_at: string;
@@ -1927,6 +1962,12 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
   const [repos, setRepos] = useState<GhRepo[]>([]);
   const [reposLoading, setReposLoading] = useState(true);
   const [reposError, setReposError] = useState<string | null>(null);
+  const [docker1, setDocker1] = useState<DockerContainer[]>([]);
+  const [docker2, setDocker2] = useState<DockerContainer[]>([]);
+  const [dockerLoading1, setDockerLoading1] = useState(true);
+  const [dockerLoading2, setDockerLoading2] = useState(true);
+  const [dockerError1, setDockerError1] = useState<string | null>(null);
+  const [dockerError2, setDockerError2] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/github/repos')
@@ -1934,13 +1975,22 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
       .then(d => { if (d.error) setReposError(d.error); else setRepos(d.repos ?? []); })
       .catch(() => setReposError('Error al cargar repositorios'))
       .finally(() => setReposLoading(false));
+
+    fetch('/api/vps/stats', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d.error) setDockerError1(d.error); else setDocker1(d.docker ?? []); })
+      .catch(() => setDockerError1('Sin conexión'))
+      .finally(() => setDockerLoading1(false));
+
+    fetch('/api/vps2/stats', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d.error) setDockerError2(d.error); else setDocker2(d.docker ?? []); })
+      .catch(() => setDockerError2('Sin conexión'))
+      .finally(() => setDockerLoading2(false));
   }, []);
 
   return (
-    <div style={{ padding: '40px 32px', maxWidth: '1200px' }}>
-      <div style={{ marginBottom: '32px' }}>
-      </div>
-
+    <div style={{ padding: '16px 32px', maxWidth: '1200px' }}>
       {/* VPS Section */}
       <div style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
@@ -1973,6 +2023,16 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Docker Section */}
+      <div style={{ marginBottom: '40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={1.5}><path d="M22 13a10 10 0 0 1-10 9 10 10 0 0 1-10-9 10 10 0 0 1 10-9 10 10 0 0 1 10 9z"/><path d="M4 13h16M13 2v11M8 2v8M18 2v8"/></svg>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Docker — Contenedores Activos</span>
+        </div>
+        <DockerPanel vpsLabel="KVM 2 · 177.7.46.87" containers={docker1} loading={dockerLoading1} error={dockerError1} />
+        <DockerPanel vpsLabel="KVM 1 · 2.25.201.131" containers={docker2} loading={dockerLoading2} error={dockerError2} />
       </div>
 
       {/* GitHub Section */}
