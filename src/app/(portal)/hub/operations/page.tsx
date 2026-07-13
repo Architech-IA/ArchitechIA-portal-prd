@@ -1940,7 +1940,6 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
     <div style={{ padding: '40px 32px', maxWidth: '1200px' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>Operations</h1>
-        <p style={{ margin: 0, fontSize: '13px', color: '#475569' }}>Infraestructura y repositorios del proyecto</p>
       </div>
 
       {/* VPS Section */}
