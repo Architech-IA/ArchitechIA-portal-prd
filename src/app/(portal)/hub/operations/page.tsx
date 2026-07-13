@@ -1864,21 +1864,27 @@ type DockerContainer = {
   id: string; name: string; image: string; status: string; ports: string;
 };
 
-const DB_IMAGES = ['postgres', 'mysql', 'mongo', 'redis', 'mariadb', 'pgvector', 'clickhouse', 'sqlite', 'mssql', 'oracle'];
+const DB_IMAGES    = ['postgres', 'mysql', 'mongo', 'redis', 'mariadb', 'pgvector', 'clickhouse', 'sqlite', 'mssql', 'oracle'];
 const WEBHOOK_NAMES = ['evolution', 'webhook', 'n8n', 'zapier', 'make', 'chatwoot'];
+const API_NAMES     = ['fastapi', 'uvicorn', 'gunicorn', 'flask', 'django', 'express', 'fastify', 'api', 'server', 'whisper', 'backend', 'worker'];
+const ADMIN_NAMES   = ['portainer', 'grafana', 'kibana', 'dashboard', 'panel', 'admin', 'streamlit'];
 
 function categorize(containers: DockerContainer[]) {
   const db: DockerContainer[] = [];
   const webhooks: DockerContainer[] = [];
   const apis: DockerContainer[] = [];
+  const admin: DockerContainer[] = [];
+  const apps: DockerContainer[] = [];
   for (const ct of containers) {
     const img = ct.image.toLowerCase();
     const nm  = ct.name.toLowerCase();
-    if (DB_IMAGES.some(k => img.includes(k) || nm.includes(k))) db.push(ct);
+    if (DB_IMAGES.some(k => img.includes(k) || nm.includes(k)))       db.push(ct);
     else if (WEBHOOK_NAMES.some(k => img.includes(k) || nm.includes(k))) webhooks.push(ct);
-    else apis.push(ct);
+    else if (ADMIN_NAMES.some(k => img.includes(k) || nm.includes(k)))   admin.push(ct);
+    else if (API_NAMES.some(k => img.includes(k) || nm.includes(k)))     apis.push(ct);
+    else apps.push(ct);
   }
-  return { db, webhooks, apis };
+  return { db, webhooks, apis, admin, apps };
 }
 
 function ContainerRow({ ct }: { ct: DockerContainer }) {
@@ -1917,15 +1923,17 @@ function ServerServicePanel({ vpsLabel, containers, loading, error }: { vpsLabel
     <div style={{ marginBottom: '28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>{vpsLabel}</span>
-        {!loading && !error && <span style={{ fontSize: '10px', color: '#334155' }}>{containers.length} contenedores</span>}
+        <span style={{ fontSize: '10px', color: loading ? '#f59e0b' : error ? '#f87171' : '#334155' }}>{loading ? 'cargando...' : error ? 'Error: '+error : containers.length+' contenedores'}</span>
       </div>
       {loading && <div style={{ height: '60px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }} />}
       {error && <p style={{ margin: 0, fontSize: '11px', color: '#f87171' }}>{error}</p>}
       {!loading && !error && (
         <div>
-          <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth={2}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>} label="APIs & Servicios" color="#60a5fa" items={cats.apis} />
+          <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth={2}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>} label="APIs" color="#60a5fa" items={cats.apis} />
           <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth={2}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>} label="Bases de Datos" color="#a78bfa" items={cats.db} />
           <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth={2}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>} label="Webhooks" color="#fb923c" items={cats.webhooks} />
+          <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={2}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>} label="Apps & Frontends" color="#94a3b8" items={cats.apps} />
+          <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} label="Admin & Herramientas" color="#34d399" items={cats.admin} />
           {containers.length === 0 && <p style={{ margin: 0, fontSize: '11px', color: '#334155' }}>Sin contenedores</p>}
         </div>
       )}
