@@ -1871,14 +1871,16 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
         {VPS_LIST.map(vps => (
           <button key={vps.key} onClick={() => onSelect(vps.key)}
             style={{ textAlign: 'left', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', cursor: 'pointer', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = vps.color + '40'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, ' + vps.color + ', ' + vps.color + '80)', borderRadius: '16px 16px 0 0' }} />
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = vps.color + '40'; e.currentTarget.style.boxShadow = '0 0 24px ' + vps.color + '18'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: vps.color + '15', border: '1px solid ' + vps.color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={vps.color} strokeWidth={1.5}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
               </div>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', borderRadius: '20px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399' }} />
+                <span style={{ fontSize: '10px', fontWeight: 700, color: '#34d399', letterSpacing: '0.04em' }}>Online</span>
+              </div>
             </div>
             <p style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: '#f1f5f9' }}>{vps.label}</p>
             <p style={{ margin: '0 0 2px', fontSize: '12px', color: vps.color, fontFamily: 'monospace', fontWeight: 600 }}>{vps.ip}</p>
