@@ -73,6 +73,73 @@ function resolveAttendees(attendees: string | null, users: { name: string; email
 }
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// DatePicker custom
+const MESES_DP = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_DP = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+
+function DatePicker({ value, onChange, required: req }: { value: string; onChange: (v: string) => void; required?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const today = new Date();
+  const sel = value ? new Date(value + 'T12:00:00') : null;
+  const [vm, setVm] = useState(sel ? sel.getMonth() : today.getMonth());
+  const [vy, setVy] = useState(sel ? sel.getFullYear() : today.getFullYear());
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const firstDayMon = (new Date(vy, vm, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(vy, vm + 1, 0).getDate();
+  const prevM = () => { if (vm === 0) { setVm(11); setVy((y: number) => y-1); } else setVm((m: number) => m-1); };
+  const nextM = () => { if (vm === 11) { setVm(0); setVy((y: number) => y+1); } else setVm((m: number) => m+1); };
+  const pick = (d: number) => {
+    onChange(`${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+    setOpen(false);
+  };
+  const display = sel ? sel.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  return (
+    <div className="relative" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
+      <button type="button" onClick={() => setOpen((o: boolean) => !o)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-all" style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}>
+        <svg className="w-4 h-4 flex-shrink-0 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+        <span className={display ? 'text-white' : 'text-gray-500'}>{display || 'Seleccionar fecha...'}</span>
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-2 left-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', minWidth: '280px', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            <button type="button" onClick={prevM} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors" onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.08)'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='transparent'}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <span className="text-sm font-semibold text-white">{MESES_DP[vm]} {vy}</span>
+            <button type="button" onClick={nextM} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors" onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.08)'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='transparent'}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div className="grid grid-cols-7 px-3 pt-3 pb-1">
+            {DIAS_DP.map(d => <div key={d} className="text-center text-xs font-medium py-1" style={{ color: 'rgba(255,255,255,0.25)' }}>{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 px-3 pb-3 gap-y-0.5">
+            {Array.from({ length: firstDayMon }, (_, i) => <div key={'e'+i}/>)}
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const d = i+1;
+              const ds = `${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+              const isSel = ds === value;
+              const isTod = ds === todayStr;
+              return (
+                <button key={d} type="button" onClick={() => pick(d)} className="w-full aspect-square flex items-center justify-center text-sm rounded-lg font-medium transition-all" style={{ background: isSel ? '#f97316' : isTod ? 'rgba(251,146,60,0.12)' : 'transparent', color: isSel ? '#fff' : isTod ? '#fb923c' : 'rgba(255,255,255,0.8)', border: isTod && !isSel ? '1px solid rgba(251,146,60,0.3)' : '1px solid transparent' }}
+                  onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.08)'; }}
+                  onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = isTod ? 'rgba(251,146,60,0.12)' : 'transparent'; }}
+                >{d}</button>
+              );
+            })}
+          </div>
+          <div className="px-4 py-2.5 border-t flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <button type="button" onClick={() => { onChange(''); setOpen(false); }} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Borrar</button>
+            <button type="button" onClick={() => { onChange(todayStr); setVm(today.getMonth()); setVy(today.getFullYear()); setOpen(false); }} className="text-xs font-medium text-orange-400 hover:text-orange-300 transition-colors">Hoy</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
 export default function MeetingsPage() {
@@ -703,16 +770,15 @@ export default function MeetingsPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Fecha</label>
                   <div className="flex gap-3">
-                    <div className="relative flex-1">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      </div>
-                      <input type="date" required value={form.date ? form.date.slice(0, 10) : ''}
-                        onChange={e => {
+                    <div className="flex-1">
+                      <DatePicker
+                        required
+                        value={form.date ? form.date.slice(0, 10) : ''}
+                        onChange={v => {
                           const time = form.date ? form.date.slice(11, 16) : '09:00';
-                          setForm({...form, date: `${e.target.value}T${time}`});
+                          setForm({...form, date: v ? `${v}T${time}` : ''});
                         }}
-                        className="w-full pl-10 pr-4 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm [color-scheme:dark]" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                      />
                     </div>
                     <div className="flex gap-2 items-center">
                       <select value={form.date ? form.date.slice(11, 13) : '09'}
@@ -771,16 +837,14 @@ export default function MeetingsPage() {
                   </div>
                   {form.endDate ? (
                     <div className="flex gap-3">
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        </div>
-                        <input type="date" value={form.endDate.slice(0, 10)}
-                          onChange={e => {
+                      <div className="flex-1">
+                        <DatePicker
+                          value={form.endDate.slice(0, 10)}
+                          onChange={v => {
                             const time = form.endDate.slice(11, 16) || '10:00';
-                            setForm({...form, endDate: `${e.target.value}T${time}`});
+                            setForm({...form, endDate: v ? `${v}T${time}` : ''});
                           }}
-                          className="w-full pl-10 pr-4 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm [color-scheme:dark]" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                        />
                       </div>
                       <select value={form.endDate.slice(11, 13) || '10'}
                         onChange={e => {
