@@ -142,6 +142,62 @@ function DatePicker({ value, onChange, required: req }: { value: string; onChang
 
 const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
+// TimePicker custom
+function TimePicker({ hour, minute, onHourChange, onMinuteChange }: {
+  hour: string; minute: string;
+  onHourChange: (h: string) => void;
+  onMinuteChange: (m: string) => void;
+}) {
+  const [openH, setOpenH] = useState(false);
+  const [openM, setOpenM] = useState(false);
+  const HOURS = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0'));
+  const MINS = ['00','15','30','45'];
+
+  const DropDown = ({ open, setOpen, value, options, onChange }: {
+    open: boolean; setOpen: (v: boolean) => void;
+    value: string; options: string[]; onChange: (v: string) => void;
+  }) => (
+    <div className="relative" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
+      <button
+        type="button"
+        onClick={() => { setOpen(!open); }}
+        className="w-14 flex items-center justify-between gap-1 px-2.5 py-2.5 rounded-xl text-sm font-mono font-semibold transition-all"
+        style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', color: '#fff', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}
+      >
+        {value}
+        <svg className="w-3 h-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 left-0 rounded-xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 16px 40px rgba(0,0,0,0.7)', width: '72px', maxHeight: '200px', overflowY: 'auto' }}>
+          {options.map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => { onChange(opt); setOpen(false); }}
+              className="w-full px-3 py-2 text-sm font-mono text-left transition-colors"
+              style={{ background: opt === value ? 'rgba(249,115,22,0.2)' : 'transparent', color: opt === value ? '#f97316' : 'rgba(255,255,255,0.8)', fontWeight: opt === value ? '700' : '400' }}
+              onMouseEnter={e => { if (opt !== value) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; }}
+              onMouseLeave={e => { if (opt !== value) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <DropDown open={openH} setOpen={setOpenH} value={hour} options={HOURS} onChange={onHourChange} />
+      <span className="text-gray-500 font-bold text-base select-none">:</span>
+      <DropDown open={openM} setOpen={setOpenM} value={minute} options={MINS} onChange={onMinuteChange} />
+      <span className="text-xs text-gray-500 ml-1">hrs</span>
+    </div>
+  );
+}
+
+
 export default function MeetingsPage() {
   const { data: session } = useSession();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -780,28 +836,20 @@ export default function MeetingsPage() {
                         }}
                       />
                     </div>
-                    <div className="flex gap-2 items-center">
-                      <select value={form.date ? form.date.slice(11, 13) : '09'}
-                        onChange={e => {
-                          const date = form.date ? form.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
-                          const min = form.date ? form.date.slice(14, 16) : '00';
-                          setForm({...form, date: `${date}T${e.target.value}:${min}`});
-                        }}
-                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
-                      </select>
-                      <span className="text-gray-500 text-sm">:</span>
-                      <select value={form.date ? form.date.slice(14, 16) : '00'}
-                        onChange={e => {
-                          const date = form.date ? form.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
-                          const hour = form.date ? form.date.slice(11, 13) : '09';
-                          setForm({...form, date: `${date}T${hour}:${e.target.value}`});
-                        }}
-                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        {['00','15','30','45'].map(m => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                      <span className="text-xs text-gray-500 ml-1">hrs</span>
-                    </div>
+                    <TimePicker
+                      hour={form.date ? form.date.slice(11, 13) : '09'}
+                      minute={form.date ? form.date.slice(14, 16) : '00'}
+                      onHourChange={h => {
+                        const date = form.date ? form.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
+                        const min = form.date ? form.date.slice(14, 16) : '00';
+                        setForm({...form, date: `${date}T${h}:${min}`});
+                      }}
+                      onMinuteChange={m => {
+                        const date = form.date ? form.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
+                        const hour = form.date ? form.date.slice(11, 13) : '09';
+                        setForm({...form, date: `${date}T${hour}:${m}`});
+                      }}
+                    />
                   </div>
                   {form.date && (
                     <p className="text-xs text-orange-400/60 mt-1.5">
@@ -846,25 +894,20 @@ export default function MeetingsPage() {
                           }}
                         />
                       </div>
-                      <select value={form.endDate.slice(11, 13) || '10'}
-                        onChange={e => {
+                      <TimePicker
+                        hour={form.endDate.slice(11, 13) || '10'}
+                        minute={form.endDate.slice(14, 16) || '00'}
+                        onHourChange={h => {
                           const date = form.endDate.slice(0, 10);
                           const min = form.endDate.slice(14, 16) || '00';
-                          setForm({...form, endDate: `${date}T${e.target.value}:${min}`});
+                          setForm({...form, endDate: `${date}T${h}:${min}`});
                         }}
-                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
-                      </select>
-                      <span className="text-gray-500 text-sm self-center">:</span>
-                      <select value={form.endDate.slice(14, 16) || '00'}
-                        onChange={e => {
+                        onMinuteChange={m => {
                           const date = form.endDate.slice(0, 10);
                           const hour = form.endDate.slice(11, 13) || '10';
-                          setForm({...form, endDate: `${date}T${hour}:${e.target.value}`});
+                          setForm({...form, endDate: `${date}T${hour}:${m}`});
                         }}
-                        className="w-16 px-2 py-2.5 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm text-center" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        {['00','15','30','45'].map(m => <option key={m} value={m}>{m}</option>)}
-                      </select>
+                      />
                     </div>
                   ) : form.date ? (
                     <div className="flex gap-2">
