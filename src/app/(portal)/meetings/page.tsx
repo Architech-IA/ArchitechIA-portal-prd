@@ -911,7 +911,7 @@ export default function MeetingsPage() {
                       }}
                     />
                   </div>
-                  <div className="w-36 flex-shrink-0">
+                  <div className="flex-1 min-w-0">
                     <label className="block text-sm text-gray-400 mb-2">Duración</label>
                     <Select
                   value={(() => {
