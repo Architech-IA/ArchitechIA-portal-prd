@@ -2268,35 +2268,6 @@ function OverviewAgentsGrid({ agents1, agents2 }: { agents1: AgentDef[]; agents2
       </div>
     </div>
   );
-}: { agents1: AgentDef[]; agents2: AgentDef[] }) {
-  const EXCLUDE = new Set(['metrics_agent.py', 'base_agent.py']);
-  const all = [
-    ...agents1.filter(a => !EXCLUDE.has(a.file)).map(a => ({ ...a, server: 'KVM2', serverColor: ORANGE })),
-    ...agents2.filter(a => !EXCLUDE.has(a.file)).map(a => ({ ...a, server: 'KVM1', serverColor: '#60a5fa' })),
-  ];
-  if (all.length === 0) return null;
-  return (
-    <div>
-      <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        Agentes IA <span style={{ color: '#334155', fontWeight: 500 }}>· {all.length} activos</span>
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
-        {all.map(a => {
-          const col = AREA_COLORS[a.area] ?? '#64748b';
-          return (
-            <div key={a.server + a.file} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: col, boxShadow: '0 0 5px ' + col + '80', flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</p>
-                <p style={{ margin: 0, fontSize: '9px', color: '#475569' }}>{a.project}</p>
-              </div>
-              <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: a.serverColor + '18', color: a.serverColor, border: '1px solid ' + a.serverColor + '30' }}>{a.server}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
 // ── Right panel ───────────────────────────────────────────────────────────────
