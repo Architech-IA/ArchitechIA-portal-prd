@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const body = await req.json();
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const body = await request.json();
   const activo = await prisma.activo.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       nombre: body.nombre,
       tipo: body.tipo,
@@ -24,7 +25,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(activo);
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  await prisma.activo.delete({ where: { id: params.id } });
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await prisma.activo.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

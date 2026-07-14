@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const body = await req.json();
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const body = await request.json();
   const solicitud = await prisma.solicitudVacacion.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       estado: body.estado,
       aprobadoPor: body.aprobadoPor || null,
