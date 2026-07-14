@@ -711,3 +711,63 @@ model SolicitudVacacion {
   notas       String?
   createdAt   DateTime     @default(now())
 }
+
+// ── MÓDULO 1: CONTABILIDAD ───────────────────────────────────────────────────
+
+model CuentaContable {
+  id          String   @id @default(cuid())
+  codigo      String   @unique
+  nombre      String
+  tipo        String   // ACTIVO, PASIVO, PATRIMONIO, INGRESO, GASTO
+  subtipo     String?  // Corriente, No corriente, Operacional, etc.
+  nivel       Int      @default(1)
+  cuentaPadreId String?
+  cuentaPadre CuentaContable?  @relation("SubCuentas", fields: [cuentaPadreId], references: [id])
+  subCuentas  CuentaContable[] @relation("SubCuentas")
+  activa      Boolean  @default(true)
+  descripcion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lineas      LineaAsiento[]
+}
+
+model AsientoContable {
+  id          String         @id @default(cuid())
+  numero      Int            @unique
+  fecha       DateTime
+  descripcion String
+  referencia  String?
+  estado      String         @default("CONFIRMADO")
+  tipo        String         @default("MANUAL")
+  creadoPor   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  lineas      LineaAsiento[]
+}
+
+model LineaAsiento {
+  id          String          @id @default(cuid())
+  asientoId   String
+  asiento     AsientoContable @relation(fields: [asientoId], references: [id], onDelete: Cascade)
+  cuentaId    String
+  cuenta      CuentaContable  @relation(fields: [cuentaId], references: [id])
+  descripcion String?
+  debe        Float           @default(0)
+  haber       Float           @default(0)
+  createdAt   DateTime        @default(now())
+}
+
+model MovimientoBancario {
+  id           String    @id @default(cuid())
+  fecha        DateTime
+  descripcion  String
+  referencia   String?
+  monto        Float
+  tipo         String    // DEBITO, CREDITO
+  saldo        Float?
+  conciliado   Boolean   @default(false)
+  asientoId    String?
+  banco        String    @default("Principal")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
