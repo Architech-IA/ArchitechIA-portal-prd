@@ -93,7 +93,7 @@ function DatePicker({ value, onChange, required: req }: { value: string; onChang
     onChange(`${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
     setOpen(false);
   };
-  const display = sel ? sel.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const display = sel ? sel.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   return (
     <div className="relative" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
       <button type="button" onClick={() => setOpen((o: boolean) => !o)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-all" style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}>
@@ -143,10 +143,11 @@ function DatePicker({ value, onChange, required: req }: { value: string; onChang
 const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
 // TimePicker custom
-function TimePicker({ hour, minute, onHourChange, onMinuteChange }: {
+function TimePicker({ hour, minute, onHourChange, onMinuteChange, showLabel = true }: {
   hour: string; minute: string;
   onHourChange: (h: string) => void;
   onMinuteChange: (m: string) => void;
+  showLabel?: boolean;
 }) {
   const [openH, setOpenH] = useState(false);
   const [openM, setOpenM] = useState(false);
@@ -201,7 +202,7 @@ function TimePicker({ hour, minute, onHourChange, onMinuteChange }: {
       <DropDown open={openH} setOpen={setOpenH} value={hour} options={HOURS} onChange={onHourChange} />
       <span className="text-gray-500 font-bold text-base select-none">:</span>
       <DropDown open={openM} setOpen={setOpenM} value={minute} options={MINS} onChange={onMinuteChange} />
-      <span className="text-xs text-gray-500 ml-1">hrs</span>
+      {showLabel && <span className="text-xs text-gray-500 ml-1">hrs</span>}
     </div>
   );
 }
@@ -879,24 +880,23 @@ export default function MeetingsPage() {
                   />
                 </div>
               </div>
-              {/* Fecha + Fin en una sola fila */}
-              <div>
-                <div className="flex items-end gap-2">
-                  {/* Inicio */}
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-xs text-gray-500 font-medium mb-1.5 uppercase tracking-wide">Inicio</label>
-                    <div className="flex gap-2 items-center">
-                      <div className="flex-1 min-w-0">
-                        <DatePicker
-                          required
-                          value={form.date ? form.date.slice(0, 10) : ''}
-                          onChange={v => {
-                            const time = form.date ? form.date.slice(11, 16) : '09:00';
-                            setForm({...form, date: v ? `${v}T${time}` : ''});
-                          }}
-                        />
-                      </div>
+              {/* Fecha + Fin — dos columnas */}
+              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+                <div className="grid grid-cols-2 divide-x" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                  {/* Columna Inicio */}
+                  <div className="p-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Inicio</p>
+                    <DatePicker
+                      required
+                      value={form.date ? form.date.slice(0, 10) : ''}
+                      onChange={v => {
+                        const time = form.date ? form.date.slice(11, 16) : '09:00';
+                        setForm({...form, date: v ? `${v}T${time}` : ''});
+                      }}
+                    />
+                    <div className="mt-2">
                       <TimePicker
+                        showLabel={false}
                         hour={form.date ? form.date.slice(11, 13) : '09'}
                         minute={form.date ? form.date.slice(14, 16) : '00'}
                         onHourChange={h => {
@@ -911,62 +911,65 @@ export default function MeetingsPage() {
                         }}
                       />
                     </div>
+                    {form.date && (
+                      <p className="text-xs mt-2" style={{ color: 'rgba(251,146,60,0.55)' }}>
+                        {new Date(form.date + ':00-05:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Separador / toggle Fin */}
-                  <div className="flex flex-col items-center gap-1 pb-0.5 flex-shrink-0">
-                    <span className="text-xs text-gray-600 font-medium uppercase tracking-wide">Fin</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (form.endDate) {
-                          setForm({...form, endDate: ''});
-                        } else if (form.date) {
-                          const startDate = form.date.slice(0, 10);
-                          const startHour = parseInt(form.date.slice(11, 13));
-                          const startMin = form.date.slice(14, 16);
-                          const endHour = startHour + 1;
-                          setForm({...form, endDate: `${startDate}T${String(endHour).padStart(2, '0')}:${startMin}`});
-                        }
-                      }}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${form.endDate ? 'bg-orange-600' : 'bg-gray-700'}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.endDate ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                    </button>
-                  </div>
-
-                  {/* Fin: picker o quick-picks */}
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-xs text-gray-500 font-medium mb-1.5 uppercase tracking-wide opacity-0">Fin</label>
+                  {/* Columna Fin */}
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Fin</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (form.endDate) {
+                            setForm({...form, endDate: ''});
+                          } else if (form.date) {
+                            const startDate = form.date.slice(0, 10);
+                            const startHour = parseInt(form.date.slice(11, 13));
+                            const startMin = form.date.slice(14, 16);
+                            const endHour = startHour + 1;
+                            setForm({...form, endDate: `${startDate}T${String(endHour).padStart(2, '0')}:${startMin}`});
+                          }
+                        }}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${form.endDate ? 'bg-orange-600' : 'bg-gray-700'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.endDate ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
                     {form.endDate ? (
-                      <div className="flex gap-2 items-center">
-                        <div className="flex-1 min-w-0">
-                          <DatePicker
-                            value={form.endDate.slice(0, 10)}
-                            onChange={v => {
-                              const time = form.endDate.slice(11, 16) || '10:00';
-                              setForm({...form, endDate: v ? `${v}T${time}` : ''});
+                      <>
+                        <DatePicker
+                          value={form.endDate.slice(0, 10)}
+                          onChange={v => {
+                            const time = form.endDate.slice(11, 16) || '10:00';
+                            setForm({...form, endDate: v ? `${v}T${time}` : ''});
+                          }}
+                        />
+                        <div className="mt-2">
+                          <TimePicker
+                            showLabel={false}
+                            hour={form.endDate.slice(11, 13) || '10'}
+                            minute={form.endDate.slice(14, 16) || '00'}
+                            onHourChange={h => {
+                              const date = form.endDate.slice(0, 10);
+                              const min = form.endDate.slice(14, 16) || '00';
+                              setForm({...form, endDate: `${date}T${h}:${min}`});
+                            }}
+                            onMinuteChange={m => {
+                              const date = form.endDate.slice(0, 10);
+                              const hour = form.endDate.slice(11, 13) || '10';
+                              setForm({...form, endDate: `${date}T${hour}:${m}`});
                             }}
                           />
                         </div>
-                        <TimePicker
-                          hour={form.endDate.slice(11, 13) || '10'}
-                          minute={form.endDate.slice(14, 16) || '00'}
-                          onHourChange={h => {
-                            const date = form.endDate.slice(0, 10);
-                            const min = form.endDate.slice(14, 16) || '00';
-                            setForm({...form, endDate: `${date}T${h}:${min}`});
-                          }}
-                          onMinuteChange={m => {
-                            const date = form.endDate.slice(0, 10);
-                            const hour = form.endDate.slice(11, 13) || '10';
-                            setForm({...form, endDate: `${date}T${hour}:${m}`});
-                          }}
-                        />
-                      </div>
+                      </>
                     ) : (
-                      <div className="flex gap-1.5 flex-wrap pt-0.5">
-                        {[{ label: '30m', mins: 30 }, { label: '1h', mins: 60 }, { label: '1.5h', mins: 90 }, { label: '2h', mins: 120 }].map(p => (
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {[{ label: '30 min', mins: 30 }, { label: '1 h', mins: 60 }, { label: '1.5 h', mins: 90 }, { label: '2 h', mins: 120 }].map(p => (
                           <button key={p.label} type="button"
                             onClick={() => {
                               if (!form.date) return;
@@ -975,19 +978,15 @@ export default function MeetingsPage() {
                               const totalMin = startHour * 60 + startMin + p.mins;
                               setForm({...form, endDate: `${form.date.slice(0,10)}T${String(Math.floor(totalMin/60)%24).padStart(2,'0')}:${String(totalMin%60).padStart(2,'0')}`});
                             }}
-                            className="px-2.5 py-2 text-xs text-gray-400 rounded-lg hover:text-orange-400 transition-colors"
+                            className="px-2.5 py-1.5 text-xs text-gray-400 rounded-lg hover:text-orange-400 transition-colors"
                             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                           >{p.label}</button>
                         ))}
+                        <p className="w-full text-xs text-gray-600 mt-1">Sin hora de fin</p>
                       </div>
                     )}
                   </div>
                 </div>
-                {form.date && (
-                  <p className="text-xs text-orange-400/60 mt-2">
-                    {new Date(form.date + ':00-05:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  </p>
-                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
