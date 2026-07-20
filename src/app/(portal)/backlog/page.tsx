@@ -1163,7 +1163,8 @@ export default function BacklogPage() {
                   <input type="number" min={0} max={100} value={form.points} onChange={e => setForm({...form, points: e.target.value})} placeholder="0" className={inputCls} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '8px 12px' }} />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-6 pb-1">
+              <div style={{ height: "1px", background: "rgba(255,255,255,0.06)", margin: "0 0 4px 0" }} />
+              <div className="flex justify-end gap-2 pt-4 pb-1">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button type="submit" disabled={saving} className="px-5 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2 transition-colors disabled:opacity-50" style={{ background: saving ? '#c2410c' : '#ea580c' }}>
                   {saving && <Loader2 size={13} className="animate-spin" />}
