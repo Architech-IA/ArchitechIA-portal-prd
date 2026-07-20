@@ -198,6 +198,9 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               <div className="w-px h-3 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
               <button onClick={onEdit} className="text-gray-600 hover:text-white transition-colors" title="Editar"><Pencil size={12} /></button>
               <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors" title="Eliminar"><Trash2 size={12} /></button>
+              <div className="w-px h-3 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+              <span title="Creado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280' }}>{new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+              <span title="Actualizado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>{new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
             </div>
             <h2 className="text-base font-semibold text-white leading-snug">{item.title}</h2>
           </div>
@@ -387,15 +390,7 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               )}
             </div>
 
-            {/* Footer: updatedAt + createdAt pills */}
-            <div className="flex flex-wrap gap-1.5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280' }}>
-                Creado: {new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
-              </span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>
-                Actualizado: {new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
-              </span>
-            </div>
+
             </div>
 
             {/* Sticky save button */}
