@@ -1097,11 +1097,9 @@ export default function BacklogPage() {
                   {editItem?.taskCode && (
                     <span title="Task ID" className="text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>{editItem.taskCode}</span>
                   )}
-                  {editItem?.sprint?.sprintCode && (
-                    <span title="Sprint ID" className="text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>{editItem.sprint.sprintCode}</span>
-                  )}
+
                 </div>
-                <p className="text-[11px] text-gray-500">Completá los campos para registrar el ítem</p>
+
               </div>
               <button onClick={() => setShowModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors flex-shrink-0 ml-3" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14} /></button>
             </div>
