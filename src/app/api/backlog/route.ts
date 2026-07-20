@@ -27,11 +27,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Auto-generate taskCode if assigning to a sprint
-  const TYPE_CODES: Record<string, string> = { FEATURE:'FE', BUG:'BG', TECH_DEBT:'TD', DOCUMENTACION:'DO', INVESTIGACION:'IN', EPIC:'EP' }
+  const TYPE_CODES: Record<string, string> = { DESARROLLO:'DV', BUG:'BG', TECH_DEBT:'TD', DOCUMENTACION:'DO', INVESTIGACION:'IN', TEST_QA:'QA' }
   let taskCode: string | null = null
   if (sprintId) {
     const sprint = await prisma.sprint.findUnique({ where: { id: sprintId }, select: { sprintCode: true } })
-    const typeCode = TYPE_CODES[type] ?? 'FE'
+    const typeCode = TYPE_CODES[type] ?? 'DV'
     const count = await prisma.backlogItem.count({ where: { sprintId, taskCode: { contains: `-${typeCode}` } } })
     taskCode = sprint?.sprintCode ? `${sprint.sprintCode}-${typeCode}${String(count + 1).padStart(3, '0')}` : null
   }

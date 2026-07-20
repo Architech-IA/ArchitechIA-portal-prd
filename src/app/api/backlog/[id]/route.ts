@@ -11,14 +11,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { title, description, type, priority, status, points, solucionId, assigneeId, assigneeName, sprintId } = body
 
   // Auto-generate taskCode when assigning to a sprint for the first time
-  const TYPE_CODES: Record<string, string> = { FEATURE:'FE', BUG:'BG', TECH_DEBT:'TD', DOCUMENTACION:'DO', INVESTIGACION:'IN', EPIC:'EP' }
+  const TYPE_CODES: Record<string, string> = { DESARROLLO:'DV', BUG:'BG', TECH_DEBT:'TD', DOCUMENTACION:'DO', INVESTIGACION:'IN', TEST_QA:'QA' }
   let taskCodeUpdate: { taskCode: string } | Record<string, never> = {}
   if (sprintId) {
     const existing = await prisma.backlogItem.findUnique({ where: { id }, select: { sprintId: true, taskCode: true, type: true } })
     if (!existing?.taskCode || existing.sprintId !== sprintId) {
       const sprint = await prisma.sprint.findUnique({ where: { id: sprintId }, select: { sprintCode: true } })
       const itemType = type ?? existing?.type ?? 'FEATURE'
-      const typeCode = TYPE_CODES[itemType] ?? 'FE'
+      const typeCode = TYPE_CODES[itemType] ?? 'DV'
       const count = await prisma.backlogItem.count({ where: { sprintId, taskCode: { contains: `-${typeCode}` } } })
       const code = sprint?.sprintCode ? `${sprint.sprintCode}-${typeCode}${String(count + 1).padStart(3, '0')}` : null
       if (code) taskCodeUpdate = { taskCode: code }

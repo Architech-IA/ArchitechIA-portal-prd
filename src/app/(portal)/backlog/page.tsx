@@ -48,12 +48,12 @@ const STATUSES = [
 ]
 
 const TYPES = [
-  { key: 'FEATURE',       label: 'Feature',        code: 'FE', icon: Zap,        color: 'text-purple-400 bg-purple-500/10'  },
+  { key: 'DESARROLLO',    label: 'Desarrollo',     code: 'DV', icon: Zap,        color: 'text-purple-400 bg-purple-500/10'  },
   { key: 'BUG',           label: 'Bug',            code: 'BG', icon: Bug,        color: 'text-red-400 bg-red-500/10'        },
   { key: 'TECH_DEBT',     label: 'Deuda técnica',  code: 'TD', icon: CreditCard, color: 'text-yellow-400 bg-yellow-500/10'  },
   { key: 'DOCUMENTACION', label: 'Documentación',  code: 'DO', icon: Wrench,     color: 'text-indigo-400 bg-indigo-500/10'  },
   { key: 'INVESTIGACION', label: 'Investigación',  code: 'IN', icon: TrendingUp, color: 'text-pink-400 bg-pink-500/10'      },
-  { key: 'EPIC',          label: 'Epic',           code: 'EP', icon: CheckSquare, color: 'text-cyan-400 bg-cyan-500/10'     },
+  { key: 'TEST_QA',       label: 'Test / QA',      code: 'QA', icon: CheckSquare, color: 'text-cyan-400 bg-cyan-500/10'    },
 ]
 
 const PRIORITIES = [
@@ -64,7 +64,7 @@ const PRIORITIES = [
 ]
 
 const EMPTY_FORM = {
-  title: '', description: '', type: 'FEATURE', priority: 'MEDIUM',
+  title: '', description: '', type: 'DESARROLLO', priority: 'MEDIUM',
   status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '',
 }
 
@@ -388,7 +388,7 @@ export default function BacklogPage() {
   const importFileRef = useRef<HTMLInputElement>(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [importTasks, setImportTasks] = useState<ImportTask[]>([])
-  const [importDefaults, setImportDefaults] = useState({ type: 'FEATURE', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '' })
+  const [importDefaults, setImportDefaults] = useState({ type: 'DESARROLLO', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '' })
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [showSprintModal, setShowSprintModal] = useState(false)
@@ -402,7 +402,7 @@ export default function BacklogPage() {
   const [savingSprintEdit, setSavingSprintEdit] = useState(false)
   const [showAddItems, setShowAddItems] = useState(false)
   const [pendingSprintId, setPendingSprintId] = useState<string | null>(null)
-  const [sprintQuickAdd, setSprintQuickAdd] = useState({ title: '', type: 'FEATURE', priority: 'MEDIUM' })
+  const [sprintQuickAdd, setSprintQuickAdd] = useState({ title: '', type: 'DESARROLLO', priority: 'MEDIUM' })
 
   const userName = (session?.user as any)?.name ?? ''
 
@@ -491,7 +491,7 @@ export default function BacklogPage() {
       const parsed = parseFileToTasks(content, file.name)
       if (parsed.length === 0) { alert('No se detectaron tareas en el archivo.'); return }
       setImportTasks(parsed.map((t, i) => ({ ...t, id: `imp-${i}`, selected: true })))
-      setImportDefaults({ type: 'FEATURE', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: userName })
+      setImportDefaults({ type: 'DESARROLLO', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: userName })
       setImportError('')
       setShowImportModal(true)
     }
