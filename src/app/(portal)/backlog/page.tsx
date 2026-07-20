@@ -48,15 +48,12 @@ const STATUSES = [
 ]
 
 const TYPES = [
-  { key: 'FEATURE',     label: 'Feature',        icon: Zap,       color: 'text-purple-400 bg-purple-500/10' },
-  { key: 'BUG',         label: 'Bug',            icon: Bug,       color: 'text-red-400 bg-red-500/10'      },
-  { key: 'TASK',        label: 'Tarea',          icon: Wrench,    color: 'text-blue-400 bg-blue-500/10'    },
-  { key: 'IMPROVEMENT', label: 'Mejora',         icon: TrendingUp,color: 'text-green-400 bg-green-500/10'  },
-  { key: 'TECH_DEBT',   label: 'Deuda técnica',  icon: CreditCard,color: 'text-yellow-400 bg-yellow-500/10'},
-  { key: 'DESARROLLO',     label: 'Desarrollo',     icon: Zap,       color: 'text-cyan-400 bg-cyan-500/10'     },
-  { key: 'COTIZACION',    label: 'Cotización',     icon: CreditCard,color: 'text-orange-400 bg-orange-500/10'  },
-  { key: 'DOCUMENTACION', label: 'Documentación',  icon: Wrench,    color: 'text-indigo-400 bg-indigo-500/10'  },
-  { key: 'INVESTIGACION', label: 'Investigación',  icon: TrendingUp,color: 'text-pink-400 bg-pink-500/10'      },
+  { key: 'FEATURE',       label: 'Feature',        code: 'FE', icon: Zap,        color: 'text-purple-400 bg-purple-500/10'  },
+  { key: 'BUG',           label: 'Bug',            code: 'BG', icon: Bug,        color: 'text-red-400 bg-red-500/10'        },
+  { key: 'TECH_DEBT',     label: 'Deuda técnica',  code: 'TD', icon: CreditCard, color: 'text-yellow-400 bg-yellow-500/10'  },
+  { key: 'DOCUMENTACION', label: 'Documentación',  code: 'DO', icon: Wrench,     color: 'text-indigo-400 bg-indigo-500/10'  },
+  { key: 'INVESTIGACION', label: 'Investigación',  code: 'IN', icon: TrendingUp, color: 'text-pink-400 bg-pink-500/10'      },
+  { key: 'EPIC',          label: 'Epic',           code: 'EP', icon: CheckSquare, color: 'text-cyan-400 bg-cyan-500/10'     },
 ]
 
 const PRIORITIES = [
@@ -67,7 +64,7 @@ const PRIORITIES = [
 ]
 
 const EMPTY_FORM = {
-  title: '', description: '', type: 'TASK', priority: 'MEDIUM',
+  title: '', description: '', type: 'FEATURE', priority: 'MEDIUM',
   status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '',
 }
 
@@ -343,7 +340,7 @@ function CustomSelect({ value, onChange, options, placeholder }: {
         className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-white focus:outline-none transition-all"
         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
       >
-        <span className={selected ? 'text-white' : 'text-gray-500'}>{selected ? selected.label : (placeholder ?? 'Seleccionar...')}</span>
+        <span className={`flex-1 min-w-0 truncate text-left text-sm ${selected ? 'text-white' : 'text-gray-500'}`}>{selected ? selected.label : (placeholder ?? 'Seleccionar...')}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && (
@@ -391,7 +388,7 @@ export default function BacklogPage() {
   const importFileRef = useRef<HTMLInputElement>(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [importTasks, setImportTasks] = useState<ImportTask[]>([])
-  const [importDefaults, setImportDefaults] = useState({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '' })
+  const [importDefaults, setImportDefaults] = useState({ type: 'FEATURE', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '' })
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [showSprintModal, setShowSprintModal] = useState(false)
@@ -405,7 +402,7 @@ export default function BacklogPage() {
   const [savingSprintEdit, setSavingSprintEdit] = useState(false)
   const [showAddItems, setShowAddItems] = useState(false)
   const [pendingSprintId, setPendingSprintId] = useState<string | null>(null)
-  const [sprintQuickAdd, setSprintQuickAdd] = useState({ title: '', type: 'TASK', priority: 'MEDIUM' })
+  const [sprintQuickAdd, setSprintQuickAdd] = useState({ title: '', type: 'FEATURE', priority: 'MEDIUM' })
 
   const userName = (session?.user as any)?.name ?? ''
 
@@ -494,7 +491,7 @@ export default function BacklogPage() {
       const parsed = parseFileToTasks(content, file.name)
       if (parsed.length === 0) { alert('No se detectaron tareas en el archivo.'); return }
       setImportTasks(parsed.map((t, i) => ({ ...t, id: `imp-${i}`, selected: true })))
-      setImportDefaults({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: userName })
+      setImportDefaults({ type: 'FEATURE', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: userName })
       setImportError('')
       setShowImportModal(true)
     }
@@ -1042,11 +1039,19 @@ export default function BacklogPage() {
             {/* Accent bar */}
             <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c44)' }} />
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div>
-                <h2 className="text-base font-semibold text-white">{editItem ? 'Editar tarea' : 'Nueva tarea'}</h2>
-                <p className="text-[11px] text-gray-500 mt-0.5">Completá los campos para registrar el ítem</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                  <h2 className="text-base font-semibold text-white">{editItem ? 'Editar tarea' : 'Nueva tarea'}</h2>
+                  {editItem?.taskCode && (
+                    <span title="Task ID" className="text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>{editItem.taskCode}</span>
+                  )}
+                  {editItem?.sprint?.sprintCode && (
+                    <span title="Sprint ID" className="text-[10px] font-bold px-2 py-0.5 rounded-full cursor-default" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>{editItem.sprint.sprintCode}</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-500">Completá los campos para registrar el ítem</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14} /></button>
+              <button onClick={() => setShowModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors flex-shrink-0 ml-3" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14} /></button>
             </div>
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
@@ -1077,7 +1082,8 @@ export default function BacklogPage() {
               {/* Separador */}
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }} />
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Fila 1: Tipo · Prioridad · Estado */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Tipo</label>
                   <CustomSelect value={form.type} onChange={v => setForm({...form, type: v})} options={TYPES.map(t => ({ value: t.key, label: t.label }))} />
@@ -1086,36 +1092,26 @@ export default function BacklogPage() {
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Prioridad</label>
                   <CustomSelect value={form.priority} onChange={v => setForm({...form, priority: v})} options={PRIORITIES.map(p => ({ value: p.key, label: p.label }))} />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Estado</label>
                   <CustomSelect value={form.status} onChange={v => setForm({...form, status: v})} options={STATUSES.map(s => ({ value: s.key, label: s.label }))} />
                 </div>
+              </div>
+
+              {/* Fila 2: Solución · Responsable · Story Points */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Story points</label>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución *</label>
+                  <CustomSelect value={form.solucionId} onChange={v => setForm({...form, solucionId: v})} placeholder="Seleccionar…" options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Responsable</label>
+                  <CustomSelect value={form.assigneeId} onChange={v => { const u = users.find(x => x.id === v); setForm({ ...form, assigneeId: v, assigneeName: u?.name ?? '' }) }} placeholder="Sin asignar" options={[{ value: '', label: 'Sin asignar' }, ...users.map(u => ({ value: u.id, label: u.name }))]} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Story Points</label>
                   <input type="number" min={0} max={100} value={form.points} onChange={e => setForm({...form, points: e.target.value})} placeholder="0" className={inputCls} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '8px 12px' }} />
                 </div>
-              </div>
-
-              {/* Separador */}
-              <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }} />
-
-              <div className="grid grid-cols-2 gap-3">
-
-                <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución asociada *</label>
-                  <CustomSelect value={form.solucionId} onChange={v => setForm({...form, solucionId: v})} placeholder="Selecciona una solución…" options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Responsable</label>
-                <CustomSelect
-                  value={form.assigneeId}
-                  onChange={v => { const u = users.find(x => x.id === v); setForm({ ...form, assigneeId: v, assigneeName: u?.name ?? '' }) }}
-                  placeholder="Sin asignar"
-                  options={[{ value: '', label: 'Sin asignar' }, ...users.map(u => ({ value: u.id, label: u.name }))]}
-                />
               </div>
               <div className="flex justify-end gap-2 pt-2 pb-1">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
