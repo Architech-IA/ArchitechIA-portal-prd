@@ -173,3 +173,8 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
+export function verifyInternalApiKey(request: Request): boolean {
+  const key = request.headers.get('x-api-key');
+  return !!key && key === process.env.INTERNAL_API_KEY;
+}

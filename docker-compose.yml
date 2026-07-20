@@ -17,6 +17,7 @@ services:
       VPS2_METRICS_TOKEN: "ArchitechIA2026*"
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_USERNAME: ${GITHUB_USERNAME}
+      INTERNAL_API_KEY: "8ea723ef1a9c7b3845e92877afc4ed6e0fe12ca4285595518daa2598bf57fd57"
     extra_hosts:
       - "host-gateway:host-gateway"
     ports:

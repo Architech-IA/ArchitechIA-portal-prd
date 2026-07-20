@@ -10,7 +10,7 @@ export async function GET() {
       solucion: { select: { id: true, nombre: true, tipo: true } },
       sprint: { select: { id: true, sprintCode: true, name: true } },
     },
-    orderBy: [{ status: 'asc' }, { priority: 'asc' }, { order: 'asc' }],
+    orderBy: [{ createdAt: 'asc' }],
   })
   return NextResponse.json(items)
 }

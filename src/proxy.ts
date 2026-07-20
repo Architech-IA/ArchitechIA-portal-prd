@@ -9,6 +9,14 @@ const SUPERADMIN_ONLY = ['/traceability', '/graph', '/reportes'];
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Internal API key — bypass auth for server-to-server calls
+  if (pathname.startsWith('/api/')) {
+    const apiKey = request.headers.get('x-api-key');
+    if (apiKey && apiKey === process.env.INTERNAL_API_KEY) {
+      return NextResponse.next();
+    }
+  }
+
   // Rutas públicas — sin protección
   const isPublic = PUBLIC_PATHS.some(p => pathname.startsWith(p));
   if (isPublic) return NextResponse.next();
