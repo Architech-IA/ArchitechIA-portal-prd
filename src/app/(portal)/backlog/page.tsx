@@ -415,6 +415,7 @@ export default function BacklogPage() {
   const [sprintEditForm, setSprintEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '' })
   const [savingSprintEdit, setSavingSprintEdit] = useState(false)
   const [showAddItems, setShowAddItems] = useState(false)
+  const [showCollapsed, setShowCollapsed] = useState(true)
   const [pendingSprintId, setPendingSprintId] = useState<string | null>(null)
   const [sprintQuickAdd, setSprintQuickAdd] = useState({ title: '', type: 'DESARROLLO', priority: 'MEDIUM' })
 
@@ -696,8 +697,7 @@ export default function BacklogPage() {
       {/* Content */}
       <div className={`flex-1 min-h-0 ${mainView === 'sprint' ? 'overflow-auto p-6' : (view === 'kanban' ? 'overflow-hidden flex flex-col p-6' : 'overflow-auto p-6')}`}>
         {mainView === 'sprint' && (() => {
-          const activeSprint = sprints.find(s => s.status === 'ACTIVE') ?? sprints.find(s => s.status === 'PLANNED') ?? sprints[0]
-          if (!activeSprint) return (
+          if (sprints.length === 0) return (
             <div className="flex flex-col items-center justify-center h-full gap-4">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
                 <Rocket size={28} className="text-emerald-400" />
@@ -708,11 +708,14 @@ export default function BacklogPage() {
               </button>
             </div>
           )
+          const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : null
+          return (
+            <div className="flex flex-col gap-6">
+            {sprints.map(activeSprint => {
           const sprintItems = items.filter(i => i.sprintId === activeSprint.id)
           const doneCount = sprintItems.filter(i => i.status === 'DONE').length
           const progress = sprintItems.length > 0 ? Math.round((doneCount / sprintItems.length) * 100) : 0
           const bySprintStatus = (status: string) => sprintItems.filter(i => i.status === status)
-          const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : null
           const updateSprintStatus = async (newStatus: string) => {
             if (newStatus === 'ACTIVE') {
               const existingActive = sprints.find(s => s.status === 'ACTIVE')
@@ -722,7 +725,6 @@ export default function BacklogPage() {
               }
             }
             if (newStatus === 'CLOSED') {
-              // Return unfinished items to BACKLOG status (but keep in sprint for history) — or just close
               const unfinished = sprintItems.filter(i => i.status !== 'DONE')
               for (const item of unfinished) {
                 await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, status: 'BACKLOG', solucionId: item.solucionId }) })
@@ -733,7 +735,7 @@ export default function BacklogPage() {
             if (res.ok) { const updated = await res.json(); setSprints(prev => prev.map(s => s.id === updated.id ? updated : s)) }
           }
           return (
-            <div className="flex flex-col h-full gap-4">
+            <div key={activeSprint.id} className="flex flex-col gap-4">
               {/* Sprint header */}
               <div className="rounded-2xl flex-shrink-0 overflow-hidden" style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.15)' }}>
                 {/* Top bar: ID + status + actions */}
@@ -746,11 +748,7 @@ export default function BacklogPage() {
                       {activeSprint.status === 'ACTIVE' ? 'Activo' : activeSprint.status === 'PLANNED' ? 'Planificado' : 'Cerrado'}
                     </span>
                     {fmtDate(activeSprint.startDate) && <span className="text-[11px] text-gray-600">{fmtDate(activeSprint.startDate)} → {fmtDate(activeSprint.endDate) ?? '?'}</span>}
-                    {sprints.length > 1 && (
-                      <select value={activeSprint.id} onChange={() => {}} className="text-[10px] rounded px-1.5 py-0.5 text-gray-500 focus:outline-none ml-1" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        {sprints.map(s => <option key={s.id} value={s.id}>{s.sprintCode ?? '?'} — {s.name.slice(0,30)}</option>)}
-                      </select>
-                    )}
+                
                   </div>
                   <div className="flex items-center gap-1.5">
                     {activeSprint.status === 'PLANNED' && (
@@ -778,10 +776,13 @@ export default function BacklogPage() {
                   <div>
                     {/* Header row */}
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wider">Actividades ({sprintItems.length})</span>
+                      <button onClick={() => setShowCollapsed(v => !v)} className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-300 uppercase tracking-wider hover:text-white transition-colors">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                        Actividades ({sprintItems.length})
+                      </button>
                       <div className="relative">
-                        <button onClick={() => setShowAddItems(v => !v)} className="flex items-center gap-1 text-[10px] font-medium transition-all" style={{ color: showAddItems ? '#f97316' : '#6b7280' }}>
-                          <Plus size={10} /> {showAddItems ? 'Cerrar' : 'Gestionar'}
+                        <button onClick={() => setShowAddItems(v => !v)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all" style={{ background: showAddItems ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)', border: showAddItems ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.1)', color: showAddItems ? '#f97316' : '#9ca3af' }}>
+                          <Plus size={10} /> Gestionar
                         </button>
                       </div>
                     </div>
@@ -862,57 +863,11 @@ export default function BacklogPage() {
                     })()}
 
                     {/* Activities list */}
-                    {/* Manage sprint items bar */}
-              {(() => {
-                const availableItems = items.filter(i => !i.sprintId && i.status !== 'DONE')
-                const addToSprint = async (item: BacklogItem) => {
-                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: activeSprint.id, solucionId: item.solucionId }) })
-                  if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
-                }
-                const removeFromSprint = async (item: BacklogItem) => {
-                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, solucionId: item.solucionId }) })
-                  if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
-                }
-                return (
-                  <div className="flex items-center justify-between flex-shrink-0">
+                  <div className="flex items-center flex-shrink-0 mb-2">
                     <span className="text-[11px] text-gray-600">{sprintItems.length} item{sprintItems.length !== 1 ? 's' : ''} en este sprint</span>
-                    <div className="relative">
-                      <button onClick={() => setShowAddItems(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all" style={{ background: showAddItems ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)', border: showAddItems ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.1)', color: showAddItems ? '#f97316' : '#9ca3af' }}>
-                        <Plus size={11} /> Gestionar items
-                      </button>
-                      {showAddItems && (
-                        <div className="absolute right-0 z-20 rounded-xl overflow-hidden shadow-2xl" style={{ top: 'calc(100% + 6px)', minWidth: '320px', maxHeight: '320px', overflowY: 'auto', background: 'rgba(8,10,22,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)' }}>
-                          {availableItems.length > 0 && <>
-                            <div className="px-3 py-2 sticky top-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(8,10,22,0.98)' }}>
-                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Agregar al sprint</p>
-                            </div>
-                            {availableItems.map(item => (
-                              <button key={item.id} onClick={() => addToSprint(item)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-white/5" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                <Plus size={11} className="text-emerald-400 flex-shrink-0" />
-                                <span className="text-[12px] text-gray-300 truncate flex-1">{item.title}</span>
-                                <span className="text-[10px] text-gray-600 flex-shrink-0">{item.status === 'BACKLOG' ? 'Backlog' : item.status === 'IN_PROGRESS' ? 'En Progreso' : 'Bloqueado'}</span>
-                              </button>
-                            ))}
-                          </>}
-                          {sprintItems.length > 0 && <>
-                            <div className="px-3 py-2 sticky top-0" style={{ borderTop: availableItems.length > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(8,10,22,0.98)' }}>
-                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Quitar del sprint</p>
-                            </div>
-                            {sprintItems.map(item => (
-                              <button key={item.id} onClick={() => removeFromSprint(item)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-white/5" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                <X size={11} className="text-red-400 flex-shrink-0" />
-                                <span className="text-[12px] text-gray-300 truncate flex-1">{item.title}</span>
-                              </button>
-                            ))}
-                          </>}
-                          {availableItems.length === 0 && sprintItems.length === 0 && <p className="text-[12px] text-gray-600 text-center py-5">No hay items disponibles</p>}
-                        </div>
-                      )}
-                    </div>
                   </div>
-                )
-              })()}
-              {sprintItems.length === 0 ? (
+
+              {!showCollapsed && (sprintItems.length === 0 ? (
                       <p className="text-[11px] text-gray-700 py-1">Sin actividades — abrí Gestionar para agregar.</p>
                     ) : (
                       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -937,10 +892,13 @@ export default function BacklogPage() {
                           )
                         })}
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               </div>
+            </div>
+          )
+        })}
             </div>
           )
         })()}
