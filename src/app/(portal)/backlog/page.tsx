@@ -392,6 +392,7 @@ export default function BacklogPage() {
   const [filterType, setFilterType]     = useState('')
   const [filterPriority, setFilterPriority] = useState('')
   const [filterSolution, setFilterSolution] = useState('')
+  const [filterSprint, setFilterSprint]     = useState('')
   const [filterAssignee, setFilterAssignee] = useState('')
   const [users, setUsers] = useState<{ id: string; name: string; role: string }[]>([])
 
@@ -554,6 +555,7 @@ export default function BacklogPage() {
 
   const filtered = items.filter(i => {
     if (filterSolution && i.solucionId !== filterSolution) return false
+    if (filterSprint && i.sprintId !== filterSprint) return false
     if (filterType && i.type !== filterType) return false
     if (filterPriority && i.priority !== filterPriority) return false
     if (filterAssignee && i.assigneeId !== filterAssignee) return false
@@ -578,6 +580,12 @@ export default function BacklogPage() {
             onChange={setFilterSolution}
             placeholder="Todas las soluciones"
             options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))}
+          />
+          <FilterSelect
+            value={filterSprint}
+            onChange={setFilterSprint}
+            placeholder="Todos los sprints"
+            options={sprints.map(s => ({ value: s.id, label: s.sprintCode ? `${s.sprintCode} — ${s.name}` : s.name }))}
           />
           <FilterSelect
             value={filterType}
