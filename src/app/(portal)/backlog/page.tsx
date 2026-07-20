@@ -326,28 +326,37 @@ function CustomSelect({ value, onChange, options, placeholder }: {
   placeholder?: string
 }) {
   const [open, setOpen] = React.useState(false)
+  const [pos, setPos] = React.useState({ top: 0, left: 0, width: 0 })
   const ref = React.useRef<HTMLDivElement>(null)
+  const btnRef = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width })
+    }
+    setOpen(v => !v)
+  }
   const selected = options.find(o => o.value === value)
   return (
     <div ref={ref} className="relative w-full">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={handleOpen}
         className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-white focus:outline-none transition-all"
         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
       >
         <span className={`flex-1 min-w-0 truncate text-left text-sm ${selected ? 'text-white' : 'text-gray-500'}`}>{selected ? selected.label : (placeholder ?? 'Seleccionar...')}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      {open && (
+      {open && typeof window !== 'undefined' && (
         <div
-          className="absolute left-0 right-0 z-[200] rounded-xl overflow-hidden shadow-2xl"
-          style={{ top: 'calc(100% + 4px)', background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '200px', overflowY: 'auto' }}
+          style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '200px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}
         >
           {options.map((opt, i) => (
             <button
