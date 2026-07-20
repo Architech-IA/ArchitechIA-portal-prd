@@ -8,8 +8,8 @@ interface BacklogItem {
   id: string; title: string; description: string | null; type: string;
   priority: string; status: string; points: number | null;
   assigneeId: string | null; assigneeName: string | null; createdAt: string;
-  projectId: string | null; project: { id: string; name: string } | null;
   solucionId: string | null; solucion: { id: string; nombre: string; tipo: string } | null;
+  resultado: string | null;
 }
 
 interface PersonalData {
@@ -160,7 +160,7 @@ export default function PersonalDashboard() {
     await fetch(`/api/backlog/${item.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...item, status: newStatus, projectId: item.projectId, solucionId: item.solucionId }),
+      body: JSON.stringify({ ...item, status: newStatus, solucionId: item.solucionId }),
     });
     setData(prev => {
       if (!prev) return prev;
@@ -372,7 +372,7 @@ export default function PersonalDashboard() {
                       {item.title}
                     </p>
                     <p className="text-[11px] text-gray-600 truncate mt-0.5">
-                      {item.project?.name ?? 'Sin proyecto'}
+                      {item.solucion?.nombre ?? 'Sin solución'}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">

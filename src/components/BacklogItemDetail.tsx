@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ArrowRight, CheckCircle2, Clock, Loader2, Flag, MessageSquare, Pencil, Trash2 } from 'lucide-react'
+import { X, ArrowRight, CheckCircle2, Clock, Loader2, Flag, MessageSquare, Pencil, Trash2, FileText, Upload } from 'lucide-react'
 
 interface BacklogItem {
   id: string
@@ -16,6 +16,7 @@ interface BacklogItem {
   assigneeId: string | null
   assigneeName: string | null
   createdAt: string
+  resultado: string | null
 }
 
 interface Log {
@@ -73,6 +74,9 @@ const inputCls = 'w-full rounded-lg text-sm text-white placeholder-gray-500 focu
 export default function BacklogItemDetail({ item, onClose, onStatusChange, currentUserName, onEdit, onDelete }: Props) {
   const [logs, setLogs]             = useState<Log[]>([])
   const [loadingLogs, setLoadingLogs] = useState(true)
+  const [resultado, setResultado] = useState(item.resultado ?? '')
+  const [savingResultado, setSavingResultado] = useState(false)
+  const [resultadoDirty, setResultadoDirty] = useState(false)
   const [note, setNote]             = useState('')
   const [nextStatus, setNextStatus] = useState(NEXT_STATUS[item.status] ?? item.status)
   const [saving, setSaving]         = useState(false)
@@ -106,6 +110,34 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
     new Date(d).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   const statusLabel = (key: string) => STATUSES.find(s => s.key === key)?.label ?? key
+
+  const saveResultado = async () => {
+    setSavingResultado(true)
+    await fetch(`/api/backlog/${item.id}/resultado`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resultado: resultado || null }),
+    })
+    setSavingResultado(false)
+    setResultadoDirty(false)
+  }
+
+  const importMarkdown = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.md,.markdown,.txt'
+    input.onchange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = ev => {
+        setResultado(ev.target?.result as string ?? '')
+        setResultadoDirty(true)
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
 
   return (
     <div
@@ -236,6 +268,50 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Resultado */}
+              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex items-center gap-2">
+                    <FileText size={11} className="text-gray-500" />
+                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Resultado</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={importMarkdown}
+                      title="Importar archivo .md"
+                      className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-orange-400 transition-colors px-2 py-0.5 rounded"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                    >
+                      <Upload size={9} />
+                      <span>Importar .md</span>
+                    </button>
+                    {resultadoDirty && (
+                      <button
+                        type="button"
+                        onClick={saveResultado}
+                        disabled={savingResultado}
+                        className="flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                        style={{ background: '#ea580c', border: '1px solid rgba(249,115,22,0.5)' }}
+                      >
+                        {savingResultado ? <Loader2 size={9} className="animate-spin" /> : null}
+                        Guardar
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <textarea
+                    value={resultado}
+                    onChange={e => { setResultado(e.target.value); setResultadoDirty(true) }}
+                    placeholder="Documentá el resultado, qué se logró, evidencias, notas de cierre… (acepta Markdown)"
+                    rows={6}
+                    className="w-full text-sm text-gray-300 placeholder-gray-700 focus:outline-none resize-y"
+                    style={{ background: 'transparent', padding: '12px 16px', lineHeight: '1.6', minHeight: '120px', fontFamily: 'ui-monospace, monospace', fontSize: '12px' }}
+                  />
+                </div>
               </div>
             </div>
           </div>

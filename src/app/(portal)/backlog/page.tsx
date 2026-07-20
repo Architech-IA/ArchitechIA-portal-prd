@@ -24,6 +24,7 @@ interface BacklogItem {
   assigneeId: string | null
   assigneeName: string | null
   taskCode: string | null
+  resultado: string | null
   sprintId: string | null
   sprint: { id: string; sprintCode: string | null; name: string } | null
   createdAt: string
