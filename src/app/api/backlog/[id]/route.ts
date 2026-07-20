@@ -8,7 +8,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params
   const body = await request.json()
-  const { title, description, type, priority, status, points, projectId, solucionId, assigneeId, assigneeName, sprintId } = body
+  const { title, description, type, priority, status, points, solucionId, assigneeId, assigneeName, sprintId } = body
 
   // Auto-generate taskCode when assigning to a sprint for the first time
   let taskCodeUpdate: { taskCode: string } | Record<string, never> = {}
@@ -27,13 +27,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     data: {
       title, description: description || null, type, priority, status,
       points: points ? Number(points) : null,
-      ...(projectId !== undefined ? { projectId: projectId || null } : {}),
       ...(solucionId !== undefined ? { solucionId: solucionId || null } : {}),
       assigneeId: assigneeId || null, assigneeName: assigneeName || null,
       ...(sprintId !== undefined ? { sprintId: sprintId || null, ...(sprintId === null ? { taskCode: null } : taskCodeUpdate) } : {}),
     },
     include: {
-      project: { select: { id: true, name: true } },
       solucion: { select: { id: true, nombre: true, tipo: true } },
       sprint: { select: { id: true, sprintCode: true, name: true } },
     },

@@ -5,11 +5,6 @@ import { useSession } from 'next-auth/react'
 import { Plus, LayoutGrid, List, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye, Upload, CheckSquare, Square, Rocket, Calendar } from 'lucide-react'
 import BacklogItemDetail from '@/components/BacklogItemDetail'
 
-interface Project {
-  id: string
-  name: string
-}
-
 interface Solucion {
   id: string
   nombre: string
@@ -24,8 +19,6 @@ interface BacklogItem {
   priority: string
   status: string
   points: number | null
-  projectId: string | null
-  project: { id: string; name: string } | null
   solucionId: string | null
   solucion: { id: string; nombre: string; tipo: string } | null
   assigneeId: string | null
@@ -75,7 +68,7 @@ const PRIORITIES = [
 
 const EMPTY_FORM = {
   title: '', description: '', type: 'TASK', priority: 'MEDIUM',
-  status: 'BACKLOG', points: '', projectId: '', solucionId: '', assigneeId: '', assigneeName: '',
+  status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '',
 }
 
 interface ImportTask {
@@ -379,7 +372,6 @@ function CustomSelect({ value, onChange, options, placeholder }: {
 export default function BacklogPage() {
   const { data: session } = useSession()
   const [items, setItems]   = useState<BacklogItem[]>([])
-  const [projects, setProjects] = useState<Project[]>([])
   const [soluciones, setSoluciones] = useState<Solucion[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView]         = useState<'kanban' | 'lista'>('kanban')
@@ -390,7 +382,6 @@ export default function BacklogPage() {
   const [form, setForm]     = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [confirmDel, setConfirmDel] = useState<BacklogItem | null>(null)
-  const [filterProject, setFilterProject] = useState('')
   const [filterType, setFilterType]     = useState('')
   const [filterPriority, setFilterPriority] = useState('')
   const [filterSolution, setFilterSolution] = useState('')
@@ -400,7 +391,7 @@ export default function BacklogPage() {
   const importFileRef = useRef<HTMLInputElement>(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [importTasks, setImportTasks] = useState<ImportTask[]>([])
-  const [importDefaults, setImportDefaults] = useState({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', projectId: '', solucionId: '', assigneeId: '', assigneeName: '' })
+  const [importDefaults, setImportDefaults] = useState({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '' })
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [showSprintModal, setShowSprintModal] = useState(false)
@@ -430,15 +421,13 @@ export default function BacklogPage() {
 
   const load = async () => {
     try {
-      const [i, p, s, u, sp] = await Promise.all([
+      const [i, s, u, sp] = await Promise.all([
         safeFetch('/api/backlog'),
-        safeFetch('/api/projects'),
         safeFetch('/api/soluciones'),
         safeFetch('/api/users'),
         safeFetch('/api/backlog/sprints'),
       ])
       setItems(Array.isArray(i) ? i : [])
-      setProjects(Array.isArray(p) ? p.map((x: any) => ({ id: x.id, name: x.name })) : [])
       setSoluciones(Array.isArray(s) ? s.map((x: any) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo })) : [])
       setUsers(Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : [])
       setSprints(Array.isArray(sp) ? sp : [])
@@ -462,7 +451,7 @@ export default function BacklogPage() {
     setForm({
       title: item.title, description: item.description ?? '', type: item.type,
       priority: item.priority, status: item.status, points: item.points ? String(item.points) : '',
-      projectId: item.projectId ?? '', solucionId: item.solucionId ?? '', assigneeId: item.assigneeId ?? '', assigneeName: item.assigneeName ?? '',
+      solucionId: item.solucionId ?? '', assigneeId: item.assigneeId ?? '', assigneeName: item.assigneeName ?? '',
     })
     setShowModal(true)
   }
@@ -474,12 +463,8 @@ export default function BacklogPage() {
       alert('Debes seleccionar una solución asociada')
       return
     }
-    if (!form.projectId.trim()) {
-      alert('Debes seleccionar un proyecto')
-      return
-    }
     setSaving(true)
-    const body = { ...form, points: form.points ? Number(form.points) : null, projectId: form.projectId || null, solucionId: form.solucionId || null }
+    const body = { ...form, points: form.points ? Number(form.points) : null, solucionId: form.solucionId || null }
     if (editItem) {
       const res = await fetch(`/api/backlog/${editItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
@@ -509,7 +494,7 @@ export default function BacklogPage() {
       const parsed = parseFileToTasks(content, file.name)
       if (parsed.length === 0) { alert('No se detectaron tareas en el archivo.'); return }
       setImportTasks(parsed.map((t, i) => ({ ...t, id: `imp-${i}`, selected: true })))
-      setImportDefaults({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', projectId: '', solucionId: '', assigneeId: '', assigneeName: userName })
+      setImportDefaults({ type: 'TASK', priority: 'MEDIUM', status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: userName })
       setImportError('')
       setShowImportModal(true)
     }
@@ -520,7 +505,6 @@ export default function BacklogPage() {
   const handleImportSubmit = async () => {
     const selected = importTasks.filter(t => t.selected && t.title.trim())
     if (selected.length === 0) { setImportError('Selecciona al menos una tarea.'); return }
-    if (!importDefaults.projectId) { setImportError('Selecciona un proyecto por defecto.'); return }
     if (!importDefaults.solucionId) { setImportError('Selecciona una solución asociada.'); return }
     setImporting(true)
     setImportError('')
@@ -537,7 +521,6 @@ export default function BacklogPage() {
             priority: t.priority ?? importDefaults.priority,
             status: importDefaults.status,
             points: (() => { const p = t.points ?? importDefaults.points; return p ? Number(p) : null })(),
-            projectId: importDefaults.projectId,
             solucionId: importDefaults.solucionId,
             assigneeId: importDefaults.assigneeId || null,
             assigneeName: importDefaults.assigneeName || null,
@@ -557,13 +540,12 @@ export default function BacklogPage() {
   const changeStatus = async (item: BacklogItem, newStatus: string) => {
     const res = await fetch(`/api/backlog/${item.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...item, status: newStatus, projectId: item.projectId, solucionId: item.solucionId, assigneeName: item.assigneeName }),
+      body: JSON.stringify({ ...item, status: newStatus, solucionId: item.solucionId, assigneeName: item.assigneeName }),
     })
     if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
   }
 
   const filtered = items.filter(i => {
-    if (filterProject && i.projectId !== filterProject) return false
     if (filterSolution && i.solucionId !== filterSolution) return false
     if (filterType && i.type !== filterType) return false
     if (filterPriority && i.priority !== filterPriority) return false
@@ -584,12 +566,6 @@ export default function BacklogPage() {
       <div className="flex-shrink-0 px-4 py-3 border-b border-gray-800 flex items-center gap-2 min-w-0">
         {/* Filters — scroll horizontal en pantallas pequeñas */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
-          <FilterSelect
-            value={filterProject}
-            onChange={setFilterProject}
-            placeholder="Todos los proyectos"
-            options={projects.map(p => ({ value: p.id, label: p.name }))}
-          />
           <FilterSelect
             value={filterSolution}
             onChange={setFilterSolution}
@@ -731,7 +707,7 @@ export default function BacklogPage() {
               // Return unfinished items to BACKLOG status (but keep in sprint for history) — or just close
               const unfinished = sprintItems.filter(i => i.status !== 'DONE')
               for (const item of unfinished) {
-                await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, status: 'BACKLOG', projectId: item.projectId, solucionId: item.solucionId }) })
+                await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, status: 'BACKLOG', solucionId: item.solucionId }) })
               }
               setItems(prev => prev.map(i => { const u = unfinished.find(x => x.id === i.id); return u ? { ...i, sprintId: null, status: 'BACKLOG' } : i }))
             }
@@ -795,11 +771,11 @@ export default function BacklogPage() {
                     {showAddItems && (() => {
                       const availableItems = items.filter(i => !i.sprintId && i.status !== 'DONE')
                       const addToSprint = async (item: BacklogItem) => {
-                        const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: activeSprint.id, projectId: item.projectId, solucionId: item.solucionId }) })
+                        const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: activeSprint.id, solucionId: item.solucionId }) })
                         if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
                       }
                       const removeFromSprint = async (item: BacklogItem) => {
-                        const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, projectId: item.projectId, solucionId: item.solucionId }) })
+                        const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, solucionId: item.solucionId }) })
                         if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
                       }
                       return (
@@ -1001,7 +977,6 @@ export default function BacklogPage() {
                   <th className="text-left px-4 py-3">Tipo</th>
                   <th className="text-left px-4 py-3">Prioridad</th>
                   <th className="text-left px-4 py-3">Estado</th>
-                  <th className="text-left px-4 py-3">Proyecto</th>
                   <th className="text-left px-4 py-3">Solución</th>
                   <th className="text-left px-4 py-3">Responsable</th>
                   <th className="text-center px-4 py-3">Pts</th>
@@ -1010,7 +985,7 @@ export default function BacklogPage() {
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-12 text-center text-gray-600 text-sm">Sin ítems en el backlog</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-600 text-sm">Sin ítems en el backlog</td></tr>
                 ) : filtered.map(item => {
                   const st = STATUSES.find(s => s.key === item.status)
                   const pr = PRIORITIES.find(p => p.key === item.priority)
@@ -1035,7 +1010,6 @@ export default function BacklogPage() {
                           {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-xs text-orange-400/70">{item.project?.name ?? '—'}</td>
                       <td className="px-4 py-3"><SolutionBadge solucion={item.solucion} /></td>
                       <td className="px-4 py-3 text-xs text-gray-400">{item.assigneeName ?? '—'}</td>
                       <td className="px-4 py-3 text-center"><PointsBadge points={item.points} /></td>
@@ -1128,10 +1102,7 @@ export default function BacklogPage() {
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }} />
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Proyecto *</label>
-                  <CustomSelect value={form.projectId} onChange={v => setForm({...form, projectId: v})} placeholder="Selecciona un proyecto…" options={projects.map(p => ({ value: p.id, label: p.name }))} />
-                </div>
+
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución asociada *</label>
                   <CustomSelect value={form.solucionId} onChange={v => setForm({...form, solucionId: v})} placeholder="Selecciona una solución…" options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))} />
@@ -1169,7 +1140,7 @@ export default function BacklogPage() {
           onStatusChange={async (item, newStatus) => {
             const res = await fetch(`/api/backlog/${item.id}`, {
               method: 'PUT', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...item, status: newStatus, projectId: item.projectId, solucionId: item.solucionId, assigneeName: item.assigneeName }),
+              body: JSON.stringify({ ...item, status: newStatus, solucionId: item.solucionId, assigneeName: item.assigneeName }),
             })
             if (res.ok) {
               const updated = await res.json()
@@ -1204,14 +1175,7 @@ export default function BacklogPage() {
               {/* Defaults */}
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-3">Configuración por defecto (aplica a todas)</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Proyecto <span className="text-orange-400">*</span></label>
-                    <select value={importDefaults.projectId} onChange={e => setImportDefaults(d => ({ ...d, projectId: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
-                      <option value="">Selecciona un proyecto…</option>
-                      {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                  </div>
+                <div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Solución asociada <span className="text-orange-400">*</span></label>
                     <select value={importDefaults.solucionId} onChange={e => setImportDefaults(d => ({ ...d, solucionId: e.target.value }))} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500">
@@ -1338,11 +1302,11 @@ export default function BacklogPage() {
                 const currentItems = items.filter(i => i.sprintId === editingSprint.id)
                 const available = items.filter(i => !i.sprintId && i.status !== 'DONE')
                 const addItem = async (item: BacklogItem) => {
-                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: editingSprint.id, projectId: item.projectId, solucionId: item.solucionId }) })
+                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: editingSprint.id, solucionId: item.solucionId }) })
                   if (res.ok) { const u = await res.json(); setItems(prev => prev.map(i => i.id === u.id ? u : i)) }
                 }
                 const removeItem = async (item: BacklogItem) => {
-                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, projectId: item.projectId, solucionId: item.solucionId }) })
+                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, solucionId: item.solucionId }) })
                   if (res.ok) { const u = await res.json(); setItems(prev => prev.map(i => i.id === u.id ? u : i)) }
                 }
                 return (
@@ -1565,7 +1529,7 @@ export default function BacklogPage() {
                         if (!item) continue
                         const r = await fetch(`/api/backlog/${itemId}`, {
                           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ ...item, sprintId: newSprint.id, projectId: item.projectId, solucionId: item.solucionId }),
+                          body: JSON.stringify({ ...item, sprintId: newSprint.id, solucionId: item.solucionId }),
                         })
                         if (r.ok) assigned.push(await r.json())
                       }

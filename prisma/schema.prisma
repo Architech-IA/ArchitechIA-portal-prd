@@ -497,8 +497,6 @@ model BacklogItem {
   sprint       Sprint?  @relation(fields: [sprintId], references: [id])
   assigneeId   String?
   assigneeName String?
-  projectId    String?
-  project      Project? @relation(fields: [projectId], references: [id])
   solucionId   String?
   solucion     Solucion? @relation(fields: [solucionId], references: [id], onDelete: SetNull)
   order        Int      @default(0)

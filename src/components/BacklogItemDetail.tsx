@@ -11,8 +11,6 @@ interface BacklogItem {
   priority: string
   status: string
   points: number | null
-  projectId: string | null
-  project: { id: string; name: string } | null
   solucionId: string | null
   solucion: { id: string; nombre: string; tipo: string } | null
   assigneeId: string | null
@@ -40,17 +38,15 @@ interface Props {
 }
 
 const STATUSES = [
-  { key: 'BACKLOG',     label: 'Backlog',      color: 'bg-gray-500/20 text-gray-400 border-gray-500/30'     },
-  { key: 'IN_PROGRESS', label: 'En Progreso',  color: 'bg-blue-500/20 text-blue-400 border-blue-500/30'     },
-  { key: 'REVIEW',      label: 'Review',       color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'},
-  { key: 'BLOCKED',     label: 'Bloqueado',    color: 'bg-red-500/20 text-red-400 border-red-500/30'        },
-  { key: 'DONE',        label: 'Done',         color: 'bg-green-500/20 text-green-400 border-green-500/30'  },
+  { key: 'BACKLOG',     label: 'Backlog',      color: 'bg-gray-500/20 text-gray-400 border-gray-500/30'      },
+  { key: 'IN_PROGRESS', label: 'En Progreso',  color: 'bg-blue-500/20 text-blue-400 border-blue-500/30'      },
+  { key: 'BLOCKED',     label: 'Bloqueado',    color: 'bg-red-500/20 text-red-400 border-red-500/30'          },
+  { key: 'DONE',        label: 'Done',         color: 'bg-green-500/20 text-green-400 border-green-500/30'    },
 ]
 
 const NEXT_STATUS: Record<string, string> = {
   BACKLOG:     'IN_PROGRESS',
-  IN_PROGRESS: 'REVIEW',
-  REVIEW:      'DONE',
+  IN_PROGRESS: 'DONE',
   BLOCKED:     'IN_PROGRESS',
   DONE:        'DONE',
 }
@@ -72,12 +68,14 @@ const SOLUCION_TIPO_LABELS: Record<string, string> = {
   PROJECT: 'Proyecto', DEMO: 'Demo', PARTNERSHIP: 'Partnership', PRODUCT: 'Producto', INTERN: 'Intern',
 }
 
+const inputCls = 'w-full rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-all'
+
 export default function BacklogItemDetail({ item, onClose, onStatusChange, currentUserName, onEdit, onDelete }: Props) {
-  const [logs, setLogs]       = useState<Log[]>([])
+  const [logs, setLogs]             = useState<Log[]>([])
   const [loadingLogs, setLoadingLogs] = useState(true)
-  const [note, setNote]       = useState('')
+  const [note, setNote]             = useState('')
   const [nextStatus, setNextStatus] = useState(NEXT_STATUS[item.status] ?? item.status)
-  const [saving, setSaving]   = useState(false)
+  const [saving, setSaving]         = useState(false)
 
   const st = STATUSES.find(s => s.key === item.status)
   const pr = PRIORITY_LABELS[item.priority]
@@ -91,16 +89,13 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
   const confirmTransition = async () => {
     if (nextStatus === item.status && !note.trim()) return
     setSaving(true)
-    // Log the transition
     await fetch('/api/backlog/logs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itemId: item.id, fromStatus: item.status, toStatus: nextStatus, note: note.trim() || null }),
     })
-    // Update item status
     if (nextStatus !== item.status) {
       await onStatusChange(item, nextStatus)
     }
-    // Refresh logs
     const updated = await fetch(`/api/backlog/logs?itemId=${item.id}`).then(r => r.json())
     setLogs(Array.isArray(updated) ? updated : [])
     setNote('')
@@ -113,101 +108,125 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
   const statusLabel = (key: string) => STATUSES.find(s => s.key === key)?.label ?? key
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        className="w-full shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        style={{ maxWidth: '800px', background: 'rgba(10,12,28,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}
+      >
+        {/* Accent bar */}
+        <div className="h-0.5 w-full flex-shrink-0" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c44)' }} />
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-gray-800 flex-shrink-0">
+        <div className="flex items-start justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex-1 min-w-0 pr-4">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
               <span className={`text-[10px] px-2 py-0.5 rounded-full border ${st?.color}`}>{st?.label}</span>
-              <span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{TYPE_LABELS[item.type] ?? item.type}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}>{TYPE_LABELS[item.type] ?? item.type}</span>
               <span className={`flex items-center gap-1 text-[10px] ${pr?.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${pr?.dot}`} /> {pr?.label}
               </span>
-              {item.points && <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded font-mono">{item.points}pt</span>}
-              <div className="w-px h-3 bg-gray-700 mx-1" />
-              <button onClick={onEdit} className="text-gray-500 hover:text-white transition-colors" title="Editar"><Pencil size={12} /></button>
-              <button onClick={onDelete} className="text-gray-500 hover:text-red-400 transition-colors" title="Eliminar"><Trash2 size={12} /></button>
+              {item.points && (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.07)', color: '#d1d5db' }}>{item.points}pt</span>
+              )}
+              <div className="w-px h-3 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+              <button onClick={onEdit} className="text-gray-600 hover:text-white transition-colors" title="Editar"><Pencil size={12} /></button>
+              <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors" title="Eliminar"><Trash2 size={12} /></button>
             </div>
-            <h2 className="text-lg font-bold text-white leading-tight">{item.title}</h2>
+            <h2 className="text-base font-semibold text-white leading-snug">{item.title}</h2>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors flex-shrink-0"><X size={18} /></button>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            <X size={14} />
+          </button>
         </div>
 
         {/* Body — 2 columns */}
-        <div className="flex-1 overflow-hidden flex divide-x divide-gray-800">
+        <div className="flex-1 overflow-hidden flex" style={{ borderTop: 'none' }}>
 
           {/* Left: info + traceability */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 flex flex-col overflow-hidden" style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
-              {/* Meta */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Meta cards — solo Responsable + Solución */}
+              <div className="flex flex-wrap gap-3">
                 {item.assigneeName && (
-                  <div className="bg-gray-800/60 rounded-lg p-3">
-                    <p className="text-[10px] text-gray-500 mb-1">Responsable</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[9px] font-bold text-black">
-                        {item.assigneeName.split(' ').map(w => w[0]).slice(0,2).join('')}
-                      </div>
-                      <span className="text-sm text-white">{item.assigneeName}</span>
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0">
+                      {item.assigneeName.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Responsable</p>
+                      <p className="text-sm text-white font-medium">{item.assigneeName}</p>
                     </div>
                   </div>
                 )}
-                {item.project && (
-                  <div className="bg-gray-800/60 rounded-lg p-3">
-                    <p className="text-[10px] text-gray-500 mb-1">Proyecto</p>
-                    <p className="text-sm text-orange-400">{item.project.name}</p>
-                  </div>
-                )}
                 {item.solucion && (
-                  <div className="bg-gray-800/60 rounded-lg p-3">
-                    <p className="text-[10px] text-gray-500 mb-1">Solución asociada</p>
-                    <p className="text-sm text-emerald-400">{SOLUCION_TIPO_LABELS[item.solucion.tipo] ?? item.solucion.tipo}: {item.solucion.nombre}</p>
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                    <div className="w-1.5 h-7 rounded-full bg-emerald-500/60 flex-shrink-0" />
+                    <div>
+                      <p className="text-[9px] text-emerald-400 uppercase tracking-wide leading-none mb-0.5">Solución asociada</p>
+                      <p className="text-sm text-emerald-400 font-medium">{SOLUCION_TIPO_LABELS[item.solucion.tipo] ?? item.solucion.tipo}: {item.solucion.nombre}</p>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Description */}
               {item.description && (
-                <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Descripción</p>
-                  <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{item.description}</p>
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10" />
+                    </svg>
+                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Descripción</p>
+                  </div>
+                  <div className="px-4 py-3" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{item.description}</p>
+                  </div>
                 </div>
               )}
 
-              {/* Traceability timeline */}
+              {/* Traceability */}
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1">
-                  <Clock size={10} /> Trazabilidad
-                </p>
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock size={10} className="text-gray-600" />
+                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Trazabilidad</p>
+                </div>
                 {loadingLogs ? (
                   <div className="flex items-center gap-2 text-gray-600 text-xs"><Loader2 size={12} className="animate-spin" /> Cargando...</div>
                 ) : logs.length === 0 ? (
-                  <p className="text-xs text-gray-700">Sin transiciones registradas aún</p>
+                  <div className="flex flex-col items-center justify-center py-6 gap-2" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px" }}>
+                    <Clock size={16} className="text-gray-700" />
+                    <p className="text-xs text-gray-600">Sin transiciones registradas aún</p>
+                  </div>
                 ) : (
-                  <div className="relative space-y-0">
+                  <div className="space-y-0">
                     {logs.map((log, i) => (
                       <div key={log.id} className="flex gap-3">
-                        {/* Timeline line */}
                         <div className="flex flex-col items-center">
-                          <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${log.fromStatus ? 'bg-orange-500' : 'bg-gray-600'}`} />
-                          {i < logs.length - 1 && <div className="w-0.5 flex-1 bg-gray-800 my-1" />}
+                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${log.fromStatus ? 'bg-orange-500' : 'bg-gray-700'}`} />
+                          {i < logs.length - 1 && <div className="w-px flex-1 my-1" style={{ background: 'rgba(255,255,255,0.07)' }} />}
                         </div>
                         <div className="pb-4 min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             {log.fromStatus && (
                               <>
                                 <span className="text-[10px] text-gray-500">{statusLabel(log.fromStatus)}</span>
-                                <ArrowRight size={10} className="text-gray-600" />
+                                <ArrowRight size={9} className="text-gray-600" />
                               </>
                             )}
-                            <span className="text-[10px] font-medium text-orange-400">{statusLabel(log.toStatus)}</span>
-                            {log.userName && <span className="text-[10px] text-gray-600">· {log.userName}</span>}
+                            <span className="text-[10px] font-semibold text-orange-400">{statusLabel(log.toStatus)}</span>
+                            {log.userName && <span className="text-[10px] text-gray-500">· {log.userName}</span>}
                           </div>
                           {log.note && (
-                            <p className="text-xs text-gray-400 mt-1 bg-gray-800/50 rounded-lg px-2 py-1.5 leading-relaxed">
+                            <p className="text-xs text-gray-400 mt-1.5 leading-relaxed px-2.5 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                               {log.note}
                             </p>
                           )}
@@ -224,22 +243,24 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
           {/* Right: status action panel */}
           <div className="w-64 flex-shrink-0 flex flex-col px-5 py-5 space-y-4">
             <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Flag size={10} /> Avance de estado
-              </p>
+              <div className="flex items-center gap-2 mb-3">
+                <Flag size={10} className="text-gray-600" />
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Avance de estado</p>
+              </div>
 
               {/* Current status */}
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border mb-3 ${st?.color}`}>
+              <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border mb-4 ${st?.color}`}>
                 <CheckCircle2 size={13} />
                 <span className="text-xs font-medium">Actual: {st?.label}</span>
               </div>
 
-              {/* Next status selector */}
-              <label className="text-[10px] text-gray-500 mb-1 block">Mover a</label>
+              {/* Next status */}
+              <label className="text-[10px] text-gray-600 mb-1.5 block">Mover a</label>
               <select
                 value={nextStatus}
                 onChange={e => setNextStatus(e.target.value)}
-                className="w-full text-sm bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500 mb-3"
+                className={inputCls + ' mb-4 px-3 py-2'}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
               >
                 {STATUSES.filter(s => s.key !== item.status).map(s => (
                   <option key={s.key} value={s.key}>{s.label}</option>
@@ -248,29 +269,32 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               </select>
 
               {/* Note */}
-              <label className="text-[10px] text-gray-500 mb-1 flex items-center gap-1 block">
-                <MessageSquare size={9} /> Nota de confirmación
-              </label>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <MessageSquare size={9} className="text-gray-600" />
+                <label className="text-[10px] text-gray-600">Nota de confirmación</label>
+              </div>
               <textarea
                 rows={4}
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 placeholder="Describe qué se hizo, qué falta o por qué se mueve..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-orange-500 resize-none"
+                className={inputCls + ' resize-none px-3 py-2 text-xs'}
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
               />
             </div>
 
             <button
               onClick={confirmTransition}
               disabled={saving || (nextStatus === item.status && !note.trim())}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: saving ? '#c2410c' : '#ea580c' }}
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
               {nextStatus !== item.status ? `Mover a ${statusLabel(nextStatus)}` : 'Registrar nota'}
             </button>
 
-            <div className="pt-3 border-t border-gray-800 space-y-1 text-[10px] text-gray-600">
-              <p>Creado: {new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            <div className="pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-[10px] text-gray-700">Creado: {new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
             </div>
           </div>
         </div>
