@@ -275,16 +275,7 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                       <Upload size={9} />
                       <span>Importar .md</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={saveResultado}
-                      disabled={savingResultado || !resultadoDirty}
-                      className="flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-0.5 rounded transition-colors disabled:opacity-40"
-                      style={{ background: resultadoDirty ? '#ea580c' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(249,115,22,0.3)' }}
-                    >
-                      {savingResultado ? <Loader2 size={9} className="animate-spin" /> : null}
-                      Guardar
-                    </button>
+
                   </div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)' }}>
@@ -296,6 +287,32 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                     className="w-full text-sm text-gray-300 placeholder-gray-700 focus:outline-none resize-y"
                     style={{ background: 'transparent', padding: '12px 16px', lineHeight: '1.6', minHeight: '120px', fontFamily: 'ui-monospace, monospace', fontSize: '12px' }}
                   />
+                </div>
+              </div>
+              {/* Fecha de ejecución */}
+              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <CalendarClock size={11} className="text-gray-500" />
+                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Fecha de ejecución</p>
+                </div>
+                <div className="px-4 py-3 flex gap-2" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <input
+                    type="datetime-local"
+                    value={fechaEjecucion}
+                    onChange={e => { setFechaEjecucion(e.target.value); setFechaDirty(true) }}
+                    className="flex-1 rounded-lg text-[11px] text-white focus:outline-none"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '7px 10px', colorScheme: 'dark' }}
+                  />
+                  {fechaDirty && (
+                    <button
+                      onClick={() => saveFechaEjecucion(fechaEjecucion)}
+                      disabled={savingFecha}
+                      className="px-3 rounded-lg text-[10px] font-semibold text-white flex-shrink-0 transition-colors disabled:opacity-50"
+                      style={{ background: '#ea580c' }}
+                    >
+                      {savingFecha ? <Loader2 size={10} className="animate-spin" /> : '✓'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -332,32 +349,17 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               </div>
             </div>
 
-            {/* Fecha de ejecución */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarClock size={10} className="text-gray-600" />
-                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Fecha de ejecución</p>
-              </div>
-              <div className="flex gap-1.5">
-                <input
-                  type="datetime-local"
-                  value={fechaEjecucion}
-                  onChange={e => { setFechaEjecucion(e.target.value); setFechaDirty(true) }}
-                  className="flex-1 rounded-lg text-[11px] text-white focus:outline-none"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '7px 10px', colorScheme: 'dark' }}
-                />
-                {fechaDirty && (
-                  <button
-                    onClick={() => saveFechaEjecucion(fechaEjecucion)}
-                    disabled={savingFecha}
-                    className="px-2.5 rounded-lg text-[10px] font-semibold text-white flex-shrink-0 transition-colors disabled:opacity-50"
-                    style={{ background: '#ea580c' }}
-                  >
-                    {savingFecha ? <Loader2 size={10} className="animate-spin" /> : '✓'}
-                  </button>
-                )}
-              </div>
-            </div>
+
+            {/* Guardar cambios */}
+            <button
+              onClick={saveResultado}
+              disabled={savingResultado || !resultadoDirty}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: resultadoDirty ? '#ea580c' : 'rgba(255,255,255,0.06)', border: resultadoDirty ? 'none' : '1px solid rgba(255,255,255,0.08)' }}
+            >
+              {savingResultado ? <Loader2 size={14} className="animate-spin" /> : null}
+              {resultadoDirty ? 'Guardar resultado' : 'Sin cambios'}
+            </button>
 
             {/* Trazabilidad in right panel */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
