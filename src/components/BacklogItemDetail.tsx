@@ -192,15 +192,14 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               <span className={`flex items-center gap-1 text-[10px] ${pr?.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${pr?.dot}`} /> {pr?.label}
               </span>
+              <span title="Creado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280' }}>{new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+              <span title="Actualizado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>{new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
               {item.points && (
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.07)', color: '#d1d5db' }}>{item.points}pt</span>
               )}
               <div className="w-px h-3 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
               <button onClick={onEdit} className="text-gray-600 hover:text-white transition-colors" title="Editar"><Pencil size={12} /></button>
               <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors" title="Eliminar"><Trash2 size={12} /></button>
-              <div className="w-px h-3 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
-              <span title="Creado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280' }}>{new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-              <span title="Actualizado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>{new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
             </div>
             <h2 className="text-base font-semibold text-white leading-snug">{item.title}</h2>
           </div>
