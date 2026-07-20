@@ -10,20 +10,32 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const body = await request.json()
   const { title, description, type, priority, status, points, projectId, solucionId, assigneeId, assigneeName, sprintId } = body
 
+  // Auto-generate taskCode when assigning to a sprint for the first time
+  let taskCodeUpdate: { taskCode: string } | Record<string, never> = {}
+  if (sprintId) {
+    const existing = await prisma.backlogItem.findUnique({ where: { id }, select: { sprintId: true, taskCode: true } })
+    if (!existing?.taskCode || existing.sprintId !== sprintId) {
+      const sprint = await prisma.sprint.findUnique({ where: { id: sprintId }, select: { sprintCode: true } })
+      const count = await prisma.backlogItem.count({ where: { sprintId } })
+      const code = sprint?.sprintCode ? `${sprint.sprintCode}-T${count + 1}` : null
+      if (code) taskCodeUpdate = { taskCode: code }
+    }
+  }
+
   const item = await prisma.backlogItem.update({
     where: { id },
     data: {
       title, description: description || null, type, priority, status,
       points: points ? Number(points) : null,
-      // Solo actualiza el proyecto/solución si viene en el body (no lo borra por accidente).
       ...(projectId !== undefined ? { projectId: projectId || null } : {}),
       ...(solucionId !== undefined ? { solucionId: solucionId || null } : {}),
       assigneeId: assigneeId || null, assigneeName: assigneeName || null,
-      ...(sprintId !== undefined ? { sprintId: sprintId || null } : {}),
+      ...(sprintId !== undefined ? { sprintId: sprintId || null, ...(sprintId === null ? { taskCode: null } : taskCodeUpdate) } : {}),
     },
     include: {
       project: { select: { id: true, name: true } },
       solucion: { select: { id: true, nombre: true, tipo: true } },
+      sprint: { select: { id: true, sprintCode: true, name: true } },
     },
   })
   return NextResponse.json(item)

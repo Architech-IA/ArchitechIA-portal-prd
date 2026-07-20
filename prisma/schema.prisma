@@ -492,6 +492,7 @@ model BacklogItem {
   priority     String   @default("MEDIUM")
   status       String   @default("BACKLOG")
   points       Int?
+  taskCode     String?  @unique
   sprintId     String?
   sprint       Sprint?  @relation(fields: [sprintId], references: [id])
   assigneeId   String?

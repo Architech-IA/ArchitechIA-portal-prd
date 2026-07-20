@@ -60,6 +60,14 @@ export async function POST(request: NextRequest) {
   // El proyecto es obligatorio: si no llega, se asigna al proyecto Interno.
   const resolvedProjectId = projectId || (await ensureInternoAndBackfill())
 
+  // Auto-generate taskCode if assigning to a sprint
+  let taskCode: string | null = null
+  if (sprintId) {
+    const sprint = await prisma.sprint.findUnique({ where: { id: sprintId }, select: { sprintCode: true } })
+    const count = await prisma.backlogItem.count({ where: { sprintId } })
+    taskCode = sprint?.sprintCode ? `${sprint.sprintCode}-T${count + 1}` : null
+  }
+
   const item = await prisma.backlogItem.create({
     data: {
       title,
@@ -73,6 +81,7 @@ export async function POST(request: NextRequest) {
       assigneeId: assigneeId || null,
       assigneeName: assigneeName || null,
       sprintId: sprintId || null,
+      taskCode,
     },
     include: {
       project: { select: { id: true, name: true } },

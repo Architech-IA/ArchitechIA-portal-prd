@@ -30,6 +30,7 @@ interface BacklogItem {
   solucion: { id: string; nombre: string; tipo: string } | null
   assigneeId: string | null
   assigneeName: string | null
+  taskCode: string | null
   sprintId: string | null
   sprint: { id: string; sprintCode: string | null; name: string } | null
   createdAt: string
@@ -877,6 +878,7 @@ export default function BacklogPage() {
                           return (
                             <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/[0.03]" style={{ borderBottom: idx < sprintItems.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }} onClick={() => setViewItem(item)}>
                               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusMeta?.color ?? 'bg-gray-500'}`} />
+                              {item.taskCode && <span className="text-[9px] font-bold flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
                               <span className="text-[12px] text-gray-200 flex-1 truncate">{item.title}</span>
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 {TypeIcon && <span className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium ${typeMeta?.color}`}><TypeIcon size={9} /></span>}
@@ -930,8 +932,8 @@ export default function BacklogPage() {
                             <PriorityDot priority={item.priority} />
                             <p className="flex-1 text-[11px] text-white leading-snug truncate">{item.title}</p>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
-                              {item.sprint?.sprintCode && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>{item.sprint.sprintCode}</span>
+                              {item.taskCode && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>
                               )}
                               {item.assigneeName && (
                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[9px] font-bold text-black" title={item.assigneeName}>
@@ -957,8 +959,8 @@ export default function BacklogPage() {
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <SolutionBadge solucion={item.solucion} />
-                              {item.sprint?.sprintCode && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>{item.sprint.sprintCode}</span>
+                              {item.taskCode && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>
                               )}
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
@@ -1375,6 +1377,7 @@ export default function BacklogPage() {
                           return (
                             <div key={item.id} className="flex items-center gap-2 px-3 py-2 group" style={{ borderBottom: idx < currentItems.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: 'rgba(255,255,255,0.02)' }}>
                               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st?.color ?? 'bg-gray-500'}`} />
+                              {item.taskCode && <span className="text-[9px] font-bold flex-shrink-0 px-1 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
                               <span className="text-[11px] text-gray-300 flex-1 truncate">{item.title}</span>
                               <span className="text-[10px] text-gray-600 flex-shrink-0 mr-1">{st?.label}</span>
                               <button onClick={() => removeItem(item)} className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-400 flex-shrink-0"><X size={11} /></button>
