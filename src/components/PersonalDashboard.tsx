@@ -11,6 +11,7 @@ interface BacklogItem {
   solucionId: string | null; solucion: { id: string; nombre: string; tipo: string } | null;
   resultado: string | null;
   updatedAt: string;
+  fechaEjecucion: string | null;
 }
 
 interface PersonalData {

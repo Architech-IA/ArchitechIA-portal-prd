@@ -491,7 +491,8 @@ model BacklogItem {
   id           String   @id @default(cuid())
   title        String
   description  String?
-  resultado    String?
+  resultado       String?
+  fechaEjecucion  DateTime?
   type         String   @default("TASK")
   priority     String   @default("MEDIUM")
   status       String   @default("BACKLOG")

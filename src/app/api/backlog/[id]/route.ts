@@ -8,7 +8,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params
   const body = await request.json()
-  const { title, description, resultado, type, priority, status, points, solucionId, assigneeId, assigneeName, sprintId } = body
+  const { title, description, resultado, fechaEjecucion, type, priority, status, points, solucionId, assigneeId, assigneeName, sprintId } = body
 
   // Auto-generate taskCode when assigning to a sprint for the first time
   let taskCodeUpdate: { taskCode: string } | Record<string, never> = {}
@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const item = await prisma.backlogItem.update({
     where: { id },
     data: {
-      title, description: description || null, resultado: resultado ?? undefined, type, priority, status,
+      title, description: description || null, resultado: resultado ?? undefined, fechaEjecucion: fechaEjecucion ? new Date(fechaEjecucion) : null, type, priority, status,
       points: points ? Number(points) : null,
       ...(solucionId !== undefined ? { solucionId: solucionId || null } : {}),
       assigneeId: assigneeId || null, assigneeName: assigneeName || null,

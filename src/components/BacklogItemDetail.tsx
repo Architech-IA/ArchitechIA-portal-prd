@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ArrowRight, CheckCircle2, Clock, Loader2, Flag, MessageSquare, Pencil, Trash2, FileText, Upload } from 'lucide-react'
+import { X, ArrowRight, CheckCircle2, Clock, Loader2, Flag, Pencil, Trash2, FileText, Upload, CalendarClock } from 'lucide-react'
 
 interface BacklogItem {
   id: string
@@ -18,6 +18,7 @@ interface BacklogItem {
   createdAt: string
   updatedAt: string
   resultado: string | null
+  fechaEjecucion: string | null
 }
 
 interface Log {
@@ -107,6 +108,18 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
     setSaving(false)
   }
 
+  const confirmTransitionTo = async (toStatus: string) => {
+    setSaving(true)
+    await fetch('/api/backlog/logs', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: item.id, fromStatus: item.status, toStatus, note: null }),
+    })
+    await onStatusChange(item, toStatus)
+    const updated = await fetch(`/api/backlog/logs?itemId=${item.id}`).then(r => r.json())
+    setLogs(Array.isArray(updated) ? updated : [])
+    setSaving(false)
+  }
+
   const formatDate = (d: string) =>
     new Date(d).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
@@ -121,6 +134,23 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
     })
     setSavingResultado(false)
     setResultadoDirty(false)
+  }
+
+  const [fechaEjecucion, setFechaEjecucion] = useState<string>(
+    item.fechaEjecucion ? new Date(item.fechaEjecucion).toISOString().slice(0, 16) : ''
+  )
+  const [savingFecha, setSavingFecha] = useState(false)
+  const [fechaDirty, setFechaDirty] = useState(false)
+
+  const saveFechaEjecucion = async (val: string) => {
+    setSavingFecha(true)
+    await fetch(`/api/backlog/${item.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...item, fechaEjecucion: val || null }),
+    })
+    setSavingFecha(false)
+    setFechaDirty(false)
   }
 
   const importMarkdown = () => {
@@ -246,18 +276,16 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                       <Upload size={9} />
                       <span>Importar .md</span>
                     </button>
-                    {resultadoDirty && (
-                      <button
-                        type="button"
-                        onClick={saveResultado}
-                        disabled={savingResultado}
-                        className="flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-0.5 rounded transition-colors disabled:opacity-50"
-                        style={{ background: '#ea580c', border: '1px solid rgba(249,115,22,0.5)' }}
-                      >
-                        {savingResultado ? <Loader2 size={9} className="animate-spin" /> : null}
-                        Guardar
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={saveResultado}
+                      disabled={savingResultado || !resultadoDirty}
+                      className="flex items-center gap-1 text-[10px] font-semibold text-white px-2 py-0.5 rounded transition-colors disabled:opacity-40"
+                      style={{ background: resultadoDirty ? '#ea580c' : 'rgba(255,255,255,0.06)', border: '1px solid rgba(249,115,22,0.3)' }}
+                    >
+                      {savingResultado ? <Loader2 size={9} className="animate-spin" /> : null}
+                      Guardar
+                    </button>
                   </div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)' }}>
@@ -282,49 +310,54 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               </div>
 
               {/* Current status */}
-              <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border mb-4 ${st?.color}`}>
+              <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border mb-3 ${st?.color}`}>
                 <CheckCircle2 size={13} />
                 <span className="text-xs font-medium">Actual: {st?.label}</span>
               </div>
 
-              {/* Next status */}
-              <label className="text-[10px] text-gray-600 mb-1.5 block">Mover a</label>
-              <select
-                value={nextStatus}
-                onChange={e => setNextStatus(e.target.value)}
-                className={inputCls + ' mb-4 px-3 py-2'}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
-              >
+              {/* Quick status buttons */}
+              <div className="flex flex-col gap-1.5">
                 {STATUSES.filter(s => s.key !== item.status).map(s => (
-                  <option key={s.key} value={s.key}>{s.label}</option>
+                  <button
+                    key={s.key}
+                    onClick={() => { setNextStatus(s.key); confirmTransitionTo(s.key) }}
+                    disabled={saving}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-medium transition-all disabled:opacity-40"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#9ca3af' }}
+                  >
+                    <span>Mover a {s.label}</span>
+                    <ArrowRight size={10} />
+                  </button>
                 ))}
-                <option value={item.status}>— Solo agregar nota —</option>
-              </select>
-
-              {/* Note */}
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <MessageSquare size={9} className="text-gray-600" />
-                <label className="text-[10px] text-gray-600">Nota de confirmación</label>
               </div>
-              <textarea
-                rows={4}
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                placeholder="Describe qué se hizo, qué falta o por qué se mueve..."
-                className={inputCls + ' resize-none px-3 py-2 text-xs'}
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-              />
             </div>
 
-            <button
-              onClick={confirmTransition}
-              disabled={saving || (nextStatus === item.status && !note.trim())}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: saving ? '#c2410c' : '#ea580c' }}
-            >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-              {nextStatus !== item.status ? `Mover a ${statusLabel(nextStatus)}` : 'Registrar nota'}
-            </button>
+            {/* Fecha de ejecución */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarClock size={10} className="text-gray-600" />
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Fecha de ejecución</p>
+              </div>
+              <div className="flex gap-1.5">
+                <input
+                  type="datetime-local"
+                  value={fechaEjecucion}
+                  onChange={e => { setFechaEjecucion(e.target.value); setFechaDirty(true) }}
+                  className="flex-1 rounded-lg text-[11px] text-white focus:outline-none"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '7px 10px', colorScheme: 'dark' }}
+                />
+                {fechaDirty && (
+                  <button
+                    onClick={() => saveFechaEjecucion(fechaEjecucion)}
+                    disabled={savingFecha}
+                    className="px-2.5 rounded-lg text-[10px] font-semibold text-white flex-shrink-0 transition-colors disabled:opacity-50"
+                    style={{ background: '#ea580c' }}
+                  >
+                    {savingFecha ? <Loader2 size={10} className="animate-spin" /> : '✓'}
+                  </button>
+                )}
+              </div>
+            </div>
 
             {/* Trazabilidad in right panel */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>

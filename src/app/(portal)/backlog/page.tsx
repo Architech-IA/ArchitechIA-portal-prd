@@ -29,6 +29,7 @@ interface BacklogItem {
   sprint: { id: string; sprintCode: string | null; name: string } | null
   createdAt: string
   updatedAt: string
+  fechaEjecucion: string | null
 }
 
 interface Sprint {
