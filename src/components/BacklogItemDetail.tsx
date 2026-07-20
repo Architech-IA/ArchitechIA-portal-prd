@@ -256,7 +256,6 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                 </div>
               )}
 
-              </div>
 
               {/* Resultado */}
               <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -299,6 +298,7 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                   />
                 </div>
               </div>
+            </div>
           </div>
 
           {/* Right: status action panel */}
