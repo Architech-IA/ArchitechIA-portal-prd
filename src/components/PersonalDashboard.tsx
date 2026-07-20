@@ -10,6 +10,7 @@ interface BacklogItem {
   assigneeId: string | null; assigneeName: string | null; createdAt: string;
   solucionId: string | null; solucion: { id: string; nombre: string; tipo: string } | null;
   resultado: string | null;
+  updatedAt: string;
 }
 
 interface PersonalData {

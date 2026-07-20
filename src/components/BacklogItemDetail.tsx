@@ -16,6 +16,7 @@ interface BacklogItem {
   assigneeId: string | null
   assigneeName: string | null
   createdAt: string
+  updatedAt: string
   resultado: string | null
 }
 
@@ -225,49 +226,6 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                 </div>
               )}
 
-              {/* Traceability */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={10} className="text-gray-600" />
-                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Trazabilidad</p>
-                </div>
-                {loadingLogs ? (
-                  <div className="flex items-center gap-2 text-gray-600 text-xs"><Loader2 size={12} className="animate-spin" /> Cargando...</div>
-                ) : logs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-6 gap-2" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px" }}>
-                    <Clock size={16} className="text-gray-700" />
-                    <p className="text-xs text-gray-600">Sin transiciones registradas aún</p>
-                  </div>
-                ) : (
-                  <div className="space-y-0">
-                    {logs.map((log, i) => (
-                      <div key={log.id} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${log.fromStatus ? 'bg-orange-500' : 'bg-gray-700'}`} />
-                          {i < logs.length - 1 && <div className="w-px flex-1 my-1" style={{ background: 'rgba(255,255,255,0.07)' }} />}
-                        </div>
-                        <div className="pb-4 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {log.fromStatus && (
-                              <>
-                                <span className="text-[10px] text-gray-500">{statusLabel(log.fromStatus)}</span>
-                                <ArrowRight size={9} className="text-gray-600" />
-                              </>
-                            )}
-                            <span className="text-[10px] font-semibold text-orange-400">{statusLabel(log.toStatus)}</span>
-                            {log.userName && <span className="text-[10px] text-gray-500">· {log.userName}</span>}
-                          </div>
-                          {log.note && (
-                            <p className="text-xs text-gray-400 mt-1.5 leading-relaxed px-2.5 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                              {log.note}
-                            </p>
-                          )}
-                          <p className="text-[10px] text-gray-700 mt-1">{formatDate(log.createdAt)}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Resultado */}
@@ -313,7 +271,6 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                   />
                 </div>
               </div>
-            </div>
           </div>
 
           {/* Right: status action panel */}
@@ -369,8 +326,50 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               {nextStatus !== item.status ? `Mover a ${statusLabel(nextStatus)}` : 'Registrar nota'}
             </button>
 
-            <div className="pt-3 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-[10px] text-gray-700">Creado: {new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            {/* Trazabilidad in right panel */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={10} className="text-gray-600" />
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Trazabilidad</p>
+              </div>
+              {loadingLogs ? (
+                <div className="flex items-center gap-2 text-gray-600 text-xs"><Loader2 size={12} className="animate-spin" /> Cargando...</div>
+              ) : logs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-4 gap-2" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "10px" }}>
+                  <Clock size={14} className="text-gray-700" />
+                  <p className="text-[10px] text-gray-600">Sin transiciones registradas aún</p>
+                </div>
+              ) : (
+                <div className="space-y-0 max-h-48 overflow-y-auto">
+                  {logs.map((log, i) => (
+                    <div key={log.id} className="flex gap-2">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${log.fromStatus ? 'bg-orange-500' : 'bg-gray-700'}`} />
+                        {i < logs.length - 1 && <div className="w-px flex-1 my-1" style={{ background: 'rgba(255,255,255,0.07)' }} />}
+                      </div>
+                      <div className="pb-3 min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {log.fromStatus && (<><span className="text-[9px] text-gray-500">{statusLabel(log.fromStatus)}</span><ArrowRight size={8} className="text-gray-600" /></>)}
+                          <span className="text-[9px] font-semibold text-orange-400">{statusLabel(log.toStatus)}</span>
+                          {log.userName && <span className="text-[9px] text-gray-500">· {log.userName}</span>}
+                        </div>
+                        {log.note && <p className="text-[10px] text-gray-400 mt-1 leading-relaxed px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>{log.note}</p>}
+                        <p className="text-[9px] text-gray-700 mt-0.5">{formatDate(log.createdAt)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer: updatedAt + createdAt pills */}
+            <div className="flex flex-wrap gap-1.5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280' }}>
+                Creado: {new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>
+                Actualizado: {new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
             </div>
           </div>
         </div>
