@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { usePageTitleOverride } from "@/lib/pageTitleContext";
+import { PageActionsProvider, usePageActions } from "@/lib/pageActionsContext";
 
 type NavItem = { href: string; label: string; icon: string };
 type NavSection = { id: string; label: string; superAdmin?: boolean; items: NavItem[] };
@@ -378,6 +379,7 @@ export default function PortalLayoutClient({
   }
 
   return (
+    <PageActionsProvider>
     <div className="flex h-screen" style={{ background: 'transparent' }}>
       {!isMobile && (
         <aside
@@ -441,6 +443,7 @@ export default function PortalLayoutClient({
         <GlobalSearch />
       </div>
     </div>
+  </PageActionsProvider>
   );
 }
 

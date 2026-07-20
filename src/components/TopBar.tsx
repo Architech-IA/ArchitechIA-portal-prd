@@ -1,4 +1,5 @@
 'use client';
+import { usePageActions } from '@/lib/pageActionsContext';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -73,6 +74,7 @@ export default function TopBar({
   title?: string;
 }) {
   const router = useRouter();
+  const { actions: pageActions } = usePageActions();
   const pathname = usePathname();
   const { data: session } = useSession();
 
@@ -147,7 +149,7 @@ export default function TopBar({
         flexShrink: 0,
       }}
     >
-      <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         {title && (
           titleHref ? (
             <button
@@ -168,6 +170,13 @@ export default function TopBar({
               {title}
             </span>
           )
+        )}
+        {/* Page-injected actions slot — next to title */}
+        {pageActions && (
+          <>
+            <div className="w-px h-4 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <div className="flex items-center flex-shrink-0">{pageActions}</div>
+          </>
         )}
       </div>
 

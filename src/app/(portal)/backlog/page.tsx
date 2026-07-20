@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { usePageActions } from '@/lib/pageActionsContext'
 import { useSession } from 'next-auth/react'
 import { Plus, LayoutGrid, List, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye, Upload, CheckSquare, Square, Rocket, Calendar } from 'lucide-react'
 import BacklogItemDetail from '@/components/BacklogItemDetail'
@@ -397,6 +398,8 @@ export default function BacklogPage() {
   const [filterSolution, setFilterSolution] = useState('')
   const [filterSprint, setFilterSprint]     = useState('')
   const [filterAssignee, setFilterAssignee] = useState('')
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo]     = useState('')
   const [users, setUsers] = useState<{ id: string; name: string; role: string }[]>([])
 
   const importFileRef = useRef<HTMLInputElement>(null)
@@ -410,6 +413,16 @@ export default function BacklogPage() {
   const [savingSprint, setSavingSprint] = useState(false)
   const [showItemsPicker, setShowItemsPicker] = useState(false)
   const [mainView, setMainView] = useState<'backlog' | 'sprint'>('backlog')
+  const { setActions } = usePageActions()
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <button onClick={() => setMainView('backlog')} className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all" style={{ background: mainView === 'backlog' ? 'rgba(249,115,22,0.2)' : 'transparent', color: mainView === 'backlog' ? '#f97316' : '#6b7280', border: mainView === 'backlog' ? '1px solid rgba(249,115,22,0.3)' : '1px solid transparent' }} onMouseEnter={e => { if (mainView !== 'backlog') { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db'; } }} onMouseLeave={e => { if (mainView !== 'backlog') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280'; } }}>Backlog</button>
+        <button onClick={() => setMainView('sprint')} className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ background: mainView === 'sprint' ? 'rgba(16,185,129,0.2)' : 'transparent', color: mainView === 'sprint' ? '#10b981' : '#6b7280', border: mainView === 'sprint' ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent' }} onMouseEnter={e => { if (mainView !== 'sprint') { (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db'; } }} onMouseLeave={e => { if (mainView !== 'sprint') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280'; } }}><Rocket size={10} /> Sprint</button>
+      </div>
+    )
+    return () => setActions(null)
+  }, [mainView])
   const [sprints, setSprints] = useState<Sprint[]>([])
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
   const [sprintEditForm, setSprintEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '' })
@@ -563,6 +576,8 @@ export default function BacklogPage() {
     if (filterType && i.type !== filterType) return false
     if (filterPriority && i.priority !== filterPriority) return false
     if (filterAssignee && i.assigneeId !== filterAssignee) return false
+    if (filterDateFrom && i.createdAt && new Date(i.createdAt) < new Date(filterDateFrom)) return false
+    if (filterDateTo && i.createdAt && new Date(i.createdAt) > new Date(filterDateTo + 'T23:59:59')) return false
     return true
   })
 
@@ -642,25 +657,31 @@ export default function BacklogPage() {
           })()}
         </div>
 
+        {/* Date range filter */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="w-px h-4 bg-gray-700 mx-0.5" />
+          <Calendar size={11} className="text-gray-500 flex-shrink-0" />
+          <input
+            type="date"
+            value={filterDateFrom}
+            onChange={e => setFilterDateFrom(e.target.value)}
+            className="text-[11px] text-gray-300 rounded-lg px-2 py-1 focus:outline-none flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark', width: '118px' }}
+          />
+          <span className="text-[10px] text-gray-600 flex-shrink-0">→</span>
+          <input
+            type="date"
+            value={filterDateTo}
+            onChange={e => setFilterDateTo(e.target.value)}
+            className="text-[11px] text-gray-300 rounded-lg px-2 py-1 focus:outline-none flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark', width: '118px' }}
+          />
+          {(filterDateFrom || filterDateTo) && (
+            <button onClick={() => { setFilterDateFrom(''); setFilterDateTo('') }} className="text-gray-600 hover:text-gray-400 transition-colors flex-shrink-0"><X size={11} /></button>
+          )}
+        </div>
         {/* Acciones — siempre visibles, nunca bajan de línea */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {/* Main view tab toggle */}
-          <div className="flex items-center gap-0.5 rounded-lg p-1 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <button
-              onClick={() => setMainView('backlog')}
-              className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all"
-              style={{ background: mainView === 'backlog' ? 'rgba(249,115,22,0.2)' : 'transparent', color: mainView === 'backlog' ? '#f97316' : '#6b7280', border: mainView === 'backlog' ? '1px solid rgba(249,115,22,0.3)' : '1px solid transparent' }}
-            >
-              Backlog
-            </button>
-            <button
-              onClick={() => setMainView('sprint')}
-              className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
-              style={{ background: mainView === 'sprint' ? 'rgba(16,185,129,0.2)' : 'transparent', color: mainView === 'sprint' ? '#10b981' : '#6b7280', border: mainView === 'sprint' ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent' }}
-            >
-              <Rocket size={10} /> Sprint
-            </button>
-          </div>
           <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
             <button onClick={() => setView('kanban')} className={`p-1.5 rounded-md transition-colors ${view === 'kanban' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}><LayoutGrid size={14} /></button>
             <button onClick={() => setView('lista')}  className={`p-1.5 rounded-md transition-colors ${view === 'lista'  ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}><List size={14} /></button>
