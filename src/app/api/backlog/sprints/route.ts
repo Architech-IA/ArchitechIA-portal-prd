@@ -15,8 +15,11 @@ export async function POST(request: NextRequest) {
   if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const { name, goal, startDate, endDate } = await request.json()
+  // Auto-generate sprintCode: SP-001, SP-002, ...
+  const count = await prisma.sprint.count()
+  const sprintCode = 'SP-' + String(count + 1).padStart(3, '0')
   const sprint = await prisma.sprint.create({
-    data: { name, goal: goal || null, startDate: startDate ? new Date(startDate) : null, endDate: endDate ? new Date(endDate) : null, status: 'PLANNED' },
+    data: { sprintCode, name, goal: goal || null, startDate: startDate ? new Date(startDate) : null, endDate: endDate ? new Date(endDate) : null, status: 'PLANNED' },
     include: { _count: { select: { items: true } } },
   })
   return NextResponse.json(sprint)

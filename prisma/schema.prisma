@@ -473,14 +473,15 @@ model BacklogItemLog {
 }
 
 model Sprint {
-  id        String        @id @default(cuid())
-  name      String
-  goal      String?
-  startDate DateTime?
-  endDate   DateTime?
-  status    String        @default("PLANNED")
-  createdAt DateTime      @default(now())
-  items     BacklogItem[]
+  id          String        @id @default(cuid())
+  sprintCode  String?       @unique
+  name        String
+  goal        String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String        @default("PLANNED")
+  createdAt   DateTime      @default(now())
+  items       BacklogItem[]
 }
 
 model BacklogItem {

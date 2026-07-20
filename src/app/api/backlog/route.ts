@@ -39,6 +39,7 @@ export async function GET() {
     include: {
       project: { select: { id: true, name: true } },
       solucion: { select: { id: true, nombre: true, tipo: true } },
+      sprint: { select: { id: true, sprintCode: true, name: true } },
     },
     orderBy: [{ status: 'asc' }, { priority: 'asc' }, { order: 'asc' }],
   })
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
   if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const body = await request.json()
-  const { title, description, type, priority, status, points, projectId, solucionId, assigneeId, assigneeName } = body
+  const { title, description, type, priority, status, points, projectId, solucionId, assigneeId, assigneeName, sprintId } = body
 
   if (!solucionId) {
     return NextResponse.json({ error: 'La solución asociada es obligatoria' }, { status: 400 })
@@ -71,10 +72,12 @@ export async function POST(request: NextRequest) {
       solucionId,
       assigneeId: assigneeId || null,
       assigneeName: assigneeName || null,
+      sprintId: sprintId || null,
     },
     include: {
       project: { select: { id: true, name: true } },
       solucion: { select: { id: true, nombre: true, tipo: true } },
+      sprint: { select: { id: true, sprintCode: true, name: true } },
     },
   })
   return NextResponse.json(item)

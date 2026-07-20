@@ -8,7 +8,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params
   const body = await request.json()
-  const { title, description, type, priority, status, points, projectId, solucionId, assigneeId, assigneeName } = body
+  const { title, description, type, priority, status, points, projectId, solucionId, assigneeId, assigneeName, sprintId } = body
 
   const item = await prisma.backlogItem.update({
     where: { id },
@@ -19,6 +19,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       ...(projectId !== undefined ? { projectId: projectId || null } : {}),
       ...(solucionId !== undefined ? { solucionId: solucionId || null } : {}),
       assigneeId: assigneeId || null, assigneeName: assigneeName || null,
+      ...(sprintId !== undefined ? { sprintId: sprintId || null } : {}),
     },
     include: {
       project: { select: { id: true, name: true } },
