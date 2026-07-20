@@ -319,7 +319,8 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
           </div>
 
           {/* Right: status action panel */}
-          <div className="w-64 flex-shrink-0 flex flex-col px-5 py-5 space-y-4">
+          <div className="w-64 flex-shrink-0 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-5 pt-5 pb-3 space-y-4">
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Flag size={10} className="text-gray-600" />
@@ -349,17 +350,6 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               </div>
             </div>
 
-
-            {/* Guardar cambios */}
-            <button
-              onClick={saveResultado}
-              disabled={savingResultado || !resultadoDirty}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: resultadoDirty ? '#ea580c' : 'rgba(255,255,255,0.06)', border: resultadoDirty ? 'none' : '1px solid rgba(255,255,255,0.08)' }}
-            >
-              {savingResultado ? <Loader2 size={14} className="animate-spin" /> : null}
-              {resultadoDirty ? 'Guardar resultado' : 'Sin cambios'}
-            </button>
 
             {/* Trazabilidad in right panel */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
@@ -405,6 +395,20 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>
                 Actualizado: {new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
               </span>
+            </div>
+            </div>
+
+            {/* Sticky save button */}
+            <div className="flex-shrink-0 px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+              <button
+                onClick={saveResultado}
+                disabled={savingResultado || !resultadoDirty}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:cursor-not-allowed"
+                style={{ background: resultadoDirty ? '#ea580c' : 'rgba(255,255,255,0.05)', color: resultadoDirty ? 'white' : '#6b7280', border: resultadoDirty ? 'none' : '1px solid rgba(255,255,255,0.08)' }}
+              >
+                {savingResultado ? <Loader2 size={14} className="animate-spin" /> : null}
+                {resultadoDirty ? 'Guardar resultado' : 'Sin cambios pendientes'}
+              </button>
             </div>
           </div>
         </div>
