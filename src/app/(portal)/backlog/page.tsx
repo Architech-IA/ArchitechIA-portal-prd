@@ -1017,7 +1017,10 @@ export default function BacklogPage() {
                   return (
                     <tr key={item.id} className="hover:bg-gray-800/40 transition-colors">
                       <td className="px-4 py-3">
-                        <p className="text-sm text-white font-medium">{item.title}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm text-white font-medium">{item.title}</p>
+                          {item.taskCode && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
+                        </div>
                         {item.description && <p className="text-xs text-gray-500 truncate max-w-xs">{item.description}</p>}
                       </td>
                       <td className="px-4 py-3"><TypeBadge type={item.type} /></td>
