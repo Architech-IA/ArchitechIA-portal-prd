@@ -38,6 +38,7 @@ interface Sprint {
   endDate: string | null
   status: string
   _count: { items: number }
+  solucion: { id: string; solucionCode: string | null; nombre: string } | null
 }
 
 const STATUSES = [
@@ -392,7 +393,7 @@ export default function BacklogPage() {
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [showSprintModal, setShowSprintModal] = useState(false)
-  const [sprintForm, setSprintForm] = useState({ name: '', goal: '', startDate: '', endDate: '', items: [] as string[] })
+  const [sprintForm, setSprintForm] = useState({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', items: [] as string[] })
   const [savingSprint, setSavingSprint] = useState(false)
   const [showItemsPicker, setShowItemsPicker] = useState(false)
   const [mainView, setMainView] = useState<'backlog' | 'sprint'>('backlog')
@@ -718,6 +719,7 @@ export default function BacklogPage() {
                 {/* Top bar: ID + status + actions */}
                 <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid rgba(16,185,129,0.1)', background: 'rgba(16,185,129,0.04)' }}>
                   <div className="flex items-center gap-3">
+                    {activeSprint.solucion?.solucionCode && <span title="Solución" className="text-[10px] font-mono px-1.5 py-0.5 rounded mr-1" style={{ background: 'rgba(234,88,12,0.15)', color: '#fb923c', border: '1px solid rgba(234,88,12,0.2)' }}>{activeSprint.solucion.solucionCode}</span>}
                     <span className="text-[13px] font-mono font-bold tracking-wider" style={{ color: '#10b981' }}>{activeSprint.sprintCode ?? 'SP-???'}</span>
                     <span className="w-px h-3" style={{ background: 'rgba(255,255,255,0.12)' }} />
                     <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: activeSprint.status === 'ACTIVE' ? 'rgba(16,185,129,0.2)' : activeSprint.status === 'PLANNED' ? 'rgba(251,191,36,0.2)' : 'rgba(107,114,128,0.2)', color: activeSprint.status === 'ACTIVE' ? '#10b981' : activeSprint.status === 'PLANNED' ? '#fbbf24' : '#9ca3af' }}>
@@ -840,7 +842,57 @@ export default function BacklogPage() {
                     })()}
 
                     {/* Activities list */}
-                    {sprintItems.length === 0 ? (
+                    {/* Manage sprint items bar */}
+              {(() => {
+                const availableItems = items.filter(i => !i.sprintId && i.status !== 'DONE')
+                const addToSprint = async (item: BacklogItem) => {
+                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: activeSprint.id, solucionId: item.solucionId }) })
+                  if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
+                }
+                const removeFromSprint = async (item: BacklogItem) => {
+                  const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, solucionId: item.solucionId }) })
+                  if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
+                }
+                return (
+                  <div className="flex items-center justify-between flex-shrink-0">
+                    <span className="text-[11px] text-gray-600">{sprintItems.length} item{sprintItems.length !== 1 ? 's' : ''} en este sprint</span>
+                    <div className="relative">
+                      <button onClick={() => setShowAddItems(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all" style={{ background: showAddItems ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)', border: showAddItems ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.1)', color: showAddItems ? '#f97316' : '#9ca3af' }}>
+                        <Plus size={11} /> Gestionar items
+                      </button>
+                      {showAddItems && (
+                        <div className="absolute right-0 z-20 rounded-xl overflow-hidden shadow-2xl" style={{ top: 'calc(100% + 6px)', minWidth: '320px', maxHeight: '320px', overflowY: 'auto', background: 'rgba(8,10,22,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)' }}>
+                          {availableItems.length > 0 && <>
+                            <div className="px-3 py-2 sticky top-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(8,10,22,0.98)' }}>
+                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Agregar al sprint</p>
+                            </div>
+                            {availableItems.map(item => (
+                              <button key={item.id} onClick={() => addToSprint(item)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-white/5" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                <Plus size={11} className="text-emerald-400 flex-shrink-0" />
+                                <span className="text-[12px] text-gray-300 truncate flex-1">{item.title}</span>
+                                <span className="text-[10px] text-gray-600 flex-shrink-0">{item.status === 'BACKLOG' ? 'Backlog' : item.status === 'IN_PROGRESS' ? 'En Progreso' : 'Bloqueado'}</span>
+                              </button>
+                            ))}
+                          </>}
+                          {sprintItems.length > 0 && <>
+                            <div className="px-3 py-2 sticky top-0" style={{ borderTop: availableItems.length > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(8,10,22,0.98)' }}>
+                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Quitar del sprint</p>
+                            </div>
+                            {sprintItems.map(item => (
+                              <button key={item.id} onClick={() => removeFromSprint(item)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-white/5" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                <X size={11} className="text-red-400 flex-shrink-0" />
+                                <span className="text-[12px] text-gray-300 truncate flex-1">{item.title}</span>
+                              </button>
+                            ))}
+                          </>}
+                          {availableItems.length === 0 && sprintItems.length === 0 && <p className="text-[12px] text-gray-600 text-center py-5">No hay items disponibles</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+              {sprintItems.length === 0 ? (
                       <p className="text-[11px] text-gray-700 py-1">Sin actividades — abrí Gestionar para agregar.</p>
                     ) : (
                       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -1425,6 +1477,10 @@ export default function BacklogPage() {
             <div className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Nombre del sprint *</label>
+                <div className="mb-4">
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución asociada</label>
+                  <CustomSelect value={sprintForm.solucionId} onChange={v => setSprintForm({ ...sprintForm, solucionId: v })} placeholder="Seleccionar solución…" options={soluciones.map(s => ({ value: s.id, label: s.nombre }))} />
+                </div>
                 <input value={sprintForm.name} onChange={e => setSprintForm({ ...sprintForm, name: e.target.value })} placeholder="Ej: Sprint 1 - MVP Backlog" className="w-full rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '10px 14px' }} />
               </div>
               <div>
@@ -1506,7 +1562,7 @@ export default function BacklogPage() {
               </div>
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }} />
               <div className="flex justify-end gap-2 pt-1 pb-1">
-                <button type="button" onClick={() => { setShowSprintModal(false); setSprintForm({ name: '', goal: '', startDate: '', endDate: '', items: [] }) }} className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
+                <button type="button" onClick={() => { setShowSprintModal(false); setSprintForm({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', items: [] }) }} className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button type="button" disabled={!sprintForm.name.trim() || savingSprint} onClick={async () => {
                   if (!sprintForm.name.trim()) return
                   setSavingSprint(true)
@@ -1514,7 +1570,7 @@ export default function BacklogPage() {
                     const res = await fetch('/api/backlog/sprints', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ name: sprintForm.name, goal: sprintForm.goal, startDate: sprintForm.startDate, endDate: sprintForm.endDate }),
+                      body: JSON.stringify({ name: sprintForm.name, goal: sprintForm.goal, startDate: sprintForm.startDate, endDate: sprintForm.endDate, solucionId: sprintForm.solucionId || null }),
                     })
                     if (res.ok) {
                       const newSprint: Sprint = await res.json()
@@ -1536,7 +1592,7 @@ export default function BacklogPage() {
                   } finally {
                     setSavingSprint(false)
                     setShowSprintModal(false)
-                    setSprintForm({ name: '', goal: '', startDate: '', endDate: '', items: [] })
+                    setSprintForm({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', items: [] })
                   }
                 }} className="px-5 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2 disabled:opacity-50" style={{ background: savingSprint ? '#059669' : '#10b981' }}>{savingSprint ? <Loader2 size={13} className="animate-spin" /> : <Rocket size={13} />}{savingSprint ? 'Creando...' : 'Crear Sprint'}</button>
               </div>

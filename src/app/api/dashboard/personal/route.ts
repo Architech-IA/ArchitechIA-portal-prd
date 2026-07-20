@@ -41,9 +41,8 @@ export async function GET(request: NextRequest) {
       },
       select: {
         id: true, title: true, description: true, type: true, priority: true,
-        status: true, points: true, projectId: true, solucionId: true,
+        status: true, points: true, solucionId: true,
         assigneeId: true, assigneeName: true, createdAt: true,
-        project: { select: { id: true, name: true } },
         solucion: { select: { id: true, nombre: true, tipo: true } },
       },
       orderBy: [{ status: 'asc' }, { priority: 'desc' }],

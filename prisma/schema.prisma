@@ -60,6 +60,7 @@ model Lead {
 
 model Solucion {
   id            String        @id @default(cuid())
+  solucionCode  String?       @unique
   nombre        String
   descripcion   String?
   tipo          String        // PROJECT, DEMO, PARTNERSHIP, PRODUCT
@@ -73,6 +74,7 @@ model Solucion {
   leadId        String?       @unique
   lead          Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   backlogItems  BacklogItem[]
+  sprints       Sprint[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -136,7 +138,6 @@ model Project {
   users        ProjectUser[]
   milestones   Milestone[]
   activities   Activity[]
-  backlogItems BacklogItem[]
   appInstances AppInstance[]
 }
 
@@ -475,6 +476,8 @@ model BacklogItemLog {
 model Sprint {
   id          String        @id @default(cuid())
   sprintCode  String?       @unique
+  solucionId  String?
+  solucion    Solucion?     @relation(fields: [solucionId], references: [id], onDelete: SetNull)
   name        String
   goal        String?
   startDate   DateTime?

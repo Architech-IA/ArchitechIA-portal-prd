@@ -262,7 +262,7 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'calendario' | 'semana' | 'lista'>('calendario');
+  const [tab, setTab] = useState<'calendario' | 'semana' | 'registros'>('calendario');
   const [weekOffset, setWeekOffset] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [editMeeting, setEditMeeting] = useState<Meeting | null>(null);
@@ -428,36 +428,23 @@ export default function MeetingsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex gap-1 rounded-lg p-1 w-fit" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
           <button onClick={() => setTab('calendario')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'calendario' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Mes</button>
-          <button onClick={() => setTab('semana')}     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'semana'     ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Semana</button>
-          <button onClick={() => setTab('lista')}      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'lista'      ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>Lista</button>
+          <button onClick={() => setTab('semana')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${tab === 'semana' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            Semana
+            {thisWeekMeetings.length > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${tab === 'semana' ? 'bg-white/20 text-white' : 'bg-orange-600/80 text-white'}`}>{thisWeekMeetings.length}</span>
+            )}
+          </button>
+          <button onClick={() => setTab('registros')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${tab === 'registros' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+            Registros
+            {meetings.length > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${tab === 'registros' ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'}`}>{meetings.length}</span>
+            )}
+          </button>
         </div>
         <button onClick={openNew} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           Nueva Reunión
         </button>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total eventos', value: meetings.length, color: 'text-white' },
-          { label: 'Programadas', value: meetings.filter(m => m.status === 'SCHEDULED').length, color: 'text-blue-400' },
-          { label: 'Completadas', value: meetings.filter(m => m.status === 'COMPLETED').length, color: 'text-green-400' },
-          { label: 'Esta semana', value: meetings.filter(m => {
-            const todayStr = getTodayStrUTC5();
-            const todayUTC5 = new Date(todayStr + 'T00:00:00-05:00');
-            const dayOfWeek = todayUTC5.getUTCDay();
-            const start = new Date(todayUTC5.getTime() - dayOfWeek * 86400000);
-            const end = new Date(start.getTime() + 7 * 86400000);
-            const d = new Date(m.date);
-            return d >= start && d < end;
-          }).length, color: 'text-orange-400' },
-        ].map(k => (
-          <div key={k.label} className="card p-4">
-            <p className="text-xs text-gray-400 mb-1">{k.label}</p>
-            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-          </div>
-        ))}
       </div>
 
       {tab === 'calendario' ? (
@@ -485,25 +472,35 @@ export default function MeetingsPage() {
                 <div
                   key={i}
                   onClick={() => d && setSelectedDay(d.date)}
-                  className={`min-h-[80px] p-1.5 border-b border-r border-white/[0.04] cursor-pointer hover:bg-white/[0.03] transition-colors ${
-                    d && d.date === selectedDay ? 'bg-orange-600/10 ring-1 ring-inset ring-orange-500/30' : ''
-                  } ${d?.isToday ? 'bg-blue-600/5' : ''}`}
+                  className={`min-h-[80px] p-1.5 border-b border-r border-white/[0.04] transition-colors group relative ${
+                    d ? 'cursor-pointer hover:bg-white/[0.03]' : ''
+                  } ${d && d.date === selectedDay ? 'bg-blue-500/10 ring-1 ring-inset ring-blue-500/40' : ''} ${d?.isToday && d.date !== selectedDay ? 'bg-orange-500/5' : ''}`}
                 >
                   {d && (
                     <>
                       <span className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                        d.isToday ? 'bg-orange-600 text-white' : 'text-gray-300'
+                        d.isToday ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/40' :
+                        d.date === selectedDay ? 'bg-blue-500/30 text-blue-200 ring-1 ring-blue-400/50' :
+                        'text-gray-400'
                       }`}>{d.day}</span>
                       <div className="mt-1 space-y-0.5">
                         {d.meetings.slice(0, 3).map(m => (
-                          <div key={m.id} className={`text-xs truncate px-1 py-0.5 rounded border ${TYPE_COLORS[m.type] || TYPE_COLORS.OTHER}`}>
+                          <div key={m.id} title={m.title} className={`text-xs truncate px-1 py-0.5 rounded border ${TYPE_COLORS[m.type] || TYPE_COLORS.OTHER}`}>
                             {m.title}
                           </div>
                         ))}
                         {d.meetings.length > 3 && (
-                          <span className="text-xs text-gray-600">+{d.meetings.length - 3} más</span>
+                          <span className="text-xs text-gray-600">+{d.meetings.length - 3}</span>
                         )}
                       </div>
+                      {d.meetings.length === 0 && (
+                        <button
+                          onClick={e => { e.stopPropagation(); setSelectedDay(d.date); openNew(); }}
+                          className="absolute bottom-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-white hover:bg-orange-600/60"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -519,7 +516,16 @@ export default function MeetingsPage() {
                   {getWeekdayDateUTC5(selectedDay)}
                 </h3>
                 {dayMeetings.length === 0 && (
-                  <p className="text-gray-500 text-sm">Sin eventos este día.</p>
+                  <div className="flex flex-col items-center justify-center py-8 gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                    <p className="text-gray-600 text-xs text-center">Sin eventos</p>
+                    <button onClick={openNew} className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      Agregar evento
+                    </button>
+                  </div>
                 )}
                 <div className="space-y-3">
                   {dayMeetings.map(m => (
@@ -534,19 +540,40 @@ export default function MeetingsPage() {
                         <p>{getTimeStrUTC5(m.date)}
                           {m.endDate ? ` — ${getTimeStrUTC5(m.endDate)}` : ''}
                         </p>
-                        {m.location && <p>📍 {m.location}</p>}
-                        {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 block">🔗 Enlace</a>}
-                        {m.attendees && <p>👥 {resolveAttendees(m.attendees, users)}</p>}
-                        {m.notes && <p className="text-gray-500 mt-1 italic border-t border-white/[0.06] pt-1">📝 {m.notes.slice(0, 150)}{m.notes.length > 150 ? '...' : ''}</p>}
+                        {m.location && (
+                          <p className="flex items-center gap-1.5">
+                            <svg className="w-3 h-3 flex-shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            {m.location}
+                          </p>
+                        )}
+                        {m.link && (
+                          <a href={m.link} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 flex items-center gap-1.5">
+                            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                            Enlace
+                          </a>
+                        )}
+                        {m.attendees && (
+                          <p className="flex items-start gap-1.5">
+                            <svg className="w-3 h-3 flex-shrink-0 mt-0.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            {resolveAttendees(m.attendees, users)}
+                          </p>
+                        )}
+                        {m.notes && (
+                          <p className="flex items-start gap-1.5 text-gray-500 mt-1 italic border-t border-white/[0.06] pt-1">
+                            <svg className="w-3 h-3 flex-shrink-0 mt-0.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            {m.notes.slice(0, 150)}{m.notes.length > 150 ? '...' : ''}
+                          </p>
+                        )}
                         {m.actaFile && (
-                          <a href={m.actaFile} download={m.actaFileName || 'acta'} className="text-xs text-orange-400 hover:text-orange-300 mt-1 block">
-                            📎 Descargar {m.actaFileName || 'acta'}
+                          <a href={m.actaFile} download={m.actaFileName || 'acta'} className="text-xs text-orange-400 hover:text-orange-300 mt-1 flex items-center gap-1.5">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                            {m.actaFileName || 'acta'}
                           </a>
                         )}
                       </div>
                       <div className="flex gap-2 mt-2">
                         <button onClick={() => openEdit(m)} className="text-xs text-gray-400 hover:text-white">Editar</button>
-                        <button onClick={() => handleStatusToggle(m)} className={`text-xs ${m.status === 'COMPLETED' ? 'text-blue-400 hover:text-blue-300' : 'text-green-400 hover:text-green-300'}`}>
+                        <button onClick={() => handleStatusToggle(m)} className={`text-xs transition-colors ${m.status === 'COMPLETED' ? 'text-gray-600 hover:text-blue-400' : 'text-green-400 hover:text-green-300'}`}>
                           {m.status === 'COMPLETED' ? 'Reabrir' : 'Completar'}
                         </button>
                       </div>
@@ -587,7 +614,12 @@ export default function MeetingsPage() {
                                     </p>
                                   </div>
                                 </div>
-                                {m.attendees && <p className="text-xs text-gray-500 mt-1">👥 {resolveAttendees(m.attendees, users)}</p>}
+                                {m.attendees && (
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    {resolveAttendees(m.attendees, users)}
+                  </p>
+                )}
                                 <div className="flex gap-2 mt-2">
                                   <button onClick={() => openEdit(m)} className="text-xs text-gray-500 hover:text-gray-300">Editar</button>
                                   <button onClick={() => handleStatusToggle(m)} className={`text-xs ${m.status === 'COMPLETED' ? 'text-blue-400 hover:text-blue-300' : 'text-green-400 hover:text-green-300'}`}>
@@ -742,74 +774,109 @@ export default function MeetingsPage() {
             </div>
           </div>
         );
-      })() : (
-        <>
-          {/* Filtros lista */}
-          <div className="card p-4 mb-6 flex gap-3 flex-wrap items-center">
-            <input type="text" placeholder="Buscar por título o asistentes..." value={search} onChange={e => setSearch(e.target.value)}
-              className="flex-1 min-w-48 px-4 py-2 rounded-lg text-sm text-white focus:ring-2 focus:ring-orange-500 focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }} />
-            {['', 'INTERNAL_DAILY', 'INTERNAL_WORKSHOP', 'COMMERCIAL', 'ADVISORY', 'PROVIDER'].map(t => (
-              <button key={t} onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${filterType === t ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`} style={filterType !== t ? { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' } : undefined}>
-                {t === '' ? 'Todas' : TYPE_LABELS[t]}
-              </button>
-            ))}
-            <button onClick={openNew} className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
-              + Nuevo Evento
-            </button>
-          </div>
+      })() : tab === 'registros' ? (() => {
+        const sorted = [...meetings].sort((a, b) => b.date.localeCompare(a.date));
+        const byMonth: {[k:string]:typeof sorted} = {};
+        for (const m of sorted) {
+          const key = m.date.slice(0, 7);
+          if (!byMonth[key]) byMonth[key] = [];
+          byMonth[key].push(m);
+        }
+        const monthLabel = (key: string) => {
+          const [y, mo] = key.split('-');
+          return new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        };
+        const total = meetings.length;
+        const completed = meetings.filter(m => m.status === 'COMPLETED').length;
+        const scheduled = meetings.filter(m => m.status === 'SCHEDULED').length;
+        const pct = total > 0 ? Math.round(completed / total * 100) : 0;
+        return (
+          <div className="space-y-6">
+            {/* Resumen estadístico */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Total registros', value: total, color: 'text-white', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg> },
+                { label: 'Completadas', value: completed, color: 'text-green-400', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+                { label: 'Pendientes', value: scheduled, color: 'text-blue-400', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+                { label: 'Tasa cierre', value: `${pct}%`, color: 'text-orange-400', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
+              ].map(s => (
+                <div key={s.label} className="card p-4 flex items-center gap-3">
+                  <div className={`${s.color} opacity-60`}>{s.icon}</div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">{s.label}</p>
+                    <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          {/* Lista */}
-          <div className="space-y-3">
-            {filtered.map(m => (
-              <div key={m.id} className="card p-5 transition-colors" style={{ cursor: 'default' }}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${m.status === 'COMPLETED' ? 'bg-green-900/30 text-green-400' : m.status === 'CANCELLED' ? 'bg-red-900/30 text-red-400' : 'bg-orange-900/30 text-orange-400'}`}>
-                      {getDayUTC5(m.date)}
-                    </div>
-                    <div>
-                      <h3 className={`font-semibold text-white ${m.status === 'CANCELLED' ? 'line-through opacity-50' : ''}`}>{m.title}</h3>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full border ${TYPE_COLORS[m.type] || TYPE_COLORS.OTHER}`}>{TYPE_LABELS[m.type] || m.type}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${STATUS_COLORS[m.status]}`}>{translateStatus(m.status)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => openEdit(m)} className="px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg">Editar</button>
-                    <button onClick={() => handleStatusToggle(m)} className={`px-3 py-1 text-xs rounded-lg ${m.status === 'COMPLETED' ? 'bg-blue-900/30 hover:bg-blue-800/50 text-blue-400' : 'bg-green-900/30 hover:bg-green-800/50 text-green-400'}`}>
-                      {m.status === 'COMPLETED' ? 'Reabrir' : '✓'}
-                    </button>
-                    <button onClick={() => setConfirmDel(m)} className="px-3 py-1 text-xs bg-red-900/40 hover:bg-red-800/60 text-red-400 rounded-lg">×</button>
-                  </div>
+            {/* Barra de progreso completadas */}
+            {total > 0 && (
+              <div className="card px-4 py-3">
+                <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                  <span>Progreso global</span>
+                  <span className="text-orange-400 font-semibold">{pct}% completado</span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-400">
-                  <p>📅 {getDateFullUTC5(m.date)} {getTimeStrUTC5(m.date)}</p>
-                  {m.location && <p>📍 {m.location}</p>}
-                  {m.attendees && <p>👥 {resolveAttendees(m.attendees, users)}</p>}
-                  <p>👤 {m.user.name}</p>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                  <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
                 </div>
-                {m.notes && (
-                  <p className="text-sm text-gray-500 mt-3 border-t border-white/[0.06] pt-3 italic">📝 {m.notes.slice(0, 200)}{m.notes.length > 200 ? '...' : ''}</p>
-                )}
-                {m.actaFile && (
-                  <a href={m.actaFile} download={m.actaFileName || 'acta'} className="inline-flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 mt-2">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Descargar {m.actaFileName || 'acta'}
-                  </a>
-                )}
-              </div>
-            ))}
-            {filtered.length === 0 && (
-              <div className="text-center py-16 text-gray-500">
-                <p className="text-lg mb-2">No hay eventos</p>
-                <p className="text-sm">Crea tu primer evento con el botón "Nuevo Evento".</p>
               </div>
             )}
+
+            {/* Registros agrupados por mes */}
+            {Object.keys(byMonth).length === 0 ? (
+              <div className="text-center py-16 text-gray-500">
+                <p>Sin registros.</p>
+              </div>
+            ) : (
+              Object.entries(byMonth).map(([monthKey, monthMeetings]) => (
+                <div key={monthKey}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest capitalize">{monthLabel(monthKey)}</h3>
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                    <span className="text-[10px] text-gray-600">{monthMeetings.length} eventos</span>
+                  </div>
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+                    {monthMeetings.map((m, idx) => (
+                      <div key={m.id} className={`flex items-center gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors ${idx > 0 ? 'border-t border-white/[0.04]' : ''}`}>
+                        {/* Fecha */}
+                        <div className="w-12 flex-shrink-0 text-center">
+                          <p className="text-[10px] text-gray-600 uppercase">{new Date(m.date + (m.date.length === 10 ? 'T12:00:00-05:00' : '')).toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'America/Bogota' })}</p>
+                          <p className="text-lg font-bold text-gray-300 leading-none">{getDayUTC5(m.date)}</p>
+                        </div>
+                        {/* Barra de tipo */}
+                        <div className="w-0.5 self-stretch rounded-full flex-shrink-0" style={{ background: m.type === 'COMMERCIAL' ? '#f97316' : m.type === 'INTERNAL_DAILY' ? '#3b82f6' : m.type === 'INTERNAL_WORKSHOP' ? '#06b6d4' : m.type === 'ADVISORY' ? '#a855f7' : m.type === 'PROVIDER' ? '#10b981' : '#6b7280' }} />
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{m.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-gray-500">{getTimeStrUTC5(m.date)}{m.endDate ? ` — ${getTimeStrUTC5(m.endDate)}` : ''}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${TYPE_COLORS[m.type] || TYPE_COLORS.OTHER}`}>{TYPE_SHORT[m.type] || m.type}</span>
+                          </div>
+                        </div>
+                        {/* Asistentes */}
+                        {m.attendees && (
+                          <p className="hidden md:block text-xs text-gray-500 max-w-[180px] truncate flex-shrink-0">{resolveAttendees(m.attendees, users)}</p>
+                        )}
+                        {/* Estado + acciones */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[m.status]}`}>{translateStatus(m.status)}</span>
+                          <button onClick={() => openEdit(m)} className="p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/[0.05]">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                          <button onClick={() => setConfirmDel(m)} className="p-1.5 text-gray-700 hover:text-red-400 transition-colors rounded hover:bg-red-900/20">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        </>
-      )}
+        );
+      })() : null}
 
       {/* Modal crear / editar */}
       {showModal && (

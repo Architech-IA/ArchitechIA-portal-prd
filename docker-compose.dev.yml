@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: portal-architechia-dev:latest
+    container_name: portal-architechia
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      DATABASE_URL: "postgresql://postgres.kvgrohjuragivbzvfpkf:Admin.ArchitechIA2026*@aws-1-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
+      DIRECT_URL: "postgresql://postgres.kvgrohjuragivbzvfpkf:Admin.ArchitechIA2026*@aws-1-us-west-2.pooler.supabase.com:5432/postgres"
+      NEXTAUTH_SECRET: "6110428834f4eb77827220ef0c0472aff5324c500014aeac38f8f4be3226c088"
+      NEXTAUTH_URL: "https://portal.architechia.co"
+      NODE_ENV: development
+      PORT: "3003"
+      VPS_METRICS_URL: "http://host-gateway:9100"
+      VPS_METRICS_TOKEN: "ArchitechIA2026*"
+      VPS2_METRICS_URL: "http://2.25.201.131:9100"
+      VPS2_METRICS_TOKEN: "ArchitechIA2026*"
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_USERNAME: ${GITHUB_USERNAME}
+    extra_hosts:
+      - "host-gateway:host-gateway"
+    ports:
+      - "3003:3003"

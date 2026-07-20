@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['portal.architechia.co'],
   async redirects() {
     return [
       { source: '/pipeline', destination: '/leads', permanent: true },
