@@ -187,7 +187,6 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
         <div className="flex items-start justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex-1 min-w-0 pr-4">
             <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${st?.color}`}>{st?.label}</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}>{TYPE_LABELS[item.type] ?? item.type}</span>
               <span className={`flex items-center gap-1 text-[10px] ${pr?.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${pr?.dot}`} /> {pr?.label}
