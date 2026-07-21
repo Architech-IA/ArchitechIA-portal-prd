@@ -1,8 +1,75 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X, ExternalLink, DollarSign, Tag, Calendar, User } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X, ExternalLink, DollarSign, Tag, Calendar, User, Search, Play, Box, Users, Layout, Globe, BarChart3, Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban } from 'lucide-react'
+import { APP_CATEGORIES } from '@/lib/app-types'
+import type { AppInstance } from '@/lib/app-types'
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Users, Layout, Globe, BarChart3, Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban,
+}
+
+const CAT_STYLE: Record<string, { color: string; bg: string; border: string }> = {
+  'text-orange-400':  { color: '#fb923c', bg: 'rgba(251,146,60,0.12)',  border: 'rgba(251,146,60,0.3)'  },
+  'text-blue-400':    { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.3)'  },
+  'text-green-400':   { color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)'  },
+  'text-cyan-400':    { color: '#22d3ee', bg: 'rgba(34,211,238,0.12)',  border: 'rgba(34,211,238,0.3)'  },
+  'text-purple-400':  { color: '#c084fc', bg: 'rgba(192,132,252,0.12)', border: 'rgba(192,132,252,0.3)' },
+  'text-pink-400':    { color: '#f472b6', bg: 'rgba(244,114,182,0.12)', border: 'rgba(244,114,182,0.3)' },
+  'text-yellow-400':  { color: '#facc15', bg: 'rgba(250,204,21,0.12)',  border: 'rgba(250,204,21,0.3)'  },
+  'text-red-400':     { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)' },
+  'text-emerald-400': { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.3)'  },
+  'text-indigo-400':  { color: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.3)' },
+  'text-violet-400':  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)' },
+  'text-teal-400':    { color: '#2dd4bf', bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.3)'  },
+  'text-fuchsia-400': { color: '#e879f9', bg: 'rgba(232,121,249,0.12)', border: 'rgba(232,121,249,0.3)' },
+  'text-rose-400':    { color: '#fb7185', bg: 'rgba(251,113,133,0.12)', border: 'rgba(251,113,133,0.3)' },
+  'text-amber-400':   { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)'  },
+  'text-lime-400':    { color: '#a3e635', bg: 'rgba(163,230,53,0.12)',  border: 'rgba(163,230,53,0.3)'  },
+}
+
+function getStyle(colorClass: string) {
+  return CAT_STYLE[colorClass] ?? { color: '#9ca3af', bg: 'rgba(156,163,175,0.12)', border: 'rgba(156,163,175,0.3)' }
+}
+
+function AppCard({ app }: { app: AppInstance }) {
+  const router = useRouter()
+  const Icon = ICON_MAP[app.appType.icon] ?? Box
+  const category = APP_CATEGORIES[app.appType.category]
+  const cs = getStyle(category?.color ?? 'text-gray-400')
+
+  return (
+    <div
+      className="relative rounded-2xl p-4 border flex flex-col transition-all duration-200"
+      style={{ background: '#0d0d1a', borderColor: 'rgba(255,255,255,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = cs.border; (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px ${cs.border}` }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.4)' }}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className={`h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-br ${app.appType.color} text-white shadow-md flex-shrink-0`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          style={{ color: cs.color, background: cs.bg, border: `1px solid ${cs.border}` }}>
+          {category?.label ?? app.appType.category}
+        </span>
+      </div>
+      <h3 className="text-sm font-bold mb-1.5 leading-snug" style={{ color: cs.color }}>{app.name}</h3>
+      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed flex-1 mb-4">{app.description ?? 'Sin descripcion'}</p>
+      <button
+        onClick={() => { const ext = app.config?.externalUrl as string | undefined; if (ext) window.open(ext, '_blank'); else router.push(`/apps/${app.slug}`) }}
+        className="w-full flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold text-white transition-colors"
+        style={{ background: '#ea580c' }}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#c2410c'}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#ea580c'}
+      >
+        <Play className="h-3 w-3" /> Abrir
+      </button>
+    </div>
+  )
+}
 
 interface SectionDef {
   href: string
@@ -119,6 +186,10 @@ export default function SolutionsHome() {
   const [counts, setCounts] = useState<Record<string, number | null>>({})
   const [allItems, setAllItems] = useState<Array<(Solucion | Producto) & { tipo: string }>>([])
   const [loadingList, setLoadingList] = useState(true)
+  const [apps, setApps] = useState<AppInstance[]>([])
+  const [loadingApps, setLoadingApps] = useState(true)
+  const [appSearch, setAppSearch] = useState('')
+  const [appCategory, setAppCategory] = useState('')
   const [iniciativas, setIniciativas] = useState<Array<{ id: string; nombre: string; estado: string; categoria: string; prioridad: string }>>([])
   const [loadingIniciativas, setLoadingIniciativas] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -154,7 +225,13 @@ export default function SolutionsHome() {
       .catch(() => setLoadingIniciativas(false))
   }
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => {
+    fetchAll()
+    fetch('/api/apps')
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { setApps(Array.isArray(d) ? d : []); setLoadingApps(false) })
+      .catch(() => setLoadingApps(false))
+  }, [])
 
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es requerido'); return }
@@ -252,6 +329,73 @@ export default function SolutionsHome() {
               </Link>
             )
           })}
+        </div>
+
+        {/* Apps catalog */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-white">Mini Apps</h2>
+            <Link href="/apps" className="text-[11px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+              Ver todas <ArrowRight size={10} />
+            </Link>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="relative flex-1 min-w-[160px] max-w-xs">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <input
+                className="w-full bg-white/5 border border-white/8 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-white/20"
+                placeholder="Buscar app..."
+                value={appSearch}
+                onChange={e => setAppSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setAppCategory('')}
+                className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+                style={appCategory === '' ? { background: '#f97316', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}
+              >
+                Todas
+              </button>
+              {Object.entries(APP_CATEGORIES).map(([key, cat]) => {
+                const cs = getStyle(cat.color)
+                const active = appCategory === key
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setAppCategory(active ? '' : key)}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+                    style={active
+                      ? { background: cs.color, color: '#fff' }
+                      : { background: cs.bg, color: cs.color, border: `1px solid ${cs.border}` }}
+                  >
+                    {cat.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {loadingApps ? (
+            <div className="flex justify-center py-12">
+              <Loader2 size={20} className="animate-spin text-gray-600" />
+            </div>
+          ) : (() => {
+            const filtered = apps.filter(a => {
+              const matchCat = !appCategory || a.appType.category === appCategory
+              const matchSearch = !appSearch || a.name.toLowerCase().includes(appSearch.toLowerCase()) || (a.description ?? '').toLowerCase().includes(appSearch.toLowerCase())
+              return matchCat && matchSearch
+            })
+            return filtered.length === 0 ? (
+              <p className="text-xs text-gray-600 text-center py-10">Sin apps para mostrar</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+                {filtered.map(app => <AppCard key={app.id} app={app} />)}
+              </div>
+            )
+          })()}
         </div>
       </div>
 
