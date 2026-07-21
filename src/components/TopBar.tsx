@@ -80,7 +80,7 @@ export default function TopBar({
 
   // Si estamos en una subruta de /hub o /solutions, el título lleva al home de la sección.
   const HUB_SUBPAGE_RE = /^\/hub\/.+/;
-  const SOLUTIONS_RE = /^\/solutions(\/.*)?$/;
+  const SOLUTIONS_RE = /^\/solutions\/.+/;
   const titleHref = title && HUB_SUBPAGE_RE.test(pathname) ? '/hub'
     : title && SOLUTIONS_RE.test(pathname) ? '/solutions'
     : null;

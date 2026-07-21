@@ -25,7 +25,7 @@ export default function SolutionsTabs() {
   }, [isSuperAdmin, pathname])
 
   const tabs = [
-    { href: '/solutions', label: 'Productos', icon: Package, exact: true },
+    { href: '/solutions/productos', label: 'Productos', icon: Package, exact: false },
     { href: '/solutions/projects', label: 'Projects', icon: FolderKanban, exact: false },
     { href: '/solutions/pilots', label: 'Pilots', icon: FlaskConical, exact: false },
     { href: '/solutions/partnership', label: 'Partnership', icon: Handshake, exact: false },
