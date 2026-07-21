@@ -186,40 +186,6 @@ export default function PocSolutionPage() {
   return (
     <div className="p-4 md:p-8 space-y-6">
 
-      {/* ── Metodología ─────────────────────────────────────────────────── */}
-      <div className="rounded-2xl p-6"
-        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <h2 className="text-[11px] font-bold uppercase tracking-wider mb-5" style={{ color: '#06b6d4' }}>
-          Metodología del PoC
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
-          {STEPS.map((s, idx) => {
-            const Icon = s.icon
-            return (
-              <div key={s.num} className="relative flex md:flex-col items-start gap-4 md:gap-0 pb-6 md:pb-0">
-                {idx < STEPS.length - 1 && (
-                  <div className="hidden md:block absolute top-5 left-[calc(50%+20px)] right-0 h-px"
-                    style={{ background: `linear-gradient(to right, ${s.color}60, transparent)` }} />
-                )}
-                <div className="flex md:flex-col items-center md:items-start gap-3 md:gap-3 w-full md:pr-6">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10"
-                    style={{ background: s.color + '18', border: `1px solid ${s.color}40` }}>
-                    <Icon size={16} style={{ color: s.color }} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[10px] font-bold tracking-widest" style={{ color: s.color + '80' }}>{s.num}</span>
-                      <h3 className="text-sm font-semibold text-white">{s.title}</h3>
-                    </div>
-                    <p className="text-xs text-gray-400 leading-relaxed">{s.desc}</p>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
       {/* ── Stats bar ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -406,6 +372,40 @@ export default function PocSolutionPage() {
             })}
           </div>
         )}
+      </div>
+
+      {/* ── Metodología (al final) ──────────────────────────────────────── */}
+      <div className="rounded-2xl p-6"
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <h2 className="text-[11px] font-bold uppercase tracking-wider mb-5" style={{ color: '#06b6d4' }}>
+          Metodología del PoC
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
+          {STEPS.map((s, idx) => {
+            const Icon = s.icon
+            return (
+              <div key={s.num} className="relative flex md:flex-col items-start gap-4 md:gap-0 pb-6 md:pb-0">
+                {idx < STEPS.length - 1 && (
+                  <div className="hidden md:block absolute top-5 left-[calc(50%+20px)] right-0 h-px"
+                    style={{ background: `linear-gradient(to right, ${s.color}60, transparent)` }} />
+                )}
+                <div className="flex md:flex-col items-center md:items-start gap-3 md:gap-3 w-full md:pr-6">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10"
+                    style={{ background: s.color + '18', border: `1px solid ${s.color}40` }}>
+                    <Icon size={16} style={{ color: s.color }} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[10px] font-bold tracking-widest" style={{ color: s.color + '80' }}>{s.num}</span>
+                      <h3 className="text-sm font-semibold text-white">{s.title}</h3>
+                    </div>
+                    <p className="text-xs text-gray-400 leading-relaxed">{s.desc}</p>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── Modal nueva PoC ──────────────────────────────────────────────── */}
