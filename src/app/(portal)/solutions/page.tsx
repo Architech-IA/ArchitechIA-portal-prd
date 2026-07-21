@@ -257,7 +257,7 @@ export default function SolutionsHome() {
 
       {/* Right: all solutions widget */}
       <div className="w-72 flex-shrink-0 flex flex-col gap-3">
-        {/* New solution button — outside widget */}
+        {/* Action buttons — outside widgets */}
         <button
           onClick={() => { setForm(EMPTY_FORM); setError(''); setShowModal(true) }}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-colors"
@@ -268,6 +268,16 @@ export default function SolutionsHome() {
           <Plus size={13} />
           Nueva solución
         </button>
+        <Link
+          href="/solutions/iniciativas"
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-colors"
+          style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', color: '#eab308' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(234,179,8,0.18)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(234,179,8,0.1)'}
+        >
+          <Plus size={13} />
+          Nueva iniciativa
+        </Link>
 
         <div
           className="rounded-xl overflow-hidden"
