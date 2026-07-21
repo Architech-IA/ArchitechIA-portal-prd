@@ -293,7 +293,7 @@ export default function SolutionsHome() {
         ) : allItems.length === 0 ? (
           <p className="text-xs text-gray-500 text-center py-8">Sin soluciones registradas</p>
         ) : (
-          <div className="overflow-y-auto" style={{ maxHeight: '460px' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: '168px' }}>
             {allItems.map((item, i) => {
               const meta = TYPE_META[item.tipo] || { label: item.tipo, color: '#6b7280', href: '/solutions' }
               const estado = (item as Solucion).estado || ''
@@ -347,7 +347,7 @@ export default function SolutionsHome() {
           ) : iniciativas.length === 0 ? (
             <p className="text-xs text-gray-500 text-center py-6">Sin iniciativas registradas</p>
           ) : (
-            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+            <div className="overflow-y-auto" style={{ maxHeight: '168px' }}>
               {iniciativas.map(item => {
                 const prioColor: Record<string, string> = { ALTA: '#ef4444', MEDIA: '#f97316', BAJA: '#6b7280' }
                 const dotColor = prioColor[item.prioridad] || '#eab308'
