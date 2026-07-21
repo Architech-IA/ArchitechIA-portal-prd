@@ -256,7 +256,7 @@ export default function SolutionsHome() {
         >
         {/* Widget header */}
         <div className="px-4 py-3 flex items-center justify-between"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(249,115,22,0.1)' }}>
           <span className="text-xs font-semibold text-white">Todas las soluciones</span>
           {allItems.length > 0 && (
             <span className="text-xs font-medium px-1.5 py-0.5 rounded-full"
