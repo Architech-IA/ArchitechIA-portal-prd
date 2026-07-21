@@ -207,7 +207,7 @@ export default function SolutionsHome() {
   }
 
   return (
-    <div className="flex gap-6 items-start" style={{ padding: "4px 20px 20px 20px", borderTop: "4px solid red" }}>
+    <div className="pt-3 pb-6 px-6 md:px-8 flex gap-6 items-start">
       {/* Left: section cards */}
       <div className="flex-1 min-w-0">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
