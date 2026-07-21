@@ -123,11 +123,7 @@ export default function PortalLayoutClient({
     if (pathname === '/hub/finance') return 'Finance';
     if (pathname === '/hub/operations') return 'Operations';
     if (pathname === '/hub/legal') return 'Legal';
-    if (pathname === '/solutions') return 'Solutions';
-    if (pathname === '/solutions/projects') return 'Projects';
-    if (pathname === '/solutions/pilots') return 'Pilots';
-    if (pathname === '/solutions/partnership') return 'Partnership';
-    if (pathname === '/solutions/intern') return 'Intern';
+    if (pathname?.startsWith('/solutions')) return 'Solutions';
     if (pathname === '/resources/cuentas') return 'Cuentas';
     if (pathname === '/finanzas') return 'Finance';
     if (pathname === '/inventario') return 'Inventario';
