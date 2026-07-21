@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X } from 'lucide-react'
+import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X, ExternalLink, DollarSign, Tag, Calendar, User } from 'lucide-react'
 
 interface SectionDef {
   href: string
@@ -20,6 +20,11 @@ interface Solucion {
   nombre: string
   tipo: string
   estado: string
+  descripcion: string | null
+  valorEstimado: number
+  repositorio: string | null
+  createdAt: string
+  lead: { id: string; companyName: string; contactName: string; status: string } | null
 }
 
 interface Producto {
@@ -118,6 +123,7 @@ export default function SolutionsHome() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [detail, setDetail] = useState<Solucion | null>(null)
 
   const fetchAll = () => {
     SECTIONS.forEach(s => {
@@ -279,10 +285,10 @@ export default function SolutionsHome() {
               const estado = (item as Solucion).estado || ''
               const estadoColor = ESTADO_COLOR[estado] || '#6b7280'
               return (
-                <Link
+                <button
                   key={item.id + i}
-                  href={meta.href}
-                  className="flex items-start gap-3 px-4 py-2.5 transition-colors"
+                  onClick={() => setDetail(item as Solucion)}
+                  className="w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
@@ -297,13 +303,110 @@ export default function SolutionsHome() {
                       )}
                     </div>
                   </div>
-                </Link>
+                </button>
               )
             })}
           </div>
         )}
         </div>
       </div>
+
+      {/* Detail popup */}
+      {detail && (() => {
+        const meta = TYPE_META[detail.tipo] || { label: detail.tipo, color: '#6b7280', href: '/solutions' }
+        const estadoColor = ESTADO_COLOR[detail.estado] || '#6b7280'
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={e => { if (e.target === e.currentTarget) setDetail(null) }}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl overflow-hidden"
+              style={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              {/* Header strip */}
+              <div className="px-5 py-4 flex items-start justify-between"
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: meta.color + '11' }}>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: meta.color }}>{meta.label}</p>
+                  <h2 className="text-sm font-semibold text-white leading-snug">{detail.nombre}</h2>
+                </div>
+                <button onClick={() => setDetail(null)} className="text-gray-500 hover:text-gray-300 ml-3 flex-shrink-0 mt-0.5">
+                  <X size={15} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Estado + valor */}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs px-2.5 py-1 rounded-full font-medium"
+                    style={{ background: estadoColor + '22', color: estadoColor, border: `1px solid ${estadoColor}44` }}>
+                    {detail.estado}
+                  </span>
+                  {detail.valorEstimado > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
+                      <DollarSign size={11} />
+                      {detail.valorEstimado.toLocaleString()} USD
+                    </span>
+                  )}
+                </div>
+
+                {/* Descripcion */}
+                {detail.descripcion && (
+                  <p className="text-xs text-gray-300 leading-relaxed">{detail.descripcion}</p>
+                )}
+
+                {/* Meta rows */}
+                <div className="space-y-2">
+                  {detail.lead && (
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <User size={12} className="flex-shrink-0 text-gray-600" />
+                      <span>{detail.lead.companyName}</span>
+                      {detail.lead.contactName && <span className="text-gray-600">· {detail.lead.contactName}</span>}
+                    </div>
+                  )}
+                  {detail.repositorio && (
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <Tag size={12} className="flex-shrink-0 text-gray-600" />
+                      <a href={detail.repositorio} target="_blank" rel="noopener noreferrer"
+                        className="truncate hover:text-white transition-colors" style={{ color: meta.color }}>
+                        {detail.repositorio}
+                      </a>
+                    </div>
+                  )}
+                  {detail.createdAt && (
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Calendar size={12} className="flex-shrink-0 text-gray-600" />
+                      {new Date(detail.createdAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => setDetail(null)}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-400"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    Cerrar
+                  </button>
+                  <Link
+                    href={meta.href}
+                    onClick={() => setDetail(null)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold text-white"
+                    style={{ background: meta.color }}
+                  >
+                    <ExternalLink size={11} />
+                    Ver {meta.label}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Modal */}
       {showModal && (
