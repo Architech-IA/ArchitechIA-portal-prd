@@ -5,12 +5,14 @@ import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Package, Lightbulb, FolderKanban, FlaskConical, Handshake, Building2 } from 'lucide-react'
+import { usePageActions } from '@/lib/pageActionsContext'
 
 export default function SolutionsTabs() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const isSuperAdmin = (session?.user as { role?: string })?.role === 'SUPERADMIN'
   const [pending, setPending] = useState(0)
+  const { setActions } = usePageActions()
 
   useEffect(() => {
     if (!isSuperAdmin) return
@@ -31,9 +33,9 @@ export default function SolutionsTabs() {
     { href: '/solutions/iniciativas', label: 'Iniciativas', icon: Lightbulb, exact: false },
   ]
 
-  return (
-    <div className="border-b border-gray-800 px-4 md:px-8">
-      <nav className="flex gap-1">
+  useEffect(() => {
+    setActions(
+      <nav className="flex items-center gap-0.5">
         {tabs.map(t => {
           const active = t.exact ? pathname === t.href : pathname.startsWith(t.href)
           const Icon = t.icon
@@ -41,16 +43,42 @@ export default function SolutionsTabs() {
             <Link
               key={t.href}
               href={t.href}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                active
-                  ? 'text-orange-400 border-orange-500'
-                  : 'text-gray-400 border-transparent hover:text-white'
-              }`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: active ? 600 : 400,
+                color: active ? '#f97316' : '#9ca3af',
+                background: active ? 'rgba(249,115,22,0.12)' : 'transparent',
+                textDecoration: 'none',
+                transition: 'color 0.15s, background 0.15s',
+                whiteSpace: 'nowrap' as const,
+              }}
+              onMouseEnter={e => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.color = '#d1d5db'
+                  ;(e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'
+                }
+              }}
+              onMouseLeave={e => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.color = '#9ca3af'
+                  ;(e.currentTarget as HTMLElement).style.background = 'transparent'
+                }
+              }}
             >
-              <Icon size={15} />
+              <Icon size={12} />
               {t.label}
               {t.href === '/solutions/iniciativas' && isSuperAdmin && pending > 0 && (
-                <span className="ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span style={{
+                  minWidth: '16px', height: '16px', padding: '0 3px',
+                  borderRadius: '8px', background: '#ef4444', color: '#fff',
+                  fontSize: '9px', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
                   {pending}
                 </span>
               )}
@@ -58,6 +86,9 @@ export default function SolutionsTabs() {
           )
         })}
       </nav>
-    </div>
-  )
+    )
+    return () => setActions(null)
+  }, [pathname, isSuperAdmin, pending])
+
+  return null
 }
