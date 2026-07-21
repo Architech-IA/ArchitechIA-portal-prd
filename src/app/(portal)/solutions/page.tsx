@@ -176,7 +176,7 @@ export default function SolutionsHome() {
     }
   }
 
-  const inputStyle = {
+  const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'rgba(255,255,255,0.05)',
     border: '1px solid rgba(255,255,255,0.1)',
@@ -185,6 +185,18 @@ export default function SolutionsHome() {
     color: '#e5e7eb',
     fontSize: '13px',
     outline: 'none',
+  }
+
+  const selectStyle: React.CSSProperties = {
+    ...inputStyle,
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 10px center',
+    paddingRight: '32px',
+    cursor: 'pointer',
+    colorScheme: 'dark',
   }
 
   return (
@@ -436,7 +448,7 @@ export default function SolutionsHome() {
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Tipo</label>
                   <select
-                    style={inputStyle}
+                    style={selectStyle}
                     value={form.tipo}
                     onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
                   >
