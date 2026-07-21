@@ -236,10 +236,23 @@ export default function SolutionsHome() {
       </div>
 
       {/* Right: all solutions widget */}
-      <div
-        className="w-72 flex-shrink-0 rounded-xl overflow-hidden"
-        style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}
-      >
+      <div className="w-72 flex-shrink-0 flex flex-col gap-3">
+        {/* New solution button — outside widget */}
+        <button
+          onClick={() => { setForm(EMPTY_FORM); setError(''); setShowModal(true) }}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-colors"
+          style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.25)', color: '#f97316' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.2)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.12)'}
+        >
+          <Plus size={13} />
+          Nueva solución
+        </button>
+
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}
+        >
         {/* Widget header */}
         <div className="px-4 py-3 flex items-center justify-between"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -250,20 +263,6 @@ export default function SolutionsHome() {
               {allItems.length}
             </span>
           )}
-        </div>
-
-        {/* New solution button */}
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <button
-            onClick={() => { setForm(EMPTY_FORM); setError(''); setShowModal(true) }}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-colors"
-            style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.25)', color: '#f97316' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.2)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.12)'}
-          >
-            <Plus size={13} />
-            Nueva solución
-          </button>
         </div>
 
         {/* List */}
@@ -303,6 +302,7 @@ export default function SolutionsHome() {
             })}
           </div>
         )}
+        </div>
       </div>
 
       {/* Modal */}
