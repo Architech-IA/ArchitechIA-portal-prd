@@ -1,42 +1,39 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  FlaskConical, CheckCircle2, ArrowRight, Zap, Gauge,
-  Target, ShieldCheck, Plus, X, Loader2,
-} from 'lucide-react'
+import { Plus, X, Loader2, FlaskConical, Pencil, Wrench, CheckCircle } from 'lucide-react'
 import SolucionesList, { type Solucion } from '@/components/SolucionesList'
 
-const benefits = [
+const STEPS = [
   {
+    num: '01',
+    icon: Pencil,
+    title: 'Definición',
+    desc: 'Caso de uso, datos disponibles y criterios de éxito.',
+    color: '#06b6d4',
+  },
+  {
+    num: '02',
     icon: FlaskConical,
-    title: 'Validación técnica',
-    desc: 'Comprobamos que la tecnología elegida resuelve el caso de uso antes de invertir en desarrollo completo.',
+    title: 'Diseño',
+    desc: 'Experimento mínimo viable y arquitectura técnica.',
+    color: '#8b5cf6',
   },
   {
-    icon: Gauge,
-    title: 'Rápido y enfocado',
-    desc: 'PoC de 2 a 6 semanas con un alcance reducido y métricas claras de éxito.',
+    num: '03',
+    icon: Wrench,
+    title: 'Implementación',
+    desc: 'Demo funcional construido en tiempo récord.',
+    color: '#f97316',
   },
   {
-    icon: Target,
-    title: 'Medición de impacto',
-    desc: 'Definimos KPIs concretos para demostrar ROI y tomar decisiones con datos.',
+    num: '04',
+    icon: CheckCircle,
+    title: 'Validación',
+    desc: 'Resultados medidos, recomendación go/no-go.',
+    color: '#10b981',
   },
-  {
-    icon: ShieldCheck,
-    title: 'Reducción de riesgo',
-    desc: 'Identificamos limitaciones técnicas, costos reales y ajustes necesarios a tiempo.',
-  },
-]
-
-const deliverables = [
-  { title: 'Demo funcional', desc: 'Un prototipo ejecutable del caso de uso prioritario.' },
-  { title: 'Informe técnico', desc: 'Arquitectura, stack, limitaciones y recomendaciones.' },
-  { title: 'Propuesta de escala', desc: 'Roadmap y estimación para llevar el PoC a producción.' },
-  { title: 'KPIs validados', desc: 'Resultados medibles contra los objetivos definidos.' },
 ]
 
 interface LeadOption {
@@ -58,13 +55,13 @@ export default function PocSolutionPage() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   async function openCreateModal() {
+    setShowModal(true)
     setLeadId('')
     setNombre('')
     setError('')
-    setShowModal(true)
     setLoadingLeads(true)
     try {
-      const res = await fetch('/api/leads')
+      const res = await fetch('/api/leads?status=ACTIVO')
       const data = await res.json()
       setLeads(Array.isArray(data) ? data : [])
     } catch {
@@ -79,23 +76,21 @@ export default function PocSolutionPage() {
     setShowModal(false)
   }
 
-  function handleLeadChange(value: string) {
-    setLeadId(value)
-    const lead = leads.find(l => l.id === value)
-    if (lead && !nombre.trim()) setNombre(`${lead.companyName} — Demo`)
+  function handleLeadChange(id: string) {
+    setLeadId(id)
+    const lead = leads.find(l => l.id === id)
+    if (lead && !nombre) setNombre(`${lead.companyName} — Demo`)
   }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!leadId) { setError('Selecciona un lead asociado.'); return }
-    if (!nombre.trim()) { setError('El nombre es obligatorio.'); return }
-    setSaving(true)
-    setError('')
+    if (!leadId || !nombre.trim()) { setError('Completa todos los campos.'); return }
+    setSaving(true); setError('')
     try {
       const res = await fetch('/api/soluciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombre.trim(), tipo: 'DEMO', estado: 'ACTIVO', valorEstimado: 0, leadId }),
+        body: JSON.stringify({ nombre: nombre.trim(), tipo: 'DEMO', estado: 'ACTIVO', leadId }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -119,7 +114,10 @@ export default function PocSolutionPage() {
   const addButton = (
     <button
       onClick={openCreateModal}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-white text-xs font-semibold rounded-lg transition-colors"
+      style={{ background: '#06b6d4' }}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#0891b2'}
+      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#06b6d4'}
     >
       <Plus size={14} />
       Nueva PoC
@@ -127,68 +125,60 @@ export default function PocSolutionPage() {
   )
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
-      {/* Benefits */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {benefits.map(b => (
-          <div
-            key={b.title}
-            className="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-cyan-500/30 transition-colors"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-cyan-600/15 flex items-center justify-center flex-shrink-0">
-                <b.icon className="text-cyan-400" size={20} />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">{b.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{b.desc}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="p-4 md:p-8 space-y-6">
 
-      {/* How it works */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8">
-        <h2 className="text-xl font-bold text-white mb-6">Metodología del PoC</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { step: '01', title: 'Definición', desc: 'Seleccionamos el caso de uso, datos disponibles y criterios de éxito.' },
-            { step: '02', title: 'Diseño', desc: 'Diseñamos el experimento mínimo viable y la arquitectura técnica.' },
-            { step: '03', title: 'Implementación', desc: 'Construimos el demo funcional en tiempo record.' },
-            { step: '04', title: 'Validación', desc: 'Medimos resultados y entregamos recomendación de go/no-go.' },
-          ].map((p, idx, arr) => (
-            <div key={p.step} className="relative">
-              {idx < arr.length - 1 && (
-                <div className="hidden lg:block absolute top-6 left-full w-full h-px bg-gradient-to-r from-cyan-500/50 to-transparent" />
-              )}
-              <div className="flex items-center gap-3 mb-3">
-                <span className="w-12 h-12 rounded-full bg-cyan-600/15 text-cyan-400 font-bold flex items-center justify-center border border-cyan-500/20">
-                  {p.step}
-                </span>
-                <ArrowRight className="text-gray-600 lg:hidden" size={16} />
+      {/* Metodologia del PoC */}
+      <div
+        className="rounded-2xl p-6 md:p-8"
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        <h2 className="text-sm font-semibold text-white mb-6 uppercase tracking-wider" style={{ color: '#06b6d4' }}>
+          Metodología del PoC
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-0">
+          {STEPS.map((s, idx) => {
+            const Icon = s.icon
+            return (
+              <div key={s.num} className="relative flex md:flex-col items-start md:items-start gap-4 md:gap-0 pb-6 md:pb-0">
+                {/* Connector line */}
+                {idx < STEPS.length - 1 && (
+                  <div
+                    className="hidden md:block absolute top-5 left-[calc(50%+24px)] right-0 h-px"
+                    style={{ background: `linear-gradient(to right, ${s.color}60, transparent)` }}
+                  />
+                )}
+                {idx < STEPS.length - 1 && (
+                  <div
+                    className="md:hidden absolute left-5 top-12 bottom-0 w-px"
+                    style={{ background: `linear-gradient(to bottom, ${s.color}60, transparent)` }}
+                  />
+                )}
+
+                <div className="flex md:flex-col items-center md:items-start gap-3 md:gap-4 w-full md:pr-6">
+                  {/* Step icon */}
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 relative z-10"
+                    style={{ background: s.color + '18', border: `1px solid ${s.color}40` }}
+                  >
+                    <Icon size={17} style={{ color: s.color }} />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[10px] font-bold tracking-widest" style={{ color: s.color + '99' }}>{s.num}</span>
+                      <h3 className="text-sm font-semibold text-white">{s.title}</h3>
+                    </div>
+                    <p className="text-xs text-gray-400 leading-relaxed">{s.desc}</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-white font-semibold mb-1">{p.title}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{p.desc}</p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
-      {/* Deliverables */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {deliverables.map(d => (
-          <div key={d.title} className="flex items-start gap-3 bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <CheckCircle2 className="text-cyan-400 mt-0.5 flex-shrink-0" size={18} />
-            <div>
-              <h3 className="text-white font-medium mb-1">{d.title}</h3>
-              <p className="text-gray-400 text-sm">{d.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Soluciones asociadas */}
+      {/* Lista de PoCs */}
       <SolucionesList
         tipo="DEMO"
         color="cyan"
@@ -199,60 +189,35 @@ export default function PocSolutionPage() {
         onSelect={goToDetail}
       />
 
-      {/* CTA */}
-      <div className="card p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.2)' }}>
-            <Zap className="text-cyan-400" size={20} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white mb-1">¿Quieres validar una idea antes de invertir?</h2>
-            <p className="text-gray-400 text-sm">Un PoC es la forma más segura de probar el valor de la IA en tu negocio.</p>
-          </div>
-        </div>
-        <Link
-          href="/leads"
-          className="btn btn-primary flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', borderColor: 'rgba(6,182,212,0.5)' }}
-        >
-          Empezar un PoC
-          <ArrowRight size={16} />
-        </Link>
-      </div>
-
-      {/* Modal mínimo: Nueva PoC (el resto se completa en su página) */}
+      {/* Modal */}
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div className="relative w-full max-w-md bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800 bg-gradient-to-r from-cyan-900/40 to-gray-900">
+          <div className="relative w-full max-w-md rounded-2xl overflow-hidden"
+            style={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex items-center justify-between px-6 py-5"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(6,182,212,0.06)' }}>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center">
-                  <Plus className="text-cyan-400" size={18} />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.25)' }}>
+                  <Plus className="text-cyan-400" size={16} />
                 </div>
-                <div>
-                  <h2 className="text-white font-bold text-lg leading-none">Nueva PoC</h2>
-                  <p className="text-cyan-400/70 text-xs mt-0.5">Tipo: DEMO</p>
-                </div>
+                <h2 className="text-sm font-semibold text-white">Nueva PoC</h2>
               </div>
-              <button onClick={closeModal} disabled={saving}
-                className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-50">
-                <X size={16} />
+              <button onClick={closeModal} disabled={saving} className="text-gray-500 hover:text-gray-300">
+                <X size={15} />
               </button>
             </div>
 
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Lead asociado <span className="text-cyan-400">*</span>
-                </label>
+                <label className="block text-xs text-gray-400 mb-1.5">Lead asociado *</label>
                 {loadingLeads ? (
-                  <div className="flex items-center gap-2 text-gray-500 text-sm py-3">
-                    <Loader2 size={14} className="animate-spin" /> Cargando leads…
+                  <div className="flex items-center gap-2 text-gray-500 text-xs py-2">
+                    <Loader2 size={13} className="animate-spin" /> Cargando leads…
                   </div>
                 ) : (
                   <select
@@ -260,7 +225,12 @@ export default function PocSolutionPage() {
                     onChange={e => handleLeadChange(e.target.value)}
                     disabled={saving}
                     required
-                    className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
+                    style={{
+                      width: '100%', background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                      padding: '8px 12px', color: '#e5e7eb', fontSize: '13px',
+                      outline: 'none', colorScheme: 'dark', appearance: 'none',
+                    }}
                   >
                     <option value="" disabled>Selecciona un lead…</option>
                     {availableLeads.map(l => (
@@ -269,41 +239,40 @@ export default function PocSolutionPage() {
                   </select>
                 )}
                 {!loadingLeads && availableLeads.length === 0 && (
-                  <p className="text-gray-600 text-xs mt-1.5">No hay leads sin PoC/solución asociada todavía.</p>
+                  <p className="text-gray-600 text-xs mt-1">No hay leads sin PoC asociada.</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Nombre <span className="text-cyan-400">*</span>
-                </label>
+                <label className="block text-xs text-gray-400 mb-1.5">Nombre *</label>
                 <input
                   type="text"
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
                   placeholder="Ej. Empresa XYZ — Demo"
                   disabled={saving}
-                  className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60"
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                    padding: '8px 12px', color: '#e5e7eb', fontSize: '13px', outline: 'none',
+                  }}
                 />
               </div>
 
-              <p className="text-gray-600 text-xs">Arquitectura, plan de trabajo, cronograma y código se completan después, en la página de la PoC.</p>
+              <p className="text-xs text-gray-600">Arquitectura, plan y cronograma se completan en la página de la PoC.</p>
 
-              {error && (
-                <div className="flex items-center gap-2 bg-red-900/30 border border-red-800/50 rounded-xl px-4 py-3">
-                  <X size={14} className="text-red-400 flex-shrink-0" />
-                  <p className="text-red-400 text-sm">{error}</p>
-                </div>
-              )}
+              {error && <p className="text-xs text-red-400">{error}</p>}
 
-              <div className="flex items-center justify-end gap-3 pt-1">
+              <div className="flex gap-2 pt-1">
                 <button type="button" onClick={closeModal} disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors disabled:opacity-50">
+                  className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-400"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   Cancelar
                 </button>
                 <button type="submit" disabled={saving}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white rounded-xl text-sm font-semibold transition-colors">
-                  {saving ? (<><Loader2 size={15} className="animate-spin" /> Creando…</>) : (<><Plus size={15} /> Crear y continuar</>)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
+                  style={{ background: '#06b6d4' }}>
+                  {saving ? <><Loader2 size={13} className="animate-spin" /> Creando…</> : <><Plus size={13} /> Crear y continuar</>}
                 </button>
               </div>
             </form>
