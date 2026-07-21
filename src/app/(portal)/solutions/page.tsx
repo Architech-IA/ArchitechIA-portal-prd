@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2 } from 'lucide-react'
+import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X } from 'lucide-react'
 
 interface SectionDef {
   href: string
@@ -108,12 +108,18 @@ const ESTADO_COLOR: Record<string, string> = {
   INACTIVO:        '#6b7280',
 }
 
+const EMPTY_FORM = { nombre: '', tipo: 'PROJECT', estado: 'ACTIVO', descripcion: '', valorEstimado: '' }
+
 export default function SolutionsHome() {
   const [counts, setCounts] = useState<Record<string, number | null>>({})
   const [allItems, setAllItems] = useState<Array<(Solucion | Producto) & { tipo: string }>>([])
   const [loadingList, setLoadingList] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
+  const fetchAll = () => {
     SECTIONS.forEach(s => {
       if (!s.api) return
       fetch(s.api)
@@ -133,7 +139,47 @@ export default function SolutionsHome() {
       setAllItems([...prodItems, ...solItems])
       setLoadingList(false)
     })
-  }, [])
+  }
+
+  useEffect(() => { fetchAll() }, [])
+
+  const handleSave = async () => {
+    if (!form.nombre.trim()) { setError('El nombre es requerido'); return }
+    setSaving(true); setError('')
+    try {
+      const res = await fetch('/api/soluciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: form.nombre.trim(),
+          tipo: form.tipo,
+          estado: form.estado,
+          descripcion: form.descripcion.trim() || null,
+          valorEstimado: parseFloat(form.valorEstimado) || 0,
+        }),
+      })
+      if (!res.ok) throw new Error('Error al crear')
+      setShowModal(false)
+      setForm(EMPTY_FORM)
+      setLoadingList(true)
+      fetchAll()
+    } catch {
+      setError('No se pudo crear la solución')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputStyle = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    color: '#e5e7eb',
+    fontSize: '13px',
+    outline: 'none',
+  }
 
   return (
     <div className="p-6 md:p-8 flex gap-6 items-start">
@@ -194,6 +240,7 @@ export default function SolutionsHome() {
         className="w-72 flex-shrink-0 rounded-xl overflow-hidden"
         style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}
       >
+        {/* Widget header */}
         <div className="px-4 py-3 flex items-center justify-between"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <span className="text-xs font-semibold text-white">Todas las soluciones</span>
@@ -205,6 +252,21 @@ export default function SolutionsHome() {
           )}
         </div>
 
+        {/* New solution button */}
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <button
+            onClick={() => { setForm(EMPTY_FORM); setError(''); setShowModal(true) }}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-colors"
+            style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.25)', color: '#f97316' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.2)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.12)'}
+          >
+            <Plus size={13} />
+            Nueva solución
+          </button>
+        </div>
+
+        {/* List */}
         {loadingList ? (
           <div className="flex justify-center py-8">
             <Loader2 size={16} className="animate-spin text-gray-500" />
@@ -212,7 +274,7 @@ export default function SolutionsHome() {
         ) : allItems.length === 0 ? (
           <p className="text-xs text-gray-500 text-center py-8">Sin soluciones registradas</p>
         ) : (
-          <div className="overflow-y-auto" style={{ maxHeight: '520px' }}>
+          <div className="overflow-y-auto" style={{ maxHeight: '460px' }}>
             {allItems.map((item, i) => {
               const meta = TYPE_META[item.tipo] || { label: item.tipo, color: '#6b7280', href: '/solutions' }
               const estado = (item as Solucion).estado || ''
@@ -242,6 +304,108 @@ export default function SolutionsHome() {
           </div>
         )}
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl p-6"
+            style={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-semibold text-white">Nueva solución</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-300">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Nombre *</label>
+                <input
+                  style={inputStyle}
+                  placeholder="Ej: Agente de cotizaciones"
+                  value={form.nombre}
+                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Tipo</label>
+                  <select
+                    style={inputStyle}
+                    value={form.tipo}
+                    onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
+                  >
+                    <option value="PROJECT">Project</option>
+                    <option value="DEMO">Pilot</option>
+                    <option value="PARTNERSHIP">Partnership</option>
+                    <option value="INTERN">Intern</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Estado</label>
+                  <select
+                    style={inputStyle}
+                    value={form.estado}
+                    onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}
+                  >
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Descripcion</label>
+                <textarea
+                  style={{ ...inputStyle, resize: 'none' }}
+                  rows={3}
+                  placeholder="Breve descripcion de la solución..."
+                  value={form.descripcion}
+                  onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Valor estimado (USD)</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  placeholder="0"
+                  value={form.valorEstimado}
+                  onChange={e => setForm(f => ({ ...f, valorEstimado: e.target.value }))}
+                />
+              </div>
+
+              {error && <p className="text-xs text-red-400">{error}</p>}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-400 transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold text-white transition-opacity disabled:opacity-50"
+                  style={{ background: '#f97316' }}
+                >
+                  {saving ? 'Guardando...' : 'Crear solución'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
