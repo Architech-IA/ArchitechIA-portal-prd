@@ -119,6 +119,8 @@ export default function SolutionsHome() {
   const [counts, setCounts] = useState<Record<string, number | null>>({})
   const [allItems, setAllItems] = useState<Array<(Solucion | Producto) & { tipo: string }>>([])
   const [loadingList, setLoadingList] = useState(true)
+  const [iniciativas, setIniciativas] = useState<Array<{ id: string; nombre: string; estado: string; categoria: string; prioridad: string }>>([])
+  const [loadingIniciativas, setLoadingIniciativas] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -145,6 +147,11 @@ export default function SolutionsHome() {
       setAllItems([...prodItems, ...solItems])
       setLoadingList(false)
     })
+
+    fetch('/api/iniciativas')
+      .then(r => r.ok ? r.json() : [])
+      .then(d => { setIniciativas(Array.isArray(d) ? d : []); setLoadingIniciativas(false) })
+      .catch(() => setLoadingIniciativas(false))
   }
 
   useEffect(() => { fetchAll() }, [])
@@ -315,6 +322,61 @@ export default function SolutionsHome() {
             })}
           </div>
         )}
+        </div>
+
+        {/* Iniciativas widget */}
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}
+        >
+          <div className="px-4 py-3 flex items-center justify-between"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(234,179,8,0.1)' }}>
+            <span className="text-xs font-semibold text-white">Iniciativas</span>
+            {iniciativas.length > 0 && (
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}>
+                {iniciativas.length}
+              </span>
+            )}
+          </div>
+
+          {loadingIniciativas ? (
+            <div className="flex justify-center py-6">
+              <Loader2 size={16} className="animate-spin text-gray-500" />
+            </div>
+          ) : iniciativas.length === 0 ? (
+            <p className="text-xs text-gray-500 text-center py-6">Sin iniciativas registradas</p>
+          ) : (
+            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+              {iniciativas.map(item => {
+                const prioColor: Record<string, string> = { ALTA: '#ef4444', MEDIA: '#f97316', BAJA: '#6b7280' }
+                const dotColor = prioColor[item.prioridad] || '#eab308'
+                return (
+                  <Link
+                    key={item.id}
+                    href="/solutions/iniciativas"
+                    className="flex items-start gap-3 px-4 py-2.5 transition-colors"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: dotColor }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-200 truncate">{item.nombre}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {item.categoria && (
+                          <span className="text-[10px] text-gray-500">{item.categoria}</span>
+                        )}
+                        {item.prioridad && (
+                          <span className="text-[10px] font-medium" style={{ color: dotColor }}>{item.prioridad}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
