@@ -40,33 +40,41 @@ function AppCard({ app }: { app: AppInstance }) {
   const category = APP_CATEGORIES[app.appType.category]
   const cs = getStyle(category?.color ?? 'text-gray-400')
 
+  const handleOpen = () => {
+    const ext = app.config?.externalUrl as string | undefined
+    if (ext) window.open(ext, '_blank')
+    else router.push(`/apps/${app.slug}`)
+  }
+
   return (
     <div
-      className="relative rounded-2xl p-4 border flex flex-col transition-all duration-200"
-      style={{ background: '#0d0d1a', borderColor: 'rgba(255,255,255,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = cs.border; (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px ${cs.border}` }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.4)' }}
+      className="group rounded-xl p-4 flex flex-col h-full cursor-pointer transition-all duration-150"
+      style={{ background: cs.bg, border: `1px solid ${cs.border.replace('0.3', '0.2')}` }}
+      onClick={handleOpen}
+      onMouseEnter={e => {
+        ;(e.currentTarget as HTMLElement).style.borderColor = cs.color + '55'
+        ;(e.currentTarget as HTMLElement).style.background = cs.bg.replace('0.12', '0.18')
+      }}
+      onMouseLeave={e => {
+        ;(e.currentTarget as HTMLElement).style.borderColor = cs.border.replace('0.3', '0.2')
+        ;(e.currentTarget as HTMLElement).style.background = cs.bg
+      }}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className={`h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-br ${app.appType.color} text-white shadow-md flex-shrink-0`}>
-          <Icon className="h-5 w-5" />
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: cs.color + '22', border: `1px solid ${cs.color}33` }}>
+          <Icon className="h-4 w-4" style={{ color: cs.color }} />
         </div>
         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-          style={{ color: cs.color, background: cs.bg, border: `1px solid ${cs.border}` }}>
+          style={{ background: cs.color + '22', color: cs.color }}>
           {category?.label ?? app.appType.category}
         </span>
       </div>
-      <h3 className="text-sm font-bold mb-1.5 leading-snug" style={{ color: cs.color }}>{app.name}</h3>
-      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed flex-1 mb-4">{app.description ?? 'Sin descripcion'}</p>
-      <button
-        onClick={() => { const ext = app.config?.externalUrl as string | undefined; if (ext) window.open(ext, '_blank'); else router.push(`/apps/${app.slug}`) }}
-        className="w-full flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold text-white transition-colors"
-        style={{ background: '#ea580c' }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#c2410c'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#ea580c'}
-      >
-        <Play className="h-3 w-3" /> Abrir
-      </button>
+      <h3 className="text-sm font-semibold text-white mb-1 leading-snug">{app.name}</h3>
+      <p className="text-xs text-gray-400 leading-relaxed mb-3 flex-1 line-clamp-2">{app.description ?? 'Sin descripcion'}</p>
+      <div className="flex items-center gap-1 text-xs font-medium" style={{ color: cs.color + 'cc' }}>
+        Abrir <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+      </div>
     </div>
   )
 }
