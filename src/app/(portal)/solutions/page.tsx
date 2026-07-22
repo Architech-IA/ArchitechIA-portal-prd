@@ -340,9 +340,9 @@ export default function SolutionsHome() {
             </Link>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <div className="relative flex-1 min-w-[160px] max-w-xs">
+          {/* Filters — single scrollable row */}
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            <div className="relative flex-shrink-0 w-40">
               <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               <input
                 className="w-full bg-white/5 border border-white/8 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-white/20"
@@ -351,31 +351,29 @@ export default function SolutionsHome() {
                 onChange={e => setAppSearch(e.target.value)}
               />
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setAppCategory('')}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
-                style={appCategory === '' ? { background: '#f97316', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}
-              >
-                Todas
-              </button>
-              {Object.entries(APP_CATEGORIES).map(([key, cat]) => {
-                const cs = getStyle(cat.color)
-                const active = appCategory === key
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setAppCategory(active ? '' : key)}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
-                    style={active
-                      ? { background: cs.color, color: '#fff' }
-                      : { background: cs.bg, color: cs.color, border: `1px solid ${cs.border}` }}
-                  >
-                    {cat.label}
-                  </button>
-                )
-              })}
-            </div>
+            <button
+              onClick={() => setAppCategory('')}
+              className="flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+              style={appCategory === '' ? { background: '#f97316', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}
+            >
+              Todas
+            </button>
+            {Object.entries(APP_CATEGORIES).map(([key, cat]) => {
+              const cs = getStyle(cat.color)
+              const active = appCategory === key
+              return (
+                <button
+                  key={key}
+                  onClick={() => setAppCategory(active ? '' : key)}
+                  className="flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+                  style={active
+                    ? { background: cs.color, color: '#fff' }
+                    : { background: cs.bg, color: cs.color, border: `1px solid ${cs.border}` }}
+                >
+                  {cat.label}
+                </button>
+              )
+            })}
           </div>
 
           {loadingApps ? (
