@@ -333,20 +333,14 @@ export default function SolutionsHome() {
 
         {/* Apps catalog */}
         <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-white">Mini Apps</h2>
-            <Link href="/apps" className="text-[11px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
-              Ver todas <ArrowRight size={10} />
-            </Link>
-          </div>
-
-          {/* Filters — single scrollable row */}
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            <div className="relative flex-shrink-0 w-40">
+          {/* Title + search + category pills — all in one row */}
+          <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            <h2 className="text-sm font-semibold text-white flex-shrink-0">Mini Apps</h2>
+            <div className="relative flex-shrink-0 w-36">
               <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               <input
-                className="w-full bg-white/5 border border-white/8 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-white/20"
-                placeholder="Buscar app..."
+                className="w-full bg-white/5 border border-white/[0.08] rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-white/20"
+                placeholder="Buscar..."
                 value={appSearch}
                 onChange={e => setAppSearch(e.target.value)}
               />
@@ -374,6 +368,9 @@ export default function SolutionsHome() {
                 </button>
               )
             })}
+            <Link href="/apps" className="flex-shrink-0 ml-auto text-[11px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+              Ver todas <ArrowRight size={10} />
+            </Link>
           </div>
 
           {loadingApps ? (
