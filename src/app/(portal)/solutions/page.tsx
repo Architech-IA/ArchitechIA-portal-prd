@@ -7,7 +7,7 @@ import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, A
 import { APP_CATEGORIES } from '@/lib/app-types'
 import type { AppInstance } from '@/lib/app-types'
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   Users, Layout, Globe, BarChart3, Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban,
 }
 
