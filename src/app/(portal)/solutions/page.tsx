@@ -640,9 +640,9 @@ export default function SolutionsHome() {
         const Icon = ICON_MAP[appDetail.appType.icon] ?? Box
         const category = APP_CATEGORIES[appDetail.appType.category]
         const cs = getStyle(category?.color ?? 'text-gray-400')
+        const extUrl = typeof appDetail.config?.externalUrl === 'string' ? appDetail.config.externalUrl : null
         const handleLaunch = () => {
-          const ext = appDetail.config?.externalUrl as string | undefined
-          if (ext) window.open(ext, '_blank')
+          if (extUrl) window.open(extUrl, '_blank')
           else window.open(`/apps/${appDetail.slug}`, '_blank')
           setAppDetail(null)
         }
@@ -696,13 +696,13 @@ export default function SolutionsHome() {
                     <span className="text-gray-500">Slug</span>
                     <span className="text-gray-400 font-mono text-[11px]">{appDetail.slug}</span>
                   </div>
-                  {appDetail.config?.externalUrl && (
+                  {extUrl && (
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-500">URL externa</span>
-                      <a href={appDetail.config.externalUrl as string} target="_blank" rel="noopener noreferrer"
+                      <a href={extUrl} target="_blank" rel="noopener noreferrer"
                         className="text-[11px] truncate max-w-[140px] hover:text-white transition-colors"
                         style={{ color: cs.color }}>
-                        {(appDetail.config.externalUrl as string).replace(/^https?:\/\//, '')}
+                        {extUrl.replace(/^https?:\/\//, '')}
                       </a>
                     </div>
                   )}
