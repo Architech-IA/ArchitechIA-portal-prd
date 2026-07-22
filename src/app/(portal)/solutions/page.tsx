@@ -34,23 +34,16 @@ function getStyle(colorClass: string) {
   return CAT_STYLE[colorClass] ?? { color: '#9ca3af', bg: 'rgba(156,163,175,0.12)', border: 'rgba(156,163,175,0.3)' }
 }
 
-function AppCard({ app }: { app: AppInstance }) {
-  const router = useRouter()
+function AppCard({ app, onClick }: { app: AppInstance; onClick: () => void }) {
   const Icon = ICON_MAP[app.appType.icon] ?? Box
   const category = APP_CATEGORIES[app.appType.category]
   const cs = getStyle(category?.color ?? 'text-gray-400')
-
-  const handleOpen = () => {
-    const ext = app.config?.externalUrl as string | undefined
-    if (ext) window.open(ext, '_blank')
-    else router.push(`/apps/${app.slug}`)
-  }
 
   return (
     <div
       className="group rounded-xl p-4 flex flex-col h-full cursor-pointer transition-all duration-150"
       style={{ background: cs.bg, border: `1px solid ${cs.border.replace('0.3', '0.2')}` }}
-      onClick={handleOpen}
+      onClick={onClick}
       onMouseEnter={e => {
         ;(e.currentTarget as HTMLElement).style.borderColor = cs.color + '55'
         ;(e.currentTarget as HTMLElement).style.background = cs.bg.replace('0.12', '0.18')
@@ -73,7 +66,7 @@ function AppCard({ app }: { app: AppInstance }) {
       <h3 className="text-sm font-semibold text-white mb-1 leading-snug">{app.name}</h3>
       <p className="text-xs text-gray-400 leading-relaxed mb-3 flex-1 line-clamp-2">{app.description ?? 'Sin descripcion'}</p>
       <div className="flex items-center gap-1 text-xs font-medium" style={{ color: cs.color + 'cc' }}>
-        Abrir <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+        Ver más <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
       </div>
     </div>
   )
@@ -205,6 +198,7 @@ export default function SolutionsHome() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [detail, setDetail] = useState<Solucion | null>(null)
+  const [appDetail, setAppDetail] = useState<AppInstance | null>(null)
 
   const fetchAll = () => {
     SECTIONS.forEach(s => {
@@ -400,7 +394,7 @@ export default function SolutionsHome() {
               >
                 {filtered.map(app => (
                   <div key={app.id} className="flex-shrink-0 w-52">
-                    <AppCard app={app} />
+                    <AppCard app={app} onClick={() => setAppDetail(app)} />
                   </div>
                 ))}
               </div>
@@ -634,6 +628,102 @@ export default function SolutionsHome() {
                     <ExternalLink size={11} />
                     Ver {meta.label}
                   </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* App detail popup */}
+      {appDetail && (() => {
+        const Icon = ICON_MAP[appDetail.appType.icon] ?? Box
+        const category = APP_CATEGORIES[appDetail.appType.category]
+        const cs = getStyle(category?.color ?? 'text-gray-400')
+        const handleLaunch = () => {
+          const ext = appDetail.config?.externalUrl as string | undefined
+          if (ext) window.open(ext, '_blank')
+          else window.open(`/apps/${appDetail.slug}`, '_blank')
+          setAppDetail(null)
+        }
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+            onClick={e => { if (e.target === e.currentTarget) setAppDetail(null) }}
+          >
+            <div className="w-full max-w-sm rounded-2xl overflow-hidden"
+              style={{ background: '#0f0f1a', border: `1px solid ${cs.color}33` }}>
+
+              {/* Header */}
+              <div className="px-5 py-4 flex items-start justify-between"
+                style={{ borderBottom: `1px solid ${cs.color}18`, background: cs.bg }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: cs.color + '22', border: `1px solid ${cs.color}44` }}>
+                    <Icon className="h-5 w-5" style={{ color: cs.color }} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: cs.color }}>
+                      {category?.label ?? appDetail.appType.category}
+                    </p>
+                    <h2 className="text-sm font-semibold text-white leading-snug">{appDetail.name}</h2>
+                  </div>
+                </div>
+                <button onClick={() => setAppDetail(null)} className="text-gray-500 hover:text-gray-300 mt-0.5 flex-shrink-0">
+                  <X size={15} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Descripción */}
+                {appDetail.description ? (
+                  <p className="text-xs text-gray-300 leading-relaxed">{appDetail.description}</p>
+                ) : (
+                  <p className="text-xs text-gray-600 italic">Sin descripción disponible</p>
+                )}
+
+                {/* Meta */}
+                <div className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Categoría</span>
+                    <span className="font-medium px-2 py-0.5 rounded-full text-[11px]"
+                      style={{ background: cs.color + '22', color: cs.color }}>
+                      {category?.label ?? appDetail.appType.category}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Slug</span>
+                    <span className="text-gray-400 font-mono text-[11px]">{appDetail.slug}</span>
+                  </div>
+                  {appDetail.config?.externalUrl && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">URL externa</span>
+                      <a href={appDetail.config.externalUrl as string} target="_blank" rel="noopener noreferrer"
+                        className="text-[11px] truncate max-w-[140px] hover:text-white transition-colors"
+                        style={{ color: cs.color }}>
+                        {(appDetail.config.externalUrl as string).replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => setAppDetail(null)}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-400 transition-colors"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    onClick={handleLaunch}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold text-white transition-opacity"
+                    style={{ background: cs.color }}
+                  >
+                    <Play size={11} /> Abrir app
+                  </button>
                 </div>
               </div>
             </div>
