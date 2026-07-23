@@ -41,7 +41,7 @@ function AppCard({ app, onClick }: { app: AppInstance; onClick: () => void }) {
 
   return (
     <div
-      className="group rounded-xl p-4 flex flex-col h-full cursor-pointer transition-all duration-150"
+      className="group rounded-xl p-5 flex flex-col h-full cursor-pointer transition-all duration-150" style={{ minHeight: '180px' }}
       style={{ background: cs.bg, border: `1px solid ${cs.border.replace('0.3', '0.2')}` }}
       onClick={onClick}
       onMouseEnter={e => {
@@ -393,24 +393,14 @@ export default function SolutionsHome() {
               <p className="text-xs text-gray-600 text-center py-10">Sin apps para mostrar</p>
             ) : (
               <div
-                className="overflow-x-auto pb-2"
+                className="flex gap-3 overflow-x-auto pb-2"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
               >
-                <div
-                  style={{
-                    display: 'grid',
-                    gridAutoFlow: 'column',
-                    gridTemplateRows: 'repeat(2, auto)',
-                    gap: '12px',
-                    width: 'max-content',
-                  }}
-                >
-                  {filtered.map(app => (
-                    <div key={app.id} style={{ width: '215px' }}>
-                      <AppCard app={app} onClick={() => setAppDetail(app)} />
-                    </div>
-                  ))}
-                </div>
+                {filtered.map(app => (
+                  <div key={app.id} className="flex-shrink-0 w-[215px]">
+                    <AppCard app={app} onClick={() => setAppDetail(app)} />
+                  </div>
+                ))}
               </div>
             )
           })()}
