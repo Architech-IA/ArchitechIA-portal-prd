@@ -337,7 +337,7 @@ export default function SolutionsHome() {
         <div className="mt-6">
           {/* Title + search + category pills — all in one row */}
           <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            <h2 className="text-sm font-semibold text-white flex-shrink-0">Mini Apps</h2>
+            <h2 className="text-sm font-semibold text-white flex-shrink-0">Catalog</h2>
             <div className="relative flex-shrink-0 w-36">
               <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               <input
@@ -349,8 +349,10 @@ export default function SolutionsHome() {
             </div>
             <button
               onClick={() => setAppCategory('')}
-              className="flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+              className="flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150"
               style={appCategory === '' ? { background: '#f97316', color: '#fff' } : { background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}
+              onMouseEnter={e => { if (appCategory !== '') (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)' }}
+              onMouseLeave={e => { if (appCategory !== '') (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
             >
               Todas
             </button>
@@ -361,10 +363,12 @@ export default function SolutionsHome() {
                 <button
                   key={key}
                   onClick={() => setAppCategory(active ? '' : key)}
-                  className="flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+                  className="flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150"
                   style={active
                     ? { background: cs.color, color: '#fff' }
                     : { background: cs.bg, color: cs.color, border: `1px solid ${cs.border}` }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = cs.color + '30' }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = cs.bg }}
                 >
                   {cat.label}
                 </button>
