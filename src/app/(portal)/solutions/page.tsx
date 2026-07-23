@@ -286,10 +286,10 @@ export default function SolutionsHome() {
   }
 
   return (
-    <div className="pt-3 pb-6 px-6 md:px-8 flex gap-6 items-start">
+    <div className="pt-3 pb-6 px-4 md:px-6 flex flex-col lg:flex-row gap-6 items-start">
       {/* Left: section cards */}
       <div className="flex-1 min-w-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {SECTIONS.map(s => {
             const Icon = s.icon
             const count = counts[s.href]
@@ -410,7 +410,7 @@ export default function SolutionsHome() {
       </div>
 
       {/* Right: all solutions widget */}
-      <div className="w-72 flex-shrink-0 flex flex-col gap-3">
+      <div className="w-full lg:w-72 lg:flex-shrink-0 flex flex-col gap-3">
         {/* Action buttons — outside widgets */}
         <button
           onClick={() => { setForm(EMPTY_FORM); setError(''); setShowModal(true) }}

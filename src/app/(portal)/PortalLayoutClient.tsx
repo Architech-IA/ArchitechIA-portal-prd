@@ -158,7 +158,17 @@ export default function PortalLayoutClient({
   }, []);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => {
+      const w = window.innerWidth;
+      setIsMobile(w < 768);
+      // Auto-collapse sidebar on medium screens to free up content space
+      if (w >= 768 && w < 1200) {
+        setCollapsed(true);
+      } else if (w >= 1200) {
+        const saved = localStorage.getItem('sidebar-collapsed');
+        setCollapsed(saved === 'true');
+      }
+    };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
