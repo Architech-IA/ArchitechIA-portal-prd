@@ -354,8 +354,6 @@ export default function PortalLayoutClient({
                 </button>
                 {open && (
                   <div className="relative mt-0.5 space-y-0.5">
-                    {/* Rail conector de los subitems */}
-                    <span className="absolute left-[14px] top-1 bottom-1 w-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
                     {section.items.map(item => <NavLink key={item.href} item={item} isCollapsed={false} sub />)}
                   </div>
                 )}
