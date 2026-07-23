@@ -392,15 +392,17 @@ export default function SolutionsHome() {
             return filtered.length === 0 ? (
               <p className="text-xs text-gray-600 text-center py-10">Sin apps para mostrar</p>
             ) : (
-              <div
-                className="flex gap-3 overflow-x-auto pb-2"
-                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
-              >
-                {filtered.map(app => (
-                  <div key={app.id} className="flex-shrink-0 w-[215px]">
-                    <AppCard app={app} onClick={() => setAppDetail(app)} />
-                  </div>
-                ))}
+              <div className="overflow-hidden">
+                <div
+                  className="flex gap-3 overflow-x-auto pb-2"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
+                >
+                  {filtered.map(app => (
+                    <div key={app.id} className="flex-shrink-0 w-[200px]">
+                      <AppCard app={app} onClick={() => setAppDetail(app)} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )
           })()}
