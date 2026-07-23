@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-  if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!await isAuthed(request)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const { id } = await params
   const body = await request.json()
@@ -40,8 +39,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-  if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!await isAuthed(request)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const { id } = await params
   await prisma.backlogItem.delete({ where: { id } })

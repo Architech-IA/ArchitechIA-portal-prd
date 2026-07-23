@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
 import { prisma } from '@/lib/prisma'
-
-
+import { isAuthed } from '@/lib/apiAuth'
 
 export async function GET() {
   const items = await prisma.backlogItem.findMany({
@@ -16,17 +14,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
-  if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!await isAuthed(request)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const body = await request.json()
   const { title, description, type, priority, status, points, solucionId, assigneeId, assigneeName, sprintId } = body
 
-  if (!solucionId) {
-    return NextResponse.json({ error: 'La solución asociada es obligatoria' }, { status: 400 })
-  }
-
-  // Auto-generate taskCode if assigning to a sprint
   let taskCode: string | null = null
   if (sprintId) {
     const sprint = await prisma.sprint.findUnique({ where: { id: sprintId }, select: { sprintCode: true } })
@@ -38,11 +30,11 @@ export async function POST(request: NextRequest) {
     data: {
       title,
       description: description || null,
-      type,
-      priority,
+      type: type || null,
+      priority: priority || null,
       status: status || 'BACKLOG',
       points: points ? Number(points) : null,
-      solucionId,
+      solucionId: solucionId || null,
       assigneeId: assigneeId || null,
       assigneeName: assigneeName || null,
       sprintId: sprintId || null,
