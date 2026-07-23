@@ -397,7 +397,7 @@ export default function SolutionsHome() {
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}
               >
                 {filtered.map(app => (
-                  <div key={app.id} className="flex-shrink-0 w-52">
+                  <div key={app.id} className="flex-shrink-0 w-64">
                     <AppCard app={app} onClick={() => setAppDetail(app)} />
                   </div>
                 ))}
