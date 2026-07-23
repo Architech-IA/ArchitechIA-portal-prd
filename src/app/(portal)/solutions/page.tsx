@@ -41,8 +41,8 @@ function AppCard({ app, onClick }: { app: AppInstance; onClick: () => void }) {
 
   return (
     <div
-      className="group rounded-xl p-5 flex flex-col h-full cursor-pointer transition-all duration-150" style={{ minHeight: '180px' }}
-      style={{ background: cs.bg, border: `1px solid ${cs.border.replace('0.3', '0.2')}` }}
+      className="group rounded-xl p-5 flex flex-col h-full cursor-pointer transition-all duration-150"
+      style={{ minHeight: '180px', background: cs.bg, border: `1px solid ${cs.border.replace('0.3', '0.2')}` }}
       onClick={onClick}
       onMouseEnter={e => {
         ;(e.currentTarget as HTMLElement).style.borderColor = cs.color + '55'
