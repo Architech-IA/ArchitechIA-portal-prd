@@ -394,6 +394,39 @@ aside ::-webkit-scrollbar  { width: 3px; }
   .clock-text { display: none; }
 }
 
+/* ─── Fluid Typography — clamp() ────────────────────────────────
+   Escala suavemente entre 768px y 1536px de viewport.
+   Fórmula: clamp(min, valor_en_1229px_en_vw, max)
+   Esto hace que la UI se vea consistente entre pantallas con
+   distintas resoluciones/escalas de SO.
+──────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  /* Overrides de Tailwind text utilities */
+  .text-\[10px\]  { font-size: clamp(9px,  0.78vw, 11px)  !important; }
+  .text-\[11px\]  { font-size: clamp(10px, 0.85vw, 12px)  !important; }
+  .text-\[12px\]  { font-size: clamp(10px, 0.9vw,  13px)  !important; }
+  .text-\[13px\]  { font-size: clamp(11px, 0.97vw, 14px)  !important; }
+  .text-xs        { font-size: clamp(10px, 0.85vw, 13px)  !important; }
+  .text-sm        { font-size: clamp(12px, 1.05vw, 15px)  !important; }
+  .text-base      { font-size: clamp(13px, 1.2vw,  17px)  !important; }
+  .text-lg        { font-size: clamp(15px, 1.35vw, 20px)  !important; }
+  .text-xl        { font-size: clamp(17px, 1.55vw, 23px)  !important; }
+  .text-2xl       { font-size: clamp(20px, 1.85vw, 27px)  !important; }
+  .text-3xl       { font-size: clamp(24px, 2.2vw,  33px)  !important; }
+  .text-4xl       { font-size: clamp(28px, 2.7vw,  40px)  !important; }
+
+  /* Fluid padding horizontal en páginas principales */
+  .px-6  { padding-left: clamp(16px, 1.6vw, 28px) !important; padding-right: clamp(16px, 1.6vw, 28px) !important; }
+  .px-8  { padding-left: clamp(20px, 2vw,   36px) !important; padding-right: clamp(20px, 2vw,   36px) !important; }
+  .py-6  { padding-top:  clamp(16px, 1.6vw, 28px) !important; padding-bottom: clamp(16px, 1.6vw, 28px) !important; }
+
+  /* Fluid gap en grids */
+  .gap-3 { gap: clamp(8px,  0.75vw, 14px) !important; }
+  .gap-4 { gap: clamp(12px, 1vw,    18px) !important; }
+  .gap-5 { gap: clamp(14px, 1.2vw,  22px) !important; }
+  .gap-6 { gap: clamp(16px, 1.6vw,  26px) !important; }
+}
+
 /* ─── Light mode ─────────────────────────────────────────────── */
 [data-theme="light"] {
   --bg-base:     #eef0f8;
