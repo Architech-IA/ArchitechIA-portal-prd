@@ -10,6 +10,7 @@ services:
       NEXTAUTH_SECRET: "6110428834f4eb77827220ef0c0472aff5324c500014aeac38f8f4be3226c088"
       NEXTAUTH_URL: "https://portal.architechia.co"
       NODE_ENV: production
+      HERMES_HOST: 172.16.0.1
       PORT: "3003"
       VPS_METRICS_URL: "http://host-gateway:9100"
       VPS_METRICS_TOKEN: "ArchitechIA2026*"
