@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
       headers: { 'Authorization': `Bearer ${SAGE.key}` },
     });
     if (!msgRes.ok) return NextResponse.json({ messages: [] });
-    return NextResponse.json(await msgRes.json());
+    const msgData = await msgRes.json(); return NextResponse.json({ messages: msgData.data ?? [] });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json({ sessions: data.data ?? [] });
 }
