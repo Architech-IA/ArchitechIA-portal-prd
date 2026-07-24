@@ -30,6 +30,33 @@ interface AgentConfig {
   capabilities: { label: string; icon: string }[];
 }
 
+
+/* ─── OpenCode Go models ────────────────────────────────────────── */
+const OPENCODE_MODELS = [
+  { id: 'kimi-k3',          label: 'Kimi K3',           group: 'Kimi' },
+  { id: 'kimi-k2.7-code',   label: 'Kimi K2.7 Code',    group: 'Kimi' },
+  { id: 'kimi-k2.6',        label: 'Kimi K2.6',         group: 'Kimi' },
+  { id: 'kimi-k2.5',        label: 'Kimi K2.5',         group: 'Kimi' },
+  { id: 'deepseek-v4-pro',  label: 'DeepSeek V4 Pro',   group: 'DeepSeek' },
+  { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash', group: 'DeepSeek' },
+  { id: 'glm-5.2',          label: 'GLM 5.2',           group: 'GLM' },
+  { id: 'glm-5.1',          label: 'GLM 5.1',           group: 'GLM' },
+  { id: 'glm-5',            label: 'GLM 5',             group: 'GLM' },
+  { id: 'minimax-m3',       label: 'MiniMax M3',        group: 'MiniMax' },
+  { id: 'minimax-m2.7',     label: 'MiniMax M2.7',      group: 'MiniMax' },
+  { id: 'minimax-m2.5',     label: 'MiniMax M2.5',      group: 'MiniMax' },
+  { id: 'qwen3.7-max',      label: 'Qwen 3.7 Max',      group: 'Qwen' },
+  { id: 'qwen3.7-plus',     label: 'Qwen 3.7 Plus',     group: 'Qwen' },
+  { id: 'qwen3.6-plus',     label: 'Qwen 3.6 Plus',     group: 'Qwen' },
+  { id: 'qwen3.5-plus',     label: 'Qwen 3.5 Plus',     group: 'Qwen' },
+  { id: 'mimo-v2-pro',      label: 'MiMo V2 Pro',       group: 'MiMo' },
+  { id: 'mimo-v2-omni',     label: 'MiMo V2 Omni',      group: 'MiMo' },
+  { id: 'mimo-v2.5-pro',    label: 'MiMo V2.5 Pro',     group: 'MiMo' },
+  { id: 'mimo-v2.5',        label: 'MiMo V2.5',         group: 'MiMo' },
+  { id: 'grok-4.5',         label: 'Grok 4.5',          group: 'Grok' },
+  { id: 'hy3',              label: 'Hunyuan 3',         group: 'Hunyuan' },
+  { id: 'hy3-preview',      label: 'Hunyuan 3 Preview', group: 'Hunyuan' },
+];
 /* ─── Static agent data ──────────────────────────────────────────────────── */
 const AGENTS: AgentConfig[] = [
   {
@@ -100,7 +127,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 /* ─── Chat panel ─────────────────────────────────────────────────────────── */
-function ChatPanel({ agent, status }: { agent: AgentConfig; status: AgentStatus }) {
+function ChatPanel({ agent, status, selectedModel }: { agent: AgentConfig; status: AgentStatus; selectedModel?: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -119,7 +146,7 @@ function ChatPanel({ agent, status }: { agent: AgentConfig; status: AgentStatus 
       const res = await fetch(`/api/agents/${agent.id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, sessionId }),
+        body: JSON.stringify({ message: msg, sessionId, model: selectedModel }),
       });
       const data = await res.json();
       if (data.sessionId) setSessionId(data.sessionId);
@@ -270,20 +297,38 @@ function HistoryPanel({ agent }: { agent: AgentConfig }) {
 }
 
 /* ─── Config panel ───────────────────────────────────────────────────────── */
-function ConfigPanel({ agent, status }: { agent: AgentConfig; status: AgentStatus }) {
+function ConfigPanel({ agent, status, selectedModel, onModelChange }: { agent: AgentConfig; status: AgentStatus; selectedModel?: string; onModelChange?: (m: string) => void }) {
   const mcpTools = agent.id === 'sage'
     ? ['get_backlog', 'get_backlog_sprints', 'create_backlog_item', 'update_backlog_item', 'get_meetings', 'create_meeting']
     : ['get_backlog', 'get_backlog_sprints', 'create_backlog_item', 'update_backlog_item', 'get_meetings', 'create_meeting'];
 
   return (
     <div className="space-y-5 text-sm">
-      {/* Model info */}
+      {/* Model selector */}
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Modelo</p>
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" /></svg>
-          <span className="font-mono text-xs" style={{ color: agent.color.accent }}>{agent.model}</span>
-        </div>
+        {agent.id === 'nexus' && onModelChange ? (
+          <div className="relative">
+            <select
+              value={selectedModel || 'kimi-k2.5'}
+              onChange={e => onModelChange(e.target.value)}
+              className="w-full appearance-none px-3 py-2.5 pr-8 rounded-xl text-xs font-mono outline-none cursor-pointer"
+              style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${agent.color.border}`, color: agent.color.accent }}
+            >
+              {OPENCODE_MODELS.map(m => (
+                <option key={m.id} value={m.id} style={{ background: '#1e293b', color: '#e2e8f0' }}>
+                  {m.group} — {m.label}
+                </option>
+              ))}
+            </select>
+            <svg className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" /></svg>
+            <span className="font-mono text-xs" style={{ color: agent.color.accent }}>{agent.model}</span>
+          </div>
+        )}
       </div>
 
       {/* Status */}
@@ -335,6 +380,7 @@ function ConfigPanel({ agent, status }: { agent: AgentConfig; status: AgentStatu
 function AgentCard({ agent, status, idx }: { agent: AgentConfig; status: AgentStatus; idx: number }) {
   const [tab, setTab] = useState<Tab>('chat');
   const [mounted, setMounted] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('kimi-k2.5');
   useEffect(() => { setTimeout(() => setMounted(true), idx * 120); }, [idx]);
 
   return (
@@ -373,9 +419,9 @@ function AgentCard({ agent, status, idx }: { agent: AgentConfig; status: AgentSt
       </div>
 
       <div className="border-t px-5 pt-4 pb-5 flex-1" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        {tab === 'chat'    && <ChatPanel agent={agent} status={status} />}
+        {tab === 'chat'    && <ChatPanel agent={agent} status={status} selectedModel={agent.id === 'nexus' ? selectedModel : undefined} />}
         {tab === 'history' && <HistoryPanel agent={agent} />}
-        {tab === 'config'  && <ConfigPanel agent={agent} status={status} />}
+        {tab === 'config'  && <ConfigPanel agent={agent} status={status} selectedModel={selectedModel} onModelChange={agent.id === 'nexus' ? setSelectedModel : undefined} />}
       </div>
     </div>
   );

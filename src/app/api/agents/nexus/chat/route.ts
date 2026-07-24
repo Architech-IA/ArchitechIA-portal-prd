@@ -6,7 +6,7 @@ const NEXUS = { port: 8642, key: 'nexus-portal-key-a1b2c3d4e5f6' };
 export async function POST(request: NextRequest) {
   if (!await isAuthed(request)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   const body = await request.json();
-  const { message, sessionId } = body;
+  const { message, sessionId, model } = body;
   if (!message) return NextResponse.json({ error: 'message requerido' }, { status: 400 });
 
   const headers: Record<string, string> = {
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: 'hermes-agent',
+      model: model || 'hermes-agent',
       messages: [{ role: 'user', content: message }],
       stream: false,
     }),
