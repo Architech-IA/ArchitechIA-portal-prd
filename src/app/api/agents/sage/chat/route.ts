@@ -9,31 +9,35 @@ export async function POST(request: NextRequest) {
   const { message, sessionId } = body;
   if (!message) return NextResponse.json({ error: 'message requerido' }, { status: 400 });
 
+  const host = process.env.HERMES_HOST ?? '172.16.0.1';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${SAGE.key}`,
   };
   if (sessionId) headers['X-Hermes-Session-Id'] = sessionId;
 
-  const res = await fetch(`http://172.16.0.1:${SAGE.port}/v1/chat/completions`, {
+  const upstream = await fetch(`http://${host}:${SAGE.port}/v1/chat/completions`, {
     method: 'POST',
     headers,
     body: JSON.stringify({
       model: 'hermes-agent',
       messages: [{ role: 'user', content: message }],
-      stream: false,
+      stream: true,
     }),
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    return NextResponse.json({ error: text }, { status: res.status });
+  if (!upstream.ok) {
+    const text = await upstream.text();
+    return NextResponse.json({ error: text }, { status: upstream.status });
   }
 
-  const data = await res.json();
-  const sessionIdOut = res.headers.get('X-Hermes-Session-Id') ?? sessionId ?? null;
-  return NextResponse.json({
-    reply: data.choices?.[0]?.message?.content ?? '',
-    sessionId: sessionIdOut,
-  });
+  const outSessionId = upstream.headers.get('X-Hermes-Session-Id') ?? sessionId ?? null;
+  const responseHeaders: Record<string, string> = {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  };
+  if (outSessionId) responseHeaders['X-Hermes-Session-Id'] = outSessionId;
+
+  return new Response(upstream.body, { headers: responseHeaders });
 }
