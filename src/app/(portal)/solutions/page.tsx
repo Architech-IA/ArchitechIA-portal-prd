@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Package, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X, ExternalLink, DollarSign, Tag, Calendar, User, Search, Play, Box, Users, Layout, Globe, BarChart3, Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban } from 'lucide-react'
+import { Package, Pencil, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X, ExternalLink, DollarSign, Tag, Calendar, User, Search, Play, Box, Users, Layout, Globe, BarChart3, Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban } from 'lucide-react'
 import { APP_CATEGORIES } from '@/lib/app-types'
 import type { AppInstance } from '@/lib/app-types'
 
@@ -181,7 +181,7 @@ const ESTADO_COLOR: Record<string, string> = {
   INACTIVO:        '#6b7280',
 }
 
-const EMPTY_FORM = { nombre: '', tipo: 'PROJECT', estado: 'ACTIVO', descripcion: '', valorEstimado: '' }
+const EMPTY_FORM = { id: '', nombre: '', tipo: 'PROJECT', estado: 'ACTIVO', descripcion: '', valorEstimado: '' }
 
 export default function SolutionsHome() {
   const [counts, setCounts] = useState<Record<string, number | null>>({})
@@ -239,8 +239,9 @@ export default function SolutionsHome() {
     if (!form.nombre.trim()) { setError('El nombre es requerido'); return }
     setSaving(true); setError('')
     try {
-      const res = await fetch('/api/soluciones', {
-        method: 'POST',
+      const isEdit = !!form.id
+      const res = await fetch(isEdit ? `/api/soluciones/${form.id}` : '/api/soluciones', {
+        method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre: form.nombre.trim(),
@@ -252,11 +253,12 @@ export default function SolutionsHome() {
       })
       if (!res.ok) throw new Error('Error al crear')
       setShowModal(false)
+      setDetail(null)
       setForm(EMPTY_FORM)
       setLoadingList(true)
       fetchAll()
     } catch {
-      setError('No se pudo crear la solución')
+      setError('No se pudo guardar la solución')
     } finally {
       setSaving(false)
     }
@@ -621,10 +623,21 @@ export default function SolutionsHome() {
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setDetail(null)}
-                    className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-400"
+                    className="py-2 px-4 rounded-lg text-xs font-medium text-gray-400"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                   >
                     Cerrar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setForm({ id: detail.id, nombre: detail.nombre, tipo: detail.tipo, estado: detail.estado, descripcion: detail.descripcion || '', valorEstimado: String(detail.valorEstimado || 0) })
+                      setError('')
+                      setShowModal(true)
+                    }}
+                    className="py-2 px-4 rounded-lg text-xs font-medium text-gray-300 flex items-center gap-1.5"
+                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+                  >
+                    <Pencil size={11} /> Editar
                   </button>
                   <Link
                     href={meta.href}
@@ -750,7 +763,7 @@ export default function SolutionsHome() {
             style={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)' }}
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-white">Nueva solución</h2>
+              <h2 className="text-sm font-semibold text-white">{form.id ? 'Editar solución' : 'Nueva solución'}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-300">
                 <X size={16} />
               </button>
