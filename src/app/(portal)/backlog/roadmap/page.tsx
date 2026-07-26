@@ -1,7 +1,8 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
-import { Layers, ChevronRight, ExternalLink, Loader2 } from 'lucide-react'
+import { usePageActions } from '@/lib/pageActionsContext'
+import { Layers, ChevronRight, ExternalLink, Loader2, Rocket, Map as MapIcon } from 'lucide-react'
 import Link from 'next/link'
 
 interface Sprint {
@@ -79,6 +80,36 @@ export default function SolutionPage() {
       .then(data => { setSoluciones(data); setLoading(false) })
   }, [])
 
+  const { setActions } = usePageActions()
+
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          Backlog
+        </Link>
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
+        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#93c5fd' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          <Rocket size={10}/> Sprints
+        </Link>
+        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,147,117,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1D9375' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          <Layers size={10}/> Epicas
+        </Link>
+        <Link href="/backlog/roadmap" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
+          style={{ background: 'rgba(127,119,221,0.2)', color: '#7F77DD', border: '1px solid rgba(127,119,221,0.3)' }}>
+          <MapIcon size={10}/> Solution
+        </Link>
+      </div>
+    )
+    return () => setActions(null)
+  }, [])
+
   const toggleExpand = (id: string) => setExpanded(p => ({ ...p, [id]: !p[id] }))
 
   const totalEpics = soluciones.reduce((a, s) => a + s.epics.length, 0)
@@ -86,28 +117,7 @@ export default function SolutionPage() {
 
   return (
     <div className="min-h-screen bg-[#080c12] text-white p-6 font-sans">
-      <div className="flex items-start justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-[#7F77DD]/10 border border-[#7F77DD]/20 flex items-center justify-center flex-shrink-0">
-            <Layers size={18} className="text-[#7F77DD]"/>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Solutions</h1>
-            <p className="text-xs text-white/30 mt-0.5">{soluciones.length} solutions · {totalEpics} epicas · {totalSprints} sprints</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/backlog" className="px-3 py-2 rounded-lg border border-white/10 text-xs text-white/50 hover:text-white/70 transition-colors flex items-center gap-1.5">
-            <Layers size={12}/> Backlog
-          </Link>
-          <Link href="/backlog/epics" className="px-3 py-2 rounded-lg border border-white/10 text-xs text-white/50 hover:text-white/70 transition-colors flex items-center gap-1.5">
-            <Layers size={12}/> Epicas
-          </Link>
-          <Link href="/solutions" className="px-3 py-2 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 bg-[#7F77DD]/80 hover:bg-[#7F77DD] transition-colors">
-            <ExternalLink size={13}/> Gestionar Solutions
-          </Link>
-        </div>
-      </div>
+
 
       {loading ? (
         <div className="flex items-center justify-center py-24">
