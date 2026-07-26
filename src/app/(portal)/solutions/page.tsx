@@ -19,12 +19,12 @@ interface Solucion {
   lead?: { id: string; companyName: string; contactName: string } | null
 }
 
-const TIPO_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  PROJECT:     { label: 'Project',     color: '#3b82f6', icon: FolderKanban },
-  DEMO:        { label: 'Pilot',       color: '#f59e0b', icon: FlaskConical },
-  PARTNERSHIP: { label: 'Partnership', color: '#1D9375', icon: Handshake },
-  PRODUCT:     { label: 'Product',     color: '#7F77DD', icon: Package },
-  INTERN:      { label: 'Intern',      color: '#9aa6b8', icon: Building2 },
+const TIPO_META: Record<string, { label: string; color: string; icon: React.ElementType; href: string }> = {
+  PROJECT:     { label: 'Project',     color: '#3b82f6', icon: FolderKanban, href: '/solutions/projects' },
+  DEMO:        { label: 'Pilot',       color: '#f59e0b', icon: FlaskConical,  href: '/solutions/pilots' },
+  PARTNERSHIP: { label: 'Partnership', color: '#1D9375', icon: Handshake,     href: '/solutions/partnership' },
+  PRODUCT:     { label: 'Product',     color: '#7F77DD', icon: Package,       href: '/solutions/productos' },
+  INTERN:      { label: 'Intern',      color: '#9aa6b8', icon: Building2,     href: '/solutions/intern' },
 }
 
 const ESTADO_COLOR: Record<string, string> = {
