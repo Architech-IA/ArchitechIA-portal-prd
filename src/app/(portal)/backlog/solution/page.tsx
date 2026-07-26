@@ -135,7 +135,7 @@ export default function SolutionPage() {
       ) : (
         <div className="space-y-2">
           {soluciones.map(sol => {
-            const isExp = expanded[sol.id] !== false
+            const isExp = expanded[sol.id] === true
             const color = TIPO_COLOR[sol.tipo] || '#7F77DD'
             const doneEpics = sol.epics.filter(e => e.status === 'COMPLETED').length
             const pct = sol.epics.length > 0 ? Math.round((doneEpics / sol.epics.length) * 100) : 0
