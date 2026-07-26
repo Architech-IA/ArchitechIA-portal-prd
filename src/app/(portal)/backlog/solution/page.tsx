@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePageActions } from '@/lib/pageActionsContext'
-import { Layers, ChevronRight, ExternalLink, Loader2, Rocket, Map as MapIcon } from 'lucide-react'
+import { Layers, ChevronRight, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 interface Sprint {
@@ -133,39 +133,48 @@ export default function SolutionPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-2">
           {soluciones.map(sol => {
             const isExp = expanded[sol.id] !== false
             const color = TIPO_COLOR[sol.tipo] || '#7F77DD'
             const doneEpics = sol.epics.filter(e => e.status === 'COMPLETED').length
             const pct = sol.epics.length > 0 ? Math.round((doneEpics / sol.epics.length) * 100) : 0
+            const TIPO_ICON: Record<string, React.ElementType> = { PROJECT: FolderKanban, DEMO: FlaskConical, PARTNERSHIP: Handshake, PRODUCT: Package, INTERN: Building2 }
+            const Icon = TIPO_ICON[sol.tipo] || Package
 
             return (
-              <div key={sol.id} className="rounded-2xl border border-white/8 bg-[#0c1118] overflow-hidden">
-                <div className="flex items-center gap-4 px-5 py-4 cursor-pointer select-none" onClick={() => toggleExpand(sol.id)}>
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }}/>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h2 className="text-sm font-bold text-white">{sol.nombre}</h2>
+              <div key={sol.id} className="rounded-2xl overflow-hidden"
+                style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#0c1118' }}>
+                <div className="flex items-center gap-4 px-5 py-3.5">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
+                    <Icon size={14} style={{ color }}/>
+                  </div>
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleExpand(sol.id)}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-white">{sol.nombre}</span>
                       {sol.solucionCode && (
-                        <span className="text-xs px-2 py-0.5 rounded-full border font-mono font-semibold" style={{ color, borderColor: `${color}30`, background: `${color}10` }}>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
                           {sol.solucionCode}
                         </span>
                       )}
-                      <span className="text-xs px-2 py-0.5 rounded-full border font-semibold" style={{ color, borderColor: `${color}20`, background: `${color}08` }}>
+                      <span className="text-xs px-1.5 py-0.5 rounded font-semibold"
+                        style={{ color, background: `${color}15` }}>
                         {TIPO_LABEL[sol.tipo] || sol.tipo}
                       </span>
-                      <span className="text-xs text-white/25">{sol.epics.length} epicas</span>
+                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>{sol.epics.length} epicas</span>
                     </div>
-                    {sol.descripcion && <p className="text-xs text-white/35 mt-0.5 truncate">{sol.descripcion}</p>}
+                    {sol.descripcion && <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.3)' }}>{sol.descripcion}</p>}
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="w-24 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }}/>
                     </div>
-                    <span className="text-xs text-white/30 w-8 text-right tabular-nums">{pct}%</span>
+                    <span className="text-xs tabular-nums w-7 text-right" style={{ color: 'rgba(255,255,255,0.25)' }}>{pct}%</span>
+                    <ChevronDown size={14} className={`transition-transform cursor-pointer ${isExp ? 'rotate-180' : ''}`}
+                      style={{ color: 'rgba(255,255,255,0.25)' }} onClick={() => toggleExpand(sol.id)}/>
                   </div>
-                  <ChevronRight size={15} className={`text-white/25 transition-transform ml-2 ${isExp ? 'rotate-90' : ''}`}/>
                 </div>
 
                 {isExp && (
