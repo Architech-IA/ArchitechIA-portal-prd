@@ -283,6 +283,7 @@ export default function SolutionsHome() {
     paddingRight: '32px',
     cursor: 'pointer',
     colorScheme: 'dark',
+    backgroundColor: '#0e1420',
   }
 
   return (
@@ -783,7 +784,7 @@ export default function SolutionsHome() {
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Estado</label>
                   <select
-                    style={inputStyle}
+                    style={selectStyle}
                     value={form.estado}
                     onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}
                   >
