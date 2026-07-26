@@ -112,7 +112,7 @@ function EpicModal({ initial, roadmaps, soluciones, onSave, onClose }: {
             </div>
           </div>
           <div>
-            <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Roadmap</label>
+            <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Solution</label>
             <select value={form.roadmapId} onChange={e => setForm(f => ({ ...f, roadmapId: e.target.value }))}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/30">
               <option value="">Sin roadmap</option>
@@ -222,7 +222,7 @@ export default function EpicsPage() {
             <Rocket size={12}/> Backlog
           </Link>
           <Link href="/backlog/roadmap" className="px-3 py-2 rounded-lg border border-white/10 text-xs text-white/50 hover:text-white/70 transition-colors flex items-center gap-1.5">
-            <Map size={12}/> Roadmap
+            <Map size={12}/> Solution
           </Link>
           <button onClick={() => setShowModal(true)}
             className="px-3 py-2 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 bg-[#1D9375]/80 hover:bg-[#1D9375] transition-colors">

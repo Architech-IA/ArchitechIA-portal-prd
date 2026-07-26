@@ -81,7 +81,7 @@ function RoadmapModal({ initial, onSave, onClose }: {
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-[#0e1420] border border-white/10 rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-bold text-white">{initial?.id ? 'Editar Roadmap' : 'Nuevo Roadmap'}</h2>
+          <h2 className="text-base font-bold text-white">{initial?.id ? 'Editar Solution' : 'Nueva Solution'}</h2>
           <button onClick={onClose} className="text-white/40 hover:text-white/70 transition-colors"><X size={18}/></button>
         </div>
         <div className="space-y-4">
@@ -89,7 +89,7 @@ function RoadmapModal({ initial, onSave, onClose }: {
             <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Nombre *</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/30"
-              placeholder="ej: Roadmap Q3 2026"/>
+              placeholder="ej: Solution Q3 2026"/>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -108,7 +108,7 @@ function RoadmapModal({ initial, onSave, onClose }: {
             <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Descripción</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/30 resize-none"
-              placeholder="Objetivo del roadmap…"/>
+              placeholder="Objetivo de la solution…"/>
           </div>
           <div>
             <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Color</label>
@@ -127,7 +127,7 @@ function RoadmapModal({ initial, onSave, onClose }: {
             className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-40 flex items-center justify-center gap-2"
             style={{ background: form.color }}>
             {saving ? <Loader2 size={14} className="animate-spin"/> : null}
-            {initial?.id ? 'Guardar' : 'Crear Roadmap'}
+            {initial?.id ? 'Guardar' : 'Crear Solution'}
           </button>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function RoadmapPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este roadmap? Las épicas quedarán sin roadmap.')) return
+    if (!confirm('¿Eliminar esta solution? Las épicas quedarán sin solution.')) return
     await fetch(`/api/backlog/roadmap?id=${id}`, { method: 'DELETE' })
     load()
   }
@@ -179,8 +179,8 @@ export default function RoadmapPage() {
             <Map size={18} className="text-[#7F77DD]"/>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Roadmap</h1>
-            <p className="text-xs text-white/30 mt-0.5">{roadmaps.length} roadmaps · {totalEpics} épicas · {totalSprints} sprints</p>
+            <h1 className="text-xl font-bold text-white tracking-tight">Solution</h1>
+            <p className="text-xs text-white/30 mt-0.5">{roadmaps.length} solutions · {totalEpics} épicas · {totalSprints} sprints</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default function RoadmapPage() {
           </Link>
           <button onClick={() => setShowModal(true)}
             className="px-3 py-2 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 bg-[#7F77DD]/80 hover:bg-[#7F77DD] transition-colors">
-            <Plus size={13}/> Nuevo Roadmap
+            <Plus size={13}/> Nueva Solution
           </button>
         </div>
       </div>
@@ -205,10 +205,10 @@ export default function RoadmapPage() {
       ) : roadmaps.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Map size={48} className="text-white/10 mb-4"/>
-          <p className="text-white/30 text-sm font-medium">No hay roadmaps todavía</p>
-          <p className="text-white/15 text-xs mt-1">Creá el primer roadmap para organizar las épicas por quarter</p>
+          <p className="text-white/30 text-sm font-medium">No hay solutions todavía</p>
+          <p className="text-white/15 text-xs mt-1">Creá la primera solution para organizar las épicas por quarter</p>
           <button onClick={() => setShowModal(true)} className="mt-6 px-4 py-2 rounded-lg bg-[#7F77DD]/80 hover:bg-[#7F77DD] text-sm font-semibold text-white transition-colors flex items-center gap-2">
-            <Plus size={14}/> Crear primer Roadmap
+            <Plus size={14}/> Crear primera Solution
           </button>
         </div>
       ) : (
