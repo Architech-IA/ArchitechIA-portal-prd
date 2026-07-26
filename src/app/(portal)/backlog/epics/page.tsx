@@ -23,14 +23,11 @@ interface Epic {
   color: string
   startDate: string | null
   endDate: string | null
-  roadmapId: string | null
-  roadmap: { id: string; name: string; quarter: string | null } | null
   solucion: { id: string; nombre: string } | null
   sprints: Sprint[]
   _count: { sprints: number }
 }
 
-interface Roadmap { id: string; name: string; quarter: string | null }
 interface Solucion { id: string; nombre: string }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -44,11 +41,10 @@ const SPRINT_STATUS_COLOR: Record<string, string> = {
   PLANNED: '#3d4e62', IN_PROGRESS: '#3b82f6', DONE: '#34d399', COMPLETED: '#34d399', CANCELLED: '#f87171'
 }
 
-const EMPTY_FORM = { name: '', description: '', status: 'ACTIVE', priority: 'MEDIUM', color: '#7F77DD', startDate: '', endDate: '', roadmapId: '', solucionId: '' }
+const EMPTY_FORM = { name: '', description: '', status: 'ACTIVE', priority: 'MEDIUM', color: '#7F77DD', startDate: '', endDate: '', solucionId: '' }
 
-function EpicModal({ initial, roadmaps, soluciones, onSave, onClose }: {
+function EpicModal({ initial, soluciones, onSave, onClose }: {
   initial?: Partial<typeof EMPTY_FORM & { id: string }>
-  roadmaps: Roadmap[]
   soluciones: Solucion[]
   onSave: (data: typeof EMPTY_FORM & { id?: string }) => Promise<void>
   onClose: () => void
@@ -113,22 +109,12 @@ function EpicModal({ initial, roadmaps, soluciones, onSave, onClose }: {
           </div>
           <div>
             <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Solution</label>
-            <select value={form.roadmapId} onChange={e => setForm(f => ({ ...f, roadmapId: e.target.value }))}
+            <select value={form.solucionId} onChange={e => setForm(f => ({ ...f, solucionId: e.target.value }))}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/30">
-              <option value="">Sin roadmap</option>
-              {roadmaps.map(r => <option key={r.id} value={r.id}>{r.name}{r.quarter ? ` (${r.quarter})` : ''}</option>)}
+              <option value="">Sin solution</option>
+              {soluciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
           </div>
-          {soluciones.length > 0 && (
-            <div>
-              <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Solución asociada</label>
-              <select value={form.solucionId} onChange={e => setForm(f => ({ ...f, solucionId: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-white/30">
-                <option value="">Sin solución</option>
-                {soluciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-              </select>
-            </div>
-          )}
           <div>
             <label className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Color</label>
             <div className="flex gap-2 flex-wrap">
@@ -156,7 +142,6 @@ function EpicModal({ initial, roadmaps, soluciones, onSave, onClose }: {
 
 export default function EpicsPage() {
   const [epics, setEpics] = useState<Epic[]>([])
-  const [roadmaps, setRoadmaps] = useState<Roadmap[]>([])
   const [soluciones, setSoluciones] = useState<Solucion[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -166,13 +151,11 @@ export default function EpicsPage() {
 
   const load = async () => {
     setLoading(true)
-    const [epicsRes, roadmapsRes, solRes] = await Promise.all([
+    const [epicsRes, solRes] = await Promise.all([
       fetch('/api/backlog/epics'),
-      fetch('/api/backlog/roadmap'),
       fetch('/api/soluciones'),
     ])
     setEpics(await epicsRes.json())
-    setRoadmaps(await roadmapsRes.json())
     if (solRes.ok) setSoluciones(await solRes.json())
     setLoading(false)
   }
@@ -272,9 +255,9 @@ export default function EpicsPage() {
                   <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleExpand(epic.id)}>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-white">{epic.name}</span>
-                      {epic.roadmap && (
+                      {epic.solucion && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/8 text-white/40">
-                          {epic.roadmap.quarter || epic.roadmap.name}
+                          {epic.solucion.nombre}
                         </span>
                       )}
                       <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ color: PRIORITY_COLORS[epic.priority], background: `${PRIORITY_COLORS[epic.priority]}15` }}>
@@ -347,9 +330,8 @@ export default function EpicsPage() {
             status: editing.status, priority: editing.priority, color: editing.color,
             startDate: editing.startDate ? editing.startDate.slice(0, 10) : '',
             endDate: editing.endDate ? editing.endDate.slice(0, 10) : '',
-            roadmapId: editing.roadmapId || '', solucionId: editing.solucion?.id || '',
+            solucionId: editing.solucion?.id || '',
           } : undefined}
-          roadmaps={roadmaps}
           soluciones={soluciones}
           onSave={handleSave}
           onClose={() => { setShowModal(false); setEditing(null) }}
