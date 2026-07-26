@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { usePageActions } from '@/lib/pageActionsContext'
 import { useSession } from 'next-auth/react'
-import { Plus, LayoutGrid, List, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye, Upload, CheckSquare, Square, Rocket, Calendar } from 'lucide-react'
+import { Plus, LayoutGrid, List, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye, Upload, CheckSquare, Square, Rocket, Calendar, Layers, Map as MapIcon } from 'lucide-react'
 import BacklogItemDetail from '@/components/BacklogItemDetail'
 
 interface Solucion {
@@ -423,6 +424,9 @@ export default function BacklogPage() {
       <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <button onClick={() => setMainView('backlog')} className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all" style={{ background: mainView === 'backlog' ? 'rgba(249,115,22,0.2)' : 'transparent', color: mainView === 'backlog' ? '#f97316' : '#6b7280', border: mainView === 'backlog' ? '1px solid rgba(249,115,22,0.3)' : '1px solid transparent' }} onMouseEnter={e => { if (mainView !== 'backlog') { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db'; } }} onMouseLeave={e => { if (mainView !== 'backlog') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280'; } }}>Backlog</button>
         <button onClick={() => setMainView('sprint')} className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ background: mainView === 'sprint' ? 'rgba(16,185,129,0.2)' : 'transparent', color: mainView === 'sprint' ? '#10b981' : '#6b7280', border: mainView === 'sprint' ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent' }} onMouseEnter={e => { if (mainView !== 'sprint') { (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db'; } }} onMouseLeave={e => { if (mainView !== 'sprint') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280'; } }}><Rocket size={10} /> Sprint</button>
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }} />
+        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,147,117,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1D9375'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280'; }}><Layers size={10} /> Épicas</Link>
+        <Link href="/backlog/roadmap" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(127,119,221,0.08)'; (e.currentTarget as HTMLElement).style.color = '#7F77DD'; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280'; }}><MapIcon size={10} /> Roadmap</Link>
       </div>
     )
     return () => setActions(null)
