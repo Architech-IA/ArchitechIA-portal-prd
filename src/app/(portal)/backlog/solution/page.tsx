@@ -78,6 +78,7 @@ export default function SolutionPage() {
   const [soluciones, setSoluciones] = useState<Solucion[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [filterTipo, setFilterTipo] = useState<string>('ALL')
   const { setActions } = usePageActions()
 
   useEffect(() => {
@@ -116,6 +117,17 @@ export default function SolutionPage() {
 
   const toggleExpand = (id: string) => setExpanded(p => ({ ...p, [id]: !p[id] }))
 
+  const FILTER_TABS = [
+    { key: 'ALL', label: 'Todas', color: '#7F77DD' },
+    { key: 'PROJECT', label: 'Project', color: TIPO_COLOR.PROJECT },
+    { key: 'DEMO', label: 'Pilot', color: TIPO_COLOR.DEMO },
+    { key: 'PARTNERSHIP', label: 'Partnership', color: TIPO_COLOR.PARTNERSHIP },
+    { key: 'PRODUCT', label: 'Product', color: TIPO_COLOR.PRODUCT },
+    { key: 'INTERN', label: 'Intern', color: TIPO_COLOR.INTERN },
+  ]
+
+  const filtered = filterTipo === 'ALL' ? soluciones : soluciones.filter(s => s.tipo === filterTipo)
+
   return (
     <div className="flex flex-col h-full overflow-auto p-6" style={{ background: '#080c12' }}>
       {loading ? (
@@ -133,8 +145,34 @@ export default function SolutionPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-2">
-          {soluciones.map(sol => {
+        <>
+          {/* Filter tabs */}
+          <div className="flex items-center gap-0.5 rounded-lg p-0.5 mb-5 self-start"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {FILTER_TABS.map(tab => {
+              const active = filterTipo === tab.key
+              const count = tab.key === 'ALL' ? soluciones.length : soluciones.filter(s => s.tipo === tab.key).length
+              if (tab.key !== 'ALL' && count === 0) return null
+              return (
+                <button key={tab.key}
+                  onClick={() => setFilterTipo(tab.key)}
+                  className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1.5"
+                  style={{
+                    background: active ? `${tab.color}20` : 'transparent',
+                    color: active ? tab.color : '#6b7280',
+                    border: active ? `1px solid ${tab.color}30` : '1px solid transparent',
+                  }}
+                  onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' } }}
+                  onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' } }}>
+                  {tab.label}
+                  <span className="tabular-nums" style={{ opacity: 0.55 }}>{count}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="space-y-2">
+          {filtered.map(sol => {
             const isExp = expanded[sol.id] === true
             const color = TIPO_COLOR[sol.tipo] || '#7F77DD'
             const Icon = TIPO_ICON[sol.tipo] || Package
@@ -300,7 +338,8 @@ export default function SolutionPage() {
               </div>
             )
           })}
-        </div>
+          </div>
+        </>
       )}
     </div>
   )
