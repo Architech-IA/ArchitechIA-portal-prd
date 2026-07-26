@@ -85,6 +85,7 @@ interface SectionDef {
 
 interface Solucion {
   id: string
+  solucionCode: string | null
   nombre: string
   tipo: string
   estado: string
@@ -564,8 +565,20 @@ export default function SolutionsHome() {
               {/* Header strip */}
               <div className="px-5 py-4 flex items-start justify-between"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: meta.color + '11' }}>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: meta.color }}>{meta.label}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: meta.color }}>{meta.label}</p>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                      style={{ background: estadoColor + '22', color: estadoColor, border: `1px solid ${estadoColor}44` }}>
+                      {detail.estado}
+                    </span>
+                    {detail.solucionCode && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold"
+                        style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        {detail.solucionCode}
+                      </span>
+                    )}
+                  </div>
                   <h2 className="text-sm font-semibold text-white leading-snug">{detail.nombre}</h2>
                 </div>
                 <button onClick={() => setDetail(null)} className="text-gray-500 hover:text-gray-300 ml-3 flex-shrink-0 mt-0.5">
@@ -574,19 +587,13 @@ export default function SolutionsHome() {
               </div>
 
               <div className="p-5 space-y-4">
-                {/* Estado + valor */}
-                <div className="flex items-center gap-3">
-                  <span className="text-xs px-2.5 py-1 rounded-full font-medium"
-                    style={{ background: estadoColor + '22', color: estadoColor, border: `1px solid ${estadoColor}44` }}>
-                    {detail.estado}
-                  </span>
-                  {detail.valorEstimado > 0 && (
+                {/* Valor */}
+                {detail.valorEstimado > 0 && (
                     <span className="flex items-center gap-1 text-xs text-gray-400">
                       <DollarSign size={11} />
                       {detail.valorEstimado.toLocaleString()} USD
                     </span>
-                  )}
-                </div>
+                )}
 
                 {/* Descripcion */}
                 {detail.descripcion && (
