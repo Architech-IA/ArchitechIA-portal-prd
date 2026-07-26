@@ -75,7 +75,7 @@ export default function SolutionPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    fetch('/api/backlog/roadmap')
+    fetch('/api/backlog/solution')
       .then(r => r.json())
       .then(data => { setSoluciones(data); setLoading(false) })
   }, [])
@@ -101,7 +101,7 @@ export default function SolutionPage() {
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Layers size={10}/> Epicas
         </Link>
-        <Link href="/backlog/roadmap" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
+        <Link href="/backlog/solution" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
           style={{ background: 'rgba(127,119,221,0.2)', color: '#7F77DD', border: '1px solid rgba(127,119,221,0.3)' }}>
           <MapIcon size={10}/> Solution
         </Link>
