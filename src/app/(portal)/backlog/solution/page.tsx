@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePageActions } from '@/lib/pageActionsContext'
-import { Layers, ChevronRight, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown } from 'lucide-react'
+import { Layers, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 interface Sprint {
@@ -42,45 +42,49 @@ const TIPO_COLOR: Record<string, string> = {
 }
 
 const TIPO_LABEL: Record<string, string> = {
-  PROJECT:     'Proyecto',
-  DEMO:        'Demo',
+  PROJECT:     'Project',
+  DEMO:        'Pilot',
   PARTNERSHIP: 'Partnership',
-  PRODUCT:     'Producto',
-  INTERN:      'Interno',
+  PRODUCT:     'Product',
+  INTERN:      'Intern',
+}
+
+const TIPO_ICON: Record<string, React.ElementType> = {
+  PROJECT: FolderKanban, DEMO: FlaskConical, PARTNERSHIP: Handshake, PRODUCT: Package, INTERN: Building2
 }
 
 const PRIORITY_COLOR: Record<string, string> = {
-  CRITICAL: '#f87171',
-  HIGH:     '#fb923c',
-  MEDIUM:   '#fbbf24',
-  LOW:      '#9aa6b8',
+  CRITICAL: '#f87171', HIGH: '#fb923c', MEDIUM: '#fbbf24', LOW: '#9aa6b8',
+}
+const PRIORITY_LABEL: Record<string, string> = {
+  CRITICAL: 'Crítica', HIGH: 'Alta', MEDIUM: 'Media', LOW: 'Baja',
 }
 
 const SPRINT_STATUS: Record<string, { label: string; color: string }> = {
-  PLANNED:     { label: 'Planificado', color: '#3d4e62' },
+  PLANNED:     { label: 'Planificado', color: '#4b5563' },
   IN_PROGRESS: { label: 'En progreso', color: '#3b82f6' },
   DONE:        { label: 'Completado',  color: '#34d399' },
-  CANCELLED:   { label: 'Cancelado',  color: '#f87171' },
+  COMPLETED:   { label: 'Completado',  color: '#34d399' },
+  CANCELLED:   { label: 'Cancelado',   color: '#f87171' },
 }
 
-const EPIC_STATUS: Record<string, { label: string; dot: string }> = {
-  ACTIVE:    { label: 'Activa',    dot: '#34d399' },
-  COMPLETED: { label: 'Completa',  dot: '#7F77DD' },
-  ARCHIVED:  { label: 'Archivada', dot: '#3d4e62' },
+const EPIC_STATUS: Record<string, { label: string; color: string }> = {
+  ACTIVE:    { label: 'Activa',    color: '#34d399' },
+  COMPLETED: { label: 'Completa',  color: '#7F77DD' },
+  ARCHIVED:  { label: 'Archivada', color: '#4b5563' },
 }
 
 export default function SolutionPage() {
   const [soluciones, setSoluciones] = useState<Solucion[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const { setActions } = usePageActions()
 
   useEffect(() => {
     fetch('/api/backlog/solution')
       .then(r => r.json())
       .then(data => { setSoluciones(data); setLoading(false) })
   }, [])
-
-  const { setActions } = usePageActions()
 
   useEffect(() => {
     setActions(
@@ -112,24 +116,20 @@ export default function SolutionPage() {
 
   const toggleExpand = (id: string) => setExpanded(p => ({ ...p, [id]: !p[id] }))
 
-  const totalEpics = soluciones.reduce((a, s) => a + s.epics.length, 0)
-  const totalSprints = soluciones.reduce((a, s) => a + s.epics.reduce((b, e) => b + e.sprints.length, 0), 0)
-
   return (
-    <div className="min-h-screen bg-[#080c12] text-white p-6 font-sans">
-
-
+    <div className="flex flex-col h-full overflow-auto p-6" style={{ background: '#080c12' }}>
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <Loader2 size={24} className="animate-spin text-white/20"/>
+        <div className="flex items-center justify-center py-32">
+          <Loader2 size={22} className="animate-spin" style={{ color: 'rgba(255,255,255,0.15)' }}/>
         </div>
       ) : soluciones.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <Layers size={48} className="text-white/10 mb-4"/>
-          <p className="text-white/30 text-sm font-medium">No hay solutions todavia</p>
-          <p className="text-white/15 text-xs mt-1">Crea una solution desde el modulo de Solutions</p>
-          <Link href="/solutions" className="mt-6 px-4 py-2 rounded-lg bg-[#7F77DD]/80 hover:bg-[#7F77DD] text-sm font-semibold text-white transition-colors flex items-center gap-2">
-            <ExternalLink size={14}/> Ir a Solutions
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <MapIcon size={40} style={{ color: 'rgba(255,255,255,0.08)', marginBottom: 16 }}/>
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.25)' }}>Sin solutions</p>
+          <p className="text-xs mt-1 mb-5" style={{ color: 'rgba(255,255,255,0.12)' }}>Crea una solution desde el módulo de Solutions</p>
+          <Link href="/solutions" className="px-4 py-2 rounded-lg text-xs font-semibold text-white flex items-center gap-2"
+            style={{ background: '#7F77DD' }}>
+            <ExternalLink size={12}/> Ir a Solutions
           </Link>
         </div>
       ) : (
@@ -137,93 +137,145 @@ export default function SolutionPage() {
           {soluciones.map(sol => {
             const isExp = expanded[sol.id] === true
             const color = TIPO_COLOR[sol.tipo] || '#7F77DD'
+            const Icon = TIPO_ICON[sol.tipo] || Package
             const doneEpics = sol.epics.filter(e => e.status === 'COMPLETED').length
             const pct = sol.epics.length > 0 ? Math.round((doneEpics / sol.epics.length) * 100) : 0
-            const TIPO_ICON: Record<string, React.ElementType> = { PROJECT: FolderKanban, DEMO: FlaskConical, PARTNERSHIP: Handshake, PRODUCT: Package, INTERN: Building2 }
-            const Icon = TIPO_ICON[sol.tipo] || Package
 
             return (
-              <div key={sol.id} className="rounded-2xl overflow-hidden"
-                style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#0c1118' }}>
-                <div className="flex items-center gap-4 px-5 py-3.5">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
-                    <Icon size={14} style={{ color }}/>
+              <div key={sol.id}
+                className="rounded-2xl overflow-hidden transition-all duration-200"
+                style={{
+                  border: isExp ? `1px solid ${color}30` : '1px solid rgba(255,255,255,0.07)',
+                  background: '#0c1118',
+                  boxShadow: isExp ? `0 0 0 1px ${color}15, 0 4px 24px rgba(0,0,0,0.3)` : '0 1px 3px rgba(0,0,0,0.2)',
+                }}>
+
+                {/* Solution row */}
+                <button
+                  className="w-full flex items-center gap-4 px-5 py-4 text-left transition-colors duration-150"
+                  style={{ cursor: 'pointer', background: 'transparent' }}
+                  onClick={() => toggleExpand(sol.id)}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+
+                  {/* Icon */}
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
+                    style={{ background: `${color}18`, border: `1px solid ${color}35` }}>
+                    <Icon size={15} style={{ color }}/>
                   </div>
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleExpand(sol.id)}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-white">{sol.nombre}</span>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <span className="text-[13px] font-semibold text-white leading-snug">{sol.nombre}</span>
                       {sol.solucionCode && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
-                          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md"
+                          style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {sol.solucionCode}
                         </span>
                       )}
-                      <span className="text-xs px-1.5 py-0.5 rounded font-semibold"
-                        style={{ color, background: `${color}15` }}>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                        style={{ color, background: `${color}15`, border: `1px solid ${color}25` }}>
                         {TIPO_LABEL[sol.tipo] || sol.tipo}
                       </span>
-                      <span className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>{sol.epics.length} epicas</span>
+                      <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                        {sol.epics.length} {sol.epics.length === 1 ? 'épica' : 'épicas'}
+                      </span>
                     </div>
-                    {sol.descripcion && <p className="text-xs mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.3)' }}>{sol.descripcion}</p>}
+                    {sol.descripcion && (
+                      <p className="text-xs leading-relaxed truncate" style={{ color: 'rgba(255,255,255,0.28)' }}>
+                        {sol.descripcion}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }}/>
-                    </div>
-                    <span className="text-xs tabular-nums w-7 text-right" style={{ color: 'rgba(255,255,255,0.25)' }}>{pct}%</span>
-                    <ChevronDown size={14} className={`transition-transform cursor-pointer ${isExp ? 'rotate-180' : ''}`}
-                      style={{ color: 'rgba(255,255,255,0.25)' }} onClick={() => toggleExpand(sol.id)}/>
-                  </div>
-                </div>
 
+                  {/* Right: progress + chevron */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className="text-[11px] tabular-nums font-medium" style={{ color: pct > 0 ? color : 'rgba(255,255,255,0.2)' }}>
+                        {pct}%
+                      </span>
+                      <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                        <div className="h-full rounded-full transition-all duration-300"
+                          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}aa, ${color})` }}/>
+                      </div>
+                    </div>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isExp ? 'rotate-180' : ''}`}
+                        style={{ color: 'rgba(255,255,255,0.3)' }}/>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Expanded: epics */}
                 {isExp && (
-                  <div className="border-t border-white/6 px-5 py-4">
+                  <div style={{ borderTop: `1px solid ${color}18`, background: 'rgba(0,0,0,0.15)' }}>
                     {sol.epics.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-xs text-white/20">Sin epicas - <Link href="/backlog/epics" className="text-[#7F77DD] hover:underline">crear epica</Link> y asignarla a esta solution</p>
+                      <div className="flex flex-col items-center py-10 gap-2">
+                        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.18)' }}>
+                          Sin épicas — <Link href="/backlog/epics" className="underline underline-offset-2 transition-colors" style={{ color: '#7F77DD' }}>crear épica</Link> y asignarla a esta solution
+                        </p>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="px-5 py-4 space-y-2">
                         {sol.epics.map(epic => {
                           const doneSprints = epic.sprints.filter(s => s.status === 'DONE' || s.status === 'COMPLETED').length
                           const epicPct = epic.sprints.length > 0 ? Math.round((doneSprints / epic.sprints.length) * 100) : 0
                           const statusInfo = EPIC_STATUS[epic.status] || EPIC_STATUS.ACTIVE
 
                           return (
-                            <div key={epic.id} className="rounded-xl border border-white/6 bg-[#080d14] p-4">
+                            <div key={epic.id} className="rounded-xl p-3.5"
+                              style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
                               <div className="flex items-start gap-3">
-                                <div className="w-1 self-stretch rounded-full flex-shrink-0 mt-0.5" style={{ background: epic.color }}/>
+                                {/* Epic color bar */}
+                                <div className="w-[3px] self-stretch rounded-full flex-shrink-0"
+                                  style={{ background: epic.color, minHeight: 20 }}/>
+
                                 <div className="flex-1 min-w-0">
+                                  {/* Epic header */}
                                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="text-sm font-semibold text-white">{epic.name}</span>
-                                    <span className="flex items-center gap-1 text-xs text-white/30">
-                                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusInfo.dot }}/>
+                                    <span className="text-[13px] font-semibold text-white">{epic.name}</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                      style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
                                       {statusInfo.label}
                                     </span>
-                                    <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
-                                      {epic.priority}
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                      style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
+                                      {PRIORITY_LABEL[epic.priority]}
                                     </span>
                                   </div>
-                                  {epic.description && <p className="text-xs text-white/30 mb-2">{epic.description}</p>}
+
+                                  {epic.description && (
+                                    <p className="text-xs mb-2 leading-relaxed" style={{ color: 'rgba(255,255,255,0.28)' }}>
+                                      {epic.description}
+                                    </p>
+                                  )}
+
+                                  {/* Sprint pills */}
                                   {epic.sprints.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
                                       {epic.sprints.map(sp => {
                                         const spInfo = SPRINT_STATUS[sp.status] || SPRINT_STATUS.PLANNED
                                         return (
-                                          <div key={sp.id} className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border border-white/8 bg-white/3">
+                                          <span key={sp.id} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg"
+                                            style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}25`, color: 'rgba(255,255,255,0.5)' }}>
                                             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: spInfo.color }}/>
-                                            <span className="text-white/60 truncate max-w-[140px]">{sp.name}</span>
-                                            <span className="text-white/25">{sp._count.items}</span>
-                                          </div>
+                                            <span className="truncate max-w-[130px]">{sp.name}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.25)' }}>{sp._count.items}</span>
+                                          </span>
                                         )
                                       })}
                                     </div>
                                   )}
                                 </div>
-                                <div className="flex-shrink-0 ml-2 text-right">
-                                  <div className="text-xs text-white/25 tabular-nums">{epicPct}%</div>
-                                  <div className="w-16 h-1 bg-white/8 rounded-full mt-1 overflow-hidden">
+
+                                {/* Epic progress */}
+                                <div className="flex-shrink-0 text-right min-w-[52px]">
+                                  <span className="text-[11px] font-medium tabular-nums" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
+                                    {epicPct}%
+                                  </span>
+                                  <div className="w-12 h-1 rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                                     <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
                                   </div>
                                 </div>
@@ -233,9 +285,14 @@ export default function SolutionPage() {
                         })}
                       </div>
                     )}
-                    <div className="mt-3 pt-3 border-t border-white/5">
-                      <Link href="/backlog/epics" className="text-xs text-white/25 hover:text-[#7F77DD] transition-colors flex items-center gap-1.5">
-                        <Layers size={11}/> Gestionar epicas
+
+                    <div className="px-5 pb-3 pt-1">
+                      <Link href="/backlog/epics"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-medium transition-colors"
+                        style={{ color: 'rgba(255,255,255,0.2)' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#7F77DD'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.2)'}>
+                        <Layers size={11}/> Gestionar épicas
                       </Link>
                     </div>
                   </div>
