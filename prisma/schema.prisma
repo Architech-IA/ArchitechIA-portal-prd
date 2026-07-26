@@ -75,6 +75,7 @@ model Solucion {
   lead          Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   backlogItems  BacklogItem[]
   sprints       Sprint[]
+  epics         Epic[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -483,6 +484,8 @@ model Sprint {
   startDate   DateTime?
   endDate     DateTime?
   status      String        @default("PLANNED")
+  epicId      String?
+  epic        Epic?         @relation(fields: [epicId], references: [id], onDelete: SetNull)
   createdAt   DateTime      @default(now())
   items       BacklogItem[]
 }
@@ -507,6 +510,7 @@ model BacklogItem {
   order        Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  activities   TaskActivity[]
 }
 
 model ProspectorResult {
@@ -775,4 +779,52 @@ model MovimientoBancario {
   banco        String    @default("Principal")
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+model Roadmap {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  quarter     String?
+  year        Int?
+  status      String   @default("ACTIVE")
+  color       String   @default("#7F77DD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  epics Epic[]
+}
+
+model Epic {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  status      String    @default("ACTIVE")
+  priority    String    @default("MEDIUM")
+  color       String    @default("#1D9375")
+  startDate   DateTime?
+  endDate     DateTime?
+  roadmapId   String?
+  roadmap     Roadmap?  @relation(fields: [roadmapId], references: [id], onDelete: SetNull)
+  solucionId  String?
+  solucion    Solucion? @relation(fields: [solucionId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sprints Sprint[]
+}
+
+model TaskActivity {
+  id             String      @id @default(cuid())
+  title          String
+  description    String?
+  status         String      @default("TODO")
+  estimatedHours Float?
+  loggedHours    Float?      @default(0)
+  assigneeName   String?
+  backlogItemId  String
+  backlogItem    BacklogItem @relation(fields: [backlogItemId], references: [id], onDelete: Cascade)
+  order          Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
