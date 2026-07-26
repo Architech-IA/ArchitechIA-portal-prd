@@ -5,7 +5,11 @@ import { isAuthed } from '@/lib/apiAuth'
 
 export async function GET() {
   const sprints = await prisma.sprint.findMany({
-    include: { _count: { select: { items: true } }, solucion: { select: { id: true, solucionCode: true, nombre: true } } },
+    include: {
+      _count: { select: { items: true } },
+      solucion: { select: { id: true, solucionCode: true, nombre: true } },
+      epic: { select: { id: true, name: true, color: true } },
+    },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(sprints)
@@ -14,9 +18,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   if (!await isAuthed(request)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-  const { name, goal, startDate, endDate, solucionId } = await request.json()
+  const { name, goal, startDate, endDate, solucionId, epicId } = await request.json()
 
-  // Generate sprintCode: PIAT-0001 if solucionCode exists, else SP-0001
   let sprintPrefix = 'SP'
   if (solucionId) {
     const sol = await prisma.solucion.findUnique({ where: { id: solucionId }, select: { solucionCode: true } })
@@ -26,8 +29,21 @@ export async function POST(request: NextRequest) {
   const sprintCode = `${sprintPrefix}-${String(countBySolucion + 1).padStart(4, '0')}`
 
   const sprint = await prisma.sprint.create({
-    data: { sprintCode, name, goal: goal || null, startDate: startDate ? new Date(startDate) : null, endDate: endDate ? new Date(endDate) : null, status: 'PLANNED', ...(solucionId ? { solucionId } : {}) },
-    include: { _count: { select: { items: true } }, solucion: { select: { id: true, solucionCode: true, nombre: true } } },
+    data: {
+      sprintCode,
+      name,
+      goal: goal || null,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      status: 'PLANNED',
+      ...(solucionId ? { solucionId } : {}),
+      ...(epicId ? { epicId } : {}),
+    },
+    include: {
+      _count: { select: { items: true } },
+      solucion: { select: { id: true, solucionCode: true, nombre: true } },
+      epic: { select: { id: true, name: true, color: true } },
+    },
   })
   return NextResponse.json(sprint)
 }
@@ -37,8 +53,13 @@ export async function PUT(request: NextRequest) {
 
   const { id, status } = await request.json()
   const sprint = await prisma.sprint.update({
-    where: { id }, data: { status },
-    include: { _count: { select: { items: true } }, solucion: { select: { id: true, solucionCode: true, nombre: true } } },
+    where: { id },
+    data: { status },
+    include: {
+      _count: { select: { items: true } },
+      solucion: { select: { id: true, solucionCode: true, nombre: true } },
+      epic: { select: { id: true, name: true, color: true } },
+    },
   })
   return NextResponse.json(sprint)
 }
