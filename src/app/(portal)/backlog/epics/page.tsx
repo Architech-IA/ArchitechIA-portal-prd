@@ -246,7 +246,7 @@ export default function EpicsPage() {
 
       {/* Filter tabs + action */}
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           {([
             { key: 'ALL', label: 'Todas' },
             { key: 'ACTIVE', label: 'Activas' },
@@ -257,9 +257,11 @@ export default function EpicsPage() {
             const active = filterStatus === tab.key
             return (
               <button key={tab.key} onClick={() => setFilterStatus(tab.key)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                style={{ background: active ? 'rgba(29,147,117,0.15)' : 'transparent', color: active ? '#1D9375' : 'rgba(255,255,255,0.3)' }}>
-                {tab.label} <span style={{ color: active ? 'rgba(29,147,117,0.7)' : 'rgba(255,255,255,0.15)' }}>{count}</span>
+                className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all"
+                style={{ background: active ? 'rgba(29,147,117,0.2)' : 'transparent', color: active ? '#1D9375' : '#6b7280', border: active ? '1px solid rgba(29,147,117,0.3)' : '1px solid transparent' }}
+                onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' } }}
+                onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' } }}>
+                {tab.label} {count > 0 && <span style={{ opacity: 0.5 }}>{count}</span>}
               </button>
             )
           })}

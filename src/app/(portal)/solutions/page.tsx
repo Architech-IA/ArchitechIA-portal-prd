@@ -172,7 +172,7 @@ export default function SolutionsPage() {
 
       {/* Filter tabs + button */}
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           {TIPOS.map(tab => {
             const meta = TIPO_META[tab.key]
             const count = tab.key === 'ALL' ? soluciones.length : soluciones.filter(s => s.tipo === tab.key).length
@@ -180,12 +180,15 @@ export default function SolutionsPage() {
             const activeColor = meta?.color || '#7F77DD'
             return (
               <button key={tab.key} onClick={() => setFilterTipo(tab.key)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all"
                 style={{
-                  background: active ? `${activeColor}18` : 'transparent',
-                  color: active ? activeColor : 'rgba(255,255,255,0.3)',
-                }}>
-                {tab.label} <span style={{ color: active ? `${activeColor}99` : 'rgba(255,255,255,0.15)' }}>{count}</span>
+                  background: active ? `${activeColor}22` : 'transparent',
+                  color: active ? activeColor : '#6b7280',
+                  border: active ? `1px solid ${activeColor}44` : '1px solid transparent',
+                }}
+                onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' } }}
+                onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' } }}>
+                {tab.label} {count > 0 && <span style={{ opacity: 0.5 }}>{count}</span>}
               </button>
             )
           })}
