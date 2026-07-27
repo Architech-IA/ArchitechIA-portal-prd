@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePageActions } from '@/lib/pageActionsContext'
-import { Layers, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown } from 'lucide-react'
+import { Layers, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown, Calendar, Check, X as XIcon } from 'lucide-react'
 import Link from 'next/link'
 
 interface Sprint {
@@ -81,7 +81,29 @@ export default function SolutionPage() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [filterTipo, setFilterTipo] = useState<string>('ALL')
+  const [editingDates, setEditingDates] = useState<Record<string, { start: string; end: string }>>({})
+  const [savingDates, setSavingDates] = useState<Record<string, boolean>>({})
   const { setActions } = usePageActions()
+
+  const toInputDate = (d: string | null) => d ? new Date(d).toISOString().slice(0, 10) : ''
+
+  const openDateEdit = (epic: Epic) => {
+    setEditingDates(p => ({ ...p, [epic.id]: { start: toInputDate(epic.startDate), end: toInputDate(epic.endDate) } }))
+  }
+
+  const saveDates = async (epicId: string) => {
+    const { start, end } = editingDates[epicId] || {}
+    setSavingDates(p => ({ ...p, [epicId]: true }))
+    await fetch('/api/backlog/epics', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: epicId, startDate: start || null, endDate: end || null }),
+    })
+    setSavingDates(p => ({ ...p, [epicId]: false }))
+    setEditingDates(p => { const n = { ...p }; delete n[epicId]; return n })
+    // Refresh data
+    fetch('/api/backlog/solution').then(r => r.json()).then(setSoluciones)
+  }
 
   useEffect(() => {
     fetch('/api/backlog/solution')
@@ -349,50 +371,94 @@ export default function SolutionPage() {
                                 const statusInfo = EPIC_STATUS[epic.status] || EPIC_STATUS.ACTIVE
 
                                 return (
-                                  <div key={epic.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                                  <div key={epic.id} className="rounded-xl overflow-hidden"
                                     style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <div className="w-[3px] self-stretch rounded-full flex-shrink-0" style={{ background: epic.color, minHeight: 16 }}/>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[12px] font-semibold text-white">{epic.name}</span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                                          style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
-                                          {statusInfo.label}
-                                        </span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                                          style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
-                                          {PRIORITY_LABEL[epic.priority]}
-                                        </span>
-                                        {epic.startDate && epic.endDate && (
-                                          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                                            {fmtDate(epic.startDate)} → {fmtDate(epic.endDate)}
+                                    {/* Main row */}
+                                    <div className="flex items-center gap-3 px-3 py-2.5">
+                                      <div className="w-[3px] self-stretch rounded-full flex-shrink-0" style={{ background: epic.color, minHeight: 16 }}/>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="text-[12px] font-semibold text-white">{epic.name}</span>
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                            style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
+                                            {statusInfo.label}
                                           </span>
-                                        )}
-                                        {epic.sprints.length > 0 && (
-                                          <div className="flex flex-wrap gap-1">
-                                            {epic.sprints.map(sp => {
-                                              const spInfo = SPRINT_STATUS[sp.status] || SPRINT_STATUS.PLANNED
-                                              return (
-                                                <span key={sp.id} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md"
-                                                  style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}20`, color: 'rgba(255,255,255,0.4)' }}>
-                                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: spInfo.color }}/>
-                                                  <span className="truncate max-w-[200px]">{sp.name}</span>
-                                                  <span style={{ color: 'rgba(255,255,255,0.2)' }}>{sp._count.items}</span>
-                                                </span>
-                                              )
-                                            })}
-                                          </div>
-                                        )}
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                            style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
+                                            {PRIORITY_LABEL[epic.priority]}
+                                          </span>
+                                          {epic.startDate && epic.endDate ? (
+                                            <button onClick={() => openDateEdit(epic)}
+                                              className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md transition-colors"
+                                              style={{ color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.04)' }}
+                                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = epic.color; (e.currentTarget as HTMLElement).style.background = `${epic.color}15` }}
+                                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}>
+                                              <Calendar size={10}/> {fmtDate(epic.startDate)} → {fmtDate(epic.endDate)}
+                                            </button>
+                                          ) : (
+                                            <button onClick={() => openDateEdit(epic)}
+                                              className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md transition-colors"
+                                              style={{ color: 'rgba(255,255,255,0.2)', border: '1px dashed rgba(255,255,255,0.1)' }}
+                                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = epic.color; (e.currentTarget as HTMLElement).style.borderColor = epic.color }}
+                                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)' }}>
+                                              <Calendar size={10}/> Agregar fechas
+                                            </button>
+                                          )}
+                                          {epic.sprints.length > 0 && (
+                                            <div className="flex flex-wrap gap-1">
+                                              {epic.sprints.map(sp => {
+                                                const spInfo = SPRINT_STATUS[sp.status] || SPRINT_STATUS.PLANNED
+                                                return (
+                                                  <span key={sp.id} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md"
+                                                    style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}20`, color: 'rgba(255,255,255,0.4)' }}>
+                                                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: spInfo.color }}/>
+                                                    <span className="truncate max-w-[200px]">{sp.name}</span>
+                                                    <span style={{ color: 'rgba(255,255,255,0.2)' }}>{sp._count.items}</span>
+                                                  </span>
+                                                )
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                                          <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
+                                        </div>
+                                        <span className="text-[10px] tabular-nums w-7 text-right" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
+                                          {epicPct}%
+                                        </span>
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                      <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                                        <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
+                                    {/* Date editor */}
+                                    {editingDates[epic.id] && (
+                                      <div className="flex items-center gap-2 px-3 pb-2.5"
+                                        style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <Calendar size={11} style={{ color: epic.color, flexShrink: 0 }}/>
+                                        <input type="date" value={editingDates[epic.id].start}
+                                          onChange={e => setEditingDates(p => ({ ...p, [epic.id]: { ...p[epic.id], start: e.target.value } }))}
+                                          className="text-[11px] px-2 py-1 rounded-md outline-none"
+                                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', colorScheme: 'dark' }}/>
+                                        <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>
+                                        <input type="date" value={editingDates[epic.id].end}
+                                          onChange={e => setEditingDates(p => ({ ...p, [epic.id]: { ...p[epic.id], end: e.target.value } }))}
+                                          className="text-[11px] px-2 py-1 rounded-md outline-none"
+                                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', colorScheme: 'dark' }}/>
+                                        <button onClick={() => saveDates(epic.id)} disabled={savingDates[epic.id]}
+                                          className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md font-semibold transition-colors"
+                                          style={{ background: `${epic.color}25`, color: epic.color, border: `1px solid ${epic.color}40` }}>
+                                          {savingDates[epic.id] ? <Loader2 size={11} className="animate-spin"/> : <Check size={11}/>}
+                                          Guardar
+                                        </button>
+                                        <button onClick={() => setEditingDates(p => { const n = { ...p }; delete n[epic.id]; return n })}
+                                          className="p-1 rounded-md transition-colors"
+                                          style={{ color: 'rgba(255,255,255,0.25)' }}
+                                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#f87171'}
+                                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.25)'}>
+                                          <XIcon size={12}/>
+                                        </button>
                                       </div>
-                                      <span className="text-[10px] tabular-nums w-7 text-right" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
-                                        {epicPct}%
-                                      </span>
-                                    </div>
+                                    )}
                                   </div>
                                 )
                               })}
