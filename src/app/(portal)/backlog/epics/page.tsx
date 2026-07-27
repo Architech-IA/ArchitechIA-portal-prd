@@ -297,8 +297,10 @@ export default function EpicsPage() {
             const priorityColor = PRIORITY_COLORS[epic.priority]
 
             return (
-              <div key={epic.id} className="rounded-2xl overflow-hidden"
-                style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#0c1118' }}>
+              <div key={epic.id} className="rounded-2xl overflow-hidden transition-all duration-150"
+                style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#0c1118' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.border = '1px solid rgba(255,255,255,0.15)'; el.style.background = '#0e1520' }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.border = '1px solid rgba(255,255,255,0.08)'; el.style.background = '#0c1118' }}>
 
                 {/* Epic row */}
                 <div className="flex items-center gap-4 px-5 py-3.5">
@@ -313,14 +315,6 @@ export default function EpicsPage() {
                           {epic.solucion.nombre}
                         </span>
                       )}
-                      <span className="text-xs px-1.5 py-0.5 rounded font-semibold"
-                        style={{ color: statusCfg.color, background: `${statusCfg.color}15` }}>
-                        {statusCfg.label}
-                      </span>
-                      <span className="text-xs px-1.5 py-0.5 rounded font-semibold"
-                        style={{ color: priorityColor, background: `${priorityColor}15` }}>
-                        {PRIORITY_LABELS[epic.priority]}
-                      </span>
                       <span className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>{epic._count.sprints} sprints · {total} tareas</span>
                     </div>
                     {epic.description && (
