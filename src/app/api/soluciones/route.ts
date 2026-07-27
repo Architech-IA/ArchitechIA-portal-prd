@@ -40,9 +40,32 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(soluciones);
 }
 
+function generateSolucionCode(nombre: string): string {
+  // Extract initials from each word (ignoring articles/prepositions)
+  const stopWords = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'e', 'a', 'en', 'por', 'para', 'con', 'the', 'of', 'and', '&'])
+  const words = nombre.split(/\s+/).filter(w => w.length > 0 && !stopWords.has(w.toLowerCase()))
+  const code = words.map(w => w[0].toUpperCase()).join('')
+  return code.slice(0, 6) // max 6 chars
+}
+
+async function uniqueSolucionCode(base: string): Promise<string> {
+  let candidate = base
+  let suffix = 2
+  while (true) {
+    const existing = await prisma.solucion.findFirst({ where: { solucionCode: candidate }, select: { id: true } })
+    if (!existing) return candidate
+    candidate = base.slice(0, 5) + suffix
+    suffix++
+  }
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, planTrabajo, cronograma } = body;
+  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, planTrabajo, cronograma, solucionCode } = body;
+
+  const resolvedCode = solucionCode
+    ? solucionCode.toUpperCase()
+    : await uniqueSolucionCode(generateSolucionCode(nombre))
 
   const solucion = await prisma.solucion.create({
     data: {
@@ -56,6 +79,7 @@ export async function POST(request: NextRequest) {
       arquitectura: arquitectura || '[]',
       planTrabajo: planTrabajo || null,
       cronograma: cronograma || '[]',
+      solucionCode: resolvedCode,
     },
     include: { lead: { select: { id: true, companyName: true, contactName: true, status: true } } },
   });
