@@ -719,7 +719,7 @@ export default function BacklogPage() {
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60"
             style={{ background: 'rgba(16,185,129,0.08)' }}
           >
-            <Rocket size={13} /> Sprint
+            <Rocket size={13} /> Nuevo Sprint
           </button>
           <button onClick={() => openNew()} className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors font-medium">
             <Plus size={13} /> New
