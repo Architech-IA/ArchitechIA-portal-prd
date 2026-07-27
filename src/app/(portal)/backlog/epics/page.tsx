@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Layers, X, Loader2, Pencil, Trash2, ChevronDown, Rocket, Target, Map as MapIcon } from 'lucide-react'
+import { Plus, Layers, X, Loader2, Pencil, Trash2, ChevronDown, Rocket, Target, Map as MapIcon, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { usePageActions } from '@/lib/pageActionsContext'
 
@@ -76,34 +76,46 @@ function EpicModal({ initial, soluciones, onSave, onClose }: {
   const selStyle = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' as const }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+      onClick={onClose}>
       <div onClick={e => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl overflow-hidden"
-        style={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)' }}>
+        className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: 'rgba(10,12,28,0.98)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}>
 
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <h2 className="text-sm font-semibold text-white">{initial?.id ? 'Editar Epica' : 'Nueva Epica'}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition-colors"><X size={15}/></button>
+        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg,#1D9375,#34d39944)' }}/>
+
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(29,147,117,0.12)', border: '1px solid rgba(29,147,117,0.25)' }}>
+              <Layers size={14} className="text-emerald-400"/>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-white">{initial?.id ? 'Editar Épica' : 'Nueva Épica'}</h2>
+              <p className="text-[11px] text-gray-500 mt-0.5">{initial?.id ? 'Modifica los detalles de la épica' : 'Define un nuevo milestone estratégico'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
         </div>
 
-        <div className="p-5 space-y-3">
+        <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Nombre *</label>
+            <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Nombre *</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-              placeholder="ej: Modulo de autenticacion"/>
+              className="w-full rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', fontSize: '14px', fontWeight: 500 }}
+              placeholder="ej: Módulo de autenticación"/>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Estado</label>
+              <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Estado</label>
               <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className={sel} style={selStyle}>
                 {EPIC_STATUSES.map(s => <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Prioridad</label>
+              <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Prioridad</label>
               <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className={sel} style={selStyle}>
                 {PRIORITIES.map(p => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
               </select>
@@ -111,59 +123,50 @@ function EpicModal({ initial, soluciones, onSave, onClose }: {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Solution</label>
+            <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución</label>
             <select value={form.solucionId} onChange={e => setForm(f => ({ ...f, solucionId: e.target.value }))} className={sel} style={selStyle}>
-              <option value="">Sin solution</option>
+              <option value="">Sin solución</option>
               {soluciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Inicio</label>
+              <label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Inicio</label>
               <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
                 className="w-full rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' }}/>
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', colorScheme: 'dark' }}/>
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Fin</label>
+              <label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Fin</label>
               <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
                 className="w-full rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' }}/>
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', colorScheme: 'dark' }}/>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Descripcion</label>
-            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
-              className="w-full rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none resize-none"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-              placeholder="Objetivo de esta epica..."/>
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {COLORS.map(c => (
-                <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
-                  className="w-6 h-6 rounded-full transition-all"
-                  style={{ background: c, outline: form.color === c ? `2px solid ${c}` : 'none', outlineOffset: 2 }}/>
-              ))}
-            </div>
+            <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Descripción</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}
+              className="w-full rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none resize-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', lineHeight: '1.6' }}
+              placeholder="Objetivo estratégico de esta épica..."/>
           </div>
         </div>
 
-        <div className="flex gap-3 px-5 pb-5">
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0 24px' }}/>
+
+        <div className="flex gap-2 px-6 py-4">
           <button onClick={onClose}
-            className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-400 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm text-gray-400 transition-colors"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
             Cancelar
           </button>
           <button onClick={handle} disabled={saving || !form.name.trim()}
-            className="flex-1 py-2 rounded-lg text-xs font-semibold text-white transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-            style={{ background: form.color }}>
-            {saving ? <Loader2 size={12} className="animate-spin"/> : null}
-            {initial?.id ? 'Guardar' : 'Crear Epica'}
+            className="flex-1 py-2 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+            style={{ background: saving ? '#059669' : '#1D9375' }}>
+            {saving ? <Loader2 size={13} className="animate-spin"/> : <Layers size={13}/>}
+            {initial?.id ? 'Guardar' : 'Crear Épica'}
           </button>
         </div>
       </div>
