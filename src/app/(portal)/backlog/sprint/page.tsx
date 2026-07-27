@@ -240,7 +240,6 @@ export default function SprintPage() {
                     {/* Sprint header */}
                     <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid rgba(16,185,129,0.1)', background: 'rgba(16,185,129,0.04)' }}>
                       <div className="flex items-center gap-3">
-                        {activeSprint.solucion?.solucionCode && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded mr-1" style={{ background: 'rgba(234,88,12,0.15)', color: '#fb923c', border: '1px solid rgba(234,88,12,0.2)' }}>{activeSprint.solucion.solucionCode}</span>}
                         <span className="text-[13px] font-mono font-bold tracking-wider" style={{ color: '#10b981' }}>{activeSprint.sprintCode ?? 'SP-???'}</span>
                         {activeSprint.epic && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold border" style={{ color: activeSprint.epic.color, background: `${activeSprint.epic.color}15`, borderColor: `${activeSprint.epic.color}30` }}>
@@ -261,7 +260,6 @@ export default function SprintPage() {
                           <button onClick={() => { if (confirm('¿Cerrar sprint? Los items sin terminar volverán al Backlog.')) updateSprintStatus('CLOSED') }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(107,114,128,0.15)', border: '1px solid rgba(107,114,128,0.35)', color: '#9ca3af' }}>✓ Cerrar Sprint</button>
                         )}
                         <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '', solucionId: activeSprint.solucion?.id ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7280' }}>✎ Editar</button>
-                        <button onClick={() => setShowSprintModal(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-emerald-400 transition-all" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>+ Nuevo Sprint</button>
                       </div>
                     </div>
                     {/* Sprint body */}
