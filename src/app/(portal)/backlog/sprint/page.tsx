@@ -24,7 +24,7 @@ interface Sprint {
   epicId: string | null; epic: { id: string; name: string; color: string } | null
   _count: { items: number }; solucion: { id: string; solucionCode: string | null; nombre: string } | null
 }
-interface EpicOption { id: string; name: string; color: string }
+interface EpicOption { id: string; name: string; color: string; solucionId: string | null }
 
 const STATUSES = [
   { key: 'BACKLOG',     label: 'Backlog',     color: 'bg-gray-500'  },
@@ -160,7 +160,7 @@ export default function SprintPage() {
       setItems(Array.isArray(i) ? i : [])
       setSprints(Array.isArray(sp) ? sp : [])
       setSoluciones(Array.isArray(s) ? s.map((x: any) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo })) : [])
-      setEpics(Array.isArray(ep) ? ep.map((e: { id: string; name: string; color: string }) => ({ id: e.id, name: e.name, color: e.color })) : [])
+      setEpics(Array.isArray(ep) ? ep.map((e: { id: string; name: string; color: string; solucion?: { id: string } | null }) => ({ id: e.id, name: e.name, color: e.color, solucionId: e.solucion?.id ?? null })) : [])
       setUsers(Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : [])
       setLoading(false)
     })
@@ -434,11 +434,21 @@ export default function SprintPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución</label>
-                  <CustomSelect value={sprintEditForm.solucionId} onChange={v => setSprintEditForm(f => ({ ...f, solucionId: v }))} placeholder="Sin solución" options={[{ value: '', label: 'Sin solución' }, ...soluciones.map(s => ({ value: s.id, label: s.nombre }))]}/>
+                  <CustomSelect value={sprintEditForm.solucionId} onChange={v => setSprintEditForm(f => ({ ...f, solucionId: v, epicId: '' }))} placeholder="Sin solución" options={[{ value: '', label: 'Sin solución' }, ...soluciones.map(s => ({ value: s.id, label: s.nombre }))]}/>
                 </div>
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Épica</label>
-                  <CustomSelect value={sprintEditForm.epicId} onChange={v => setSprintEditForm(f => ({ ...f, epicId: v }))} placeholder="Sin épica" options={[{ value: '', label: 'Sin épica' }, ...epics.map(e => ({ value: e.id, label: e.name }))]}/>
+                  <CustomSelect
+                    value={sprintEditForm.epicId}
+                    onChange={v => setSprintEditForm(f => ({ ...f, epicId: v }))}
+                    placeholder={sprintEditForm.solucionId ? 'Sin épica' : 'Selecciona solución primero'}
+                    options={[
+                      { value: '', label: 'Sin épica' },
+                      ...epics
+                        .filter(e => !sprintEditForm.solucionId || e.solucionId === sprintEditForm.solucionId)
+                        .map(e => ({ value: e.id, label: e.name }))
+                    ]}
+                  />
                 </div>
               </div>
               <div>
@@ -487,13 +497,21 @@ export default function SprintPage() {
             <div className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución asociada</label>
-                <CustomSelect value={sprintForm.solucionId} onChange={v => setSprintForm({ ...sprintForm, solucionId: v })} placeholder="Seleccionar solución…" options={soluciones.map(s => ({ value: s.id, label: s.nombre }))}/>
+                <CustomSelect value={sprintForm.solucionId} onChange={v => setSprintForm({ ...sprintForm, solucionId: v, epicId: '' })} placeholder="Seleccionar solución…" options={soluciones.map(s => ({ value: s.id, label: s.nombre }))}/>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Épica</label>
-                  <CustomSelect value={sprintForm.epicId} onChange={v => setSprintForm({ ...sprintForm, epicId: v })} placeholder="Sin épica" options={[{ value: '', label: 'Sin épica' }, ...epics.map(e => ({ value: e.id, label: e.name }))]}/>
-                </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Épica</label>
+                <CustomSelect
+                  value={sprintForm.epicId}
+                  onChange={v => setSprintForm({ ...sprintForm, epicId: v })}
+                  placeholder={sprintForm.solucionId ? 'Sin épica' : 'Selecciona solución primero'}
+                  options={[
+                    { value: '', label: 'Sin épica' },
+                    ...epics
+                      .filter(e => !sprintForm.solucionId || e.solucionId === sprintForm.solucionId)
+                      .map(e => ({ value: e.id, label: e.name }))
+                  ]}
+                />
               </div>
               <div>
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Nombre del sprint *</label>
