@@ -258,7 +258,7 @@ export default function SolutionPage() {
                         </p>
                       </div>
                     ) : (
-                      {(() => {
+                      <>{(() => {
                           // Compute Gantt bounds from epics that have dates
                           const datedEpics = sol.epics.filter(e => e.startDate && e.endDate)
                           const ganttMin = datedEpics.length > 0
@@ -406,7 +406,7 @@ export default function SolutionPage() {
                               })}
                             </div>
                           )
-                        })()}
+                        })()} </>
                     )}
 
                     <div className="px-5 pb-3 pt-1">
