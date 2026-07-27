@@ -76,7 +76,7 @@ const PRIORITIES = [
 
 const EMPTY_FORM = {
   title: '', description: '', type: 'DESARROLLO', priority: 'MEDIUM',
-  status: 'BACKLOG', points: '', solucionId: '', assigneeId: '', assigneeName: '',
+  status: 'BACKLOG', points: '', solucionId: '', sprintId: '', assigneeId: '', assigneeName: '',
 }
 
 interface ImportTask {
@@ -488,7 +488,7 @@ export default function BacklogPage() {
     setForm({
       title: item.title, description: item.description ?? '', type: item.type,
       priority: item.priority, status: item.status, points: item.points ? String(item.points) : '',
-      solucionId: item.solucionId ?? '', assigneeId: item.assigneeId ?? '', assigneeName: item.assigneeName ?? '',
+      solucionId: item.solucionId ?? '', sprintId: item.sprintId ?? '', assigneeId: item.assigneeId ?? '', assigneeName: item.assigneeName ?? '',
     })
     setShowModal(true)
   }
@@ -501,7 +501,7 @@ export default function BacklogPage() {
       return
     }
     setSaving(true)
-    const body = { ...form, points: form.points ? Number(form.points) : null, solucionId: form.solucionId || null }
+    const body = { ...form, points: form.points ? Number(form.points) : null, solucionId: form.solucionId || null, sprintId: form.sprintId || null }
     if (editItem) {
       const res = await fetch(`/api/backlog/${editItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
@@ -950,19 +950,29 @@ export default function BacklogPage() {
                 </div>
               </div>
 
-              {/* Fila 2: Solución · Responsable · Story Points */}
+              {/* Fila 2: Solución · Responsable · Sprint */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución *</label>
-                  <CustomSelect value={form.solucionId} onChange={v => setForm({...form, solucionId: v})} placeholder="Seleccionar…" options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))} />
+                  <CustomSelect value={form.solucionId} onChange={v => setForm({...form, solucionId: v, sprintId: ''})} placeholder="Seleccionar…" options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))} />
                 </div>
                 <div>
                   <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Responsable</label>
                   <CustomSelect value={form.assigneeId} onChange={v => { const u = users.find(x => x.id === v); setForm({ ...form, assigneeId: v, assigneeName: u?.name ?? '' }) }} placeholder="Sin asignar" options={[{ value: '', label: 'Sin asignar' }, ...users.map(u => ({ value: u.id, label: u.name }))]} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Story Points</label>
-                  <input type="number" min={0} max={100} value={form.points} onChange={e => setForm({...form, points: e.target.value})} placeholder="0" className={inputCls} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '8px 12px' }} />
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Sprint</label>
+                  <CustomSelect
+                    value={form.sprintId}
+                    onChange={v => setForm({...form, sprintId: v})}
+                    placeholder={form.solucionId ? 'Seleccionar…' : 'Primero solución'}
+                    options={[
+                      { value: '', label: 'Sin sprint' },
+                      ...sprints
+                        .filter(s => !form.solucionId || s.solucion?.id === form.solucionId)
+                        .map(s => ({ value: s.id, label: s.sprintCode ? `${s.sprintCode} — ${s.name}` : s.name }))
+                    ]}
+                  />
                 </div>
               </div>
               <div style={{ height: "1px", background: "rgba(255,255,255,0.06)", margin: "0 0 4px 0" }} />
