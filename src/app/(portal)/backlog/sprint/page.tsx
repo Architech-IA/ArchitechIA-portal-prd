@@ -102,7 +102,7 @@ export default function SprintPage() {
   const [showAddItems, setShowAddItems] = useState(false)
   const [viewItem, setViewItem] = useState<BacklogItem | null>(null)
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
-  const [sprintEditForm, setSprintEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '', epicId: '' })
+  const [sprintEditForm, setSprintEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '', epicId: '', solucionId: '' })
   const [savingSprintEdit, setSavingSprintEdit] = useState(false)
   const [showSprintModal, setShowSprintModal] = useState(false)
   const [sprintForm, setSprintForm] = useState({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', epicId: '', items: [] as string[] })
@@ -260,7 +260,7 @@ export default function SprintPage() {
                         {activeSprint.status === 'ACTIVE' && (
                           <button onClick={() => { if (confirm('¿Cerrar sprint? Los items sin terminar volverán al Backlog.')) updateSprintStatus('CLOSED') }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(107,114,128,0.15)', border: '1px solid rgba(107,114,128,0.35)', color: '#9ca3af' }}>✓ Cerrar Sprint</button>
                         )}
-                        <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7280' }}>✎ Editar</button>
+                        <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '', solucionId: activeSprint.solucion?.id ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7280' }}>✎ Editar</button>
                         <button onClick={() => setShowSprintModal(true)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-emerald-400 transition-all" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>+ Nuevo Sprint</button>
                       </div>
                     </div>
@@ -420,30 +420,47 @@ export default function SprintPage() {
 
       {/* Edit sprint modal */}
       {editingSprint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }} onClick={() => setEditingSprint(null)}>
-          <div className="w-full rounded-2xl overflow-hidden" style={{ maxWidth: '480px', background: 'rgba(10,12,26,0.98)', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
-            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#10b981,#34d399)' }}/>
-            <div className="p-5 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2"><Rocket size={16} className="text-emerald-400"/><h2 className="text-sm font-semibold text-white">Editar Sprint</h2></div>
-                <button onClick={() => setEditingSprint(null)} className="text-gray-600 hover:text-white transition-colors"><X size={16}/></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(10px)' }} onClick={() => setEditingSprint(null)}>
+          <div className="w-full rounded-2xl overflow-visible" style={{ maxWidth: '520px', background: 'rgba(10,12,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }} onClick={e => e.stopPropagation()}>
+            <div className="h-0.5 w-full rounded-t-2xl" style={{ background: 'linear-gradient(90deg,#10b981,#34d39944)' }}/>
+            <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)' }}><Rocket size={14} className="text-emerald-400"/></div>
+                <div><h2 className="text-sm font-semibold text-white">Editar Sprint</h2><p className="text-[11px] text-gray-500 mt-0.5">Modifica los detalles del sprint</p></div>
               </div>
-              <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }}/>
-              <div><label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Nombre del sprint</label><input autoFocus value={sprintEditForm.name} onChange={e => setSprintEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Sprint 1" className="w-full rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', padding: '10px 14px' }}/></div>
-              <div><label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Objetivo</label><textarea value={sprintEditForm.goal} onChange={e => setSprintEditForm(f => ({ ...f, goal: e.target.value }))} rows={2} className="w-full rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none resize-none" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', padding: '10px 14px' }}/></div>
-              {epics.length > 0 && <div><label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Épica</label><select value={sprintEditForm.epicId} onChange={e => setSprintEditForm(f => ({ ...f, epicId: e.target.value }))} className="w-full rounded-lg text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '9px 12px' }}><option value="">Sin épica</option>{epics.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>}
+              <button onClick={() => setEditingSprint(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
+            </div>
+            <div className="px-6 py-5 flex flex-col gap-4 overflow-visible">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución</label>
+                  <CustomSelect value={sprintEditForm.solucionId} onChange={v => setSprintEditForm(f => ({ ...f, solucionId: v }))} placeholder="Sin solución" options={[{ value: '', label: 'Sin solución' }, ...soluciones.map(s => ({ value: s.id, label: s.nombre }))]}/>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Épica</label>
+                  <CustomSelect value={sprintEditForm.epicId} onChange={v => setSprintEditForm(f => ({ ...f, epicId: v }))} placeholder="Sin épica" options={[{ value: '', label: 'Sin épica' }, ...epics.map(e => ({ value: e.id, label: e.name }))]}/>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Nombre del sprint</label>
+                <input autoFocus value={sprintEditForm.name} onChange={e => setSprintEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Sprint 1" className="w-full rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', padding: '10px 14px' }}/>
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Objetivo</label>
+                <textarea value={sprintEditForm.goal} onChange={e => setSprintEditForm(f => ({ ...f, goal: e.target.value }))} rows={2} className="w-full rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none resize-none" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', padding: '10px 14px' }}/>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Inicio</label><input type="date" value={sprintEditForm.startDate} onChange={e => setSprintEditForm(f => ({ ...f, startDate: e.target.value }))} className="w-full rounded-lg text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '8px 12px', colorScheme: 'dark' }}/></div>
                 <div><label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Fin</label><input type="date" value={sprintEditForm.endDate} onChange={e => setSprintEditForm(f => ({ ...f, endDate: e.target.value }))} className="w-full rounded-lg text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '8px 12px', colorScheme: 'dark' }}/></div>
               </div>
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }}/>
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pb-1">
                 <button type="button" onClick={() => setEditingSprint(null)} className="px-4 py-2 rounded-lg text-sm text-gray-400" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button type="button" disabled={!sprintEditForm.name.trim() || savingSprintEdit} onClick={async () => {
                   if (!sprintEditForm.name.trim()) return
                   setSavingSprintEdit(true)
                   try {
-                    const res = await fetch('/api/backlog/sprints/edit', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingSprint.id, name: sprintEditForm.name, goal: sprintEditForm.goal, startDate: sprintEditForm.startDate, endDate: sprintEditForm.endDate, epicId: sprintEditForm.epicId || null }) })
+                    const res = await fetch('/api/backlog/sprints/edit', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingSprint.id, name: sprintEditForm.name, goal: sprintEditForm.goal, startDate: sprintEditForm.startDate, endDate: sprintEditForm.endDate, epicId: sprintEditForm.epicId || null, solucionId: sprintEditForm.solucionId || null }) })
                     if (res.ok) { const updated = await res.json(); setSprints(prev => prev.map(s => s.id === updated.id ? { ...s, ...updated } : s)) }
                   } finally { setSavingSprintEdit(false); setEditingSprint(null) }
                 }} className="px-5 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2 disabled:opacity-50" style={{ background: savingSprintEdit ? '#059669' : '#10b981' }}>
@@ -472,7 +489,12 @@ export default function SprintPage() {
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución asociada</label>
                 <CustomSelect value={sprintForm.solucionId} onChange={v => setSprintForm({ ...sprintForm, solucionId: v })} placeholder="Seleccionar solución…" options={soluciones.map(s => ({ value: s.id, label: s.nombre }))}/>
               </div>
-              {epics.length > 0 && <div><label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Épica</label><select value={sprintForm.epicId} onChange={e => setSprintForm({ ...sprintForm, epicId: e.target.value })} className="w-full rounded-lg text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '9px 12px' }}><option value="">Sin épica</option>{epics.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Épica</label>
+                  <CustomSelect value={sprintForm.epicId} onChange={v => setSprintForm({ ...sprintForm, epicId: v })} placeholder="Sin épica" options={[{ value: '', label: 'Sin épica' }, ...epics.map(e => ({ value: e.id, label: e.name }))]}/>
+                </div>
+              </div>
               <div>
                 <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Nombre del sprint *</label>
                 <input value={sprintForm.name} onChange={e => setSprintForm({ ...sprintForm, name: e.target.value })} placeholder="Ej: Sprint 1 - MVP Backlog" className="w-full rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '10px 14px' }}/>
