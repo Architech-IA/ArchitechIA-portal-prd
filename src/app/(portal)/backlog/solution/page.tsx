@@ -19,6 +19,8 @@ interface Epic {
   status: string
   priority: string
   color: string
+  startDate: string | null
+  endDate: string | null
   sprints: Sprint[]
   _count: { sprints: number }
 }
@@ -256,72 +258,155 @@ export default function SolutionPage() {
                         </p>
                       </div>
                     ) : (
-                      <div className="px-5 py-4 space-y-2">
-                        {sol.epics.map(epic => {
-                          const doneSprints = epic.sprints.filter(s => s.status === 'DONE' || s.status === 'COMPLETED').length
-                          const epicPct = epic.sprints.length > 0 ? Math.round((doneSprints / epic.sprints.length) * 100) : 0
-                          const statusInfo = EPIC_STATUS[epic.status] || EPIC_STATUS.ACTIVE
+                      {(() => {
+                          // Compute Gantt bounds from epics that have dates
+                          const datedEpics = sol.epics.filter(e => e.startDate && e.endDate)
+                          const ganttMin = datedEpics.length > 0
+                            ? new Date(Math.min(...datedEpics.map(e => new Date(e.startDate!).getTime())))
+                            : null
+                          const ganttMax = datedEpics.length > 0
+                            ? new Date(Math.max(...datedEpics.map(e => new Date(e.endDate!).getTime())))
+                            : null
+                          const totalMs = ganttMin && ganttMax ? ganttMax.getTime() - ganttMin.getTime() : 0
+                          const today = new Date()
+
+                          const fmtDate = (d: string) => {
+                            const dt = new Date(d)
+                            return dt.toLocaleDateString('es', { day: '2-digit', month: 'short' })
+                          }
 
                           return (
-                            <div key={epic.id} className="rounded-xl p-3.5"
-                              style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                              <div className="flex items-start gap-3">
-                                {/* Epic color bar */}
-                                <div className="w-[3px] self-stretch rounded-full flex-shrink-0"
-                                  style={{ background: epic.color, minHeight: 20 }}/>
-
-                                <div className="flex-1 min-w-0">
-                                  {/* Epic header */}
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="text-[13px] font-semibold text-white">{epic.name}</span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                                      style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
-                                      {statusInfo.label}
+                            <div className="px-5 py-4 space-y-2">
+                              {/* Mini Gantt header */}
+                              {datedEpics.length > 0 && ganttMin && ganttMax && (
+                                <div className="mb-4 rounded-xl overflow-hidden"
+                                  style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                      Línea de tiempo
                                     </span>
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                                      style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
-                                      {PRIORITY_LABEL[epic.priority]}
+                                    <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                      {fmtDate(ganttMin.toISOString())} — {fmtDate(ganttMax.toISOString())}
                                     </span>
                                   </div>
+                                  <div className="px-4 pb-3 space-y-2 mt-2">
+                                    {/* Today marker position */}
+                                    {datedEpics.map(epic => {
+                                      const start = new Date(epic.startDate!)
+                                      const end = new Date(epic.endDate!)
+                                      const left = totalMs > 0 ? ((start.getTime() - ganttMin.getTime()) / totalMs) * 100 : 0
+                                      const width = totalMs > 0 ? Math.max(((end.getTime() - start.getTime()) / totalMs) * 100, 2) : 2
+                                      const doneSprints = epic.sprints.filter(s => s.status === 'DONE' || s.status === 'COMPLETED').length
+                                      const pctDone = epic.sprints.length > 0 ? doneSprints / epic.sprints.length : 0
+                                      const isActive = today >= start && today <= end
 
-                                  {epic.description && (
-                                    <p className="text-xs mb-2 leading-relaxed" style={{ color: 'rgba(255,255,255,0.28)' }}>
-                                      {epic.description}
-                                    </p>
-                                  )}
-
-                                  {/* Sprint pills */}
-                                  {epic.sprints.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                      {epic.sprints.map(sp => {
-                                        const spInfo = SPRINT_STATUS[sp.status] || SPRINT_STATUS.PLANNED
-                                        return (
-                                          <span key={sp.id} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg"
-                                            style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}25`, color: 'rgba(255,255,255,0.5)' }}>
-                                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: spInfo.color }}/>
-                                            <span className="truncate max-w-[130px]">{sp.name}</span>
-                                            <span style={{ color: 'rgba(255,255,255,0.25)' }}>{sp._count.items}</span>
+                                      return (
+                                        <div key={epic.id} className="flex items-center gap-3">
+                                          <span className="text-[11px] truncate flex-shrink-0 text-right" style={{ width: 120, color: 'rgba(255,255,255,0.4)' }}>
+                                            {epic.name}
                                           </span>
-                                        )
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Epic progress */}
-                                <div className="flex-shrink-0 text-right min-w-[52px]">
-                                  <span className="text-[11px] font-medium tabular-nums" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
-                                    {epicPct}%
-                                  </span>
-                                  <div className="w-12 h-1 rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                                    <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
+                                          <div className="flex-1 relative h-5 flex items-center">
+                                            {/* Track */}
+                                            <div className="absolute inset-y-0 left-0 right-0 flex items-center">
+                                              <div className="w-full h-[2px] rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }}/>
+                                            </div>
+                                            {/* Today line */}
+                                            {today >= ganttMin && today <= ganttMax && (
+                                              <div className="absolute top-0 bottom-0 w-px z-10"
+                                                style={{
+                                                  left: `${((today.getTime() - ganttMin.getTime()) / totalMs) * 100}%`,
+                                                  background: 'rgba(251,191,36,0.5)',
+                                                }}/>
+                                            )}
+                                            {/* Bar */}
+                                            <div className="absolute h-4 rounded-full flex items-center overflow-hidden"
+                                              style={{
+                                                left: `${left}%`,
+                                                width: `${width}%`,
+                                                background: `${epic.color}22`,
+                                                border: `1px solid ${epic.color}${isActive ? '60' : '30'}`,
+                                                minWidth: 6,
+                                              }}>
+                                              {/* Fill */}
+                                              <div className="h-full rounded-full"
+                                                style={{ width: `${pctDone * 100}%`, background: `${epic.color}80` }}/>
+                                            </div>
+                                          </div>
+                                          <span className="text-[10px] tabular-nums flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)', width: 32, textAlign: 'right' }}>
+                                            {fmtDate(epic.endDate!)}
+                                          </span>
+                                        </div>
+                                      )
+                                    })}
                                   </div>
                                 </div>
-                              </div>
+                              )}
+
+                              {/* Epic cards */}
+                              {sol.epics.map(epic => {
+                                const doneSprints = epic.sprints.filter(s => s.status === 'DONE' || s.status === 'COMPLETED').length
+                                const epicPct = epic.sprints.length > 0 ? Math.round((doneSprints / epic.sprints.length) * 100) : 0
+                                const statusInfo = EPIC_STATUS[epic.status] || EPIC_STATUS.ACTIVE
+
+                                return (
+                                  <div key={epic.id} className="rounded-xl p-3.5"
+                                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-[3px] self-stretch rounded-full flex-shrink-0"
+                                        style={{ background: epic.color, minHeight: 20 }}/>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                          <span className="text-[13px] font-semibold text-white">{epic.name}</span>
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                            style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
+                                            {statusInfo.label}
+                                          </span>
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                            style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
+                                            {PRIORITY_LABEL[epic.priority]}
+                                          </span>
+                                          {epic.startDate && epic.endDate && (
+                                            <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                              {fmtDate(epic.startDate)} → {fmtDate(epic.endDate)}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {epic.description && (
+                                          <p className="text-xs mb-2 leading-relaxed" style={{ color: 'rgba(255,255,255,0.28)' }}>
+                                            {epic.description}
+                                          </p>
+                                        )}
+                                        {epic.sprints.length > 0 && (
+                                          <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {epic.sprints.map(sp => {
+                                              const spInfo = SPRINT_STATUS[sp.status] || SPRINT_STATUS.PLANNED
+                                              return (
+                                                <span key={sp.id} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg"
+                                                  style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}25`, color: 'rgba(255,255,255,0.5)' }}>
+                                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: spInfo.color }}/>
+                                                  <span className="truncate max-w-[130px]">{sp.name}</span>
+                                                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>{sp._count.items}</span>
+                                                </span>
+                                              )
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-shrink-0 text-right min-w-[52px]">
+                                        <span className="text-[11px] font-medium tabular-nums" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
+                                          {epicPct}%
+                                        </span>
+                                        <div className="w-12 h-1 rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                                          <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
                             </div>
                           )
-                        })}
-                      </div>
+                        })()}
                     )}
 
                     <div className="px-5 pb-3 pt-1">
