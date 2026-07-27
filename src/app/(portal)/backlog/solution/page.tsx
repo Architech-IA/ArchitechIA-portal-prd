@@ -349,57 +349,49 @@ export default function SolutionPage() {
                                 const statusInfo = EPIC_STATUS[epic.status] || EPIC_STATUS.ACTIVE
 
                                 return (
-                                  <div key={epic.id} className="rounded-xl p-3.5"
-                                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                    <div className="flex items-start gap-3">
-                                      <div className="w-[3px] self-stretch rounded-full flex-shrink-0"
-                                        style={{ background: epic.color, minHeight: 20 }}/>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                                          <span className="text-[13px] font-semibold text-white">{epic.name}</span>
-                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                                            style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
-                                            {statusInfo.label}
+                                  <div key={epic.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div className="w-[3px] self-stretch rounded-full flex-shrink-0" style={{ background: epic.color, minHeight: 16 }}/>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[12px] font-semibold text-white">{epic.name}</span>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                          style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
+                                          {statusInfo.label}
+                                        </span>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                          style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
+                                          {PRIORITY_LABEL[epic.priority]}
+                                        </span>
+                                        {epic.startDate && epic.endDate && (
+                                          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                            {fmtDate(epic.startDate)} → {fmtDate(epic.endDate)}
                                           </span>
-                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
-                                            style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
-                                            {PRIORITY_LABEL[epic.priority]}
-                                          </span>
-                                          {epic.startDate && epic.endDate && (
-                                            <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                                              {fmtDate(epic.startDate)} → {fmtDate(epic.endDate)}
-                                            </span>
-                                          )}
-                                        </div>
-                                        {epic.description && (
-                                          <p className="text-xs mb-2 leading-relaxed" style={{ color: 'rgba(255,255,255,0.28)' }}>
-                                            {epic.description}
-                                          </p>
                                         )}
                                         {epic.sprints.length > 0 && (
-                                          <div className="flex flex-wrap gap-1.5 mt-2">
+                                          <div className="flex flex-wrap gap-1">
                                             {epic.sprints.map(sp => {
                                               const spInfo = SPRINT_STATUS[sp.status] || SPRINT_STATUS.PLANNED
                                               return (
-                                                <span key={sp.id} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg"
-                                                  style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}25`, color: 'rgba(255,255,255,0.5)' }}>
+                                                <span key={sp.id} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md"
+                                                  style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}20`, color: 'rgba(255,255,255,0.4)' }}>
                                                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: spInfo.color }}/>
-                                                  <span className="truncate max-w-[130px]">{sp.name}</span>
-                                                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>{sp._count.items}</span>
+                                                  <span className="truncate max-w-[200px]">{sp.name}</span>
+                                                  <span style={{ color: 'rgba(255,255,255,0.2)' }}>{sp._count.items}</span>
                                                 </span>
                                               )
                                             })}
                                           </div>
                                         )}
                                       </div>
-                                      <div className="flex-shrink-0 text-right min-w-[52px]">
-                                        <span className="text-[11px] font-medium tabular-nums" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
-                                          {epicPct}%
-                                        </span>
-                                        <div className="w-12 h-1 rounded-full mt-1 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                                          <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
-                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                                        <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
                                       </div>
+                                      <span className="text-[10px] tabular-nums w-7 text-right" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
+                                        {epicPct}%
+                                      </span>
                                     </div>
                                   </div>
                                 )
