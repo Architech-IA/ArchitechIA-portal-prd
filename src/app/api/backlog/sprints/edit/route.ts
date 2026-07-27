@@ -8,17 +8,35 @@ export async function PUT(request: NextRequest) {
 
   const { id, name, goal, startDate, endDate, epicId, solucionId } = await request.json()
 
-  // Regenerate sprintCode if solucionId changed
-  const current = await prisma.sprint.findUnique({ where: { id }, select: { solucionId: true } })
+  const current = await prisma.sprint.findUnique({
+    where: { id },
+    select: { solucionId: true, sprintCode: true },
+  })
+
+  // Determine if we need a new sprint code:
+  // - solution changed, OR
+  // - current code prefix doesn't match the solution's code (stale code from old solution)
   let newSprintCode: string | undefined
-  if (solucionId !== (current?.solucionId ?? null)) {
-    let sprintPrefix = 'SP'
-    if (solucionId) {
-      const sol = await prisma.solucion.findUnique({ where: { id: solucionId }, select: { solucionCode: true } })
-      if (sol?.solucionCode) sprintPrefix = sol.solucionCode
-    }
-    const countBySolucion = await prisma.sprint.count({ where: solucionId ? { solucionId } : {} })
-    newSprintCode = `${sprintPrefix}-${String(countBySolucion + 1).padStart(4, '0')}`
+  const resolvedSolucionId = solucionId || null
+
+  let sol = null
+  if (resolvedSolucionId) {
+    sol = await prisma.solucion.findUnique({
+      where: { id: resolvedSolucionId },
+      select: { solucionCode: true },
+    })
+  }
+
+  const expectedPrefix = sol?.solucionCode ?? 'SP'
+  const currentPrefix = current?.sprintCode?.split('-')[0] ?? ''
+  const solutionChanged = resolvedSolucionId !== (current?.solucionId ?? null)
+  const prefixMismatch = currentPrefix !== expectedPrefix
+
+  if (solutionChanged || prefixMismatch) {
+    const countBySolucion = await prisma.sprint.count({
+      where: resolvedSolucionId ? { solucionId: resolvedSolucionId } : {},
+    })
+    newSprintCode = `${expectedPrefix}-${String(countBySolucion + 1).padStart(4, '0')}`
   }
 
   const sprint = await prisma.sprint.update({
@@ -29,7 +47,7 @@ export async function PUT(request: NextRequest) {
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
       epicId: epicId || null,
-      solucionId: solucionId || null,
+      solucionId: resolvedSolucionId,
       ...(newSprintCode ? { sprintCode: newSprintCode } : {}),
     },
     include: {
