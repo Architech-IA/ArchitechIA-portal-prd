@@ -101,6 +101,10 @@ export default function SprintPage() {
   const [showCollapsed, setShowCollapsed] = useState(true)
   const [showAddItems, setShowAddItems] = useState(false)
   const [viewItem, setViewItem] = useState<BacklogItem | null>(null)
+  const [dragOrder, setDragOrder] = useState<Record<string, string[]>>({})
+  const [savingOrder, setSavingOrder] = useState<Record<string, boolean>>({})
+  const dragItemRef = useRef<string | null>(null)
+  const dragOverRef = useRef<string | null>(null)
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
   const [sprintEditForm, setSprintEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '', epicId: '', solucionId: '' })
   const [savingSprintEdit, setSavingSprintEdit] = useState(false)
@@ -333,35 +337,96 @@ export default function SprintPage() {
                             </div>
                           )
                         })()}
-                        <div className="flex items-center flex-shrink-0 mb-2">
-                          <span className="text-[11px] text-gray-600">{sprintItems.length} item{sprintItems.length !== 1 ? 's' : ''} en este sprint</span>
-                        </div>
-                        {!showCollapsed && (sprintItems.length === 0 ? (
-                          <p className="text-[11px] text-gray-700 py-1">Sin actividades — abrí Gestionar para agregar.</p>
-                        ) : (
-                          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                            {sprintItems.map((item, idx) => {
-                              const statusMeta = STATUSES.find(s => s.key === item.status)
-                              const typeMeta = TYPES.find(t => t.key === item.type)
-                              const TypeIcon = typeMeta?.icon
-                              return (
-                                <div key={item.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/[0.03]" style={{ borderBottom: idx < sprintItems.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }} onClick={() => setViewItem(item)}>
-                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusMeta?.color ?? 'bg-gray-500'}`}/>
-                                  {item.taskCode && <span className="text-[9px] font-bold flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
-                                  <span className="text-[12px] text-gray-200 flex-1 truncate">{item.title}</span>
-                                  <div className="flex items-center gap-2 flex-shrink-0">
-                                    {TypeIcon && <span className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium ${typeMeta?.color}`}><TypeIcon size={9}/></span>}
-                                    <PriorityDot priority={item.priority}/>
-                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: item.status === 'DONE' ? 'rgba(16,185,129,0.15)' : item.status === 'IN_PROGRESS' ? 'rgba(59,130,246,0.15)' : item.status === 'BLOCKED' ? 'rgba(239,68,68,0.15)' : 'rgba(107,114,128,0.15)', color: item.status === 'DONE' ? '#10b981' : item.status === 'IN_PROGRESS' ? '#60a5fa' : item.status === 'BLOCKED' ? '#f87171' : '#9ca3af' }}>
-                                      {statusMeta?.label ?? item.status}
-                                    </span>
-                                    {item.assigneeName && <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0" style={{ background: 'linear-gradient(135deg,#f97316,#fb923c)' }} title={item.assigneeName}>{item.assigneeName.split(' ').map((w: string) => w[0]).slice(0,2).join('')}</div>}
+                        {(() => {
+                          const orderedIds = dragOrder[activeSprint.id]
+                          const orderedItems = orderedIds
+                            ? orderedIds.map(id => sprintItems.find(i => i.id === id)).filter(Boolean) as BacklogItem[]
+                            : sprintItems
+                          const hasReordered = !!orderedIds
+                          const confirmOrder = async () => {
+                            setSavingOrder(prev => ({ ...prev, [activeSprint.id]: true }))
+                            try {
+                              const res = await fetch('/api/backlog/reorder', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ sprintId: activeSprint.id, orderedIds: orderedItems.map(i => i.id) })
+                              })
+                              if (res.ok) {
+                                const updated: BacklogItem[] = await res.json()
+                                setItems(prev => prev.map(i => { const u = updated.find(x => x.id === i.id); return u ?? i }))
+                                setDragOrder(prev => { const n = { ...prev }; delete n[activeSprint.id]; return n })
+                              }
+                            } finally {
+                              setSavingOrder(prev => ({ ...prev, [activeSprint.id]: false }))
+                            }
+                          }
+                          return (
+                            <>
+                              <div className="flex items-center justify-between flex-shrink-0 mb-2">
+                                <span className="text-[11px] text-gray-600">{sprintItems.length} item{sprintItems.length !== 1 ? 's' : ''} en este sprint</span>
+                                {hasReordered && (
+                                  <div className="flex items-center gap-1.5">
+                                    <button onClick={() => setDragOrder(prev => { const n = { ...prev }; delete n[activeSprint.id]; return n })} className="text-[10px] px-2 py-1 rounded-lg text-gray-500 hover:text-gray-300 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>Cancelar</button>
+                                    <button onClick={confirmOrder} disabled={savingOrder[activeSprint.id]} className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg font-semibold transition-all disabled:opacity-50" style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981' }}>
+                                      {savingOrder[activeSprint.id] ? <Loader2 size={9} className="animate-spin"/> : '↕'} Confirmar orden
+                                    </button>
                                   </div>
+                                )}
+                              </div>
+                              {!showCollapsed && (orderedItems.length === 0 ? (
+                                <p className="text-[11px] text-gray-700 py-1">Sin actividades — abrí Gestionar para agregar.</p>
+                              ) : (
+                                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                                  {orderedItems.map((item, idx) => {
+                                    const statusMeta = STATUSES.find(s => s.key === item.status)
+                                    const typeMeta = TYPES.find(t => t.key === item.type)
+                                    const TypeIcon = typeMeta?.icon
+                                    return (
+                                      <div
+                                        key={item.id}
+                                        draggable
+                                        onDragStart={() => { dragItemRef.current = item.id }}
+                                        onDragOver={e => {
+                                          e.preventDefault()
+                                          if (!dragItemRef.current || dragItemRef.current === item.id) return
+                                          if (dragOverRef.current === item.id) return
+                                          dragOverRef.current = item.id
+                                          setDragOrder(prev => {
+                                            const base = prev[activeSprint.id] ?? sprintItems.map(i => i.id)
+                                            const from = base.indexOf(dragItemRef.current!)
+                                            const to = base.indexOf(item.id)
+                                            if (from === -1 || to === -1) return prev
+                                            const next = [...base]
+                                            next.splice(from, 1)
+                                            next.splice(to, 0, dragItemRef.current!)
+                                            return { ...prev, [activeSprint.id]: next }
+                                          })
+                                        }}
+                                        onDragEnd={() => { dragItemRef.current = null; dragOverRef.current = null }}
+                                        className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
+                                        style={{ borderBottom: idx < orderedItems.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', cursor: 'grab' }}
+                                        onClick={() => setViewItem(item)}
+                                      >
+                                        <span className="text-gray-600 flex-shrink-0 select-none" style={{ fontSize: '10px', cursor: 'grab' }}>⠿</span>
+                                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusMeta?.color ?? 'bg-gray-500'}`}/>
+                                        {item.taskCode && <span className="text-[9px] font-bold flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
+                                        <span className="text-[12px] text-gray-200 flex-1 truncate">{item.title}</span>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          {TypeIcon && <span className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium ${typeMeta?.color}`}><TypeIcon size={9}/></span>}
+                                          <PriorityDot priority={item.priority}/>
+                                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: item.status === 'DONE' ? 'rgba(16,185,129,0.15)' : item.status === 'IN_PROGRESS' ? 'rgba(59,130,246,0.15)' : item.status === 'BLOCKED' ? 'rgba(239,68,68,0.15)' : 'rgba(107,114,128,0.15)', color: item.status === 'DONE' ? '#10b981' : item.status === 'IN_PROGRESS' ? '#60a5fa' : item.status === 'BLOCKED' ? '#f87171' : '#9ca3af' }}>
+                                            {statusMeta?.label ?? item.status}
+                                          </span>
+                                          {item.assigneeName && <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0" style={{ background: 'linear-gradient(135deg,#f97316,#fb923c)' }} title={item.assigneeName}>{item.assigneeName.split(' ').map((w: string) => w[0]).slice(0,2).join('')}</div>}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
                                 </div>
-                              )
-                            })}
-                          </div>
-                        ))}
+                              ))}
+                            </>
+                          )
+                        })()}
                       </div>
                     </div>
                   </div>
