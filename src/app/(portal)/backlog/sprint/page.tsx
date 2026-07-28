@@ -215,7 +215,9 @@ export default function SprintPage() {
         ) : (
           <div className="flex flex-col gap-6">
             {sprints.map(activeSprint => {
-              const sprintItems = items.filter(i => i.sprintId === activeSprint.id)
+              const sprintItems = items
+                .filter(i => i.sprintId === activeSprint.id)
+                .sort((a, b) => (a.taskCode ?? '').localeCompare(b.taskCode ?? '', undefined, { numeric: true }))
               const doneCount = sprintItems.filter(i => i.status === 'DONE').length
               const progress = sprintItems.length > 0 ? Math.round((doneCount / sprintItems.length) * 100) : 0
 
