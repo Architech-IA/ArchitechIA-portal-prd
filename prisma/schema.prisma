@@ -66,6 +66,7 @@ model Solucion {
   tipo          String        // PROJECT, DEMO, PARTNERSHIP, PRODUCT
   estado        String        @default("ACTIVO")
   valorEstimado Float         @default(0)
+  empresa       String?
   repositorio   String?
   arquitectura  String?       @default("[]") // JSON: nodos del lienzo de arquitectura
   arquitecturaHtml String?    // HTML del diagrama de arquitectura importado

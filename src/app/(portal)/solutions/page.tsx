@@ -92,6 +92,7 @@ interface Solucion {
   estado: string
   descripcion: string | null
   valorEstimado: number
+  empresa: string | null
   repositorio: string | null
   createdAt: string
   lead: { id: string; companyName: string; contactName: string; status: string } | null
@@ -183,7 +184,7 @@ const ESTADO_COLOR: Record<string, string> = {
   INACTIVO:        '#6b7280',
 }
 
-const EMPTY_FORM = { id: '', nombre: '', tipo: 'PROJECT', estado: 'ACTIVO', descripcion: '', valorEstimado: '' }
+const EMPTY_FORM = { id: '', nombre: '', tipo: 'PROJECT', estado: 'ACTIVO', descripcion: '', valorEstimado: '', empresa: '' }
 
 export default function SolutionsHome() {
   const [counts, setCounts] = useState<Record<string, number | null>>({})
@@ -282,6 +283,7 @@ export default function SolutionsHome() {
           estado: form.estado,
           descripcion: form.descripcion.trim() || null,
           valorEstimado: parseFloat(form.valorEstimado) || 0,
+          empresa: form.empresa?.trim() || null,
         }),
       })
       if (!res.ok) throw new Error('Error al crear')
@@ -587,7 +589,7 @@ export default function SolutionsHome() {
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+            style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
             onClick={e => { if (e.target === e.currentTarget) setDetail(null) }}
           >
             <div
@@ -669,7 +671,7 @@ export default function SolutionsHome() {
                   </button>
                   <button
                     onClick={() => {
-                      setForm({ id: detail.id, nombre: detail.nombre, tipo: detail.tipo, estado: detail.estado, descripcion: detail.descripcion || '', valorEstimado: String(detail.valorEstimado || 0) })
+                      setForm({ id: detail.id, nombre: detail.nombre, tipo: detail.tipo, estado: detail.estado, descripcion: detail.descripcion || '', valorEstimado: String(detail.valorEstimado || 0), empresa: detail.empresa || '' })
                       setError('')
                       setShowModal(true)
                     }}
@@ -794,23 +796,40 @@ export default function SolutionsHome() {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
         >
           <div
-            className="w-full max-w-md rounded-2xl p-6"
-            style={{ background: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="w-full max-w-md rounded-2xl overflow-hidden"
+            style={{ background: 'rgba(15,15,26,0.95)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)' }}
           >
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-white">{form.id ? 'Editar solución' : 'Nueva solución'}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-300">
-                <X size={16} />
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.18) 0%, rgba(168,85,247,0.12) 100%)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.2)', border: '1px solid rgba(249,115,22,0.3)' }}>
+                  <Rocket size={14} style={{ color: '#f97316' }} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-white tracking-wide">{form.id ? 'EDITAR SOLUCIÓN' : 'NUEVA SOLUCIÓN'}</h2>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Completa los datos de la solución</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)')}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)')}
+              >
+                <X size={14} style={{ color: 'rgba(255,255,255,0.5)' }} />
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Nombre *</label>
+                <label className="block text-xs font-medium mb-1.5 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>Nombre *</label>
                 <input
                   style={inputStyle}
                   placeholder="Ej: Agente de cotizaciones"
@@ -819,22 +838,33 @@ export default function SolutionsHome() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-medium mb-1.5 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>Empresa</label>
+                <input
+                  style={inputStyle}
+                  placeholder="Ej: ArchiTechIA, Cliente S.A."
+                  value={form.empresa}
+                  onChange={e => setForm(f => ({ ...f, empresa: e.target.value }))}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Tipo</label>
+                  <label className="block text-xs font-medium mb-1.5 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>Tipo</label>
                   <select
                     style={selectStyle}
                     value={form.tipo}
                     onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
                   >
                     <option value="PROJECT">Project</option>
+                    <option value="PRODUCT">Product</option>
                     <option value="DEMO">Pilot</option>
                     <option value="PARTNERSHIP">Partnership</option>
                     <option value="INTERN">Intern</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Estado</label>
+                  <label className="block text-xs font-medium mb-1.5 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>Estado</label>
                   <select
                     style={selectStyle}
                     value={form.estado}
@@ -847,18 +877,18 @@ export default function SolutionsHome() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Descripcion</label>
+                <label className="block text-xs font-medium mb-1.5 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>Descripción</label>
                 <textarea
                   style={{ ...inputStyle, resize: 'none' }}
                   rows={3}
-                  placeholder="Breve descripcion de la solución..."
+                  placeholder="Breve descripción de la solución..."
                   value={form.descripcion}
                   onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Valor estimado (USD)</label>
+                <label className="block text-xs font-medium mb-1.5 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>Valor estimado (USD)</label>
                 <input
                   style={inputStyle}
                   type="number"
@@ -868,23 +898,31 @@ export default function SolutionsHome() {
                 />
               </div>
 
-              {error && <p className="text-xs text-red-400">{error}</p>}
+              {error && (
+                <div className="rounded-lg px-3 py-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <p className="text-xs" style={{ color: '#fca5a5' }}>{error}</p>
+                </div>
+              )}
 
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-2 rounded-lg text-xs font-medium text-gray-400 transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-medium transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.09)')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)')}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 py-2 rounded-lg text-xs font-semibold text-white transition-opacity disabled:opacity-50"
-                  style={{ background: '#f97316' }}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 4px 15px rgba(249,115,22,0.25)' }}
+                  onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(249,115,22,0.4)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(249,115,22,0.25)' }}
                 >
-                  {saving ? 'Guardando...' : 'Crear solución'}
+                  {saving ? 'Guardando...' : (form.id ? 'Guardar cambios' : 'Crear solución')}
                 </button>
               </div>
             </div>

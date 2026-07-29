@@ -61,7 +61,7 @@ async function uniqueSolucionCode(base: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, planTrabajo, cronograma, solucionCode } = body;
+  const { nombre, descripcion, tipo, estado, valorEstimado, empresa, leadId, repositorio, arquitectura, planTrabajo, cronograma, solucionCode } = body;
 
   const resolvedCode = solucionCode
     ? solucionCode.toUpperCase()
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
       tipo,
       estado: estado || 'ACTIVO',
       valorEstimado: parseFloat(valorEstimado) || 0,
+      empresa: empresa || null,
       leadId: leadId || null,
       repositorio: repositorio || null,
       arquitectura: arquitectura || '[]',
