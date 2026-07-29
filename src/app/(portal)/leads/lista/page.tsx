@@ -26,7 +26,7 @@ interface Lead {
 
 const EMPTY_FORM = {
   companyName: '', contactName: '', email: '', phone: '',
-  status: 'NEW', source: '', tipo: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
+  status: 'NEW', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
 };
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -405,9 +405,12 @@ export default function LeadsPage() {
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(4px)' }}>
           <div style={{ ...glass.modal, padding: '28px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#f1f5f9', margin: 0 }}>{editLead ? 'Editar Lead' : 'Nuevo Lead'}</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>×</button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.15),rgba(234,88,12,0.08))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '18px 18px 0 0', borderBottom: '1px solid rgba(249,115,22,0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 0 8px rgba(249,115,22,0.6)' }} />
+                <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#f1f5f9', margin: 0 }}>{editLead ? 'Editar Lead' : 'Nuevo Lead'}</h2>
+              </div>
+              <button onClick={() => setShowModal(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', fontSize: '16px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>x</button>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
@@ -426,32 +429,28 @@ export default function LeadsPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-                <div>
-                  <label style={labelCls}>Tipo</label>
-                  <select value={formData.tipo} onChange={e => setFormData({...formData, tipo: e.target.value})} style={inputCls}>
-                    <option value="">Seleccionar...</option>
-                    {['Desarrollos','Productos','Servicios Gestionados','Soporte','Consultoría'].map(v => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
                 <div>
                   <label style={labelCls}>Solución Asociada</label>
-                  <select value={formData.solucionAsociada} onChange={e => setFormData({...formData, solucionAsociada: e.target.value})} style={inputCls}>
-                    <option value="">Seleccionar...</option>
-                    {['Project','Demo','Partnership','Products','Intern'].map(v => <option key={v} value={v}>{v}</option>)}
+                  <select value={formData.solucionAsociada} onChange={e => setFormData({...formData, solucionAsociada: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
+                    <option value="" style={{{ background: '#0f172a', color: '#f1f5f9' }}}>Seleccionar...</option>
+                    {['Project','Demo','Partnership','Products','Intern'].map(v => <option key={v} value={v} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{v}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={labelCls}>Estado</label>
-                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={inputCls}>
-                    {Object.entries(STATUS_META).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
+                    {Object.entries(STATUS_META).map(([k,v]) => <option key={k} value={k} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{v.label}</option>)}
                   </select>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
                 <div>
                   <label style={labelCls}>Fuente</label>
-                  <input type="text" required value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} style={inputCls} />
+                  <select required value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
+                    <option value="" style={{{ background: '#0f172a', color: '#f1f5f9' }}}>Seleccionar...</option>
+                    {['Directo','Referido','Partnership'].map(v => <option key={v} value={v} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{v}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label style={labelCls}>Valor Estimado</label>
@@ -460,9 +459,9 @@ export default function LeadsPage() {
               </div>
               <div>
                 <label style={labelCls}>Responsable</label>
-                <select required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} style={inputCls}>
-                  <option value="">Seleccionar...</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                <select required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
+                  <option value="" style={{{ background: '#0f172a', color: '#f1f5f9' }}}>Seleccionar...</option>
+                  {users.map(u => <option key={u.id} value={u.id} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{u.name}</option>)}
                 </select>
               </div>
               <div>
