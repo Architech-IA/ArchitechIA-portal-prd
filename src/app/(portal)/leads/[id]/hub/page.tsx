@@ -15,6 +15,7 @@ interface Lead {
   contactName: string
   status: string
   estimatedValue: number
+  scope: string | null
   source: string
   notes: string | null
   user: { name: string }
@@ -265,7 +266,8 @@ export default function LeadHubPage() {
           </button>
           <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.07)' }} />
           <span style={{ fontSize: '14px', fontWeight: 800, color: '#f1f5f9' }}>{l.companyName}</span>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${l.estimatedValue.toLocaleString()}</span>
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.07)' }} />
+          {l.scope && <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{l.scope.toUpperCase()}</span>}
         </div>
       )
     })
