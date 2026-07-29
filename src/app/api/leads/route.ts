@@ -41,26 +41,6 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Crear solución asociada automáticamente si aplica
-  if (solucionAsociada) {
-    const tipoMap: Record<string, string> = {
-      Project: 'PROJECT',
-      Demo: 'DEMO',
-      Partnership: 'PARTNERSHIP',
-      Products: 'PRODUCT',
-      Intern: 'INTERN',
-    };
-    await prisma.solucion.create({
-      data: {
-        nombre: `${companyName} — ${solucionAsociada}`,
-        descripcion: scope || null,
-        tipo: tipoMap[solucionAsociada] || 'PROJECT',
-        valorEstimado: parseFloat(estimatedValue) || 0,
-        leadId: lead.id,
-      },
-    });
-  }
-
   await logActivity({
     type: 'CREATED', description: `creó el lead ${companyName}`,
     entityType: 'lead', entityId: lead.id, userId, leadId: lead.id,
