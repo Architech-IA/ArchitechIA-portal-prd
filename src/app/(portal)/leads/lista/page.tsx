@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { usePageActions } from '@/lib/pageActionsContext';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { StickyNote, Pencil, Trash2, LayoutDashboard } from 'lucide-react';
+import { Pencil, Trash2, LayoutDashboard } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -69,11 +69,6 @@ export default function LeadsPage() {
   const [formError, setFormError]   = useState('');
   const [deleting, setDeleting]     = useState(false);
   const [delError, setDelError]     = useState('');
-  const [notesLead, setNotesLead]   = useState<Lead | null>(null);
-  const [notesList, setNotesList]   = useState<{ id: string; description: string; createdAt: string; user: { name: string } }[]>([]);
-  const [noteText, setNoteText]     = useState('');
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [addingNote, setAddingNote] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [fStatus, setFStatus]   = useState('');
   const [fSource, setFSource]   = useState('');
@@ -144,18 +139,7 @@ export default function LeadsPage() {
     finally { setDeleting(false); }
   };
 
-  const openNotes = async (lead: Lead) => {
-    setNotesLead(lead); setNoteText(''); setNotesLoading(true);
-    const data = await fetch(`/api/leads/${lead.id}/notes`).then(r => r.json());
-    setNotesList(data); setNotesLoading(false);
-  };
 
-  const addNote = async () => {
-    if (!notesLead || !noteText.trim()) return; setAddingNote(true);
-    const res = await fetch(`/api/leads/${notesLead.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: noteText }) });
-    if (res.ok) { const note = await res.json(); setNotesList(prev => [note, ...prev]); setNoteText(''); }
-    setAddingNote(false);
-  };
 
   const filtered = useMemo(() => leads.filter(l => {
     if (search) { const q = search.toLowerCase(); if (!l.companyName.toLowerCase().includes(q) && !l.contactName.toLowerCase().includes(q) && !l.email.toLowerCase().includes(q)) return false; }
@@ -361,7 +345,6 @@ export default function LeadsPage() {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <button onClick={() => router.push(`/leads/${lead.id}/hub`)} title="HUB" style={{ background: 'none', border: 'none', color: '#f97316', cursor: 'pointer', display: 'flex' }}><LayoutDashboard size={14} /></button>
-                            <button onClick={() => openNotes(lead)} title="Notas" style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', display: 'flex' }}><StickyNote size={14} /></button>
                             <button onClick={() => openEdit(lead)} title="Editar" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}><Pencil size={14} /></button>
                             <button onClick={() => setConfirmDel(lead)} title="Eliminar" style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', opacity: 0.6 }}><Trash2 size={14} /></button>
                           </div>
@@ -502,33 +485,6 @@ export default function LeadsPage() {
         </div>
       )}
 
-      {/* Modal notas */}
-      {notesLead && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(4px)' }}>
-          <div style={{ ...glass.modal, padding: '24px', width: '100%', maxWidth: '480px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Notas — {notesLead.companyName}</h2>
-              <button onClick={() => setNotesLead(null)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px' }}>×</button>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <input type="text" value={noteText} onChange={e => setNoteText(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNote()} placeholder="Escribe una nota..." style={{ ...inputCls, flex: 1 }} />
-              <button onClick={addNote} disabled={addingNote || !noteText.trim()} style={{ padding: '8px 14px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: '9px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: addingNote || !noteText.trim() ? 0.5 : 1 }}>
-                {addingNote ? '...' : 'Agregar'}
-              </button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {notesLoading && <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}><div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.08)', borderTopColor: '#f97316', animation: 'spin 0.8s linear infinite' }} /></div>}
-              {!notesLoading && notesList.length === 0 && <p style={{ textAlign: 'center', color: '#334155', fontSize: '13px', padding: '16px' }}>Sin notas aún.</p>}
-              {notesList.map(n => (
-                <div key={n.id} style={{ ...glass.card, padding: '12px 14px' }}>
-                  <p style={{ fontSize: '13px', color: '#e2e8f0', margin: '0 0 4px' }}>{n.description}</p>
-                  <p style={{ fontSize: '11px', color: '#475569', margin: 0 }}>{n.user.name} · {new Date(n.createdAt).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal confirmar eliminación */}
       {confirmDel && (
