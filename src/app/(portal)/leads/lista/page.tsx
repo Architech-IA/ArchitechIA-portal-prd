@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { usePageActions } from '@/lib/pageActionsContext';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { StickyNote, Pencil, Trash2, LayoutDashboard } from 'lucide-react';
-import LeadsNav from '@/components/LeadsNav';
 
 interface Lead {
   id: string;
@@ -88,6 +88,21 @@ export default function LeadsPage() {
   const [sortDir, setSortDir]   = useState<'asc' | 'desc'>('desc');
   const [page, setPage]         = useState(1);
   const [pageSize, setPageSize] = useState(20);
+
+  const { setActions } = usePageActions()
+
+  useEffect(() => {
+    setActions(
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '3px' }}>
+        <a href="/leads/lista" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 700, textDecoration: 'none', background: 'linear-gradient(135deg,#f97316,#ea580c)', color: '#fff', boxShadow: '0 2px 8px rgba(249,115,22,0.35)' }}>Leads</a>
+        <a href="/leads/clientes" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Clientes</a>
+        <a href="/leads/prospector" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Prospector</a>
+        <a href="/leads/pipeline" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Timeline</a>
+        <a href="/leads/mercado" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Mercado</a>
+      </div>
+    )
+    return () => setActions(null)
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -218,7 +233,6 @@ export default function LeadsPage() {
 
   return (
     <div style={{ padding: '10px 32px 32px' }}>
-      <LeadsNav />
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '20px' }}>
