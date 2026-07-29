@@ -181,6 +181,7 @@ model Activity {
   proposalId  String?
   project     Project?     @relation(fields: [projectId], references: [id])
   projectId   String?
+  date        DateTime?
   createdAt   DateTime     @default(now())
 }
 
@@ -250,6 +251,10 @@ enum ActivityType {
   NOTE_ADDED
   PROPOSAL_SENT
   MILESTONE_COMPLETED
+  CALL
+  EMAIL
+  MEETING
+  WHATSAPP
 }
 
 model RegistroFinanciero {
