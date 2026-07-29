@@ -178,7 +178,7 @@ function PhasePanel({
         disabled={saving}
         className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
       >
-        {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={14} /> : <Save size={14} />}
+        {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={11} /> : <Save size={14} />}
         {saving ? 'Guardando...' : saved ? '¡Guardado!' : 'Guardar'}
       </button>
 
@@ -310,7 +310,7 @@ export default function LeadHubPage() {
       <div className="w-72 flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
 
         {/* Timeline */}
-        <div className="flex-1 overflow-y-auto py-4 px-3">
+        <div className="flex-1 overflow-y-auto py-2 px-2">
           {PHASES.map((phase, i) => {
             const status   = getPhaseStatus(phase.key)
             const isActive = active === phase.key
@@ -321,39 +321,39 @@ export default function LeadHubPage() {
               <div key={phase.key} className="relative">
                 {/* Connector line */}
                 {i < PHASES.length - 1 && (
-                  <div className={`absolute left-[1.375rem] top-10 w-0.5 h-8 ${status === 'done' ? 'bg-orange-500/40' : 'bg-gray-800'}`} />
+                  <div className={`absolute left-[0.9rem] top-8 w-0.5 h-6 ${status === 'done' ? 'bg-orange-500/40' : 'bg-gray-800'}`} />
                 )}
 
                 <button
                   onClick={() => setActive(isActive ? null : phase.key)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all mb-1 text-left ${
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all mb-0.5 text-left ${
                     isActive ? `${c.bg} ${c.border} border` : 'hover:bg-gray-800/60'
                   }`}
                 >
                   {/* Status icon */}
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
                     status === 'done'   ? 'bg-orange-500/20 ring-2 ring-orange-500/30' :
                     status === 'active' ? `${c.bg} ring-2 ${c.ring}` :
                                          'bg-gray-800'
                   }`}>
                     {status === 'done'
-                      ? <CheckCircle2 size={14} className="text-orange-400" />
+                      ? <CheckCircle2 size={11} className="text-orange-400" />
                       : status === 'active'
-                      ? <div className={`w-2.5 h-2.5 rounded-full ${c.dot} animate-pulse`} />
-                      : <Circle size={12} className="text-gray-700" />
+                      ? <div className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />
+                      : <Circle size={10} className="text-gray-700" />
                     }
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${isActive ? c.text : status === 'done' ? 'text-gray-300' : status === 'active' ? 'text-white' : 'text-gray-500'}`}>
+                    <p className={`text-xs font-medium ${isActive ? c.text : status === 'done' ? 'text-gray-300' : status === 'active' ? 'text-white' : 'text-gray-500'}`}>
                       {phase.label}
                     </p>
                     {hasData && (
-                      <p className="text-[10px] text-orange-400/70">Con contenido</p>
+                      <p className="text-[9px] text-orange-400/70">Con contenido</p>
                     )}
                   </div>
 
-                  <ChevronRight size={13} className={`flex-shrink-0 transition-transform ${isActive ? `rotate-90 ${c.text}` : 'text-gray-700'}`} />
+                  <ChevronRight size={11} className={`flex-shrink-0 transition-transform ${isActive ? `rotate-90 ${c.text}` : 'text-gray-700'}`} />
                 </button>
               </div>
             )
