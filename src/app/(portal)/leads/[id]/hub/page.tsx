@@ -309,6 +309,35 @@ export default function LeadHubPage() {
       {/* Timeline sidebar */}
       <div className="w-72 flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
 
+        {/* Widget info general del lead */}
+        <div style={{ margin: '12px', marginBottom: '0', padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
+          <p style={{ fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Info del Lead</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+              <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Contacto</span>
+              <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
+            </div>
+            {lead.scope && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Alcance</span>
+                <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8', textAlign: 'right', maxWidth: '130px' }}>{lead.scope}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', color: '#475569' }}>Fuente</span>
+              <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>{lead.source || '—'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', color: '#475569' }}>Valor</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${lead.estimatedValue.toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', color: '#475569' }}>Responsable</span>
+              <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
+            </div>
+          </div>
+        </div>
+
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto py-2 px-2">
           {PHASES.map((phase, i) => {
@@ -358,41 +387,6 @@ export default function LeadHubPage() {
               </div>
             )
           })}
-        </div>
-
-        {/* Widget info general del lead */}
-        <div style={{ margin: '12px', padding: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', flexShrink: 0 }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Info del Lead</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Contacto</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
-            </div>
-            {lead.scope && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Alcance</span>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right', maxWidth: '130px' }}>{lead.scope}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Fuente</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.source || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Valor</span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${lead.estimatedValue.toLocaleString()}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Responsable</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
-            </div>
-            <div style={{ marginTop: '2px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Estado</span>
-              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)' }}>
-                {PHASES.find(p => p.key === lead.status)?.label ?? lead.status}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 
