@@ -308,7 +308,7 @@ export default function LeadsPage() {
                   { key: 'scope'          as SortKey, label: 'Alcance'     },
                   { key: 'contactName'    as SortKey, label: 'Contacto'    },
                   { key: 'email'          as SortKey, label: 'Email'       },
-                  { key: 'status'         as SortKey, label: 'Estado'      },
+                  { key: 'solucionAsociada' as SortKey, label: 'Tipo Solución' },
                   { key: 'estimatedValue' as SortKey, label: 'Valor'       },
                   { key: 'source'         as SortKey, label: 'Fuente'      },
                   { key: 'createdAt'      as SortKey, label: 'Días'        },
@@ -354,13 +354,7 @@ export default function LeadsPage() {
                       <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.scope || '—'}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#94a3b8' }}>{lead.contactName}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.email}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {sm && <span style={{ padding: '2px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '20px', background: sm.bg, color: sm.color, border: `1px solid ${sm.border}`, width: 'fit-content' }}>{sm.label}</span>}
-                          {lead.tipo && <span style={{ padding: '2px 8px', fontSize: '10px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', color: '#64748b', border: '1px solid rgba(255,255,255,0.07)', width: 'fit-content' }}>{lead.tipo}</span>}
-                          {lead.solucionAsociada && <span style={{ padding: '2px 8px', fontSize: '10px', borderRadius: '20px', background: 'rgba(249,115,22,0.08)', color: '#f97316', border: '1px solid rgba(249,115,22,0.2)', width: 'fit-content' }}>{lead.solucionAsociada}</span>}
-                        </div>
-                      </td>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{lead.solucionAsociada ? <span style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}>{lead.solucionAsociada}</span> : <span style={{ color: '#334155', fontSize: '12px' }}>—</span>}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>${lead.estimatedValue.toLocaleString()}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.source}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
