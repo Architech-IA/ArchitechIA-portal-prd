@@ -310,7 +310,7 @@ export default function LeadsPage() {
                   { key: 'solucionAsociada' as SortKey, label: 'Tipo Solución' },
                   { key: 'estimatedValue' as SortKey, label: 'Valor'       },
                   { key: 'source'         as SortKey, label: 'Fuente'      },
-                  { key: 'createdAt'      as SortKey, label: 'Días'        },
+                
                   { key: 'user'           as SortKey, label: 'Responsable' },
                 ]).map(col => (
                   <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
@@ -333,8 +333,8 @@ export default function LeadsPage() {
               ) : (
                 paginated.map((lead, i) => {
                   const sm = STATUS_META[lead.status];
-                  const days = Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / 86400000);
-                  const oldAlert = !['WON','LOST'].includes(lead.status) && days > 7;
+
+
                   return (
                     <tr key={lead.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'}
@@ -356,9 +356,7 @@ export default function LeadsPage() {
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{lead.solucionAsociada ? <span style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}>{lead.solucionAsociada}</span> : <span style={{ color: '#334155', fontSize: '12px' }}>—</span>}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>${lead.estimatedValue.toLocaleString()}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.source}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: oldAlert ? 'rgba(248,113,113,0.1)' : 'transparent', color: oldAlert ? '#f87171' : '#475569', border: oldAlert ? '1px solid rgba(248,113,113,0.2)' : 'none' }}>{days}d</span>
-                      </td>
+                
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.user.name}</td>
                     </tr>
                   );
