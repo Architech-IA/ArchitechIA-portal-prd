@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import {
-  ArrowLeft, CheckCircle2, Circle, Clock, Loader2,
+  CheckCircle2, Circle, Clock, Loader2,
   Save, Paperclip, X, Download, Trash2, FileText,
   ChevronRight,
 } from 'lucide-react'
@@ -242,8 +242,6 @@ function PhasePanel({
 
 export default function LeadHubPage() {
   const { id } = useParams() as { id: string }
-  const router = useRouter()
-
   const { setActions } = usePageActions()
 
   const [lead, setLead]       = useState<Lead | null>(null)
@@ -260,16 +258,14 @@ export default function LeadHubPage() {
       setPhases(Array.isArray(p) ? p : [])
       setLoading(false)
       setActions(
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1.2 }}>{l.companyName}</span>
-            <span style={{ fontSize: '11px', color: '#64748b' }}>{l.contactName}</span>
-          </div>
-          <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.07)' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${l.estimatedValue.toLocaleString()}</span>
-            <span style={{ fontSize: '11px', color: '#475569' }}>{l.user.name}</span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => window.history.back()} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '4px 10px', color: '#94a3b8', fontSize: '12px', cursor: 'pointer' }}>
+            <svg width='12' height='12' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 19l-7-7 7-7' /></svg>
+            Volver a Leads
+          </button>
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.07)' }} />
+          <span style={{ fontSize: '14px', fontWeight: 800, color: '#f1f5f9' }}>{l.companyName}</span>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${l.estimatedValue.toLocaleString()}</span>
         </div>
       )
     })
@@ -310,23 +306,6 @@ export default function LeadHubPage() {
 
       {/* Timeline sidebar */}
       <div className="w-72 flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
-
-        {/* Header */}
-        <div className="px-5 py-5 border-b border-gray-800">
-          <button
-            onClick={() => router.push('/leads')}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-4"
-          >
-            <ArrowLeft size={13} /> Volver a Leads
-          </button>
-          <h1 className="text-base font-bold text-white leading-tight">{lead.companyName}</h1>
-          <p className="text-xs text-gray-500 mt-0.5">{lead.contactName}</p>
-          <div className="flex items-center gap-2 mt-3">
-            <span className="text-xs text-orange-400 font-mono">${lead.estimatedValue.toLocaleString()}</span>
-            <span className="text-gray-700">·</span>
-            <span className="text-xs text-gray-500">{lead.user.name}</span>
-          </div>
-        </div>
 
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto py-4 px-3">
