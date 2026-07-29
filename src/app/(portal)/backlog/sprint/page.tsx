@@ -217,7 +217,10 @@ export default function SprintPage() {
             {sprints.map(activeSprint => {
               const sprintItems = items
                 .filter(i => i.sprintId === activeSprint.id)
-                .sort((a, b) => (a.taskCode ?? '').localeCompare(b.taskCode ?? '', undefined, { numeric: true }))
+                .sort((a, b) => {
+                  const n = (tc: string | null) => parseInt((tc ?? '').split('-').pop() ?? '0', 10)
+                  return n(a.taskCode) - n(b.taskCode)
+                })
               const doneCount = sprintItems.filter(i => i.status === 'DONE').length
               const progress = sprintItems.length > 0 ? Math.round((doneCount / sprintItems.length) * 100) : 0
 
@@ -345,21 +348,22 @@ export default function SprintPage() {
                             ? orderedIds.map(id => sprintItems.find(i => i.id === id)).filter(Boolean) as BacklogItem[]
                             : sprintItems
                           const hasReordered = !!orderedIds
+                          const sid = activeSprint.id
                           const confirmOrder = async () => {
-                            setSavingOrder(prev => ({ ...prev, [activeSprint.id]: true }))
+                            setSavingOrder(prev => ({ ...prev, [sid]: true }))
                             try {
                               const res = await fetch('/api/backlog/reorder', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ sprintId: activeSprint.id, orderedIds: orderedItems.map(i => i.id) })
+                                body: JSON.stringify({ sprintId: sid, orderedIds: orderedItems.map(i => i.id) })
                               })
                               if (res.ok) {
                                 const updated: BacklogItem[] = await res.json()
                                 setItems(prev => prev.map(i => { const u = updated.find(x => x.id === i.id); return u ?? i }))
-                                setDragOrder(prev => { const n = { ...prev }; delete n[activeSprint.id]; return n })
                               }
                             } finally {
-                              setSavingOrder(prev => ({ ...prev, [activeSprint.id]: false }))
+                              setSavingOrder(prev => ({ ...prev, [sid]: false }))
+                              setDragOrder(prev => { const n = { ...prev }; delete n[sid]; return n })
                             }
                           }
                           return (
