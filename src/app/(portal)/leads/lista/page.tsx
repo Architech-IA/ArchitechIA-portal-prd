@@ -230,23 +230,22 @@ export default function LeadsPage() {
 
       {/* Action bar */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center' }}>
-        <button onClick={exportCSV} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9px', color: '#94a3b8', fontSize: '13px', cursor: 'pointer', flexShrink: 0 }}>
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-          CSV
-        </button>
         <button onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: '9px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 12px rgba(249,115,22,0.3)' }}>
           + Nuevo Lead
         </button>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#475569' }} width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <input type="text" placeholder="Buscar por empresa, contacto o email..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputCls, paddingLeft: '36px' }} />
-        </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
           style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '9px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, border: showFilters || activeFilterCount > 0 ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.08)', background: showFilters || activeFilterCount > 0 ? 'rgba(249,115,22,0.1)' : 'rgba(255,255,255,0.05)', color: showFilters || activeFilterCount > 0 ? '#f97316' : '#64748b' }}
         >
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
           Filtros {activeFilterCount > 0 && `(${activeFilterCount})`}
+        </button>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#475569' }} width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input type="text" placeholder="Buscar por empresa, contacto o email..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputCls, paddingLeft: '36px' }} />
+        </div>
+        <button onClick={exportCSV} title="Exportar CSV" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9px', color: '#94a3b8', cursor: 'pointer', flexShrink: 0 }}>
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
         </button>
       </div>
 
