@@ -9,32 +9,41 @@ export async function POST(request: NextRequest) {
 
   const items = await prisma.backlogItem.findMany({ where: { sprintId, id: { in: orderedIds } } })
 
-  const updated = await Promise.all(
-    orderedIds.map(async (id: string, idx: number) => {
-      const item = items.find(i => i.id === id)
-      if (!item) return null
-
-      // Build new taskCode: keep prefix (SOL-EPIC-SPRINT), replace last segment
-      const newNum = String(idx + 1).padStart(3, '0')
-      let newTaskCode = item.taskCode
-      if (item.taskCode) {
-        const parts = item.taskCode.split('-')
-        if (parts.length >= 4) {
-          parts[parts.length - 1] = newNum
-          newTaskCode = parts.join('-')
-        }
-      }
-
-      return prisma.backlogItem.update({
-        where: { id },
-        data: { taskCode: newTaskCode },
-        include: {
-          solucion: { select: { id: true, nombre: true, tipo: true } },
-          sprint: { select: { id: true, sprintCode: true, name: true } },
-        },
-      })
+  // Step 1: set all to temp codes to avoid unique constraint collisions
+  for (const item of items) {
+    await prisma.backlogItem.update({
+      where: { id: item.id },
+      data: { taskCode: `__tmp_${item.id}` },
     })
-  )
+  }
 
-  return NextResponse.json(updated.filter(Boolean))
+  // Step 2: assign final codes sequentially in drag order
+  const updated = []
+  for (let idx = 0; idx < orderedIds.length; idx++) {
+    const id = orderedIds[idx]
+    const item = items.find(i => i.id === id)
+    if (!item) continue
+
+    const newNum = String(idx + 1).padStart(3, '0')
+    let newTaskCode = item.taskCode
+    if (item.taskCode) {
+      const parts = item.taskCode.split('-')
+      if (parts.length >= 4) {
+        parts[parts.length - 1] = newNum
+        newTaskCode = parts.join('-')
+      }
+    }
+
+    const result = await prisma.backlogItem.update({
+      where: { id },
+      data: { taskCode: newTaskCode },
+      include: {
+        solucion: { select: { id: true, nombre: true, tipo: true } },
+        sprint: { select: { id: true, sprintCode: true, name: true } },
+      },
+    })
+    updated.push(result)
+  }
+
+  return NextResponse.json(updated)
 }
