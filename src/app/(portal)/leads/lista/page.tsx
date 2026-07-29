@@ -404,48 +404,52 @@ export default function LeadsPage() {
 
       {/* Modal crear / editar */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(4px)' }}>
-          <div style={{ ...glass.modal, padding: '28px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.15),rgba(234,88,12,0.08))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '18px 18px 0 0', borderBottom: '1px solid rgba(249,115,22,0.15)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 0 8px rgba(249,115,22,0.6)' }} />
-                <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#f1f5f9', margin: 0 }}>{editLead ? 'Editar Lead' : 'Nuevo Lead'}</h2>
-              </div>
-              <button onClick={() => setShowModal(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '7px', color: '#94a3b8', cursor: 'pointer', fontSize: '16px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>x</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)' }}>
+          <div style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '24px', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: '28px', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(12px)' }}>
+              <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>{editLead ? 'Editar Lead' : 'Nuevo Lead'}</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', fontSize: '15px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>×</button>
             </div>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Fila 1: Empresa, Alcance, Solución */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-                {[['Empresa','companyName','text',true],['Alcance','scope','text',false],['Contacto','contactName','text',true]].map(([l,k,t,r]) => (
+                {[['Empresa','companyName','text',true],['Alcance','scope','text',false]].map(([l,k,t,r]) => (
                   <div key={k as string}>
                     <label style={labelCls}>{l as string}</label>
                     <input type={t as string} required={r as boolean} value={formData[k as keyof typeof formData]} onChange={e => setFormData({...formData, [k as string]: e.target.value})} style={inputCls} />
                   </div>
                 ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
-                {[['Email','email','email',true],['Teléfono','phone','text',false]].map(([l,k,t,r]) => (
-                  <div key={k as string}>
-                    <label style={labelCls}>{l as string}</label>
-                    <input type={t as string} required={r as boolean} value={formData[k as keyof typeof formData]} onChange={e => setFormData({...formData, [k as string]: e.target.value})} style={inputCls} />
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
                 <div>
-                  <label style={labelCls}>Solución Asociada</label>
+                  <label style={labelCls}>Solución</label>
                   <select value={formData.solucionAsociada} onChange={e => setFormData({...formData, solucionAsociada: e.target.value})} style={selectCls}>
                     <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Seleccionar...</option>
                     {['Project','Demo','Partnership','Products','Intern'].map(v => <option key={v} value={v} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v}</option>)}
                   </select>
                 </div>
+              </div>
+              {/* Fila 2: Contacto, Email, Teléfono */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+                <div>
+                  <label style={labelCls}>Contacto</label>
+                  <input type="text" required value={formData.contactName} onChange={e => setFormData({...formData, contactName: e.target.value})} style={inputCls} />
+                </div>
+                <div>
+                  <label style={labelCls}>Email</label>
+                  <input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={inputCls} />
+                </div>
+                <div>
+                  <label style={labelCls}>Teléfono</label>
+                  <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={inputCls} />
+                </div>
+              </div>
+              {/* Fila 3: Estado, Fuente, Responsable */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
                 <div>
                   <label style={labelCls}>Estado</label>
                   <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={selectCls}>
                     {Object.entries(STATUS_META).map(([k,v]) => <option key={k} value={k} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v.label}</option>)}
                   </select>
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
                 <div>
                   <label style={labelCls}>Fuente</label>
                   <select required value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} style={selectCls}>
@@ -454,17 +458,19 @@ export default function LeadsPage() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelCls}>Valor Estimado</label>
-                  <input type="number" value={formData.estimatedValue} onChange={e => setFormData({...formData, estimatedValue: e.target.value})} style={inputCls} />
+                  <label style={labelCls}>Responsable</label>
+                  <select required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} style={selectCls}>
+                    <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Seleccionar...</option>
+                    {users.map(u => <option key={u.id} value={u.id} style={{ background: '#0f172a', color: '#f1f5f9' }}>{u.name}</option>)}
+                  </select>
                 </div>
               </div>
+              {/* Fila 4: Valor Estimado */}
               <div>
-                <label style={labelCls}>Responsable</label>
-                <select required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} style={selectCls}>
-                  <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Seleccionar...</option>
-                  {users.map(u => <option key={u.id} value={u.id} style={{ background: '#0f172a', color: '#f1f5f9' }}>{u.name}</option>)}
-                </select>
+                <label style={labelCls}>Valor Estimado</label>
+                <input type="number" value={formData.estimatedValue} onChange={e => setFormData({...formData, estimatedValue: e.target.value})} style={inputCls} />
               </div>
+              {/* Fila 5: Notas */}
               <div>
                 <label style={labelCls}>Notas</label>
                 <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} rows={3} style={{ ...inputCls, resize: 'vertical' }} />
