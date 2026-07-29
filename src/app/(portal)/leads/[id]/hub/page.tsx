@@ -279,17 +279,17 @@ export default function LeadHubPage() {
   }, [])
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex items-center justify-center" style={{ height: "calc(100vh - 52px)" }}>
       <Loader2 className="animate-spin text-orange-500" size={32} />
     </div>
   )
 
   if (!lead) return (
-    <div className="flex items-center justify-center h-screen text-gray-500">Lead no encontrado</div>
+    <div className="flex items-center justify-center text-gray-500" style={{ height: "calc(100vh - 52px)" }}>Lead no encontrado</div>
   )
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex overflow-hidden" style={{ height: "calc(100vh - 52px)" }}>
 
       {/* Timeline sidebar */}
       <div className="w-72 flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
