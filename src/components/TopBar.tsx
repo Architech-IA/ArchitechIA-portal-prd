@@ -84,13 +84,6 @@ export default function TopBar({
   const titleHref = title && HUB_SUBPAGE_RE.test(pathname) ? '/hub'
     : title && SOLUTIONS_RE.test(pathname) ? '/solutions'
     : null;
-  const userName = (session?.user as { name?: string })?.name ?? '';
-  const initials = userName
-    .split(' ')
-    .slice(0, 2)
-    .map((n: string) => n[0])
-    .join('')
-    .toUpperCase() || 'A';
 
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -306,19 +299,6 @@ export default function TopBar({
         )}
       </div>
 
-      {/* Avatar con iniciales */}
-      <a
-        href="/profile"
-        title={userName || 'Mi Perfil'}
-        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 select-none transition-colors"
-        style={{ background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.3)' }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.3)'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.2)'}
-      >
-        <span style={{ fontSize: '10px', fontWeight: 700, color: '#A78BFA', letterSpacing: '0.03em' }}>
-          {initials}
-        </span>
-      </a>
     </div>
   );
 }
