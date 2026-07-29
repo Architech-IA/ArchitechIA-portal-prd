@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { usePageActions } from '@/lib/pageActionsContext'
 import {
   ArrowLeft, CheckCircle2, Circle, Clock, Loader2,
   Save, Paperclip, X, Download, Trash2, FileText,
@@ -243,6 +244,8 @@ export default function LeadHubPage() {
   const { id } = useParams() as { id: string }
   const router = useRouter()
 
+  const { setActions } = usePageActions()
+
   const [lead, setLead]       = useState<Lead | null>(null)
   const [phases, setPhases]   = useState<PhaseData[]>([])
   const [loading, setLoading] = useState(true)
@@ -256,7 +259,21 @@ export default function LeadHubPage() {
       setLead(l)
       setPhases(Array.isArray(p) ? p : [])
       setLoading(false)
+      setActions(
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1.2 }}>{l.companyName}</span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>{l.contactName}</span>
+          </div>
+          <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.07)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${l.estimatedValue.toLocaleString()}</span>
+            <span style={{ fontSize: '11px', color: '#475569' }}>{l.user.name}</span>
+          </div>
+        </div>
+      )
     })
+    return () => setActions(null)
   }, [id])
 
   const getPhaseData = (key: string) => phases.find(p => p.phase === key) ?? null
