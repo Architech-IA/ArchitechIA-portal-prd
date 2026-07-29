@@ -99,7 +99,7 @@ export default function LeadsPage() {
   const openNew = () => { setEditLead(null); setFormData(EMPTY_FORM); setFormError(''); setShowModal(true); };
   const openEdit = (lead: Lead) => {
     setEditLead(lead); setFormError('');
-    setFormData({ companyName: lead.companyName, contactName: lead.contactName, email: lead.email, phone: lead.phone || '', status: lead.status, source: lead.source, tipo: lead.tipo || '', solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '', estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id });
+    setFormData({ companyName: lead.companyName, contactName: lead.contactName, email: lead.email, phone: lead.phone || '', status: lead.status, source: lead.source, solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '', estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id });
     setShowModal(true);
   };
 
@@ -195,7 +195,8 @@ export default function LeadsPage() {
     : <span style={{ color: '#f97316', marginLeft: '4px' }}>{sortDir === 'asc' ? '↑' : '↓'}</span>;
 
   const inputCls: React.CSSProperties = { ...glass.input, padding: '8px 12px', fontSize: '13px' };
-  const labelCls: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' };
+  const labelCls: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }
+      const selectCls: React.CSSProperties = { ...glass.input, padding: '8px 12px', fontSize: '13px', colorScheme: 'dark', cursor: 'pointer' };
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -432,24 +433,24 @@ export default function LeadsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
                 <div>
                   <label style={labelCls}>Solución Asociada</label>
-                  <select value={formData.solucionAsociada} onChange={e => setFormData({...formData, solucionAsociada: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
-                    <option value="" style={{{ background: '#0f172a', color: '#f1f5f9' }}}>Seleccionar...</option>
-                    {['Project','Demo','Partnership','Products','Intern'].map(v => <option key={v} value={v} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{v}</option>)}
+                  <select value={formData.solucionAsociada} onChange={e => setFormData({...formData, solucionAsociada: e.target.value})} style={selectCls}>
+                    <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Seleccionar...</option>
+                    {['Project','Demo','Partnership','Products','Intern'].map(v => <option key={v} value={v} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={labelCls}>Estado</label>
-                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
-                    {Object.entries(STATUS_META).map(([k,v]) => <option key={k} value={k} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{v.label}</option>)}
+                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={selectCls}>
+                    {Object.entries(STATUS_META).map(([k,v]) => <option key={k} value={k} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v.label}</option>)}
                   </select>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
                 <div>
                   <label style={labelCls}>Fuente</label>
-                  <select required value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
-                    <option value="" style={{{ background: '#0f172a', color: '#f1f5f9' }}}>Seleccionar...</option>
-                    {['Directo','Referido','Partnership'].map(v => <option key={v} value={v} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{v}</option>)}
+                  <select required value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} style={selectCls}>
+                    <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Seleccionar...</option>
+                    {['Directo','Referido','Partnership'].map(v => <option key={v} value={v} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v}</option>)}
                   </select>
                 </div>
                 <div>
@@ -459,9 +460,9 @@ export default function LeadsPage() {
               </div>
               <div>
                 <label style={labelCls}>Responsable</label>
-                <select required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} style={{{ ...inputCls, appearance: 'none' as const, WebkitAppearance: 'none' as const, backgroundImage: "url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px', cursor: 'pointer' }}}>
-                  <option value="" style={{{ background: '#0f172a', color: '#f1f5f9' }}}>Seleccionar...</option>
-                  {users.map(u => <option key={u.id} value={u.id} style={{{ background: '#0f172a', color: '#f1f5f9' }}}>{u.name}</option>)}
+                <select required value={formData.userId} onChange={e => setFormData({...formData, userId: e.target.value})} style={selectCls}>
+                  <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Seleccionar...</option>
+                  {users.map(u => <option key={u.id} value={u.id} style={{ background: '#0f172a', color: '#f1f5f9' }}>{u.name}</option>)}
                 </select>
               </div>
               <div>
