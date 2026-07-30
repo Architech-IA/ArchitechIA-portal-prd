@@ -1,4 +1,5 @@
 ﻿'use client'
+import React from 'react'
 
 import { useState, useEffect } from 'react'
 import { Plus, Layers, X, Loader2, Pencil, Trash2, ChevronDown, Rocket, Target, Map as MapIcon, Calendar } from 'lucide-react'
@@ -56,14 +57,56 @@ const SPRINT_STATUS_LABEL: Record<string, string> = {
 
 const EMPTY_FORM = { name: '', description: '', status: 'ACTIVE', priority: 'MEDIUM', color: '#7F77DD', startDate: '', endDate: '', solucionId: '' }
 
+function Dropdown({ label, value, onChange, options }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+}) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+  const selected = options.find(o => o.value === value)
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{label}</label>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: open ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.08)', color: '#f1f5f9', fontSize: '13px', cursor: 'pointer', backdropFilter: 'blur(8px)', transition: 'all 0.15s' }}>
+        <span>{selected?.label ?? '—'}</span>
+        <ChevronDown size={13} style={{ color: '#475569', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, borderRadius: '10px', background: 'rgba(15,18,36,0.97)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 16px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', overflow: 'hidden' }}>
+          {options.map(opt => (
+            <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false) }}
+              style={{ width: '100%', display: 'block', padding: '9px 14px', textAlign: 'left', fontSize: '12px', fontWeight: value === opt.value ? 600 : 400, color: value === opt.value ? '#f97316' : '#94a3b8', background: value === opt.value ? 'rgba(249,115,22,0.08)' : 'transparent', border: 'none', cursor: 'pointer', transition: 'all 0.1s' }}
+              onMouseEnter={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { if (value !== opt.value) (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+              {opt.value === value && <span style={{ marginRight: '6px', color: '#f97316' }}>✓</span>}{opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function EpicModal({ initial, soluciones, onSave, onClose }: {
   initial?: Partial<typeof EMPTY_FORM & { id: string }>
   soluciones: Solucion[]
   onSave: (data: typeof EMPTY_FORM & { id?: string }) => Promise<void>
   onClose: () => void
 }) {
-  const [form, setForm] = useState({ ...EMPTY_FORM, ...initial })
-  const [saving, setSaving] = useState(false)
+  const [form, setForm] = React.useState({ ...EMPTY_FORM, ...initial })
+  const [saving, setSaving] = React.useState(false)
 
   const handle = async () => {
     if (!form.name.trim()) return
@@ -72,107 +115,102 @@ function EpicModal({ initial, soluciones, onSave, onClose }: {
     setSaving(false)
   }
 
-  const sel = 'w-full rounded-lg px-3 py-2 text-sm text-white focus:outline-none'
-  const selStyle = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', colorScheme: 'dark' as const }
+  const statusOptions = EPIC_STATUSES.map(s => ({ value: s, label: STATUS_CONFIG[s]?.label || s }))
+  const priorityOptions = PRIORITIES.map(p => ({ value: p, label: PRIORITY_LABELS[p] }))
+  const solucionOptions = [{ value: '', label: 'Sin solución' }, ...soluciones.map(s => ({ value: s.id, label: s.nombre }))]
+
+  const inputStyle: React.CSSProperties = { width: '100%', borderRadius: '10px', padding: '8px 12px', fontSize: '13px', color: '#f1f5f9', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', backdropFilter: 'blur(8px)' }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(16px)' }}
       onClick={onClose}>
       <div onClick={e => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
-        style={{ background: 'rgba(10,12,28,0.98)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}>
+        className="w-full max-w-lg rounded-2xl overflow-hidden"
+        style={{ background: 'rgba(12,15,30,0.85)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)', backdropFilter: 'blur(40px) saturate(180%)' }}>
 
-        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg,#1D9375,#34d39944)' }}/>
+        {/* Línea superior */}
+        <div style={{ height: '2px', background: 'linear-gradient(90deg, #1D9375, rgba(52,211,153,0.2))' }} />
 
-        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(29,147,117,0.12)', border: '1px solid rgba(29,147,117,0.25)' }}>
-              <Layers size={14} className="text-emerald-400"/>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(90deg, rgba(29,147,117,0.1) 0%, rgba(168,85,247,0.06) 100%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(29,147,117,0.15)', border: '1px solid rgba(29,147,117,0.3)' }}>
+              <Layers size={14} style={{ color: '#34d399' }} />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">{initial?.id ? 'Editar Épica' : 'Nueva Épica'}</h2>
-              <p className="text-[11px] text-gray-500 mt-0.5">{initial?.id ? 'Modifica los detalles de la épica' : 'Define un nuevo milestone estratégico'}</p>
+              <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{initial?.id ? 'EDITAR ÉPICA' : 'NUEVA ÉPICA'}</h2>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>Define un nuevo milestone estratégico</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Nombre *</label>
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', fontSize: '14px', fontWeight: 500 }}
-              placeholder="ej: Módulo de autenticación"/>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Estado</label>
-              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className={sel} style={selStyle}>
-                {EPIC_STATUSES.map(s => <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Prioridad</label>
-              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className={sel} style={selStyle}>
-                {PRIORITIES.map(p => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Solución</label>
-            <select value={form.solucionId} onChange={e => setForm(f => ({ ...f, solucionId: e.target.value }))} className={sel} style={selStyle}>
-              <option value="">Sin solución</option>
-              {soluciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Inicio</label>
-              <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-                className="w-full rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', colorScheme: 'dark' }}/>
-            </div>
-            <div>
-              <label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Fin</label>
-              <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
-                className="w-full rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', colorScheme: 'dark' }}/>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Descripción</label>
-            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}
-              className="w-full rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none resize-none"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', lineHeight: '1.6' }}
-              placeholder="Objetivo estratégico de esta épica..."/>
-          </div>
-        </div>
-
-        <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0 24px' }}/>
-
-        <div className="flex gap-2 px-6 py-4">
           <button onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-gray-400 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)')}
+            onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)')}>
+            <X size={13} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+          {/* Nombre */}
+          <div>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Nombre *</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="ej: Módulo de autenticación"
+              style={inputStyle} />
+          </div>
+
+          {/* Estado + Prioridad */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <Dropdown label="Estado" value={form.status} onChange={v => setForm(f => ({ ...f, status: v }))} options={statusOptions} />
+            <Dropdown label="Prioridad" value={form.priority} onChange={v => setForm(f => ({ ...f, priority: v }))} options={priorityOptions} />
+          </div>
+
+          {/* Solución */}
+          <Dropdown label="Solución" value={form.solucionId} onChange={v => setForm(f => ({ ...f, solucionId: v }))} options={solucionOptions} />
+
+          {/* Fechas */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Inicio</label>
+              <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} style={{ ...inputStyle, colorScheme: 'dark' as const }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Fin</label>
+              <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} style={{ ...inputStyle, colorScheme: 'dark' as const }} />
+            </div>
+          </div>
+
+          {/* Descripción */}
+          <div>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Descripción</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}
+              placeholder="Objetivo estratégico de esta épica..."
+              style={{ ...inputStyle, resize: 'vertical' as const, lineHeight: '1.6' }} />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0 24px' }} />
+        <div style={{ display: 'flex', gap: '8px', padding: '16px 24px' }}>
+          <button onClick={onClose}
+            style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#475569', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer' }}>
             Cancelar
           </button>
           <button onClick={handle} disabled={saving || !form.name.trim()}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-            style={{ background: saving ? '#059669' : '#1D9375' }}>
-            {saving ? <Loader2 size={13} className="animate-spin"/> : <Layers size={13}/>}
-            {initial?.id ? 'Guardar' : 'Crear Épica'}
+            style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#fff', background: saving ? '#059669' : 'linear-gradient(135deg, #1D9375, #059669)', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (!form.name.trim() && !saving) ? 0.4 : 1 }}>
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <Layers size={13} />}
+            {initial?.id ? 'Guardar cambios' : 'Crear Épica'}
           </button>
         </div>
       </div>
     </div>
   )
 }
+
+
 
 export default function EpicsPage() {
   const [epics, setEpics] = useState<Epic[]>([])
