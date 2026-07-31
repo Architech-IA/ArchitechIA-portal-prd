@@ -312,6 +312,7 @@ export default function LeadsPage() {
                   { key: 'source'         as SortKey, label: 'Fuente'      },
                 
                   { key: 'user'           as SortKey, label: 'Responsable' },
+                  { key: 'createdAt'      as SortKey, label: 'Creado'       },
                 ]).map(col => (
                   <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
                     {col.label}{sortIcon(col.key)}
@@ -322,7 +323,7 @@ export default function LeadsPage() {
             <tbody>
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 10 : 9} style={{ padding: '64px 24px', textAlign: 'center' }}>
+                  <td colSpan={isAdmin ? 11 : 10} style={{ padding: '64px 24px', textAlign: 'center' }}>
                     <div style={{ width: '52px', height: '52px', margin: '0 auto 16px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="24" height="24" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </div>
@@ -358,6 +359,7 @@ export default function LeadsPage() {
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.source}</td>
                 
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.user.name}</td>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '11px', color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                     </tr>
                   );
                 })

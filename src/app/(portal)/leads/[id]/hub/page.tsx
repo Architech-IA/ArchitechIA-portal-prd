@@ -18,6 +18,7 @@ interface Lead {
   scope: string | null
   source: string
   notes: string | null
+  createdAt: string
   user: { name: string }
 }
 
@@ -655,6 +656,10 @@ export default function LeadHubPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '10px', color: '#475569' }}>Responsable</span>
               <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '10px', color: '#475569' }}>Creado</span>
+              <span style={{ fontSize: '10px', fontWeight: 600, color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </div>
           </div>
         </div>
