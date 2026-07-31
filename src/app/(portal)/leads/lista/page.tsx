@@ -411,7 +411,7 @@ export default function LeadsPage() {
                   <label style={labelCls}>Solución</label>
                   <select value={formData.solucionAsociada} onChange={e => setFormData({...formData, solucionAsociada: e.target.value})} style={selectCls}>
                     <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Seleccionar...</option>
-                    {['Project','Demo','Partnership','Products','Intern','Preventa'].map(v => <option key={v} value={v} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v}</option>)}
+                    {['Project','Demo','Partnership','Products','Intern','Presales'].map(v => <option key={v} value={v} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v}</option>)}
                   </select>
                 </div>
               </div>
