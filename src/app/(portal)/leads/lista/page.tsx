@@ -309,7 +309,6 @@ export default function LeadsPage() {
                   { key: 'email'          as SortKey, label: 'Email'       },
                   { key: 'solucionAsociada' as SortKey, label: 'Tipo Solución' },
                   { key: 'estimatedValue' as SortKey, label: 'Valor'       },
-                  { key: 'source'         as SortKey, label: 'Fuente'      },
                 
                   { key: 'user'           as SortKey, label: 'Responsable' },
                   { key: 'createdAt'      as SortKey, label: 'Creado'       },
@@ -323,7 +322,7 @@ export default function LeadsPage() {
             <tbody>
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 11 : 10} style={{ padding: '64px 24px', textAlign: 'center' }}>
+                  <td colSpan={isAdmin ? 10 : 9} style={{ padding: '64px 24px', textAlign: 'center' }}>
                     <div style={{ width: '52px', height: '52px', margin: '0 auto 16px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="24" height="24" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </div>
@@ -356,7 +355,6 @@ export default function LeadsPage() {
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.email}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{lead.solucionAsociada ? <span style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}>{lead.solucionAsociada}</span> : <span style={{ color: '#334155', fontSize: '12px' }}>—</span>}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>${lead.estimatedValue.toLocaleString()}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.source}</td>
                 
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.user.name}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '11px', color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
