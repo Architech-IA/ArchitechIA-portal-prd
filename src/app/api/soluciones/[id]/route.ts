@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const solucion = await prisma.solucion.findUnique({
     where: { id },
@@ -14,11 +13,9 @@ export async function GET(
   return NextResponse.json(solucion);
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   const body = await request.json();
   const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, arquitecturaHtml, planTrabajo, cronograma } = body;
 
@@ -26,12 +23,8 @@ export async function PUT(
     const solucion = await prisma.solucion.update({
       where: { id },
       data: {
-        nombre,
-        descripcion: descripcion || null,
-        tipo,
-        estado: estado || 'ACTIVO',
-        valorEstimado: parseFloat(valorEstimado) || 0,
-        leadId: leadId || null,
+        nombre, descripcion: descripcion || null, tipo, estado: estado || 'ACTIVO',
+        valorEstimado: parseFloat(valorEstimado) || 0, leadId: leadId || null,
         ...(repositorio !== undefined ? { repositorio: repositorio || null } : {}),
         ...(arquitectura !== undefined ? { arquitectura: arquitectura || '[]' } : {}),
         ...(arquitecturaHtml !== undefined ? { arquitecturaHtml: arquitecturaHtml || null } : {}),
@@ -40,19 +33,26 @@ export async function PUT(
       },
       include: { lead: { select: { id: true, companyName: true, contactName: true, status: true } } },
     });
+    await logActivity({
+      type: 'UPDATED', description: 'actualizó la solución ' + nombre,
+      entityType: 'solucion', entityId: id, userId: token?.sub,
+    });
     return NextResponse.json(solucion);
   } catch {
     return NextResponse.json({ error: 'Error al actualizar la solución' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   try {
+    const solucion = await prisma.solucion.findUnique({ where: { id }, select: { nombre: true } });
     await prisma.solucion.delete({ where: { id } });
+    await logActivity({
+      type: 'UPDATED', description: 'eliminó la solución ' + solucion?.nombre,
+      entityType: 'solucion', entityId: id, userId: token?.sub,
+    });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Error al eliminar la solución' }, { status: 500 });

@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
+import { logActivity } from '@/lib/activity';
 import type { AppInstance, AppTypeDefinition } from '@/lib/app-types';
 
 function slugify(name: string) {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
 export async function GET(request: NextRequest) {
@@ -21,103 +18,65 @@ export async function GET(request: NextRequest) {
   const where: Record<string, unknown> = {};
   if (status) where.status = status;
   if (appTypeId) where.appTypeId = appTypeId;
-  if (search) {
-    where.OR = [
-      { name: { contains: search } },
-      { description: { contains: search } },
-    ];
-  }
-  if (category) {
-    where.appType = { category };
-  }
+  if (search) { where.OR = [{ name: { contains: search } }, { description: { contains: search } }]; }
+  if (category) { where.appType = { category }; }
 
   const apps = await prisma.appInstance.findMany({
     where,
     include: {
-      appType: true,
-      owner: { select: { name: true } },
-      lead: { select: { companyName: true } },
-      proposal: { select: { title: true } },
-      project: { select: { name: true } },
-      cliente: { select: { nombre: true } },
+      appType: true, owner: { select: { name: true } },
+      lead: { select: { companyName: true } }, proposal: { select: { title: true } },
+      project: { select: { name: true } }, cliente: { select: { nombre: true } },
     },
     orderBy: { updatedAt: 'desc' },
   });
 
-  return NextResponse.json(
-    apps.map((a) => ({
-      ...a,
-      config: a.config as unknown as AppInstance['config'],
-      appType: {
-        ...a.appType,
-        schema: a.appType.schema as unknown as AppTypeDefinition['schema'],
-        defaultConfig: a.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
-      },
-    })),
-  );
+  return NextResponse.json(apps.map((a) => ({
+    ...a,
+    config: a.config as unknown as AppInstance['config'],
+    appType: { ...a.appType, schema: a.appType.schema as unknown as AppTypeDefinition['schema'], defaultConfig: a.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'] },
+  })));
 }
 
 export async function POST(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-  if (!token) {
-    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-  }
+  if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
   const body = await request.json();
   const { name, description, appTypeId, leadId, proposalId, projectId, clienteId } = body;
 
-  if (!name?.trim() || !appTypeId) {
-    return NextResponse.json(
-      { error: 'Nombre y tipo de app son obligatorios' },
-      { status: 400 },
-    );
-  }
+  if (!name?.trim() || !appTypeId) return NextResponse.json({ error: 'Nombre y tipo de app son obligatorios' }, { status: 400 });
 
   const appType = await prisma.appType.findUnique({ where: { id: appTypeId } });
-  if (!appType) {
-    return NextResponse.json({ error: 'Tipo de app no encontrado' }, { status: 404 });
-  }
+  if (!appType) return NextResponse.json({ error: 'Tipo de app no encontrado' }, { status: 404 });
 
   let slug = typeof body.slug === 'string' && body.slug.trim() ? body.slug.trim().toLowerCase() : slugify(name);
-  if (!slug) slug = `app-${Date.now()}`;
+  if (!slug) slug = 'app-' + Date.now();
 
-  let uniqueSlug = slug;
-  let counter = 1;
+  let uniqueSlug = slug, counter = 1;
   while (await prisma.appInstance.findUnique({ where: { slug: uniqueSlug } })) {
-    uniqueSlug = `${slug}-${counter}`;
-    counter += 1;
+    uniqueSlug = slug + '-' + counter; counter += 1;
   }
 
   const app = await prisma.appInstance.create({
     data: {
-      name: name.trim(),
-      description: description?.trim() || null,
-      slug: uniqueSlug,
-      appTypeId,
-      status: 'DRAFT',
-      config: appType.defaultConfig as never,
-      leadId: leadId || null,
-      proposalId: proposalId || null,
-      projectId: projectId || null,
-      clienteId: clienteId || null,
+      name: name.trim(), description: description?.trim() || null, slug: uniqueSlug,
+      appTypeId, status: 'DRAFT', config: appType.defaultConfig as never,
+      leadId: leadId || null, proposalId: proposalId || null,
+      projectId: projectId || null, clienteId: clienteId || null,
       ownerId: token.sub as string,
     },
-    include: {
-      appType: true,
-      owner: { select: { name: true } },
-    },
+    include: { appType: true, owner: { select: { name: true } } },
   });
 
-  return NextResponse.json(
-    {
-      ...app,
-      config: app.config as unknown as AppInstance['config'],
-      appType: {
-        ...app.appType,
-        schema: app.appType.schema as unknown as AppTypeDefinition['schema'],
-        defaultConfig: app.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'],
-      },
-    },
-    { status: 201 },
-  );
+  await logActivity({
+    type: 'CREATED', description: 'creó la app  + name + ',
+    entityType: 'app', entityId: app.id, userId: token.sub,
+  });
+
+  return NextResponse.json({
+    ...app,
+    config: app.config as unknown as AppInstance['config'],
+    appType: { ...app.appType, schema: app.appType.schema as unknown as AppTypeDefinition['schema'], defaultConfig: app.appType.defaultConfig as unknown as AppTypeDefinition['defaultConfig'] },
+  }, { status: 201 });
 }

@@ -7,11 +7,12 @@ export async function logActivity(args: {
   description: string;
   entityType: string;
   entityId: string;
-  userId: string;
+  userId?: string | null;
   leadId?: string | null;
   proposalId?: string | null;
   projectId?: string | null;
 }) {
+  if (!args.userId) return;
   try {
     await prisma.activity.create({
       data: {
