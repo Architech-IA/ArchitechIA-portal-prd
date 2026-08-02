@@ -84,7 +84,7 @@ function Dropdown({ label, value, onChange, options }: {
         <ChevronDown size={13} style={{ color: '#475569', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, borderRadius: '10px', background: 'rgba(15,18,36,0.97)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 16px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, borderRadius: '10px', background: 'rgba(15,18,36,0.97)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 16px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', overflow: 'auto', maxHeight: '220px' }}>
           {options.map(opt => (
             <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false) }}
               style={{ width: '100%', display: 'block', padding: '9px 14px', textAlign: 'left', fontSize: '12px', fontWeight: value === opt.value ? 600 : 400, color: value === opt.value ? '#f97316' : '#94a3b8', background: value === opt.value ? 'rgba(249,115,22,0.08)' : 'transparent', border: 'none', cursor: 'pointer', transition: 'all 0.1s' }}
