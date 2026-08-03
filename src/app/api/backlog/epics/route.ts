@@ -12,11 +12,11 @@ export async function GET() {
           _count: { select: { items: true } },
           items: { select: { status: true } },
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
       },
       _count: { select: { sprints: true } },
     },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(epics)
 }
