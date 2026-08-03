@@ -11,7 +11,7 @@ export async function GET() {
           },
           _count: { select: { sprints: true } },
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
       },
     },
     orderBy: { createdAt: 'desc' },
