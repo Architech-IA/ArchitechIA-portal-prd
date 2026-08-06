@@ -882,16 +882,32 @@ export default function MeetingsPage() {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px) saturate(160%)', WebkitBackdropFilter: 'blur(24px) saturate(160%)' }}
           onClick={() => setShowModal(false)}
         >
           <div
-            className="relative w-full max-w-2xl rounded-2xl overflow-hidden"
-            style={{ background: 'linear-gradient(135deg,rgba(12,12,30,0.99) 0%,rgba(10,10,24,0.99) 100%)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04) inset' }}
+            className="relative w-full max-w-2xl rounded-3xl overflow-hidden"
+            style={{
+              background: 'linear-gradient(145deg, rgba(18,20,48,0.52) 0%, rgba(10,12,32,0.48) 100%)',
+              backdropFilter: 'blur(56px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(56px) saturate(200%)',
+              border: '1px solid rgba(255,255,255,0.13)',
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.07) inset, 0 48px 120px rgba(0,0,0,0.65), 0 0 100px rgba(251,146,60,0.06), 0 0 0 0.5px rgba(255,255,255,0.04)',
+              animation: 'liquidModalIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
+            }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="h-0.5 w-full" style={{ background: ({'INTERNAL_DAILY':'linear-gradient(90deg,#3b82f6,transparent)','INTERNAL_WORKSHOP':'linear-gradient(90deg,#06b6d4,transparent)','COMMERCIAL':'linear-gradient(90deg,#f97316,transparent)','ADVISORY':'linear-gradient(90deg,#a855f7,transparent)','PROVIDER':'linear-gradient(90deg,#10b981,transparent)'})[form.type] || 'linear-gradient(90deg,#f97316,transparent)' }} />
-            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            {/* Top light reflection */}
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22) 30%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.22) 70%, transparent)' }} />
+            <div className="absolute top-0 left-0 right-0 h-20 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)', borderRadius: '24px 24px 0 0' }} />
+            <style>{`
+              @keyframes liquidModalIn {
+                from { opacity: 0; transform: scale(0.94) translateY(12px); }
+                to   { opacity: 1; transform: scale(1)    translateY(0); }
+              }
+            `}</style>
+            <div className="h-[2px] w-full" style={{ background: ({'INTERNAL_DAILY':'linear-gradient(90deg,rgba(59,130,246,0.9),rgba(59,130,246,0.3),transparent)','INTERNAL_WORKSHOP':'linear-gradient(90deg,rgba(6,182,212,0.9),rgba(6,182,212,0.3),transparent)','COMMERCIAL':'linear-gradient(90deg,rgba(249,115,22,0.9),rgba(249,115,22,0.3),transparent)','ADVISORY':'linear-gradient(90deg,rgba(168,85,247,0.9),rgba(168,85,247,0.3),transparent)','PROVIDER':'linear-gradient(90deg,rgba(16,185,129,0.9),rgba(16,185,129,0.3),transparent)'})[form.type] || 'linear-gradient(90deg,rgba(249,115,22,0.9),rgba(249,115,22,0.3),transparent)' }} />
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
               <div>
                 <h2 className="text-base font-bold text-white">{editMeeting ? 'Editar Evento' : 'Nuevo Evento'}</h2>
                 <p className="text-xs text-gray-500 mt-0.5">{TYPE_LABELS[form.type] || form.type}</p>
@@ -906,7 +922,7 @@ export default function MeetingsPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Título</label>
                   <input type="text" required value={form.title} onChange={e => setForm({...form, title: e.target.value})}
-                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
                   {/* Quick-pick suggestions */}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {[
@@ -1085,7 +1101,7 @@ export default function MeetingsPage() {
                           ? 'text-gray-400 cursor-not-allowed select-none'
                           : 'text-white focus:ring-2 focus:ring-orange-500 placeholder-gray-500'
                       }`}
-                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                     />
                     {form.type === 'INTERNAL_DAILY' && (
                       <a
@@ -1143,7 +1159,7 @@ export default function MeetingsPage() {
                       }
                     }}
                     placeholder="Nombre o email y presiona Enter..."
-                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm placeholder-gray-500" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm placeholder-gray-500 transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
                   {attendeeInput.trim() && (() => {
                     const q = attendeeInput.trim().toLowerCase();
                     const suggestions = users.filter(u =>
@@ -1205,14 +1221,14 @@ export default function MeetingsPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Descripción</label>
                   <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={2}
-                    className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
                 </div>
               )}
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Acta / Notas de reunión</label>
                 <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={4}
                   placeholder="Puntos tratados, acuerdos, tareas pendientes..."
-                  className="w-full px-3 py-2 text-white rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm placeholder-gray-500" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                  className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm placeholder-gray-500 transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
                 <div className="mt-2 flex items-center gap-3">
                   <label className="px-3 py-1.5 text-gray-400 rounded-lg cursor-pointer text-xs flex items-center gap-1.5" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
@@ -1238,11 +1254,24 @@ export default function MeetingsPage() {
                 />
               </div>
               {formError && (
-                <div className="px-3 py-2 bg-red-900/30 border border-red-700/50 rounded-lg text-red-400 text-sm">{formError}</div>
+                <div className="px-3 py-2 rounded-xl text-red-300 text-sm flex items-center gap-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', backdropFilter: 'blur(8px)' }}>
+                  <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                  {formError}
+                </div>
               )}
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-600 rounded-lg hover:bg-gray-700 text-gray-300 text-sm">Cancelar</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-60 text-sm font-medium flex items-center gap-2">
+                <button type="button" onClick={() => setShowModal(false)}
+                  className="px-5 py-2 rounded-xl text-gray-300 text-sm font-medium transition-all duration-200"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.1)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.18)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.1)'; }}
+                >Cancelar</button>
+                <button type="submit" disabled={saving}
+                  className="px-5 py-2 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-200"
+                  style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95))', border: '1px solid rgba(251,146,60,0.4)', boxShadow: '0 0 20px rgba(249,115,22,0.25), 0 0 0 1px rgba(255,255,255,0.08) inset', backdropFilter: 'blur(8px)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 0 30px rgba(249,115,22,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 0 20px rgba(249,115,22,0.25), 0 0 0 1px rgba(255,255,255,0.08) inset'; }}
+                >
                   {saving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                   {editMeeting ? 'Guardar Cambios' : 'Crear Evento'}
                 </button>
@@ -1255,8 +1284,9 @@ export default function MeetingsPage() {
 
       {/* Modal eliminar */}
       {confirmDel && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: 'rgba(10,10,28,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(20px) saturate(160%)', WebkitBackdropFilter: 'blur(20px) saturate(160%)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-md relative overflow-hidden" style={{ background: 'rgba(14,10,28,0.50)', backdropFilter: 'blur(48px) saturate(200%)', WebkitBackdropFilter: 'blur(48px) saturate(200%)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 40px 80px rgba(0,0,0,0.65), 0 0 60px rgba(239,68,68,0.07)', animation: 'liquidModalIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2) 50%, transparent)' }} />
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-900/40 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
