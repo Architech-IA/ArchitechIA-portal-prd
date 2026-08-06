@@ -882,32 +882,44 @@ export default function MeetingsPage() {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
-          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px) saturate(160%)', WebkitBackdropFilter: 'blur(24px) saturate(160%)' }}
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
           onClick={() => setShowModal(false)}
         >
+          <style>{`
+            @keyframes liquidModalIn {
+              from { opacity: 0; transform: scale(0.92) translateY(16px); filter: blur(4px); }
+              to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0); }
+            }
+            @keyframes shimmer {
+              0%   { background-position: -200% center; }
+              100% { background-position: 200% center; }
+            }
+          `}</style>
+          {/* Gradient border wrapper */}
           <div
-            className="relative w-full max-w-2xl rounded-3xl overflow-hidden"
+            className="relative w-full max-w-2xl rounded-3xl p-px"
             style={{
-              background: 'linear-gradient(145deg, rgba(18,20,48,0.52) 0%, rgba(10,12,32,0.48) 100%)',
-              backdropFilter: 'blur(56px) saturate(200%)',
-              WebkitBackdropFilter: 'blur(56px) saturate(200%)',
-              border: '1px solid rgba(255,255,255,0.13)',
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.07) inset, 0 48px 120px rgba(0,0,0,0.65), 0 0 100px rgba(251,146,60,0.06), 0 0 0 0.5px rgba(255,255,255,0.04)',
-              animation: 'liquidModalIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(251,146,60,0.4) 25%, rgba(255,255,255,0.08) 50%, rgba(99,102,241,0.3) 75%, rgba(255,255,255,0.2) 100%)',
+              boxShadow: '0 48px 120px rgba(0,0,0,0.7), 0 0 80px rgba(251,146,60,0.08)',
+              animation: 'liquidModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
             }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Top light reflection */}
-            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.22) 30%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.22) 70%, transparent)' }} />
-            <div className="absolute top-0 left-0 right-0 h-20 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)', borderRadius: '24px 24px 0 0' }} />
-            <style>{`
-              @keyframes liquidModalIn {
-                from { opacity: 0; transform: scale(0.94) translateY(12px); }
-                to   { opacity: 1; transform: scale(1)    translateY(0); }
-              }
-            `}</style>
-            <div className="h-[2px] w-full" style={{ background: ({'INTERNAL_DAILY':'linear-gradient(90deg,rgba(59,130,246,0.9),rgba(59,130,246,0.3),transparent)','INTERNAL_WORKSHOP':'linear-gradient(90deg,rgba(6,182,212,0.9),rgba(6,182,212,0.3),transparent)','COMMERCIAL':'linear-gradient(90deg,rgba(249,115,22,0.9),rgba(249,115,22,0.3),transparent)','ADVISORY':'linear-gradient(90deg,rgba(168,85,247,0.9),rgba(168,85,247,0.3),transparent)','PROVIDER':'linear-gradient(90deg,rgba(16,185,129,0.9),rgba(16,185,129,0.3),transparent)'})[form.type] || 'linear-gradient(90deg,rgba(249,115,22,0.9),rgba(249,115,22,0.3),transparent)' }} />
-            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <div
+            className="relative w-full rounded-3xl overflow-hidden"
+            style={{
+              background: 'linear-gradient(145deg, rgba(22,26,60,0.72) 0%, rgba(12,14,38,0.80) 100%)',
+              backdropFilter: 'blur(60px) saturate(180%) brightness(1.1)',
+              WebkitBackdropFilter: 'blur(60px) saturate(180%) brightness(1.1)',
+            }}
+          >
+            {/* Top specular highlight */}
+            <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.5) 30%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.5) 70%, transparent 95%)' }} />
+            <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%)', borderRadius: '24px 24px 0 0' }} />
+            {/* Orb glow bottom right */}
+            <div className="absolute bottom-0 right-0 w-64 h-64 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
+            <div className="h-[2px] w-full" style={{ background: ({'INTERNAL_DAILY':'linear-gradient(90deg,rgba(59,130,246,1),rgba(59,130,246,0.4),transparent)','INTERNAL_WORKSHOP':'linear-gradient(90deg,rgba(6,182,212,1),rgba(6,182,212,0.4),transparent)','COMMERCIAL':'linear-gradient(90deg,rgba(249,115,22,1),rgba(249,115,22,0.4),transparent)','ADVISORY':'linear-gradient(90deg,rgba(168,85,247,1),rgba(168,85,247,0.4),transparent)','PROVIDER':'linear-gradient(90deg,rgba(16,185,129,1),rgba(16,185,129,0.4),transparent)'})[form.type] || 'linear-gradient(90deg,rgba(249,115,22,1),rgba(249,115,22,0.4),transparent)' }} />
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
               <div>
                 <h2 className="text-base font-bold text-white">{editMeeting ? 'Editar Evento' : 'Nuevo Evento'}</h2>
                 <p className="text-xs text-gray-500 mt-0.5">{TYPE_LABELS[form.type] || form.type}</p>
@@ -1278,6 +1290,7 @@ export default function MeetingsPage() {
               </div>
             </form>
             </div>
+          </div>
           </div>
         </div>
       )}
