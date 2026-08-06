@@ -882,7 +882,7 @@ export default function MeetingsPage() {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
-          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
           onClick={() => setShowModal(false)}
         >
           <style>{`
@@ -912,7 +912,7 @@ export default function MeetingsPage() {
               style={{
                 backdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
                 WebkitBackdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
-                background: 'linear-gradient(145deg, rgba(55,65,160,0.55) 0%, rgba(35,42,120,0.65) 100%)',
+                background: 'linear-gradient(145deg, rgba(80,90,200,0.65) 0%, rgba(45,30,140,0.80) 50%, rgba(20,15,80,0.90) 100%)',
                 borderBottom: '1px solid rgba(255,255,255,0.12)',
               }}
             >
