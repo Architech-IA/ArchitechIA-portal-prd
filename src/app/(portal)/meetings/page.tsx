@@ -906,30 +906,24 @@ export default function MeetingsPage() {
             }}
             onClick={e => e.stopPropagation()}
           >
-            {/* HEADER — liquid glass visible */}
+            {/* HEADER — solutions style */}
             <div
-              className="relative rounded-t-3xl overflow-hidden"
-              style={{
-                backdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
-                WebkitBackdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
-                background: 'linear-gradient(145deg, rgba(80,90,200,0.65) 0%, rgba(45,30,140,0.80) 50%, rgba(20,15,80,0.90) 100%)',
-                borderBottom: '1px solid rgba(255,255,255,0.12)',
-              }}
+              className="rounded-t-3xl flex items-center justify-between px-6 py-4"
+              style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.18) 0%, rgba(168,85,247,0.12) 100%)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
             >
-              {/* top specular line */}
-              <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.6) 70%, transparent 95%)' }} />
-              {/* inner glow */}
-              <div className="absolute top-0 left-0 right-0 h-14 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.09) 0%, transparent 100%)' }} />
-              <div className="flex items-center justify-between px-6 py-4">
-              <div>
-                <h2 className="text-base font-bold text-white">{editMeeting ? 'Editar Evento' : 'Nuevo Evento'}</h2>
-                <p className="text-xs mt-0.5" style={{ color: 'rgba(180,190,255,0.7)' }}>{TYPE_LABELS[form.type] || form.type}</p>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.2)', border: '1px solid rgba(249,115,22,0.3)' }}>
+                  <svg width="14" height="14" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-white tracking-wide">{editMeeting ? 'EDITAR EVENTO' : 'NUEVO EVENTO'}</h2>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{TYPE_LABELS[form.type] || 'Completa los datos del evento'}</p>
+                </div>
               </div>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-all duration-150" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }} onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,0.15)'} onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,0.08)'}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <button onClick={() => setShowModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center transition-all" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)')} onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)')}>
+                <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
-            </div>{/* end header glass */}
             {/* BODY — dark solid, scrollable */}
             <div className="rounded-b-3xl overflow-y-auto" style={{ background: 'rgba(8,9,22,0.98)', maxHeight: 'calc(100vh - 160px)' }}><div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
