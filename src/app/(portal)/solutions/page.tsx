@@ -589,7 +589,7 @@ export default function SolutionsHome() {
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
             onClick={e => { if (e.target === e.currentTarget) setDetail(null) }}
           >
             <div
@@ -796,17 +796,28 @@ export default function SolutionsHome() {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)' }}
+          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
         >
+          <style>{`@keyframes liquidModalIn { from { opacity: 0; transform: scale(0.92) translateY(16px); filter: blur(4px); } to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } }`}</style>
           <div
-            className="w-full max-w-md rounded-2xl overflow-hidden"
-            style={{ background: 'rgba(15,15,26,0.95)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)' }}
+            className="relative w-full max-w-md rounded-3xl"
+            style={{ border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 48px 120px rgba(0,0,0,0.75), 0 0 60px rgba(251,146,60,0.05)', animation: 'liquidModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both', overflow: 'visible' }}
           >
             <div
-              className="flex items-center justify-between px-6 py-4"
-              style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.18) 0%, rgba(168,85,247,0.12) 100%)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+              className="relative rounded-t-3xl overflow-hidden"
+              style={{
+                backdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
+                WebkitBackdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
+                background: 'linear-gradient(145deg, rgba(80,90,200,0.65) 0%, rgba(45,30,140,0.80) 50%, rgba(20,15,80,0.90) 100%)',
+                borderBottom: '1px solid rgba(255,255,255,0.12)',
+              }}
             >
+              {/* top specular line */}
+              <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.6) 70%, transparent 95%)' }} />
+              {/* inner glow */}
+              <div className="absolute top-0 left-0 right-0 h-14 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.09) 0%, transparent 100%)' }} />
+              <div className="flex items-center justify-between px-6 py-4">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.2)', border: '1px solid rgba(249,115,22,0.3)' }}>
                   <Rocket size={14} style={{ color: '#f97316' }} />
@@ -825,9 +836,10 @@ export default function SolutionsHome() {
               >
                 <X size={14} style={{ color: 'rgba(255,255,255,0.5)' }} />
               </button>
-            </div>
+              </div>{/* end inner flex */}
+            </div>{/* end header glass */}
 
-            <div className="p-6 space-y-4">
+            <div className="rounded-b-3xl overflow-y-auto" style={{ background: 'rgba(8,9,22,0.98)', maxHeight: 'calc(100vh - 160px)' }}><div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-medium mb-1.5 tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.45)' }}>Nombre *</label>
                 <input
@@ -925,6 +937,7 @@ export default function SolutionsHome() {
                   {saving ? 'Guardando...' : (form.id ? 'Guardar cambios' : 'Crear solución')}
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>
