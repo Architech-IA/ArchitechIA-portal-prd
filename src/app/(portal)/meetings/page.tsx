@@ -895,40 +895,43 @@ export default function MeetingsPage() {
               100% { background-position: 200% center; }
             }
           `}</style>
-          {/* Gradient border wrapper */}
+          {/* Modal container */}
           <div
-            className="relative w-full max-w-2xl rounded-3xl p-px"
+            className="relative w-full max-w-2xl rounded-3xl"
             style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(251,146,60,0.4) 25%, rgba(255,255,255,0.08) 50%, rgba(99,102,241,0.3) 75%, rgba(255,255,255,0.2) 100%)',
-              boxShadow: '0 48px 120px rgba(0,0,0,0.7), 0 0 80px rgba(251,146,60,0.08)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 48px 120px rgba(0,0,0,0.75), 0 0 60px rgba(251,146,60,0.05)',
               animation: 'liquidModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
+              overflow: 'visible',
             }}
             onClick={e => e.stopPropagation()}
           >
-          <div
-            className="relative w-full rounded-3xl overflow-hidden"
-            style={{
-              background: 'linear-gradient(145deg, rgba(22,26,60,0.72) 0%, rgba(12,14,38,0.80) 100%)',
-              backdropFilter: 'blur(60px) saturate(180%) brightness(1.1)',
-              WebkitBackdropFilter: 'blur(60px) saturate(180%) brightness(1.1)',
-            }}
-          >
-            {/* Top specular highlight */}
-            <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.5) 30%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.5) 70%, transparent 95%)' }} />
-            <div className="absolute top-0 left-0 right-0 h-32 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%)', borderRadius: '24px 24px 0 0' }} />
-            {/* Orb glow bottom right */}
-            <div className="absolute bottom-0 right-0 w-64 h-64 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
-            <div className="h-[2px] w-full" style={{ background: ({'INTERNAL_DAILY':'linear-gradient(90deg,rgba(59,130,246,1),rgba(59,130,246,0.4),transparent)','INTERNAL_WORKSHOP':'linear-gradient(90deg,rgba(6,182,212,1),rgba(6,182,212,0.4),transparent)','COMMERCIAL':'linear-gradient(90deg,rgba(249,115,22,1),rgba(249,115,22,0.4),transparent)','ADVISORY':'linear-gradient(90deg,rgba(168,85,247,1),rgba(168,85,247,0.4),transparent)','PROVIDER':'linear-gradient(90deg,rgba(16,185,129,1),rgba(16,185,129,0.4),transparent)'})[form.type] || 'linear-gradient(90deg,rgba(249,115,22,1),rgba(249,115,22,0.4),transparent)' }} />
-            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            {/* HEADER — liquid glass visible */}
+            <div
+              className="relative rounded-t-3xl overflow-hidden"
+              style={{
+                backdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
+                WebkitBackdropFilter: 'blur(64px) saturate(220%) brightness(1.4)',
+                background: 'linear-gradient(145deg, rgba(55,65,160,0.55) 0%, rgba(35,42,120,0.65) 100%)',
+                borderBottom: '1px solid rgba(255,255,255,0.12)',
+              }}
+            >
+              {/* top specular line */}
+              <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.6) 70%, transparent 95%)' }} />
+              {/* inner glow */}
+              <div className="absolute top-0 left-0 right-0 h-14 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.09) 0%, transparent 100%)' }} />
+              <div className="flex items-center justify-between px-6 py-4">
               <div>
                 <h2 className="text-base font-bold text-white">{editMeeting ? 'Editar Evento' : 'Nuevo Evento'}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{TYPE_LABELS[form.type] || form.type}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(180,190,255,0.7)' }}>{TYPE_LABELS[form.type] || form.type}</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0)' }} onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,0.08)'} onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,0)'}>
+              <button onClick={() => setShowModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-all duration-150" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }} onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,0.15)'} onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background='rgba(255,255,255,0.08)'}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6">
+            </div>{/* end header glass */}
+            {/* BODY — dark solid, scrollable */}
+            <div className="rounded-b-3xl overflow-y-auto" style={{ background: 'rgba(8,9,22,0.98)', maxHeight: 'calc(100vh - 160px)' }}><div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1289,8 +1292,7 @@ export default function MeetingsPage() {
                 </button>
               </div>
             </form>
-            </div>
-          </div>
+            </div></div>
           </div>
         </div>
       )}
