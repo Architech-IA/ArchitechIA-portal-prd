@@ -191,13 +191,7 @@ export default function SprintPage() {
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div/>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowSprintModal(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium text-emerald-400 hover:text-emerald-300"
-            style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)' }}>
-            <Rocket size={13}/> Nuevo Sprint
-          </button>
-        </div>
+        <div />
       </div>
 
       {/* Content */}
@@ -444,6 +438,24 @@ export default function SprintPage() {
       </div>
 
       {/* New item modal */}
+      {/* FAB — Nuevo Sprint */}
+      <button
+        onClick={() => setShowSprintModal(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl font-semibold text-sm text-emerald-400 transition-all duration-200 hover:scale-105 active:scale-95"
+        style={{
+          background: 'rgba(16,185,129,0.12)',
+          border: '1px solid rgba(16,185,129,0.35)',
+          boxShadow: '0 8px 32px rgba(16,185,129,0.2), 0 2px 8px rgba(0,0,0,0.4)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 12px 40px rgba(16,185,129,0.35), 0 2px 8px rgba(0,0,0,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(16,185,129,0.2)' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 32px rgba(16,185,129,0.2), 0 2px 8px rgba(0,0,0,0.4)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(16,185,129,0.12)' }}
+      >
+        <Rocket size={15} />
+        Nuevo Sprint
+      </button>
+
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }} onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}>
           <div className="w-full max-w-lg shadow-2xl rounded-2xl overflow-hidden" style={{ background: 'rgba(10,12,28,0.98)', border: '1px solid rgba(255,255,255,0.09)' }}>
