@@ -160,12 +160,15 @@ export default function SprintPage() {
       safeFetch('/api/soluciones'),
       safeFetch('/api/backlog/epics'),
       safeFetch('/api/users'),
-    ]).then(([i, sp, s, ep, u]) => {
+      safeFetch('/api/agents'),
+    ]).then(([i, sp, s, ep, u, ag]) => {
       setItems(Array.isArray(i) ? i : [])
       setSprints(Array.isArray(sp) ? sp : [])
       setSoluciones(Array.isArray(s) ? s.map((x: any) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo })) : [])
       setEpics(Array.isArray(ep) ? ep.map((e: { id: string; name: string; color: string; solucion?: { id: string } | null }) => ({ id: e.id, name: e.name, color: e.color, solucionId: e.solucion?.id ?? null })) : [])
-      setUsers(Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : [])
+      const humans = Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : []
+      const agentUsers = Array.isArray(ag) ? ag.filter((x: any) => x.status === 'ACTIVE').map((x: any) => ({ id: x.id, name: x.name + ' [Agente]', role: x.role })) : []
+      setUsers([...humans, ...agentUsers])
       setLoading(false)
     })
   }, [])
