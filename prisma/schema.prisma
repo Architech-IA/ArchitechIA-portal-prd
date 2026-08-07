@@ -834,3 +834,20 @@ model TaskActivity {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 }
+
+model Agent {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  role          String
+  area          String
+  personality   String
+  systemPrompt  String?
+  taskTypes     String[]
+  repos         String[]
+  discordUserId String?
+  vaultPath     String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
