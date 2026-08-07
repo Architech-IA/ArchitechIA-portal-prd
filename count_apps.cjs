@@ -1,0 +1,5 @@
+const { PrismaClient } = require('@prisma/client')
+const p = new PrismaClient()
+p.appType.findMany({ select: { slug: true, name: true, category: true } })
+  .then(types => { console.log('AppTypes restaurados:', types.length); types.forEach(t => console.log(' -', t.slug, '|', t.name, '|', t.category)) })
+  .finally(() => p.$disconnect())
