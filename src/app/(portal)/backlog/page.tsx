@@ -403,6 +403,7 @@ export default function BacklogPage() {
   const [filterType, setFilterType]     = useState('')
   const [filterPriority, setFilterPriority] = useState('')
   const [filterSolution, setFilterSolution] = useState('')
+  const [filterEpic, setFilterEpic] = useState('')
   const [filterSprint, setFilterSprint]     = useState('')
   const [filterAssignee, setFilterAssignee] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
@@ -584,6 +585,7 @@ export default function BacklogPage() {
 
   const filtered = items.filter(i => {
     if (filterSolution && i.solucionId !== filterSolution) return false
+    if (filterEpic) { const s = sprints.find(sp => sp.id === i.sprintId); if (!s || s.epicId !== filterEpic) return false }
     if (filterSprint && i.sprintId !== filterSprint) return false
     if (filterType && i.type !== filterType) return false
     if (filterPriority && i.priority !== filterPriority) return false
@@ -611,6 +613,12 @@ export default function BacklogPage() {
             onChange={setFilterSolution}
             placeholder="Todas las soluciones"
             options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))}
+          />
+          <FilterSelect
+            value={filterEpic}
+            onChange={setFilterEpic}
+            placeholder="Todas las épicas"
+            options={epics.map(e => ({ value: e.id, label: e.name }))}
           />
           <FilterSelect
             value={filterSprint}
