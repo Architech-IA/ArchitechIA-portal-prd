@@ -117,6 +117,9 @@ export default function SprintPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [pendingSprintId, setPendingSprintId] = useState<string | null>(null)
+  const [closingSprintId, setClosingSprintId] = useState<string | null>(null)
+  const [closeResultado, setCloseResultado] = useState('')
+  const [closingSaving, setClosingSaving] = useState(false)
   const importFileRef = useRef<HTMLInputElement>(null)
   const { setActions } = usePageActions()
   const userName = (session?.user as any)?.name ?? ''
@@ -229,7 +232,7 @@ export default function SprintPage() {
                     await fetch('/api/backlog/sprints', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: existingActive.id, status: 'CLOSED' }) })
                   }
                 }
-                if (newStatus === 'CLOSED') {
+                if (newStatus === 'DONE') {
                   const unfinished = sprintItems.filter(i => i.status !== 'DONE')
                   for (const item of unfinished) {
                     await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, status: 'BACKLOG', solucionId: item.solucionId }) })
@@ -253,8 +256,8 @@ export default function SprintPage() {
                           </span>
                         )}
                         <span className="w-px h-3" style={{ background: 'rgba(255,255,255,0.12)' }}/>
-                        <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: activeSprint.status === 'ACTIVE' ? 'rgba(16,185,129,0.2)' : activeSprint.status === 'PLANNED' ? 'rgba(251,191,36,0.2)' : 'rgba(107,114,128,0.2)', color: activeSprint.status === 'ACTIVE' ? '#10b981' : activeSprint.status === 'PLANNED' ? '#fbbf24' : '#9ca3af' }}>
-                          {activeSprint.status === 'ACTIVE' ? 'Activo' : activeSprint.status === 'PLANNED' ? 'Planificado' : 'Cerrado'}
+                        <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: activeSprint.status === 'ACTIVE' ? 'rgba(16,185,129,0.2)' : activeSprint.status === 'PLANNED' ? 'rgba(251,191,36,0.2)' : activeSprint.status === 'DONE' ? 'rgba(99,102,241,0.2)' : 'rgba(107,114,128,0.2)', color: activeSprint.status === 'ACTIVE' ? '#10b981' : activeSprint.status === 'PLANNED' ? '#fbbf24' : activeSprint.status === 'DONE' ? '#818cf8' : '#9ca3af' }}>
+                          {activeSprint.status === 'ACTIVE' ? 'Activo' : activeSprint.status === 'PLANNED' ? 'Planificado' : activeSprint.status === 'DONE' ? 'Completado' : 'Cerrado'}
                         </span>
                         {fmtDate(activeSprint.startDate) && <span className="text-[11px] text-gray-600">{fmtDate(activeSprint.startDate)} → {fmtDate(activeSprint.endDate) ?? '?'}</span>}
                       </div>
@@ -263,7 +266,7 @@ export default function SprintPage() {
                           <button onClick={() => updateSprintStatus('ACTIVE')} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white transition-all" style={{ background: 'rgba(16,185,129,0.3)', border: '1px solid rgba(16,185,129,0.5)' }}>▶ Activar</button>
                         )}
                         {activeSprint.status === 'ACTIVE' && (
-                          <button onClick={() => { if (confirm('¿Cerrar sprint? Los items sin terminar volverán al Backlog.')) updateSprintStatus('CLOSED') }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(107,114,128,0.15)', border: '1px solid rgba(107,114,128,0.35)', color: '#9ca3af' }}>✓ Cerrar Sprint</button>
+                          <button onClick={() => { setClosingSprintId(activeSprint.id); setCloseResultado('') }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', color: '#10b981' }}>✓ Completar Sprint</button>
                         )}
                         <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '', solucionId: activeSprint.solucion?.id ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7280' }}>✎ Editar</button>
                       </div>
@@ -628,6 +631,70 @@ export default function SprintPage() {
         </div>
       )}
 
+      {/* Modal completar sprint */}
+      {closingSprintId && (() => {
+        const sp = sprints.find(s => s.id === closingSprintId)
+        if (!sp) return null
+        const spItems = items.filter(i => i.sprintId === closingSprintId)
+        const unfinished = spItems.filter(i => i.status !== 'DONE')
+        const handleClose = async () => {
+          setClosingSaving(true)
+          if (unfinished.length > 0) {
+            for (const item of unfinished) {
+              await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: null, status: 'BACKLOG', solucionId: item.solucionId }) })
+            }
+            setItems(prev => prev.map(i => { const u = unfinished.find(x => x.id === i.id); return u ? { ...i, sprintId: null, status: 'BACKLOG' } : i }))
+          }
+          const res = await fetch('/api/backlog/sprints', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: closingSprintId, status: 'DONE' }) })
+          if (res.ok) { const updated = await res.json(); setSprints(prev => prev.map(s => s.id === updated.id ? updated : s)) }
+          setClosingSaving(false)
+          setClosingSprintId(null)
+          setCloseResultado('')
+        }
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+            <div className="w-full max-w-lg rounded-2xl overflow-hidden" style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg,rgba(16,185,129,0.25),rgba(99,102,241,0.2))', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                    <CheckSquare size={16} className="text-emerald-400"/>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-mono">{sp.sprintCode}</p>
+                    <h3 className="text-sm font-bold text-white leading-tight">{sp.name}</h3>
+                  </div>
+                </div>
+                <button onClick={() => setClosingSprintId(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
+              </div>
+              <div className="px-6 py-5 flex flex-col gap-4">
+                {unfinished.length > 0 && (
+                  <div className="rounded-lg px-4 py-3 text-[12px]" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', color: '#fbbf24' }}>
+                    {unfinished.length} item{unfinished.length > 1 ? 's' : ''} sin terminar volverán al Backlog.
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">Resultado del sprint <span className="text-gray-600 font-normal">(opcional)</span></label>
+                  <textarea
+                    value={closeResultado}
+                    onChange={e => setCloseResultado(e.target.value)}
+                    placeholder="¿Qué se logró en este sprint?"
+                    rows={4}
+                    className="w-full px-3 py-2.5 rounded-lg text-sm text-white placeholder-gray-600 resize-none focus:outline-none transition-all"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}
+                  />
+                </div>
+              </div>
+              <div className="px-6 pb-5 flex justify-end gap-2">
+                <button onClick={() => setClosingSprintId(null)} disabled={closingSaving} className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
+                <button onClick={handleClose} disabled={closingSaving} className="px-5 py-2 rounded-lg text-sm font-bold text-white flex items-center gap-2 transition-all" style={{ background: closingSaving ? 'rgba(16,185,129,0.4)' : 'linear-gradient(135deg,#10b981,#6366f1)', border: 'none' }}>
+                  {closingSaving ? <Loader2 size={14} className="animate-spin"/> : <CheckSquare size={14}/>}
+                  {closingSaving ? 'Guardando...' : 'Marcar como DONE'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       <input ref={importFileRef} type="file" accept=".txt,.md,.xml,.html" className="hidden"/>
     </div>
   )
