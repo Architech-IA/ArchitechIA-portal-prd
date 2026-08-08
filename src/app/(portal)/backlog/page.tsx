@@ -468,7 +468,7 @@ export default function BacklogPage() {
       setItems(Array.isArray(i) ? i : [])
       setSoluciones(Array.isArray(s) ? s.map((x: any) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo })) : [])
       const humans = Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : []
-      const agentUsers = Array.isArray(ag) ? ag.filter((x: any) => x.status === 'ACTIVE').map((x: any) => ({ id: x.id, name: 'AGENT - ' + x.name, role: 'AGENT' })) : []
+      const agentUsers = Array.isArray(ag) ? ag.filter((x: any) => x.status === 'ACTIVE' && x.slug === 'orion').map((x: any) => ({ id: x.id, name: 'AGENT - Orion', role: 'AGENT' })) : []
       setUsers([...humans, ...agentUsers])
       setSprints(Array.isArray(sp) ? sp : [])
       setEpics(Array.isArray(ep) ? ep.map((e: { id: string; name: string; color: string; solucion?: { id: string } | null }) => ({ id: e.id, name: e.name, color: e.color, solucionId: e.solucion?.id ?? null })) : [])
