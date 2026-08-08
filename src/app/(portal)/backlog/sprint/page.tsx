@@ -98,8 +98,8 @@ export default function SprintPage() {
   const [epics, setEpics] = useState<EpicOption[]>([])
   const [users, setUsers] = useState<{ id: string; name: string; role: string }[]>([])
   const [loading, setLoading] = useState(true)
-  const [showCollapsed, setShowCollapsed] = useState(true)
-  const [showAddItems, setShowAddItems] = useState(false)
+  const [expandedSprints, setExpandedSprints] = useState<Record<string, boolean>>({})
+  const [showAddItems, setShowAddItems] = useState<Record<string, boolean>>({})
   const [viewItem, setViewItem] = useState<BacklogItem | null>(null)
   const [dragOrder, setDragOrder] = useState<Record<string, string[]>>({})
   const [savingOrder, setSavingOrder] = useState<Record<string, boolean>>({})
@@ -282,16 +282,16 @@ export default function SprintPage() {
                       {/* Activities */}
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <button onClick={() => setShowCollapsed(v => !v)} className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-300 uppercase tracking-wider hover:text-white transition-colors">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                          <button onClick={() => setExpandedSprints(v => ({ ...v, [activeSprint.id]: !v[activeSprint.id] }))} className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-300 uppercase tracking-wider hover:text-white transition-colors">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: !expandedSprints[activeSprint.id] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
                             Actividades ({sprintItems.length})
                           </button>
-                          <button onClick={() => setShowAddItems(v => !v)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all" style={{ background: showAddItems ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)', border: showAddItems ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.1)', color: showAddItems ? '#f97316' : '#9ca3af' }}>
+                          <button onClick={() => setShowAddItems(v => ({ ...v, [activeSprint.id]: !v[activeSprint.id] }))} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all" style={{ background: showAddItems[activeSprint.id] ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)', border: showAddItems[activeSprint.id] ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.1)', color: showAddItems[activeSprint.id] ? '#f97316' : '#9ca3af' }}>
                             <Plus size={10}/> Gestionar
                           </button>
                         </div>
                         {/* Gestionar panel */}
-                        {showAddItems && (() => {
+                        {showAddItems[activeSprint.id] && (() => {
                           const availableItems = items.filter(i => !i.sprintId && i.status !== 'DONE')
                           const addToSprint = async (item: BacklogItem) => {
                             const res = await fetch(`/api/backlog/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...item, sprintId: activeSprint.id, solucionId: item.solucionId }) })
@@ -376,7 +376,7 @@ export default function SprintPage() {
                                   </div>
                                 )}
                               </div>
-                              {!showCollapsed && (orderedItems.length === 0 ? (
+                              {expandedSprints[activeSprint.id] && (orderedItems.length === 0 ? (
                                 <p className="text-[11px] text-gray-700 py-1">Sin actividades — abrí Gestionar para agregar.</p>
                               ) : (
                                 <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
