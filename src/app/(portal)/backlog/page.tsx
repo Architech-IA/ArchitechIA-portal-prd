@@ -49,7 +49,7 @@ interface Sprint {
   solucion: { id: string; solucionCode: string | null; nombre: string } | null
 }
 
-interface EpicOption { id: string; name: string; color: string }
+interface EpicOption { id: string; name: string; color: string; solucionId: string | null }
 
 const STATUSES = [
   { key: 'BACKLOG',     label: 'Backlog',      color: 'bg-gray-500',   border: 'border-gray-500/30', bg: 'bg-gray-500/5'   },
@@ -468,7 +468,7 @@ export default function BacklogPage() {
       setSoluciones(Array.isArray(s) ? s.map((x: any) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo })) : [])
       setUsers(Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : [])
       setSprints(Array.isArray(sp) ? sp : [])
-      setEpics(Array.isArray(ep) ? ep.map((e: { id: string; name: string; color: string }) => ({ id: e.id, name: e.name, color: e.color })) : [])
+      setEpics(Array.isArray(ep) ? ep.map((e: { id: string; name: string; color: string; solucion?: { id: string } | null }) => ({ id: e.id, name: e.name, color: e.color, solucionId: e.solucion?.id ?? null })) : [])
     } catch {
       // silencia cualquier error residual; la página igual muestra el kanban vacío
     } finally {
@@ -610,21 +610,26 @@ export default function BacklogPage() {
         <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none">
           <FilterSelect
             value={filterSolution}
-            onChange={setFilterSolution}
+            onChange={v => { setFilterSolution(v); setFilterEpic(''); setFilterSprint('') }}
             placeholder="Todas las soluciones"
             options={soluciones.map(s => ({ value: s.id, label: `${SOLUCION_TIPO_LABELS[s.tipo] ?? s.tipo}: ${s.nombre}` }))}
           />
           <FilterSelect
             value={filterEpic}
-            onChange={setFilterEpic}
+            onChange={v => { setFilterEpic(v); setFilterSprint('') }}
             placeholder="Todas las épicas"
-            options={epics.map(e => ({ value: e.id, label: e.name }))}
+            options={(filterSolution ? epics.filter(e => e.solucionId === filterSolution) : epics).map(e => ({ value: e.id, label: e.name }))}
           />
           <FilterSelect
             value={filterSprint}
             onChange={setFilterSprint}
             placeholder="Todos los sprints"
-            options={sprints.map(s => ({ value: s.id, label: s.sprintCode ? `${s.sprintCode} — ${s.name}` : s.name }))}
+            options={(filterEpic
+              ? sprints.filter(s => s.epicId === filterEpic)
+              : filterSolution
+                ? sprints.filter(s => s.solucion?.id === filterSolution)
+                : sprints
+            ).map(s => ({ value: s.id, label: s.sprintCode ? `${s.sprintCode} — ${s.name}` : s.name }))}
           />
           <FilterSelect
             value={filterType}
