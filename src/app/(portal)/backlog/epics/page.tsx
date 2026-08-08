@@ -283,7 +283,7 @@ export default function EpicsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-auto p-6" style={{ background: '#080c12' }}><div style={{ height: '4px', background: 'red', width: '100%', marginBottom: '8px' }} />
+    <div className="flex flex-col h-full overflow-auto p-6" style={{ background: '#080c12' }}>
 
       {/* Filter tabs + action */}
       <div className="flex items-center justify-between mb-5">
