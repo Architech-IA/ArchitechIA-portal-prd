@@ -624,12 +624,7 @@ export default function BacklogPage() {
             placeholder="Todos los tipos"
             options={TYPES.map(t => ({ value: t.key, label: t.label }))}
           />
-          <FilterSelect
-            value={filterPriority}
-            onChange={setFilterPriority}
-            placeholder="Todas las prioridades"
-            options={PRIORITIES.map(p => ({ value: p.key, label: p.label }))}
-          />
+
           {/* Assignee avatar filter */}
           {(() => {
             const assignees = Array.from(new Map(items.filter(i => i.assigneeId && i.assigneeName).map(i => [i.assigneeId, { id: i.assigneeId, name: i.assigneeName }])).values())
@@ -714,13 +709,7 @@ export default function BacklogPage() {
             <Upload size={13} /> Import
           </button>
           <input ref={importFileRef} type="file" accept=".txt,.md,.markdown,.xml,.html,.htm" className="hidden" onChange={handleFileSelect} />
-          <button
-            onClick={() => setShowSprintModal(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60"
-            style={{ background: 'rgba(16,185,129,0.08)' }}
-          >
-            <Rocket size={13} /> Nuevo Sprint
-          </button>
+
           <button onClick={() => openNew()} className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors font-medium">
             <Plus size={13} /> New
           </button>
