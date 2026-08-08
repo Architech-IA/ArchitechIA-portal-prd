@@ -336,7 +336,7 @@ function CustomSelect({ value, onChange, options, placeholder }: {
   placeholder?: string
 }) {
   const [open, setOpen] = React.useState(false)
-  const [pos, setPos] = React.useState({ top: 0, left: 0, width: 0 })
+  const [pos, setPos] = React.useState({ top: 0, bottom: 0, left: 0, width: 0, openUp: false })
   const ref = React.useRef<HTMLDivElement>(null)
   const btnRef = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
@@ -347,7 +347,10 @@ function CustomSelect({ value, onChange, options, placeholder }: {
   const handleOpen = () => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect()
-      setPos({ top: r.bottom + 4, left: r.left, width: r.width })
+      const maxH = 200
+      const spaceBelow = window.innerHeight - r.bottom
+      const openUp = spaceBelow < maxH + 8
+      setPos({ top: r.bottom + 4, bottom: window.innerHeight - r.top + 4, left: r.left, width: r.width, openUp })
     }
     setOpen(v => !v)
   }
@@ -366,7 +369,7 @@ function CustomSelect({ value, onChange, options, placeholder }: {
       </button>
       {open && typeof window !== 'undefined' && (
         <div
-          style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '200px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}
+          style={{ position: 'fixed', ...(pos.openUp ? { bottom: pos.bottom } : { top: pos.top }), left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '200px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}
         >
           {options.map((opt, i) => (
             <button
