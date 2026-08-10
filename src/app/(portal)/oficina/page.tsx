@@ -69,6 +69,7 @@ export default function OficinePage() {
   const [actLoading, setActLoading] = useState(false)
   const [messages, setMessages]     = useState<OrionMsg[]>([])
   const [msgLoading, setMsgLoading] = useState(false)
+  const [areaMessages, setAreaMessages] = useState<OrionMsg[]>([])
   const chatEndRef = useRef<HTMLDivElement>(null)
   const [membersOpen, setMembersOpen] = useState(false)
   const [roomSearch, setRoomSearch] = useState("")
@@ -113,10 +114,13 @@ export default function OficinePage() {
         setMessages(d.reverse()); setMsgLoading(false)
       }).catch(() => setMsgLoading(false))
     } else {
-      setActLoading(true); setActivity([])
+      setActLoading(true); setActivity([]); setAreaMessages([])
       fetch(`/api/areas/${selected.slug}/activity`)
         .then(r => r.json()).then(d => { setActivity(d.events ?? []); setActLoading(false) })
         .catch(() => setActLoading(false))
+      fetch(`/api/orion/messages?areaId=${selected.id}`)
+        .then(r => r.json()).then((d: OrionMsg[]) => setAreaMessages(d.reverse()))
+        .catch(() => {})
     }
   }, [selected?.slug, sideView])
 
@@ -528,6 +532,38 @@ export default function OficinePage() {
                 ) : (
                   /* ── REGULAR ROOM mode ── */
                   <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                    {areaMessages.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#f59e0b', opacity: 0.7 }}>De Orión · {areaMessages.length}</div>
+                        <div className="space-y-2">
+                          {areaMessages.map(msg => (
+                            <div key={msg.id} className="rounded-xl border px-3 py-2.5"
+                                 style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b', opacity: 0.6 }}>ORIÓN</span>
+                                <span className="text-[10px] font-black mx-0.5" style={{ color: '#f59e0b' }}>→</span>
+                                <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>{selected?.name?.toUpperCase()}</span>
+                                {msg.backlogItemTitle && (
+                                  <div className="flex items-center gap-1.5 min-w-0 border-l pl-1.5 ml-0.5" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
+                                    <span className="text-[9px] font-black tracking-widest uppercase flex-shrink-0" style={{ color: '#f59e0b', opacity: 0.5 }}>Task:</span>
+                                    <span className="text-[10px] font-semibold truncate" style={{ color: 'rgba(245,158,11,0.8)' }}>{msg.backlogItemTitle}</span>
+                                    {msg.backlogItemCode && (
+                                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
+                                            style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
+                                        {msg.backlogItemCode}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                <span className="text-[9px] text-gray-600 flex-shrink-0 ml-auto">{new Date(msg.createdAt).toLocaleString('es', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
+                              </div>
+                              <p className="text-[11px] text-gray-300 leading-relaxed"
+                                 dangerouslySetInnerHTML={{ __html: msg.message.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {activeTasks.length > 0 && (
                       <div>
                         <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2">En progreso · {activeTasks.length}</div>

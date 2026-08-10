@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
-  const rows = await prisma.$queryRawUnsafe<any[]>(
-    `SELECT id, message, "actionType", "backlogItemId", "backlogItemTitle", "backlogItemCode", metadata, "createdAt"
-     FROM "OrionLog" ORDER BY "createdAt" DESC LIMIT 60`
-  )
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const areaId = searchParams.get('areaId')
+  let rows: any[]
+  if (areaId) {
+    rows = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT id, message, "actionType", "backlogItemId", "backlogItemTitle", "backlogItemCode", metadata, "createdAt"
+       FROM "OrionLog"
+       WHERE "actionType" = 'DISPATCHED' AND metadata->>'toAreaId' = $1
+       ORDER BY "createdAt" DESC LIMIT 40`,
+      areaId
+    )
+  } else {
+    rows = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT id, message, "actionType", "backlogItemId", "backlogItemTitle", "backlogItemCode", metadata, "createdAt"
+       FROM "OrionLog" ORDER BY "createdAt" DESC LIMIT 60`
+    )
+  }
   return NextResponse.json(rows)
 }
 

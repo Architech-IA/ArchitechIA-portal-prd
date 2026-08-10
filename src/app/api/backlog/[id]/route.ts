@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       actionType: 'DISPATCHED',
       backlogItemId: id, backlogItemTitle: title,
       backlogItemCode: (item as any).taskCode ?? undefined,
-      metadata: { toArea: areaName },
+      metadata: { toArea: areaName, toAreaId: bodyAreaId },
     })
   }
 
