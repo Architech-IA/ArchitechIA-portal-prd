@@ -24,7 +24,7 @@ export async function GET(
   const items = await prisma.$queryRawUnsafe<any[]>(
     `SELECT
       bi.id, bi.title, bi.status, bi."updatedAt", bi."createdAt",
-      bi."points", bi.type, bi.priority,
+      bi."points", bi.type, bi.priority, bi."assigneeName",
       s."sprintCode", s.name as "sprintName"
     FROM "BacklogItem" bi
     LEFT JOIN "Sprint" s ON s.id = bi."sprintId"
@@ -47,6 +47,7 @@ export async function GET(
       id: item.id, type: eventType, label, title: item.title, status: item.status,
       priority: item.priority, itemType: item.type,
       sprint: item.sprintCode ?? null, sprintName: item.sprintName ?? null,
+      assigneeName: item.assigneeName ?? null,
       timestamp: item.updatedAt,
     }
   })

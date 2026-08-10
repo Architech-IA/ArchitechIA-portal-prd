@@ -15,7 +15,7 @@ interface Area extends SubArea { subAreas: SubArea[] }
 interface ActivityEvent {
   id: string; type: string; label: string; title: string; status: string
   priority: string; itemType: string; sprint: string | null; sprintName: string | null
-  timestamp: string
+  assigneeName: string | null; timestamp: string
 }
 interface OrionMsg {
   id: string; message: string; actionType: string
@@ -539,110 +539,108 @@ function OficinaPageInner() {
                     </div>
                   </div>
                 ) : (
-                  /* ── REGULAR ROOM mode ── */
-                  <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                    {areaMessages.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: '#f59e0b', opacity: 0.7 }}>De Orión · {areaMessages.length}</div>
-                        <div className="space-y-2">
-                          {areaMessages.map(msg => (
-                            <div key={msg.id} className="rounded-xl border px-3 py-2.5"
-                                 style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}>
-                              <div className="flex items-center gap-1.5 mb-1.5">
-                                <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b', opacity: 0.6 }}>ORIÓN</span>
-                                <span className="text-[10px] font-black mx-0.5" style={{ color: '#f59e0b' }}>→</span>
-                                <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>{selected?.name?.toUpperCase()}</span>
-                                {msg.backlogItemTitle && (
-                                  <div className="flex items-center gap-1.5 min-w-0 border-l pl-1.5 ml-0.5" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
-                                    <span className="text-[9px] font-black tracking-widest uppercase flex-shrink-0" style={{ color: '#f59e0b', opacity: 0.5 }}>Task:</span>
-                                    <span className="text-[10px] font-semibold truncate" style={{ color: 'rgba(245,158,11,0.8)' }}>{msg.backlogItemTitle}</span>
-                                    {msg.backlogItemCode && (
-                                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
-                                            style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
-                                        {msg.backlogItemCode}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                                <span className="text-[9px] text-gray-600 flex-shrink-0 ml-auto">{new Date(msg.createdAt).toLocaleString('es', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
-                              </div>
-                              <p className="text-[11px] text-gray-300 leading-relaxed"
-                                 dangerouslySetInnerHTML={{ __html: msg.message.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }} />
+                  /* ── REGULAR ROOM mode — two-column layout ── */
+                  <div className="flex-1 flex overflow-hidden">
+                    {/* ── LEFT: De Orión chat ── */}
+                    <div className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
+                      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {areaMessages.length === 0 && !actLoading && (
+                          <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-12">
+                            <span className="text-2xl opacity-20">📭</span>
+                            <p className="text-[11px] text-gray-700">Sin mensajes de Orión para este room.</p>
+                          </div>
+                        )}
+                        {areaMessages.map(msg => (
+                          <div key={msg.id} className="rounded-xl border px-3 py-2.5"
+                               style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}>
+                            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                              <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b', opacity: 0.6 }}>ORIÓN</span>
+                              <span className="text-[10px] font-black mx-0.5" style={{ color: '#f59e0b' }}>→</span>
+                              <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>{selected?.name?.toUpperCase()}</span>
+                              {msg.backlogItemTitle && (
+                                <div className="flex items-center gap-1.5 min-w-0 border-l pl-1.5 ml-0.5" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
+                                  <span className="text-[9px] font-black tracking-widest uppercase flex-shrink-0" style={{ color: '#f59e0b', opacity: 0.5 }}>Task:</span>
+                                  <span className="text-[10px] font-semibold truncate" style={{ color: 'rgba(245,158,11,0.8)' }}>{msg.backlogItemTitle}</span>
+                                  {msg.backlogItemCode && (
+                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
+                                          style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
+                                      {msg.backlogItemCode}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              <span className="text-[9px] text-gray-600 flex-shrink-0 ml-auto">{new Date(msg.createdAt).toLocaleString('es', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {activeTasks.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2">En progreso · {activeTasks.length}</div>
-                        <div className="space-y-1.5">
-                          {activeTasks.map(t => (
-                            <div key={t.id} className="flex items-start gap-2 rounded-xl px-3 py-2.5 border"
-                                 style={{ background: 'rgba(249,115,22,0.06)', borderColor: 'rgba(249,115,22,0.15)' }}>
-                              <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
-                                   style={{ background: PRIORITY_DOT[t.priority] ?? '#6b7280' }} />
-                              <div className="flex-1 min-w-0">
-                                <div className="text-[12px] font-semibold text-orange-300 leading-snug">{t.title}</div>
-                                {t.sprint && <div className="text-[10px] text-gray-600 mt-0.5">{t.sprint}</div>}
-                              </div>
-                              <div className="text-[10px] text-gray-600 flex-shrink-0">{timeAgo(t.timestamp)}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {backlogTasks.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2">Pendientes · {backlogTasks.length}</div>
-                        <div className="space-y-1">
-                          {backlogTasks.slice(0, 6).map(t => (
-                            <div key={t.id} className="flex items-center gap-2 rounded-lg px-3 py-2 border border-white/5"
-                                 style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: PRIORITY_DOT[t.priority] ?? '#6b7280' }} />
-                              <span className="text-[11px] text-gray-400 flex-1 truncate">{t.title}</span>
-                              {t.sprint && <span className="text-[9px] text-gray-700 flex-shrink-0">{t.sprint}</span>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2">Actividad reciente</div>
-                      {actLoading ? (
-                        <div className="flex items-center gap-2 text-gray-600 text-xs py-4">
-                          <Loader2 size={12} className="animate-spin" /> Cargando...
-                        </div>
-                      ) : activity.length === 0 ? (
-                        <div className="text-[11px] text-gray-700 py-3">Sin actividad registrada.</div>
-                      ) : (
-                        <div className="space-y-1">
-                          {activity.slice(0, 12).map(e => (
-                            <div key={e.id+e.timestamp} className="flex items-start gap-2 py-1.5">
-                              <span className="text-sm flex-shrink-0 mt-0.5">{EVENT_ICON[e.type] ?? '📌'}</span>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-[10px] font-semibold mr-1" style={{ color: STATUS_COLOR[e.status] ?? '#6b7280' }}>{e.label}</span>
-                                <span className="text-[11px] text-gray-400 leading-snug">{e.title}</span>
-                              </div>
-                              <span className="text-[10px] text-gray-700 flex-shrink-0 mt-0.5">{timeAgo(e.timestamp)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {doneTasks.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2">Completadas recientemente</div>
-                        {doneTasks.map(t => (
-                          <div key={t.id} className="flex items-center gap-2 rounded-lg px-3 py-1.5"
-                               style={{ background: 'rgba(16,185,129,0.05)' }}>
-                            <span className="text-xs">✅</span>
-                            <span className="text-[11px] text-gray-500 flex-1 truncate line-through decoration-gray-700">{t.title}</span>
-                            <span className="text-[10px] text-gray-700">{timeAgo(t.timestamp)}</span>
+                            <p className="text-[11px] text-gray-300 leading-relaxed"
+                               dangerouslySetInnerHTML={{ __html: msg.message.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }} />
                           </div>
                         ))}
                       </div>
-                    )}
+                    </div>
+
+                    {/* ── RIGHT: Widgets ── */}
+                    <div className="w-56 flex-shrink-0 flex flex-col divide-y divide-white/5 overflow-y-auto">
+                      {/* Widget 1: En Progreso */}
+                      <div className="p-3">
+                        <div className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-2.5">
+                          En progreso{activeTasks.length > 0 ? ` · ${activeTasks.length}` : ''}
+                        </div>
+                        {actLoading ? (
+                          <div className="flex items-center gap-1.5 text-gray-700 text-[10px] py-2">
+                            <Loader2 size={10} className="animate-spin" /> Cargando...
+                          </div>
+                        ) : activeTasks.length === 0 ? (
+                          <p className="text-[10px] text-gray-700 py-1">Sin tareas activas.</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {activeTasks.map(t => (
+                              <div key={t.id} className="rounded-lg px-2.5 py-2 border"
+                                   style={{ background: 'rgba(249,115,22,0.05)', borderColor: 'rgba(249,115,22,0.12)' }}>
+                                <div className="flex items-start gap-1.5">
+                                  <div className="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0"
+                                       style={{ background: PRIORITY_DOT[t.priority] ?? '#6b7280' }} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[10px] font-semibold text-orange-300 leading-snug line-clamp-2">{t.title}</div>
+                                    {t.assigneeName && (
+                                      <div className="text-[9px] text-gray-500 mt-0.5 truncate">{t.assigneeName}</div>
+                                    )}
+                                    {t.sprint && (
+                                      <div className="text-[9px] text-gray-700 mt-0.5 truncate">{t.sprint}</div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-[9px] text-gray-700 mt-1 text-right">{timeAgo(t.timestamp)}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Widget 2: Actividad Reciente */}
+                      <div className="p-3 flex-1">
+                        <div className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-2.5">Actividad reciente</div>
+                        {actLoading ? (
+                          <div className="flex items-center gap-1.5 text-gray-700 text-[10px] py-2">
+                            <Loader2 size={10} className="animate-spin" /> Cargando...
+                          </div>
+                        ) : activity.length === 0 ? (
+                          <p className="text-[10px] text-gray-700 py-1">Sin actividad.</p>
+                        ) : (
+                          <div className="space-y-0.5">
+                            {activity.slice(0, 15).map(e => (
+                              <div key={e.id + e.timestamp} className="flex items-start gap-1.5 py-1.5 border-b border-white/[0.03]">
+                                <span className="text-[11px] flex-shrink-0 mt-0.5 leading-none">{EVENT_ICON[e.type] ?? '📌'}</span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-[9px] font-semibold mr-1" style={{ color: STATUS_COLOR[e.status] ?? '#6b7280' }}>{e.label}</span>
+                                  <span className="text-[10px] text-gray-400 leading-snug line-clamp-2">{e.title}</span>
+                                </div>
+                                <span className="text-[9px] text-gray-700 flex-shrink-0 mt-0.5">{timeAgo(e.timestamp)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
