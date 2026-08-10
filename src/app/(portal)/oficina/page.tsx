@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 
@@ -61,7 +62,9 @@ function renderMsg(text: string) {
   return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 }
 
-export default function OficinePage() {
+function OficinaPageInner() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [areas, setAreas]           = useState<Area[]>([])
   const [loading, setLoading]       = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -88,6 +91,12 @@ export default function OficinePage() {
     fetch('/api/areas').then(r => r.json()).then((data: Area[]) => {
       setAreas(data)
       setLoading(false)
+      const roomSlug = searchParams.get('room')
+      if (roomSlug) {
+        const all = [...data, ...data.flatMap(a => a.subAreas)]
+        const match = all.find(a => a.slug === roomSlug)
+        if (match) { setSelectedId(match.id); return }
+      }
       if (data.length) setSelectedId(data[0].id)
     }).catch(() => setLoading(false))
   }, [])
@@ -174,7 +183,7 @@ export default function OficinePage() {
           {roomsOpen && areas.map(area => (
             <div key={area.id}>
               <button
-                onClick={() => { setSelectedId(area.id); setSideView('rooms') }}
+                onClick={() => { setSelectedId(area.id); setSideView('rooms'); router.replace('/oficina?room=' + area.slug, { scroll: false }) }}
                 className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-left group hover:bg-white/5"
                 style={sideView === 'rooms' && selectedId === area.id
                   ? { background: area.color+'22', color: area.color }
@@ -187,7 +196,7 @@ export default function OficinePage() {
               </button>
               {area.subAreas.map(sub => (
                 <button key={sub.id}
-                  onClick={() => { setSelectedId(sub.id); setSideView('rooms') }}
+                  onClick={() => { setSelectedId(sub.id); setSideView('rooms'); router.replace('/oficina?room=' + sub.slug, { scroll: false }) }}
                   className="w-full flex items-center gap-2 pl-7 pr-3 py-1 rounded-lg transition-all text-left group hover:bg-white/5"
                   style={sideView === 'rooms' && selectedId === sub.id
                     ? { background: sub.color+'18', color: sub.color }
@@ -695,5 +704,13 @@ export default function OficinePage() {
           </div>
       </div>
     </div>
+  )
+}
+
+export default function OficinePage() {
+  return (
+    <Suspense fallback={null}>
+      <OficinaPageInner />
+    </Suspense>
   )
 }
