@@ -13,7 +13,7 @@ export async function GET() {
     LEFT JOIN "BacklogItem" bi ON bi."areaId" = a.id
     GROUP BY a.id, a.name, a.slug, a.icon, a.color, a.description, a."parentAreaId",
              ag.id, ag.name, ag.slug, ag.status
-    ORDER BY a."parentAreaId" NULLS FIRST, a.name
+    ORDER BY a."parentAreaId" NULLS FIRST, a."sortOrder" ASC NULLS LAST, a.name
   `
 
   const main = areas.filter((a: any) => !a.parentAreaId)
