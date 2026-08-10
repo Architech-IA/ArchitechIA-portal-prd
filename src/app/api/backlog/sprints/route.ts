@@ -37,6 +37,8 @@ export async function GET() {
       _count: { select: { items: true } },
       solucion: { select: { id: true, solucionCode: true, nombre: true } },
       epic: { select: { id: true, name: true, color: true } },
+      ownerArea: { select: { id: true, name: true, slug: true, color: true } },
+      sprintAreas: { include: { area: { select: { id: true, name: true, slug: true, color: true } } } },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -46,7 +48,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   if (!await isAuthed(request)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-  const { name, goal, startDate, endDate, solucionId, epicId } = await request.json()
+  const { name, goal, startDate, endDate, solucionId, epicId, responsibleId, responsibleName } = await request.json()
 
   const sprintCode = await buildSprintCode(solucionId || null, epicId || null)
 
@@ -60,6 +62,8 @@ export async function POST(request: NextRequest) {
       status: 'PLANNED',
       ...(solucionId ? { solucionId } : {}),
       ...(epicId ? { epicId } : {}),
+      ...(responsibleId ? { responsibleId } : {}),
+      ...(responsibleName ? { responsibleName } : {}),
     },
     include: {
       _count: { select: { items: true } },
@@ -67,6 +71,18 @@ export async function POST(request: NextRequest) {
       epic: { select: { id: true, name: true, color: true } },
     },
   })
+  if (responsibleName) {
+    const sprintLabel = sprint.sprintCode ?? sprint.name
+    const message = `Se ha recibido la adjudicación del **${sprintLabel} — ${sprint.name}** a Oficina Virtual.`
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "OrionLog" (id, message, "actionType", "backlogItemId", "backlogItemTitle", "backlogItemCode", metadata, "createdAt")
+       VALUES (gen_random_uuid()::text, $1, 'SPRINT_ASSIGNED', NULL, $2, $3, $4::jsonb, NOW())`,
+      message,
+      sprint.name,
+      sprint.sprintCode ?? '',
+      JSON.stringify({ sprintId: sprint.id, responsibleId, responsibleName })
+    )
+  }
   return NextResponse.json(sprint)
 }
 

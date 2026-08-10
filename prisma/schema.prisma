@@ -492,6 +492,11 @@ model Sprint {
   status      String        @default("PLANNED")
   epicId      String?
   epic        Epic?         @relation(fields: [epicId], references: [id], onDelete: SetNull)
+  ownerAreaId     String?
+  ownerArea       Area?         @relation("SprintOwner", fields: [ownerAreaId], references: [id], onDelete: SetNull)
+  sprintAreas     SprintArea[]
+  responsibleId   String?
+  responsibleName String?
   createdAt   DateTime      @default(now())
   items       BacklogItem[]
 }
@@ -514,6 +519,8 @@ model BacklogItem {
   solucionId   String?
   solucion     Solucion? @relation(fields: [solucionId], references: [id], onDelete: SetNull)
   order        Int      @default(0)
+  areaId       String?
+  area         Area?    @relation(fields: [areaId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   activities   TaskActivity[]
@@ -848,6 +855,38 @@ model Agent {
   discordUserId String?
   vaultPath     String?
   status        String   @default("ACTIVE")
+  areaId        String?
+  areaRel       Area?    @relation(fields: [areaId], references: [id])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Area {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  icon         String?
+  color        String   @default("#6366f1")
+  description  String?
+  parentAreaId String?
+  parentArea   Area?    @relation("SubAreas", fields: [parentAreaId], references: [id])
+  subAreas     Area[]   @relation("SubAreas")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  agents       Agent[]
+  backlogItems BacklogItem[]
+  ownedSprints Sprint[]      @relation("SprintOwner")
+  sprintAreas  SprintArea[]
+}
+
+model SprintArea {
+  id        String   @id @default(cuid())
+  sprintId  String
+  sprint    Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  areaId    String
+  area      Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([sprintId, areaId])
 }

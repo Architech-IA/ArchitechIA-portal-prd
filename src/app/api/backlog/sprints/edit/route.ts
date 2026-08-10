@@ -40,7 +40,7 @@ export async function PUT(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
   if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-  const { id, name, goal, startDate, endDate, epicId, solucionId } = await request.json()
+  const { id, name, goal, startDate, endDate, epicId, solucionId, responsibleId, responsibleName } = await request.json()
 
   const current = await prisma.sprint.findUnique({
     where: { id },
@@ -73,6 +73,8 @@ export async function PUT(request: NextRequest) {
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,
       epicId: resolvedEpicId,
+      responsibleId: responsibleId || null,
+      responsibleName: responsibleName || null,
       solucionId: resolvedSolucionId,
       ...(newSprintCode ? { sprintCode: newSprintCode } : {}),
     },
@@ -98,5 +100,17 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  if (responsibleName) {
+    const sprintLabel = sprint.sprintCode ?? sprint.name
+    const message = `Se ha recibido la adjudicación del **${sprintLabel} — ${sprint.name}** a Oficina Virtual.`
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "OrionLog" (id, message, "actionType", "backlogItemId", "backlogItemTitle", "backlogItemCode", metadata, "createdAt")
+       VALUES (gen_random_uuid()::text, $1, 'SPRINT_ASSIGNED', NULL, $2, $3, $4::jsonb, NOW())`,
+      message,
+      sprint.name,
+      sprint.sprintCode ?? '',
+      JSON.stringify({ sprintId: sprint.id, responsibleId, responsibleName })
+    )
+  }
   return NextResponse.json(sprint)
 }

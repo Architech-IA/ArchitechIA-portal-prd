@@ -23,8 +23,11 @@ interface Sprint {
   startDate: string | null; endDate: string | null; status: string
   epicId: string | null; epic: { id: string; name: string; color: string } | null
   _count: { items: number }; solucion: { id: string; solucionCode: string | null; nombre: string } | null
+  ownerArea: Area | null; sprintAreas: { area: Area }[]
+  responsibleId: string | null; responsibleName: string | null
 }
 interface EpicOption { id: string; name: string; color: string; solucionId: string | null }
+interface Area { id: string; name: string; slug: string; color: string }
 
 const STATUSES = [
   { key: 'BACKLOG',     label: 'Backlog',     color: 'bg-gray-500'  },
@@ -56,7 +59,7 @@ function PriorityDot({ priority }: { priority: string }) {
 
 function CustomSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder?: string }) {
   const [open, setOpen] = React.useState(false)
-  const [pos, setPos] = React.useState({ top: 0, left: 0, width: 0 })
+  const [pos, setPos] = React.useState({ bottom: 0, left: 0, width: 0 })
   const ref = React.useRef<HTMLDivElement>(null)
   const btnRef = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
@@ -65,7 +68,7 @@ function CustomSelect({ value, onChange, options, placeholder }: { value: string
     return () => document.removeEventListener('mousedown', handler)
   }, [])
   const handleOpen = () => {
-    if (btnRef.current) { const r = btnRef.current.getBoundingClientRect(); setPos({ top: r.bottom + 4, left: r.left, width: r.width }) }
+    if (btnRef.current) { const r = btnRef.current.getBoundingClientRect(); setPos({ bottom: window.innerHeight - r.top + 4, left: r.left, width: r.width }) }
     setOpen(v => !v)
   }
   const selected = options.find(o => o.value === value)
@@ -76,13 +79,54 @@ function CustomSelect({ value, onChange, options, placeholder }: { value: string
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && typeof window !== 'undefined' && (
-        <div style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '200px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 12px 40px rgba(0,0,0,0.7)' }}>
+        <div style={{ position: 'fixed', bottom: pos.bottom, left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '300px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 -8px 40px rgba(0,0,0,0.7)' }}>
           {options.map((opt, i) => (
             <button key={opt.value} type="button" onClick={() => { onChange(opt.value); setOpen(false) }} className="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]" style={{ borderBottom: i < options.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: opt.value === value ? 'rgba(249,115,22,0.08)' : 'transparent' }}>
               <span className="text-[13px]" style={{ color: opt.value === value ? '#f97316' : '#d1d5db' }}>{opt.label}</span>
               {opt.value === value && <svg width="10" height="8" viewBox="0 0 10 8" fill="none" className="ml-auto flex-shrink-0"><path d="M1 4L3.5 6.5L9 1" stroke="#f97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
             </button>
           ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+function AreaMultiSelect({ selected, onChange, areas, placeholder }: { selected: string[]; onChange: (v: string[]) => void; areas: Area[]; placeholder?: string }) {
+  const [open, setOpen] = React.useState(false)
+  const [pos, setPos] = React.useState({ bottom: 0, left: 0, width: 0 })
+  const ref = React.useRef<HTMLDivElement>(null)
+  const btnRef = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+  const handleOpen = () => {
+    if (btnRef.current) { const r = btnRef.current.getBoundingClientRect(); setPos({ bottom: window.innerHeight - r.top + 4, left: r.left, width: r.width }) }
+    setOpen(v => !v)
+  }
+  const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id])
+  const label = selected.length === 0 ? (placeholder ?? 'Ninguna') : areas.filter(a => selected.includes(a.id)).map(a => a.name).join(', ')
+  return (
+    <div ref={ref} className="relative w-full">
+      <button ref={btnRef} type="button" onClick={handleOpen} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm focus:outline-none transition-all" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
+        <span className={`flex-1 min-w-0 truncate text-left text-sm ${selected.length ? 'text-white' : 'text-gray-500'}`}>{label}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && typeof window !== 'undefined' && (
+        <div style={{ position: 'fixed', bottom: pos.bottom, left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '300px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 -8px 40px rgba(0,0,0,0.7)' }}>
+          {areas.map((area, i) => {
+            const isSel = selected.includes(area.id)
+            return (
+              <button key={area.id} type="button" onClick={() => toggle(area.id)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-white/[0.06]" style={{ borderBottom: i < areas.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: isSel ? 'rgba(255,255,255,0.05)' : 'transparent' }}>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: area.color }}/>
+                <span className="text-[13px] flex-1" style={{ color: isSel ? '#e5e7eb' : '#9ca3af' }}>{area.name}</span>
+                {isSel && <svg width="10" height="8" viewBox="0 0 10 8" fill="none" className="flex-shrink-0"><path d="M1 4L3.5 6.5L9 1" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </button>
+            )
+          })}
         </div>
       )}
     </div>
@@ -106,10 +150,10 @@ export default function SprintPage() {
   const dragItemRef = useRef<string | null>(null)
   const dragOverRef = useRef<string | null>(null)
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
-  const [sprintEditForm, setSprintEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '', epicId: '', solucionId: '' })
+  const [sprintEditForm, setSprintEditForm] = useState({ name: '', goal: '', startDate: '', endDate: '', epicId: '', solucionId: '', responsibleId: '', responsibleName: '' })
   const [savingSprintEdit, setSavingSprintEdit] = useState(false)
   const [showSprintModal, setShowSprintModal] = useState(false)
-  const [sprintForm, setSprintForm] = useState({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', epicId: '', items: [] as string[] })
+  const [sprintForm, setSprintForm] = useState({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', epicId: '', responsibleId: '', responsibleName: '', items: [] as string[] })
   const [savingSprint, setSavingSprint] = useState(false)
   const [sprintQuickAdd, setSprintQuickAdd] = useState({ title: '', type: 'DESARROLLO', priority: 'MEDIUM' })
   const [showModal, setShowModal] = useState(false)
@@ -119,6 +163,7 @@ export default function SprintPage() {
   const [pendingSprintId, setPendingSprintId] = useState<string | null>(null)
   const [closingSprintId, setClosingSprintId] = useState<string | null>(null)
   const [closeResultado, setCloseResultado] = useState('')
+  const [areas, setAreas] = useState<Area[]>([])
   const [closingSaving, setClosingSaving] = useState(false)
   const importFileRef = useRef<HTMLInputElement>(null)
   const { setActions } = usePageActions()
@@ -164,14 +209,16 @@ export default function SprintPage() {
       safeFetch('/api/backlog/epics'),
       safeFetch('/api/users'),
       safeFetch('/api/agents'),
-    ]).then(([i, sp, s, ep, u, ag]) => {
+      safeFetch('/api/areas'),
+    ]).then(([i, sp, s, ep, u, ag, ar]) => {
       setItems(Array.isArray(i) ? i : [])
       setSprints(Array.isArray(sp) ? sp : [])
       setSoluciones(Array.isArray(s) ? s.map((x: any) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo })) : [])
       setEpics(Array.isArray(ep) ? ep.map((e: { id: string; name: string; color: string; solucion?: { id: string } | null }) => ({ id: e.id, name: e.name, color: e.color, solucionId: e.solucion?.id ?? null })) : [])
       const humans = Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : []
-      const agentUsers = Array.isArray(ag) ? ag.filter((x: any) => x.status === 'ACTIVE').map((x: any) => ({ id: x.id, name: x.name + ' [Agente]', role: x.role })) : []
+      const agentUsers = Array.isArray(ag) ? ag.filter((x: any) => x.status === 'ACTIVE' && x.slug === 'orion').map((x: any) => ({ id: x.id, name: x.name + ' — CEO', role: x.role })) : []
       setUsers([...humans, ...agentUsers])
+      setAreas(Array.isArray(ar) ? ar.map((a: any) => ({ id: a.id, name: a.name, slug: a.slug, color: a.color })) : [])
       setLoading(false)
     })
   }, [])
@@ -268,7 +315,7 @@ export default function SprintPage() {
                         {activeSprint.status === 'ACTIVE' && (
                           <button onClick={() => { setClosingSprintId(activeSprint.id); setCloseResultado('') }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', color: '#10b981' }}>✓ Completar Sprint</button>
                         )}
-                        <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '', solucionId: activeSprint.solucion?.id ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7280' }}>✎ Editar</button>
+                        <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '', solucionId: activeSprint.solucion?.id ?? '', responsibleId: activeSprint.responsibleId ?? '', responsibleName: activeSprint.responsibleName ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7280' }}>✎ Editar</button>
                       </div>
                     </div>
                     {/* Sprint body */}
@@ -551,13 +598,18 @@ export default function SprintPage() {
                 <div><label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Fin</label><input type="date" value={sprintEditForm.endDate} onChange={e => setSprintEditForm(f => ({ ...f, endDate: e.target.value }))} className="w-full rounded-lg text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '8px 12px', colorScheme: 'dark' }}/></div>
               </div>
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }}/>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Responsable</label>
+                <CustomSelect value={sprintEditForm.responsibleId} onChange={v => { const u = users.find(x => x.id === v); setSprintEditForm(f => ({ ...f, responsibleId: v, responsibleName: u?.name ?? '' })) }} placeholder="Sin asignar" options={[{ value: '', label: 'Sin asignar' }, ...users.map(u => ({ value: u.id, label: u.name }))]}/>
+              </div>
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }}/>
               <div className="flex justify-end gap-2 pb-1">
                 <button type="button" onClick={() => setEditingSprint(null)} className="px-4 py-2 rounded-lg text-sm text-gray-400" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button type="button" disabled={!sprintEditForm.name.trim() || savingSprintEdit} onClick={async () => {
                   if (!sprintEditForm.name.trim()) return
                   setSavingSprintEdit(true)
                   try {
-                    const res = await fetch('/api/backlog/sprints/edit', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingSprint.id, name: sprintEditForm.name, goal: sprintEditForm.goal, startDate: sprintEditForm.startDate, endDate: sprintEditForm.endDate, epicId: sprintEditForm.epicId || null, solucionId: sprintEditForm.solucionId || null }) })
+                    const res = await fetch('/api/backlog/sprints/edit', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingSprint.id, name: sprintEditForm.name, goal: sprintEditForm.goal, startDate: sprintEditForm.startDate, endDate: sprintEditForm.endDate, epicId: sprintEditForm.epicId || null, solucionId: sprintEditForm.solucionId || null, responsibleId: sprintEditForm.responsibleId || null, responsibleName: sprintEditForm.responsibleName || null }) })
                     if (res.ok) { const updated = await res.json(); setSprints(prev => prev.map(s => s.id === updated.id ? { ...s, ...updated } : s)) }
                   } finally { setSavingSprintEdit(false); setEditingSprint(null) }
                 }} className="px-5 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2 disabled:opacity-50" style={{ background: savingSprintEdit ? '#059669' : '#10b981' }}>
@@ -613,15 +665,20 @@ export default function SprintPage() {
                 <div><label className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5"><Calendar size={11}/> Fin</label><input type="date" value={sprintForm.endDate} onChange={e => setSprintForm({ ...sprintForm, endDate: e.target.value })} className="w-full rounded-lg text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', padding: '8px 12px', colorScheme: 'dark' }}/></div>
               </div>
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }}/>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Responsable</label>
+                <CustomSelect value={sprintForm.responsibleId} onChange={v => { const u = users.find(x => x.id === v); setSprintForm({ ...sprintForm, responsibleId: v, responsibleName: u?.name ?? '' }) }} placeholder="Sin asignar" options={[{ value: '', label: 'Sin asignar' }, ...users.map(u => ({ value: u.id, label: u.name }))]}/>
+              </div>
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)' }}/>
               <div className="flex justify-end gap-2 pt-1 pb-1">
-                <button type="button" onClick={() => { setShowSprintModal(false); setSprintForm({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', epicId: '', items: [] }) }} className="px-4 py-2 rounded-lg text-sm text-gray-400" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
+                <button type="button" onClick={() => { setShowSprintModal(false); setSprintForm({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', epicId: '', responsibleId: '', responsibleName: '', items: [] }) }} className="px-4 py-2 rounded-lg text-sm text-gray-400" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancelar</button>
                 <button type="button" disabled={!sprintForm.name.trim() || savingSprint} onClick={async () => {
                   if (!sprintForm.name.trim()) return
                   setSavingSprint(true)
                   try {
-                    const res = await fetch('/api/backlog/sprints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: sprintForm.name, goal: sprintForm.goal, startDate: sprintForm.startDate, endDate: sprintForm.endDate, solucionId: sprintForm.solucionId || null, epicId: sprintForm.epicId || null }) })
+                    const res = await fetch('/api/backlog/sprints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: sprintForm.name, goal: sprintForm.goal, startDate: sprintForm.startDate, endDate: sprintForm.endDate, solucionId: sprintForm.solucionId || null, epicId: sprintForm.epicId || null, responsibleId: sprintForm.responsibleId || null, responsibleName: sprintForm.responsibleName || null }) })
                     if (res.ok) { const newSprint: Sprint = await res.json(); setSprints(prev => [newSprint, ...prev]) }
-                  } finally { setSavingSprint(false); setShowSprintModal(false); setSprintForm({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', epicId: '', items: [] }) }
+                  } finally { setSavingSprint(false); setShowSprintModal(false); setSprintForm({ name: '', goal: '', startDate: '', endDate: '', solucionId: '', epicId: '', responsibleId: '', responsibleName: '', items: [] }) }
                 }} className="px-5 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2 disabled:opacity-50" style={{ background: savingSprint ? '#059669' : '#10b981' }}>
                   {savingSprint ? <Loader2 size={13} className="animate-spin"/> : <Rocket size={13}/>}{savingSprint ? 'Creando...' : 'Crear Sprint'}
                 </button>
