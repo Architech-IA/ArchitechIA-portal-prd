@@ -453,8 +453,8 @@ export default function OficinePage() {
                         const prevMsg = messages[i - 1]
                         const sameDay = prevMsg && new Date(prevMsg.createdAt).toDateString() === new Date(msg.createdAt).toDateString()
                         const accent: Record<string,string> = {
-                          RECEIVED:'#f59e0b', STATUS_CHANGED:'#60a5fa', COMPLETED:'#10b981',
-                          DISPATCHED:'#a78bfa', INFO:'#6b7280',
+                          RECEIVED:'#6b7280', SPRINT_ASSIGNED:'#6b7280', STATUS_CHANGED:'#60a5fa', COMPLETED:'#10b981',
+                          DISPATCHED:'#f59e0b', INFO:'#6b7280',
                         }
                         const accentColor = accent[msg.actionType] ?? '#6b7280'
                         return (
