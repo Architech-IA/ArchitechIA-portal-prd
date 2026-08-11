@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle } from 'lucide-react'
+import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle, Upload, FileText } from 'lucide-react'
 
 interface Proposal {
   id: string
@@ -54,7 +54,7 @@ interface VoteState {
 
 interface ChatMsg { role: 'user' | 'assistant'; content: string }
 interface ExtractedItem { type: string; title: string; description: string; areaSlug: string; priority: string }
-interface ExtractedProposal { title: string; description: string; items: ExtractedItem[] }
+interface ExtractedProposal { title: string; description: string; items: ExtractedItem[]; _sourceFile?: string }
 
 const AGENT_COLOR: Record<string, string> = {
   orion: '#6366f1',
@@ -112,6 +112,12 @@ function formatTs(ts: string): string {
   return new Date(ts).toLocaleString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export default function CouncilView() {
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [loading, setLoading] = useState(true)
@@ -123,8 +129,9 @@ export default function CouncilView() {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const [starting, setStarting] = useState(false)
+  // Tab mode
+  const [mode, setMode] = useState<'proposals' | 'chat' | 'document'>('proposals')
   // Chat mode
-  const [mode, setMode] = useState<'proposals' | 'chat'>('proposals')
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
@@ -133,6 +140,13 @@ export default function CouncilView() {
   const [sendingToCouncil, setSendingToCouncil] = useState(false)
   const chatInputRef = useRef<HTMLInputElement>(null)
   const chatBottomRef = useRef<HTMLDivElement>(null)
+  // Document mode
+  const [docFile, setDocFile] = useState<File | null>(null)
+  const [docStatus, setDocStatus] = useState<'idle' | 'processing' | 'done' | 'error'>('idle')
+  const [docError, setDocError] = useState<string>('')
+  const [docExtracted, setDocExtracted] = useState<ExtractedProposal | null>(null)
+  const [sendingDocToCouncil, setSendingDocToCouncil] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const selectedProposal = proposals.find(p => p.id === selectedId) ?? null
 
@@ -245,6 +259,60 @@ export default function CouncilView() {
     }
   }
 
+  async function processDocument() {
+    if (!docFile) return
+    setDocStatus('processing')
+    setDocError('')
+    setDocExtracted(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', docFile)
+      const res = await fetch('/api/council/document/process', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) {
+        setDocError(data.error ?? 'Error procesando documento')
+        setDocStatus('error')
+        return
+      }
+      setDocExtracted(data)
+      setDocStatus('done')
+    } catch (err: any) {
+      setDocError(err.message ?? 'Error inesperado')
+      setDocStatus('error')
+    }
+  }
+
+  async function sendDocToCouncil() {
+    if (!docExtracted) return
+    setSendingDocToCouncil(true)
+    try {
+      const res = await fetch('/api/council/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: docExtracted.title,
+          description: docExtracted.description,
+          inputChannel: 'DOCUMENT',
+          items: docExtracted.items,
+          createdByAgentId: 'agent_orion_001',
+          createdByAgentName: 'Orión',
+          metadata: { sourceFile: docFile?.name ?? docExtracted._sourceFile ?? '' },
+        }),
+      })
+      if (res.ok) {
+        const proposal = await res.json()
+        await loadProposals()
+        setDocExtracted(null)
+        setDocFile(null)
+        setDocStatus('idle')
+        setMode('proposals')
+        setSelectedId(proposal.id)
+      }
+    } finally {
+      setSendingDocToCouncil(false)
+    }
+  }
+
   async function startDebate() {
     if (!selectedId) return
     setStarting(true)
@@ -256,7 +324,6 @@ export default function CouncilView() {
       })
       if (res.ok) {
         setProposals(prev => prev.map(p => p.id === selectedId ? { ...p, status: 'DEBATING' } : p))
-        // Start polling immediately
         if (pollRef.current) clearInterval(pollRef.current)
         pollRef.current = setInterval(() => loadDetail(selectedId), 5000)
         loadDetail(selectedId)
@@ -271,6 +338,100 @@ export default function CouncilView() {
     acc[m.round].push(m)
     return acc
   }, {})
+
+  // ── Shared extracted proposal preview panel ──
+  function ExtractedPreview({
+    data,
+    onChangeData,
+    onDiscard,
+    onSend,
+    sending,
+  }: {
+    data: ExtractedProposal
+    onChangeData: (d: ExtractedProposal) => void
+    onDiscard: () => void
+    onSend: () => void
+    sending: boolean
+  }) {
+    return (
+      <div className="w-72 flex-shrink-0 border-l border-white/5 flex flex-col overflow-hidden"
+           style={{ background: 'rgba(0,0,0,0.2)' }}>
+        <div className="px-3 pt-3 pb-2 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Propuesta extraída</span>
+          <button onClick={onDiscard} className="text-gray-600 hover:text-gray-400 transition-colors">
+            <Trash2 size={11} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {data._sourceFile && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
+              <FileText size={10} style={{ color: '#3b82f6' }} />
+              <span className="text-[9px] text-gray-500 truncate">{data._sourceFile}</span>
+            </div>
+          )}
+          <div>
+            <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Título</label>
+            <input
+              value={data.title}
+              onChange={e => onChangeData({ ...data, title: e.target.value })}
+              className="w-full rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 border border-white/8 outline-none focus:border-indigo-500/40"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            />
+          </div>
+          <div>
+            <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Descripción</label>
+            <textarea
+              value={data.description}
+              onChange={e => onChangeData({ ...data, description: e.target.value })}
+              rows={3}
+              className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-300 border border-white/8 outline-none focus:border-indigo-500/40 resize-none"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            />
+          </div>
+          <div>
+            <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-2 block">
+              Items · {data.items.length}
+            </label>
+            <div className="space-y-2">
+              {data.items.map((item, idx) => (
+                <div key={idx} className="rounded-lg p-2.5 border"
+                     style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.15)' }}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase"
+                          style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1' }}>
+                      {item.type}
+                    </span>
+                    <span className="text-[8px] text-gray-700 ml-auto">{item.priority}</span>
+                    <button
+                      onClick={() => onChangeData({ ...data, items: data.items.filter((_, i) => i !== idx) })}
+                      className="text-gray-700 hover:text-red-400 transition-colors">
+                      <Trash2 size={9} />
+                    </button>
+                  </div>
+                  <input
+                    value={item.title}
+                    onChange={e => onChangeData({ ...data, items: data.items.map((it, i) => i === idx ? { ...it, title: e.target.value } : it) })}
+                    className="w-full rounded px-2 py-1 text-[10px] font-semibold text-gray-200 border border-white/6 outline-none focus:border-indigo-500/30 mb-1"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}
+                  />
+                  <div className="text-[9px] text-gray-600">{item.areaSlug}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="p-3 border-t border-white/5 flex-shrink-0">
+          <button
+            onClick={onSend}
+            disabled={sending || !data.title}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold transition-all"
+            style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.35)', color: '#6366f1' }}>
+            {sending ? <><Loader2 size={12} className="animate-spin" /> Enviando...</> : <>⚖️ Enviar al Consejo</>}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -293,9 +454,141 @@ export default function CouncilView() {
             : { color: '#4b5563' }}>
           <MessageSquare size={12} /> Conversar con Orión
         </button>
+        <button
+          onClick={() => setMode('document')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+          style={mode === 'document'
+            ? { background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }
+            : { color: '#4b5563' }}>
+          <FileText size={12} /> Documento
+        </button>
       </div>
 
-      {mode === 'chat' ? (
+      {mode === 'document' ? (
+        /* ── DOCUMENT MODE ── */
+        <div className="flex flex-1 overflow-hidden">
+          {/* Upload / process panel */}
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
+
+              {/* Drop zone */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="relative rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 py-12 cursor-pointer transition-all hover:border-blue-500/40"
+                style={{
+                  borderColor: docFile ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)',
+                  background: docFile ? 'rgba(59,130,246,0.05)' : 'rgba(255,255,255,0.02)',
+                }}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  className="hidden"
+                  onChange={e => {
+                    const f = e.target.files?.[0]
+                    if (f) { setDocFile(f); setDocStatus('idle'); setDocExtracted(null); setDocError('') }
+                  }}
+                />
+                {docFile ? (
+                  <>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+                         style={{ background: 'rgba(59,130,246,0.15)' }}>
+                      <FileText size={22} style={{ color: '#3b82f6' }} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[13px] font-bold text-gray-200">{docFile.name}</p>
+                      <p className="text-[11px] text-gray-600 mt-0.5">{formatBytes(docFile.size)} · {docFile.type || 'archivo'}</p>
+                    </div>
+                    <p className="text-[10px] text-gray-700">Clic para cambiar archivo</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+                         style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <Upload size={22} className="text-gray-600" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[13px] font-semibold text-gray-400">Subí un documento</p>
+                      <p className="text-[11px] text-gray-600 mt-1">PDF, DOCX o TXT · hasta 50 páginas</p>
+                    </div>
+                    <p className="text-[10px] text-gray-700">Orión extraerá una propuesta automáticamente</p>
+                  </>
+                )}
+              </div>
+
+              {/* Status / error */}
+              {docStatus === 'processing' && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                     style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                  <Loader2 size={14} className="animate-spin flex-shrink-0" style={{ color: '#3b82f6' }} />
+                  <div>
+                    <p className="text-[12px] font-bold" style={{ color: '#3b82f6' }}>Orión está analizando el documento...</p>
+                    <p className="text-[10px] text-gray-600 mt-0.5">Extrayendo texto y generando propuesta estructurada</p>
+                  </div>
+                </div>
+              )}
+
+              {docStatus === 'error' && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                     style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <span className="text-base flex-shrink-0">❌</span>
+                  <div>
+                    <p className="text-[12px] font-bold" style={{ color: '#ef4444' }}>Error al procesar</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{docError}</p>
+                  </div>
+                </div>
+              )}
+
+              {docStatus === 'done' && !docExtracted && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                     style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <CheckCircle size={14} style={{ color: '#10b981' }} className="flex-shrink-0" />
+                  <p className="text-[12px] font-bold" style={{ color: '#10b981' }}>Propuesta extraída — revisá el panel</p>
+                </div>
+              )}
+
+              {/* Process button */}
+              <button
+                onClick={processDocument}
+                disabled={!docFile || docStatus === 'processing'}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-bold transition-all"
+                style={docFile && docStatus !== 'processing'
+                  ? { background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: '#3b82f6' }
+                  : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#4b5563', cursor: 'not-allowed' }}>
+                {docStatus === 'processing'
+                  ? <><Loader2 size={14} className="animate-spin" /> Procesando...</>
+                  : <><FileText size={14} /> Procesar con Orión</>}
+              </button>
+
+              {/* Helper text */}
+              <div className="px-3 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-2">Cómo funciona</p>
+                <div className="space-y-1.5">
+                  {[
+                    '1. Subí un brief, propuesta o documento de iniciativa',
+                    '2. Orión extrae automáticamente tareas y sprints',
+                    '3. Revisá y editá la propuesta antes de enviar al consejo',
+                    '4. Los 5 agentes debaten y votan para aprobar o revisar',
+                  ].map((step, i) => (
+                    <p key={i} className="text-[10px] text-gray-600">{step}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Extracted proposal preview */}
+          {docExtracted && (
+            <ExtractedPreview
+              data={docExtracted}
+              onChangeData={setDocExtracted}
+              onDiscard={() => { setDocExtracted(null); setDocStatus('idle') }}
+              onSend={sendDocToCouncil}
+              sending={sendingDocToCouncil}
+            />
+          )}
+        </div>
+      ) : mode === 'chat' ? (
         /* ── CHAT MODE ── */
         <div className="flex flex-1 overflow-hidden">
           {/* Chat panel */}
@@ -384,80 +677,13 @@ export default function CouncilView() {
 
           {/* Extracted proposal preview */}
           {extracted && (
-            <div className="w-72 flex-shrink-0 border-l border-white/5 flex flex-col overflow-hidden"
-                 style={{ background: 'rgba(0,0,0,0.2)' }}>
-              <div className="px-3 pt-3 pb-2 border-b border-white/5 flex items-center justify-between flex-shrink-0">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Propuesta extraída</span>
-                <button onClick={() => setExtracted(null)} className="text-gray-600 hover:text-gray-400 transition-colors">
-                  <Trash2 size={11} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                {/* Title */}
-                <div>
-                  <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Título</label>
-                  <input
-                    value={extracted.title}
-                    onChange={e => setExtracted(prev => prev ? { ...prev, title: e.target.value } : prev)}
-                    className="w-full rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 border border-white/8 outline-none focus:border-indigo-500/40"
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
-                  />
-                </div>
-                {/* Description */}
-                <div>
-                  <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Descripción</label>
-                  <textarea
-                    value={extracted.description}
-                    onChange={e => setExtracted(prev => prev ? { ...prev, description: e.target.value } : prev)}
-                    rows={3}
-                    className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-300 border border-white/8 outline-none focus:border-indigo-500/40 resize-none"
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
-                  />
-                </div>
-                {/* Items */}
-                <div>
-                  <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-2 block">
-                    Items · {extracted.items.length}
-                  </label>
-                  <div className="space-y-2">
-                    {extracted.items.map((item, idx) => (
-                      <div key={idx} className="rounded-lg p-2.5 border"
-                           style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.15)' }}>
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase"
-                                style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1' }}>
-                            {item.type}
-                          </span>
-                          <span className="text-[8px] text-gray-700 ml-auto">{item.priority}</span>
-                          <button
-                            onClick={() => setExtracted(prev => prev ? { ...prev, items: prev.items.filter((_, i) => i !== idx) } : prev)}
-                            className="text-gray-700 hover:text-red-400 transition-colors">
-                            <Trash2 size={9} />
-                          </button>
-                        </div>
-                        <input
-                          value={item.title}
-                          onChange={e => setExtracted(prev => prev ? { ...prev, items: prev.items.map((it, i) => i === idx ? { ...it, title: e.target.value } : it) } : prev)}
-                          className="w-full rounded px-2 py-1 text-[10px] font-semibold text-gray-200 border border-white/6 outline-none focus:border-indigo-500/30 mb-1"
-                          style={{ background: 'rgba(255,255,255,0.03)' }}
-                        />
-                        <div className="text-[9px] text-gray-600">{item.areaSlug}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              {/* Send to council */}
-              <div className="p-3 border-t border-white/5 flex-shrink-0">
-                <button
-                  onClick={sendToCouncil}
-                  disabled={sendingToCouncil || !extracted.title}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold transition-all"
-                  style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.35)', color: '#6366f1' }}>
-                  {sendingToCouncil ? <><Loader2 size={12} className="animate-spin" /> Enviando...</> : <>⚖️ Enviar al Consejo</>}
-                </button>
-              </div>
-            </div>
+            <ExtractedPreview
+              data={extracted}
+              onChangeData={setExtracted}
+              onDiscard={() => setExtracted(null)}
+              onSend={sendToCouncil}
+              sending={sendingToCouncil}
+            />
           )}
         </div>
       ) : (
@@ -569,6 +795,13 @@ export default function CouncilView() {
                   <h2 className="text-[13px] font-black text-gray-200 mt-1 leading-snug">{selectedProposal.title}</h2>
                   {selectedProposal.description && (
                     <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">{selectedProposal.description}</p>
+                  )}
+                  {/* Source file badge */}
+                  {selectedProposal.metadata?.sourceFile && (
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <FileText size={9} style={{ color: '#3b82f6' }} />
+                      <span className="text-[9px] text-gray-600">{selectedProposal.metadata.sourceFile}</span>
+                    </div>
                   )}
                 </div>
                 {/* Iniciar debate button for PENDING/REVISED */}
