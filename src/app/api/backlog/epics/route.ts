@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isAuthed } from '@/lib/apiAuth'
+import { triggerEpicProposal } from '@/lib/council-trigger'
 
 export async function GET() {
   const epics = await prisma.epic.findMany({
@@ -40,6 +41,17 @@ export async function POST(request: NextRequest) {
       sprints: true,
     },
   })
+  ;(async () => {
+    let solucionNombre: string | undefined
+    let existingEpics: string[] = []
+    if (solucionId) {
+      const sol = await prisma.solucion.findUnique({ where: { id: solucionId }, select: { nombre: true } })
+      solucionNombre = sol?.nombre ?? undefined
+      const others = await prisma.epic.findMany({ where: { solucionId }, select: { name: true } })
+      existingEpics = others.map((e: { name: string }) => e.name).filter((n: string) => n !== name)
+    }
+    await triggerEpicProposal({ id: epic.id, name, description: description || null, solucionId: solucionId || null, solucionNombre, existingEpics })
+  })().catch(console.error)
   return NextResponse.json(epic)
 }
 

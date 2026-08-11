@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
+import { triggerSolutionProposal } from '@/lib/council-trigger';
 
 const INTERN_SOLUTION_NAME = 'Portal Interno ArchitechIA';
 
@@ -68,5 +69,6 @@ export async function POST(request: NextRequest) {
     type: 'CREATED', description: 'creó la solución ' + nombre,
     entityType: 'solucion', entityId: solucion.id, userId: token?.sub,
   });
+  triggerSolutionProposal({ id: solucion.id, nombre: solucion.nombre, descripcion: solucion.descripcion, tipo: solucion.tipo }).catch(console.error);
   return NextResponse.json(solucion);
 }

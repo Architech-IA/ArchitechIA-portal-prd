@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle, Upload, FileText } from 'lucide-react'
+import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle, Upload, FileText, Settings, ToggleLeft, ToggleRight } from 'lucide-react'
 
 interface Proposal {
   id: string
@@ -147,6 +147,10 @@ export default function CouncilView() {
   const [docExtracted, setDocExtracted] = useState<ExtractedProposal | null>(null)
   const [sendingDocToCouncil, setSendingDocToCouncil] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Trigger config
+  const [showTriggerConfig, setShowTriggerConfig] = useState(false)
+  const [triggerConfig, setTriggerConfig] = useState<Record<string, boolean>>({ PRODUCT: true, PROJECT: true, INTERN: false, PILOT: false, epicTriggerEnabled: true })
+  const [savingConfig, setSavingConfig] = useState(false)
 
   const selectedProposal = proposals.find(p => p.id === selectedId) ?? null
 
@@ -160,6 +164,19 @@ export default function CouncilView() {
     }
   }
 
+  async function loadTriggerConfig() {
+    const res = await fetch("/api/council/trigger/config")
+    if (res.ok) setTriggerConfig(await res.json())
+  }
+
+  async function saveTriggerConfigFn(cfg: Record<string, boolean>) {
+    setSavingConfig(true)
+    try {
+      await fetch("/api/council/trigger/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg) })
+      setTriggerConfig(cfg)
+    } finally { setSavingConfig(false) }
+  }
+
   async function loadDetail(id: string) {
     setDetailLoading(true)
     const [msgRes, voteRes] = await Promise.all([
@@ -170,6 +187,8 @@ export default function CouncilView() {
     if (voteRes.ok) setVoteState(await voteRes.json())
     setDetailLoading(false)
   }
+
+  useEffect(() => { loadTriggerConfig() }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -434,7 +453,7 @@ export default function CouncilView() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="relative flex flex-col h-full overflow-hidden">
       {/* ── Tab bar ── */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-white/5 flex-shrink-0"
            style={{ background: 'rgba(0,0,0,0.2)' }}>
@@ -462,7 +481,34 @@ export default function CouncilView() {
             : { color: '#4b5563' }}>
           <FileText size={12} /> Documento
         </button>
+        <div className="ml-auto">
+          <button onClick={() => setShowTriggerConfig(prev => !prev)} title="Configurar triggers" className="p-1.5 rounded-lg transition-colors" style={showTriggerConfig ? { background: "rgba(99,102,241,0.15)", color: "#6366f1" } : { color: "#4b5563" }}>
+            <Settings size={12} />
+          </button>
+        </div>
       </div>
+      {showTriggerConfig && (
+        <div className="absolute z-50 right-3 top-12 w-72 rounded-xl shadow-2xl border border-white/10 p-4" style={{ background: "rgba(15,15,25,0.97)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Triggers automáticos</span>
+            {savingConfig && <span className="text-[9px] text-gray-600">Guardando...</span>}
+          </div>
+          {([ ["PRODUCT", "Productos (siempre ON)"], ["PROJECT", "Proyectos"], ["INTERN", "Internas"], ["PILOT", "Pilotos"] ] as [string, string][]).map(([k, label]) => (
+            <div key={k} className="flex items-center justify-between py-2 border-b border-white/5">
+              <span className="text-[11px] text-gray-300">{label}</span>
+              <button onClick={() => saveTriggerConfigFn({ ...triggerConfig, [k]: !triggerConfig[k] })} className="text-gray-400 hover:text-white transition-colors">
+                {triggerConfig[k] ? <ToggleRight size={20} className="text-indigo-400" /> : <ToggleLeft size={20} /> }
+              </button>
+            </div>
+          ))}
+          <div className="flex items-center justify-between py-2">
+            <span className="text-[11px] text-gray-300">Épicas</span>
+            <button onClick={() => saveTriggerConfigFn({ ...triggerConfig, epicTriggerEnabled: !triggerConfig.epicTriggerEnabled })} className="text-gray-400 hover:text-white transition-colors">
+              {triggerConfig.epicTriggerEnabled ? <ToggleRight size={20} className="text-indigo-400" /> : <ToggleLeft size={20} /> }
+            </button>
+          </div>
+        </div>
+      )}
 
       {mode === 'document' ? (
         /* ── DOCUMENT MODE ── */
