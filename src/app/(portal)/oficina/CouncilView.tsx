@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw } from 'lucide-react'
+import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle } from 'lucide-react'
 
 interface Proposal {
   id: string
@@ -51,6 +51,10 @@ interface VoteState {
   threshold: number
   approved: boolean
 }
+
+interface ChatMsg { role: 'user' | 'assistant'; content: string }
+interface ExtractedItem { type: string; title: string; description: string; areaSlug: string; priority: string }
+interface ExtractedProposal { title: string; description: string; items: ExtractedItem[] }
 
 const AGENT_COLOR: Record<string, string> = {
   orion: '#6366f1',
@@ -119,6 +123,16 @@ export default function CouncilView() {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const [starting, setStarting] = useState(false)
+  // Chat mode
+  const [mode, setMode] = useState<'proposals' | 'chat'>('proposals')
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const [extracting, setExtracting] = useState(false)
+  const [extracted, setExtracted] = useState<ExtractedProposal | null>(null)
+  const [sendingToCouncil, setSendingToCouncil] = useState(false)
+  const chatInputRef = useRef<HTMLInputElement>(null)
+  const chatBottomRef = useRef<HTMLDivElement>(null)
 
   const selectedProposal = proposals.find(p => p.id === selectedId) ?? null
 
@@ -163,6 +177,74 @@ export default function CouncilView() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  async function sendChatMessage() {
+    const content = chatInput.trim()
+    if (!content || chatLoading) return
+    const newMsg: ChatMsg = { role: 'user', content }
+    const updated = [...chatMessages, newMsg]
+    setChatMessages(updated)
+    setChatInput('')
+    setChatLoading(true)
+    try {
+      const res = await fetch('/api/council/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updated }),
+      })
+      if (res.ok) {
+        const { reply } = await res.json()
+        setChatMessages(prev => [...prev, { role: 'assistant', content: reply }])
+      }
+    } finally {
+      setChatLoading(false)
+      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    }
+  }
+
+  async function extractProposal() {
+    if (chatMessages.length < 2) return
+    setExtracting(true)
+    try {
+      const res = await fetch('/api/council/chat/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: chatMessages }),
+      })
+      if (res.ok) setExtracted(await res.json())
+    } finally {
+      setExtracting(false)
+    }
+  }
+
+  async function sendToCouncil() {
+    if (!extracted) return
+    setSendingToCouncil(true)
+    try {
+      const res = await fetch('/api/council/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: extracted.title,
+          description: extracted.description,
+          inputChannel: 'CONVERSATION',
+          items: extracted.items,
+          createdByAgentId: 'agent_orion_001',
+          createdByAgentName: 'Orión',
+        }),
+      })
+      if (res.ok) {
+        const proposal = await res.json()
+        await loadProposals()
+        setExtracted(null)
+        setChatMessages([])
+        setMode('proposals')
+        setSelectedId(proposal.id)
+      }
+    } finally {
+      setSendingToCouncil(false)
+    }
+  }
+
   async function startDebate() {
     if (!selectedId) return
     setStarting(true)
@@ -191,7 +273,195 @@ export default function CouncilView() {
   }, {})
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* ── Tab bar ── */}
+      <div className="flex items-center gap-1 px-3 py-2 border-b border-white/5 flex-shrink-0"
+           style={{ background: 'rgba(0,0,0,0.2)' }}>
+        <button
+          onClick={() => setMode('proposals')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+          style={mode === 'proposals'
+            ? { background: 'rgba(99,102,241,0.15)', color: '#6366f1' }
+            : { color: '#4b5563' }}>
+          <Vote size={12} /> Propuestas
+        </button>
+        <button
+          onClick={() => setMode('chat')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+          style={mode === 'chat'
+            ? { background: 'rgba(99,102,241,0.15)', color: '#6366f1' }
+            : { color: '#4b5563' }}>
+          <MessageSquare size={12} /> Conversar con Orión
+        </button>
+      </div>
+
+      {mode === 'chat' ? (
+        /* ── CHAT MODE ── */
+        <div className="flex flex-1 overflow-hidden">
+          {/* Chat panel */}
+          <div className="flex flex-col flex-1 overflow-hidden">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              {chatMessages.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+                       style={{ background: 'rgba(99,102,241,0.15)', border: '2px solid rgba(99,102,241,0.3)' }}>
+                    OR
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-bold text-gray-300">Conversación con Orión</p>
+                    <p className="text-[11px] text-gray-600 mt-1">Describí tu iniciativa en lenguaje natural.<br/>Orión te ayuda a estructurarla.</p>
+                  </div>
+                  <p className="text-[10px] text-gray-700 italic max-w-xs">"Orión, necesito implementar autenticación OAuth en el portal..."</p>
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
+                       style={msg.role === 'assistant'
+                         ? { background: 'rgba(99,102,241,0.25)', color: '#6366f1', border: '1.5px solid rgba(99,102,241,0.4)' }
+                         : { background: 'rgba(255,255,255,0.08)', color: '#9ca3af', border: '1.5px solid rgba(255,255,255,0.1)' }}>
+                    {msg.role === 'assistant' ? 'OR' : 'TÚ'}
+                  </div>
+                  <div className="max-w-[75%]">
+                    <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed"
+                         style={msg.role === 'assistant'
+                           ? { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)', color: '#d1d5db' }
+                           : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: '#e5e7eb' }}>
+                      {msg.content}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex gap-2.5">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
+                       style={{ background: 'rgba(99,102,241,0.25)', color: '#6366f1', border: '1.5px solid rgba(99,102,241,0.4)' }}>OR</div>
+                  <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}>
+                    <Loader2 size={12} className="animate-spin text-indigo-400" />
+                  </div>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* Actions row */}
+            {chatMessages.length >= 2 && !extracted && (
+              <div className="px-4 pb-2 flex-shrink-0">
+                <button
+                  onClick={extractProposal}
+                  disabled={extracting}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-bold transition-all"
+                  style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981' }}>
+                  {extracting ? <><Loader2 size={11} className="animate-spin" /> Extrayendo propuesta...</> : <><CheckCircle size={11} /> Listo — extraer propuesta</>}
+                </button>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="px-4 pb-4 flex-shrink-0 border-t border-white/5 pt-3">
+              <div className="flex gap-2">
+                <input
+                  ref={chatInputRef}
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
+                  placeholder="Describí tu iniciativa a Orión..."
+                  disabled={chatLoading}
+                  className="flex-1 rounded-xl px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-indigo-500/40 transition-colors placeholder-gray-600"
+                  style={{ background: 'rgba(255,255,255,0.04)' }}
+                />
+                <button
+                  onClick={sendChatMessage}
+                  disabled={!chatInput.trim() || chatLoading}
+                  className="px-3 py-2 rounded-xl transition-all flex-shrink-0"
+                  style={{ background: 'rgba(99,102,241,0.2)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
+                  <Send size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Extracted proposal preview */}
+          {extracted && (
+            <div className="w-72 flex-shrink-0 border-l border-white/5 flex flex-col overflow-hidden"
+                 style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <div className="px-3 pt-3 pb-2 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Propuesta extraída</span>
+                <button onClick={() => setExtracted(null)} className="text-gray-600 hover:text-gray-400 transition-colors">
+                  <Trash2 size={11} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                {/* Title */}
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Título</label>
+                  <input
+                    value={extracted.title}
+                    onChange={e => setExtracted(prev => prev ? { ...prev, title: e.target.value } : prev)}
+                    className="w-full rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 border border-white/8 outline-none focus:border-indigo-500/40"
+                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                  />
+                </div>
+                {/* Description */}
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Descripción</label>
+                  <textarea
+                    value={extracted.description}
+                    onChange={e => setExtracted(prev => prev ? { ...prev, description: e.target.value } : prev)}
+                    rows={3}
+                    className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-300 border border-white/8 outline-none focus:border-indigo-500/40 resize-none"
+                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                  />
+                </div>
+                {/* Items */}
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-2 block">
+                    Items · {extracted.items.length}
+                  </label>
+                  <div className="space-y-2">
+                    {extracted.items.map((item, idx) => (
+                      <div key={idx} className="rounded-lg p-2.5 border"
+                           style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.15)' }}>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase"
+                                style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1' }}>
+                            {item.type}
+                          </span>
+                          <span className="text-[8px] text-gray-700 ml-auto">{item.priority}</span>
+                          <button
+                            onClick={() => setExtracted(prev => prev ? { ...prev, items: prev.items.filter((_, i) => i !== idx) } : prev)}
+                            className="text-gray-700 hover:text-red-400 transition-colors">
+                            <Trash2 size={9} />
+                          </button>
+                        </div>
+                        <input
+                          value={item.title}
+                          onChange={e => setExtracted(prev => prev ? { ...prev, items: prev.items.map((it, i) => i === idx ? { ...it, title: e.target.value } : it) } : prev)}
+                          className="w-full rounded px-2 py-1 text-[10px] font-semibold text-gray-200 border border-white/6 outline-none focus:border-indigo-500/30 mb-1"
+                          style={{ background: 'rgba(255,255,255,0.03)' }}
+                        />
+                        <div className="text-[9px] text-gray-600">{item.areaSlug}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* Send to council */}
+              <div className="p-3 border-t border-white/5 flex-shrink-0">
+                <button
+                  onClick={sendToCouncil}
+                  disabled={sendingToCouncil || !extracted.title}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold transition-all"
+                  style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.35)', color: '#6366f1' }}>
+                  {sendingToCouncil ? <><Loader2 size={12} className="animate-spin" /> Enviando...</> : <>⚖️ Enviar al Consejo</>}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+      <div className="flex flex-1 overflow-hidden">
 
       {/* ── LEFT: Proposal list ── */}
       <div className="w-64 flex-shrink-0 flex flex-col border-r border-white/5 overflow-hidden"
@@ -511,6 +781,8 @@ export default function CouncilView() {
           </div>
         )}
       </div>
+    </div>
+      )}
     </div>
   )
 }
