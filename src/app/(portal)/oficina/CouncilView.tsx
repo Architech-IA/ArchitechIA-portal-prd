@@ -118,6 +118,7 @@ export default function CouncilView() {
   const [filterStatus, setFilterStatus] = useState<string>('')
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const [starting, setStarting] = useState(false)
 
   const selectedProposal = proposals.find(p => p.id === selectedId) ?? null
 
@@ -161,6 +162,27 @@ export default function CouncilView() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  async function startDebate() {
+    if (!selectedId) return
+    setStarting(true)
+    try {
+      const res = await fetch(`/api/council/proposals/${selectedId}/debate/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ round: selectedProposal?.round ?? 1 }),
+      })
+      if (res.ok) {
+        setProposals(prev => prev.map(p => p.id === selectedId ? { ...p, status: 'DEBATING' } : p))
+        // Start polling immediately
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(() => loadDetail(selectedId), 5000)
+        loadDetail(selectedId)
+      }
+    } finally {
+      setStarting(false)
+    }
+  }
 
   const byRound = messages.reduce<Record<number, DebateMsg[]>>((acc, m) => {
     acc[m.round] = acc[m.round] ?? []
@@ -279,6 +301,20 @@ export default function CouncilView() {
                     <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">{selectedProposal.description}</p>
                   )}
                 </div>
+                {/* Iniciar debate button for PENDING/REVISED */}
+                {(selectedProposal.status === 'PENDING' || selectedProposal.status === 'REVISED') && (
+                  <button
+                    onClick={startDebate}
+                    disabled={starting}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex-shrink-0"
+                    style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
+                    {starting ? (
+                      <><span className="animate-spin text-[12px]">⚙️</span> Iniciando...</>
+                    ) : (
+                      <><span className="text-[12px]">⚖️</span> Iniciar debate</>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
