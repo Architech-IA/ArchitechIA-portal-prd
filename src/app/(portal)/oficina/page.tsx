@@ -82,6 +82,7 @@ function OficinaPageInner() {
 
   // Config / Agentes view
   const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory'>('rooms')
+  const [councilBadge, setCouncilBadge] = useState<{ debating: number; escalated: number; total: number }>({ debating: 0, escalated: 0, total: 0 })
   const [agents, setAgents]     = useState<Agent[]>([])
   const [selAgent, setSelAgent] = useState<Agent | null>(null)
   const [form, setForm]         = useState<Partial<Agent>>({})
@@ -100,6 +101,15 @@ function OficinaPageInner() {
       }
       if (data.length) setSelectedId(data[0].id)
     }).catch(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    function fetchBadge() {
+      fetch('/api/council/badge').then(r => r.json()).then(d => setCouncilBadge(d)).catch(() => {})
+    }
+    fetchBadge()
+    const t = setInterval(fetchBadge, 30000)
+    return () => clearInterval(t)
   }, [])
 
   useEffect(() => {
@@ -191,9 +201,16 @@ function OficinaPageInner() {
                   ? { background: area.color+'22', color: area.color }
                   : { color: '#6b7280' }}>
                 <span className="text-[12px] font-semibold flex-1 truncate group-hover:text-gray-300 transition-colors">{area.name}</span>
-                {area.activeItems > 0 && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: area.color+'30', color: area.color }}>{area.activeItems}</span>
+                {area.slug === 'consejo' ? (
+                  councilBadge.total > 0 && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: councilBadge.escalated > 0 ? '#ef444430' : '#f59e0b30', color: councilBadge.escalated > 0 ? '#ef4444' : '#f59e0b' }}>{councilBadge.total}</span>
+                  )
+                ) : (
+                  area.activeItems > 0 && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: area.color+'30', color: area.color }}>{area.activeItems}</span>
+                  )
                 )}
               </button>
               {area.subAreas.map(sub => (

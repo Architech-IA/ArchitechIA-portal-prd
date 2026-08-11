@@ -282,6 +282,20 @@ export default function CouncilView() {
               </div>
             </div>
 
+            {/* Escalated banner */}
+            {selectedProposal.status === 'ESCALATED' && (
+              <div className="mx-4 mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5 flex-shrink-0"
+                   style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                <span className="text-base flex-shrink-0">🚨</span>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f97316' }}>Escalada al socio</div>
+                  <p className="text-[10px] text-gray-400 leading-snug mt-0.5">
+                    La propuesta no alcanzó umbral en 2 rondas. Requiere decisión humana: aprobar, rechazar o pedir revisión con instrucciones.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Debate messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
               {detailLoading && messages.length === 0 ? (
