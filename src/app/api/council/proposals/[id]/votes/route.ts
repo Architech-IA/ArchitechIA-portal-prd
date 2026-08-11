@@ -38,7 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (allVotes.length >= 5) {
     newStatus = weightedScore >= 5 ? 'APPROVED' : (round >= 2 ? 'ESCALATED' : 'REJECTED')
     await prisma.$executeRawUnsafe(
-      `UPDATE "Proposal" SET status = $1, "updatedAt" = NOW() WHERE id = $2`, newStatus, id
+      `UPDATE "CouncilProposal" SET status = $1, "updatedAt" = NOW() WHERE id = $2`, newStatus, id
     )
   }
 

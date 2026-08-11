@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     `SELECT id, title, description, status, "inputChannel", items, round,
             "epicId", "sprintId", "solucionId", "createdByAgentId", "createdByAgentName",
             metadata, "createdAt", "updatedAt"
-     FROM "Proposal" ${where}
+     FROM "CouncilProposal" ${where}
      ORDER BY "createdAt" DESC LIMIT 50`
   )
   return NextResponse.json(rows)
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (!title) return NextResponse.json({ error: 'title requerido' }, { status: 400 })
 
   const rows = await prisma.$queryRawUnsafe<any[]>(
-    `INSERT INTO "Proposal" (title, description, "inputChannel", items, "epicId", "sprintId", "solucionId", "createdByAgentId", "createdByAgentName", metadata)
+    `INSERT INTO "CouncilProposal" (title, description, "inputChannel", items, "epicId", "sprintId", "solucionId", "createdByAgentId", "createdByAgentName", metadata)
      VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10::jsonb)
      RETURNING *`,
     title, description ?? null, inputChannel, JSON.stringify(items),

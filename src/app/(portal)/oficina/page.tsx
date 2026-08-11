@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal } from 'lucide-react'
 import DirectoryView from './DirectoryView'
+import CouncilView from './CouncilView'
 
 interface SubArea {
   id: string; name: string; slug: string; icon: string; color: string
@@ -114,6 +115,7 @@ function OficinaPageInner() {
     ?? areas.flatMap(a => a.subAreas).find(s => s.id === selectedId) as Area | undefined
 
   const isBacklogHub = selected?.slug === 'backlog-hub'
+  const isConsejo = selected?.slug === 'consejo'
 
   useEffect(() => {
     if (!selected?.slug || sideView !== 'rooms') return
@@ -446,8 +448,10 @@ function OficinaPageInner() {
                   </div>
                 </div>
 
-                {/* ── CHAT MODE for backlog-hub ── */}
-                {isBacklogHub ? (
+                {/* ── CHAT MODE for backlog-hub / council ── */}
+                {isConsejo ? (
+                  <CouncilView />
+                ) : isBacklogHub ? (
                   <div className="flex-1 flex flex-col overflow-hidden">
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
                       {msgLoading && (

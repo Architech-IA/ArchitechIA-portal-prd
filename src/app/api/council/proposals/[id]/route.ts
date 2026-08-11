@@ -8,7 +8,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     `SELECT p.*,
       COALESCE(json_agg(DISTINCT dm.*) FILTER (WHERE dm.id IS NOT NULL), '[]') as messages,
       COALESCE(json_agg(DISTINCT av.*) FILTER (WHERE av.id IS NOT NULL), '[]') as votes
-     FROM "Proposal" p
+     FROM "CouncilProposal" p
      LEFT JOIN "DebateMessage" dm ON dm."proposalId" = p.id
      LEFT JOIN "AgentVote" av ON av."proposalId" = p.id
      WHERE p.id = $1
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (round)  { setParts.push(`round = $${vals.length + 1}`); vals.push(round) }
 
   const rows = await prisma.$queryRawUnsafe<any[]>(
-    `UPDATE "Proposal" SET ${setParts.join(', ')} WHERE id = $1 RETURNING *`,
+    `UPDATE "CouncilProposal" SET ${setParts.join(', ')} WHERE id = $1 RETURNING *`,
     ...vals
   )
   if (!rows.length) return NextResponse.json({ error: 'Not found' }, { status: 404 })
