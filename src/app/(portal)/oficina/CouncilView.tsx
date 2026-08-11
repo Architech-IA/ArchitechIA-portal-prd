@@ -1016,7 +1016,7 @@ export default function CouncilView() {
                       <span className="text-[12px]">{v.vote ? '✅' : '❌'}</span>
                     </div>
                     {v.argument && (
-                      <p className="text-[9px] text-gray-600 mt-1.5 leading-relaxed line-clamp-3">{v.argument}</p>
+                      <p className="text-[9px] text-gray-400 mt-1.5 leading-relaxed line-clamp-3">{v.argument}</p>
                     )}
                   </div>
                 )
@@ -1042,7 +1042,7 @@ export default function CouncilView() {
                     {pending.map(a => {
                       const color = AGENT_COLOR[a.slug]
                       return (
-                        <div key={a.slug} className="flex items-center gap-1.5 opacity-40">
+                        <div key={a.slug} className="flex items-center gap-1.5 opacity-55">
                           <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black flex-shrink-0"
                                style={{ background: color + '20', color }}>
                             {a.name[0]}
