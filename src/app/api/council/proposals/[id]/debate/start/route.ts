@@ -6,6 +6,7 @@ import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
+// Fallback prompts used if the agent has no systemPrompt set in the DB
 const COUNCIL_AGENTS = [
   {
     id: 'agent_orion_001',
@@ -63,19 +64,38 @@ const AGENT_WEIGHTS: Record<string, number> = {
   vesta: 1,
 }
 
+const VOTE_INSTRUCTION = '\n\nResponde EXCLUSIVAMENTE con JSON sin markdown: {"argument": "análisis en 2-3 oraciones", "vote": true o false}'
+
 async function callAgentLLM(systemPrompt: string, userMessage: string): Promise<{ argument: string; vote: boolean }> {
   const safeSystem = systemPrompt.replace(/'/g, "'\\''")
   const safeUser = userMessage.replace(/'/g, "'\\''")
   const cmd = `claude --system-prompt '${safeSystem}' -p '${safeUser}'`
   const { stdout } = await execAsync(cmd, { timeout: 60000 })
   const raw = stdout.trim()
-  // Try to extract JSON from response
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new Error(`No JSON in response: ${raw.slice(0, 200)}`)
   return JSON.parse(match[0])
 }
 
 async function runDebateEngine(proposalId: string, round: number) {
+  // Load agents from DB so system prompts are editable from the Agents config page
+  const COUNCIL_SLUGS = ['orion', 'ares', 'atlas', 'iris', 'vesta']
+  const dbAgents = await prisma.agent.findMany({
+    where: { slug: { in: COUNCIL_SLUGS } },
+    select: { id: true, name: true, slug: true, systemPrompt: true },
+  })
+  const councilAgents = COUNCIL_SLUGS.map(slug => {
+    const db = dbAgents.find(a => a.slug === slug)
+    const fb = COUNCIL_AGENTS.find(a => a.slug === slug)!
+    return {
+      id: db?.id ?? fb.id,
+      name: db?.name ?? fb.name,
+      slug,
+      // If DB has a systemPrompt, use it + append vote instruction; else use hardcoded fallback (already includes it)
+      systemPrompt: db?.systemPrompt ? db.systemPrompt + VOTE_INSTRUCTION : fb.systemPrompt,
+    }
+  })
+
   const [proposal] = await prisma.$queryRawUnsafe<any[]>(
     `SELECT * FROM "CouncilProposal" WHERE id = $1`, proposalId
   )
@@ -85,13 +105,12 @@ async function runDebateEngine(proposalId: string, round: number) {
     .map((i: any) => `- ${i.type}: ${i.title}`)
     .join('\n') || 'Sin items específicos'
 
-  // Get existing messages for context
   const prevMessages = await prisma.$queryRawUnsafe<any[]>(
     `SELECT "agentName", content FROM "DebateMessage" WHERE "proposalId" = $1 AND round = $2 ORDER BY "createdAt"`,
     proposalId, round
   )
 
-  for (const agent of COUNCIL_AGENTS) {
+  for (const agent of councilAgents) {
     try {
       const prevContext = prevMessages.length > 0
         ? '\n\nDebate previo en esta ronda:\n' + prevMessages.map((m: any) => `${m.agentName}: ${m.content}`).join('\n')
@@ -108,7 +127,6 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
 
       const result = await callAgentLLM(agent.systemPrompt, userMessage)
 
-      // Store debate message
       await prisma.$executeRawUnsafe(
         `INSERT INTO "DebateMessage" ("proposalId", "agentId", "agentName", "agentSlug", content, round)
          VALUES ($1,$2,$3,$4,$5,$6)`,
@@ -117,7 +135,6 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
         round
       )
 
-      // Determine weight (Orión=3 always; area owner=2; others=1)
       let weight = AGENT_WEIGHTS[agent.slug] ?? 1
       const items: any[] = proposal.items ?? []
       if (agent.slug !== 'orion') {
@@ -130,7 +147,6 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
         }
       }
 
-      // Upsert vote
       await prisma.$executeRawUnsafe(
         `INSERT INTO "AgentVote" ("proposalId", "agentId", "agentName", "agentSlug", weight, vote, argument, round)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -140,7 +156,6 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
         result.argument ?? null, round
       )
 
-      // Re-fetch prev messages for next agent
       prevMessages.push({ agentName: agent.name, content: result.argument })
 
     } catch (err) {
@@ -148,7 +163,6 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
     }
   }
 
-  // After all agents voted, evaluate outcome
   const THRESHOLD = 5
   const allVotes = await prisma.$queryRawUnsafe<any[]>(
     `SELECT * FROM "AgentVote" WHERE "proposalId" = $1 AND round = $2`, proposalId, round
@@ -159,7 +173,6 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
     await prisma.$executeRawUnsafe(
       `UPDATE "CouncilProposal" SET status = 'APPROVED', "updatedAt" = NOW() WHERE id = $1`, proposalId
     )
-    // Create backlog items
     const items: any[] = proposal.items ?? []
     for (const item of items) {
       if (item.type === 'task') {
@@ -187,7 +200,6 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
       `UPDATE "CouncilProposal" SET status = 'ESCALATED', "updatedAt" = NOW() WHERE id = $1`, proposalId
     )
   } else {
-    // Mark as REVISED and create round 2 proposal
     await prisma.$executeRawUnsafe(
       `UPDATE "CouncilProposal" SET status = 'REVISED', "updatedAt" = NOW() WHERE id = $1`, proposalId
     )
@@ -213,7 +225,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json().catch(() => ({}))
   const round = Number(body.round ?? 1)
 
-  // Check proposal exists and is in a startable state
   const [proposal] = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, status, round FROM "CouncilProposal" WHERE id = $1`, id
   )
@@ -222,12 +233,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: `No se puede iniciar debate con status: ${proposal.status}` }, { status: 400 })
   }
 
-  // Move to DEBATING
   await prisma.$executeRawUnsafe(
     `UPDATE "CouncilProposal" SET status = 'DEBATING', "updatedAt" = NOW() WHERE id = $1`, id
   )
 
-  // Fire debate engine in background (non-blocking)
   runDebateEngine(id, round).catch(err => console.error('[DebateEngine] Fatal error:', err))
 
   return NextResponse.json({ started: true, status: 'DEBATING', proposalId: id, round })
