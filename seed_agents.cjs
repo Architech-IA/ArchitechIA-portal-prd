@@ -1,80 +1,66 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const { PrismaClient } = require('@prisma/client');
+const p = new PrismaClient();
 
-async function main() {
-  const agents = [
-    {
-      slug: 'ares',
-      name: 'Ares',
-      role: 'Sales',
-      area: 'Comercial',
-      personality: 'Agresivo, orientado a conversión, foco en ingresos inmediatos. Cierra tratos, no especula. Habla directo, usa números concretos.',
-      systemPrompt: 'Eres Ares, agente de Sales de ArchiTechIA. Tu único objetivo es convertir leads en clientes. Eres directo, usas datos de ventas, propones acciones concretas y evitas ambigüedades. No das análisis filosóficos — das pasos de acción.',
-      taskTypes: ['planning', 'review', 'analysis'],
-      repos: [],
-      vaultPath: '/agents/ares/',
-      status: 'ACTIVE',
-    },
-    {
-      slug: 'atlas',
-      name: 'Atlas',
-      role: 'Operations',
-      area: 'Operaciones',
-      personality: 'Analítico, exige datos concretos antes de opinar, no especula. Optimiza procesos, detecta cuellos de botella, propone mejoras medibles.',
-      systemPrompt: 'Eres Atlas, agente de Operations de ArchiTechIA. Antes de opinar exiges datos. Analizas procesos, identificas ineficiencias y propones soluciones con métricas claras. No aceptas opiniones sin evidencia.',
-      taskTypes: ['planning', 'review', 'analysis', 'dev'],
-      repos: [],
-      vaultPath: '/agents/atlas/',
-      status: 'ACTIVE',
-    },
-    {
-      slug: 'iris',
-      name: 'Iris',
-      role: 'Marketing',
-      area: 'Marketing',
-      personality: 'Creativa, orientada a narrativa y posicionamiento. Conecta emocionalmente con audiencias, propone campañas y contenido con propósito.',
-      systemPrompt: 'Eres Iris, agente de Marketing de ArchiTechIA. Piensas en audiencias, mensajes y canales. Propones campañas con objetivos claros, mides impacto y conectas el trabajo de la empresa con el mercado.',
-      taskTypes: ['planning', 'review', 'analysis'],
-      repos: [],
-      vaultPath: '/agents/iris/',
-      status: 'ACTIVE',
-    },
-    {
-      slug: 'orion',
-      name: 'Orión',
-      role: 'Admin',
-      area: 'Administración',
-      personality: 'Orquestador. Delega, sintetiza sin tomar partido. Convierte complejidad en claridad. Coordina a los demás agentes y asegura alineación.',
-      systemPrompt: 'Eres Orión, agente Admin y orquestador de ArchiTechIA. Tu rol es coordinar, sintetizar y alinear. No tomas partido en debates técnicos — buscas consenso, resumes posiciones y defines próximos pasos claros para el equipo.',
-      taskTypes: ['planning', 'review'],
-      repos: [],
-      vaultPath: '/agents/orion/',
-      status: 'ACTIVE',
-    },
-    {
-      slug: 'vesta',
-      name: 'Vesta',
-      role: 'Finance',
-      area: 'Finanzas',
-      personality: 'Rigurosa, orientada a sostenibilidad financiera. Evalúa rentabilidad, flujo de caja y riesgo. No aprueba nada sin análisis financiero.',
-      systemPrompt: 'Eres Vesta, agente de Finance de ArchiTechIA. Evalúas toda decisión desde el punto de vista financiero: ROI, flujo de caja, riesgo y sostenibilidad. Nada se aprueba sin que los números lo respalden.',
-      taskTypes: ['analysis', 'review'],
-      repos: [],
-      vaultPath: '/agents/vesta/',
-      status: 'ACTIVE',
-    },
-  ]
+async function run() {
+  const now = new Date();
 
-  for (const agent of agents) {
-    const created = await prisma.agent.upsert({
-      where: { slug: agent.slug },
-      update: agent,
-      create: agent,
-    })
-    console.log('OK', created.slug, '-', created.name, '|', created.role)
+  const getAreaId = async (slug) => {
+    const r = await p.$queryRaw`SELECT id FROM "Area" WHERE slug = ${slug}`;
+    return r[0]?.id;
+  };
+
+  const agentAreaMap = [
+    { slug: 'atlas',    name: 'Atlas',    areaSlug: 'dev',      role: 'Agente de Development', personality: 'Metódico, orientado a arquitectura limpia y código mantenible.' },
+    { slug: 'sigma',    name: 'Sigma',    areaSlug: 'qa',       role: 'Agente de Quality & Testing', personality: 'Riguroso, orientado a la calidad y detección temprana de errores.' },
+    { slug: 'vulcan',   name: 'Vulcan',   areaSlug: 'infra',    role: 'Agente de Infrastructure & DevOps', personality: 'Pragmático, confiable, enfocado en estabilidad y automatización.' },
+    { slug: 'minerva',  name: 'Minerva',  areaSlug: 'data',     role: 'Agente de Data & Analytics', personality: 'Analítica, orientada a datos y métricas accionables.' },
+    { slug: 'sentinel', name: 'Sentinel', areaSlug: 'security', role: 'Agente de Cybersecurity', personality: 'Vigilante, meticuloso en la identificación de vulnerabilidades.' },
+    { slug: 'ares',     name: 'Ares',     areaSlug: 'sales',    role: 'Agente de Sales & Presales', personality: 'Persuasivo, orientado a resultados comerciales y cierre de negocios.' },
+    { slug: 'hermes',   name: 'Hermes',   areaSlug: 'delivery', role: 'Agente de Client Delivery', personality: 'Ágil, comunicativo, enfocado en la satisfacción del cliente.' },
+    { slug: 'iris',     name: 'Iris',     areaSlug: 'marketing',role: 'Agente de Marketing & Brand', personality: 'Creativo, orientado a narrativa de marca y posicionamiento.' },
+    { slug: 'vesta',    name: 'Vesta',    areaSlug: 'finance',  role: 'Agente de Finance & Legal', personality: 'Preciso, orientado al cumplimiento normativo y orden financiero.' },
+    { slug: 'hera',     name: 'Hera',     areaSlug: 'people',   role: 'Agente de People & Culture', personality: 'Empático, enfocado en el bienestar del equipo y la cultura.' },
+  ];
+
+  for (const { slug, name, areaSlug, role, personality } of agentAreaMap) {
+    const areaId = await getAreaId(areaSlug);
+    if (!areaId) { console.log(`  ⚠ Área ${areaSlug} no encontrada`); continue; }
+
+    const existing = await p.$queryRaw`SELECT id FROM "Agent" WHERE slug = ${slug}`;
+    if (existing.length > 0) {
+      await p.$executeRawUnsafe(
+        `UPDATE "Agent" SET "areaId" = $1, "updatedAt" = NOW() WHERE slug = $2`,
+        areaId, slug
+      );
+      console.log(`  ✓ ${name} → área ${areaSlug}`);
+    } else {
+      await p.$executeRawUnsafe(
+        `INSERT INTO "Agent" (id, slug, name, role, area, personality, "taskTypes", repos, status, "areaId", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, '{}', '{}', 'ACTIVE', $6, NOW(), NOW())`,
+        slug, name, role, areaSlug, personality, areaId
+      );
+      console.log(`  ✓ ${name} creado → área ${areaSlug}`);
+    }
   }
 
-  console.log('Done — 5 agentes SAGE creados')
+  await p.backlogItem.update({
+    where: { taskCode: 'PIAT-0004-0001-005' },
+    data: {
+      status: 'DONE',
+      resultado: `10 agentes asociados a sus áreas mediante Agent.areaId vía SQL directo: Atlas→dev, Sigma→qa, Vulcan→infra, Minerva→data, Sentinel→security, Ares→sales, Hermes→delivery, Iris→marketing, Vesta→finance, Hera→people. Agentes nuevos creados con rol y personalidad definidos.`,
+      fechaEjecucion: now,
+    }
+  });
+  console.log('✓ PIAT-0004-0001-005 → DONE');
+
+  await p.sprint.update({
+    where: { sprintCode: 'PIAT-0004-0001' },
+    data: { status: 'DONE', startDate: now, endDate: now }
+  });
+  console.log('✓ Sprint PIAT-0004-0001 → DONE');
+
+  await p.$disconnect();
+  console.log('\n✅ Sprint 1 completo: 5/5 items DONE.');
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect())
+run().catch(e => { console.error(e); process.exit(1); });

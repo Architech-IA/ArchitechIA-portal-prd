@@ -253,6 +253,7 @@ function FilterSelect({ value, onChange, options, placeholder }: {
 
   const current = options.find(o => o.value === value)
 
+
   return (
     <div className="flex-shrink-0">
       <button
@@ -826,6 +827,7 @@ export default function BacklogPage() {
             </div>
           </div>
         )}
+
 
         {/* Lista */}
 
