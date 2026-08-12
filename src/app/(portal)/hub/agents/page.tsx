@@ -63,8 +63,8 @@ const AGENTS: AgentConfig[] = [
   {
     id: 'nexus',
     name: 'Nexus',
-    subtitle: 'Agente General',
-    description: 'Asistente operativo de ArchiTechIA. Respuestas rápidas, búsqueda web y soporte del día a día.',
+    subtitle: 'Gerente de Operaciones',
+    description: 'Gerente de Operaciones de ArchiTechIA. Coordina procesos operativos, da seguimiento al backlog y centraliza el flujo de trabajo del equipo.',
     model: 'Kimi K2.5',
     telegramUrl: 'https://t.me/HermesNexusBot',
     iconPath: 'M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18',
@@ -74,9 +74,9 @@ const AGENTS: AgentConfig[] = [
   },
   {
     id: 'sage',
-    name: 'Sage',
-    subtitle: 'Agente Claude',
-    description: 'Asistente avanzado con acceso directo al portal. Crea tareas, registra reuniones y analiza contextos complejos.',
+    name: 'Orión',
+    subtitle: 'CEO',
+    description: 'CEO y orquestador de ArchiTechIA. Toma decisiones estratégicas, coordina al equipo de agentes y asegura alineación entre todas las áreas.',
     model: 'Claude Sonnet 4.6',
     telegramUrl: 'https://t.me/HermesSageBot',
     iconPath: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
