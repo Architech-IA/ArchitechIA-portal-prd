@@ -891,3 +891,16 @@ model SprintArea {
 
   @@unique([sprintId, areaId])
 }
+
+model AgentConversation {
+  id          String   @id @default(cuid())
+  agentSlug   String
+  channelType String   // whatsapp | portal | telegram | hub
+  channelId   String   // phone, userId, chatId, sessionId
+  messages    Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([agentSlug, channelType, channelId])
+  @@index([agentSlug, channelType])
+}
