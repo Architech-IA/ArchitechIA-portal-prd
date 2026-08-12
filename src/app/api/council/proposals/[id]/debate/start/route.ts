@@ -6,7 +6,6 @@ import { promisify } from 'util'
 
 const execAsync = promisify(exec)
 
-// Fallback prompts used if the agent has no systemPrompt set in the DB
 const COUNCIL_AGENTS = [
   {
     id: 'agent_orion_001',
@@ -66,23 +65,40 @@ const AGENT_WEIGHTS: Record<string, number> = {
 
 const VOTE_INSTRUCTION = '\n\nResponde EXCLUSIVAMENTE con JSON sin markdown: {"argument": "análisis en 2-3 oraciones", "vote": true o false}'
 
-async function callAgentLLM(systemPrompt: string, userMessage: string): Promise<{ argument: string; vote: boolean }> {
-  const safeSystem = systemPrompt.replace(/'/g, "'\\''")
-  const safeUser = userMessage.replace(/'/g, "'\\''")
-  const cmd = `claude --system-prompt '${safeSystem}' -p '${safeUser}'`
-  const { stdout } = await execAsync(cmd, { timeout: 60000 })
-  const raw = stdout.trim()
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error(`No JSON in response: ${raw.slice(0, 200)}`)
+async function callAgentLLM(
+  systemPrompt: string,
+  userMessage: string,
+  model?: string | null,
+): Promise<{ argument: string; vote: boolean }> {
+  let stdout: string
+
+  if (model && (model.startsWith('openai/') || model.startsWith('openrouter/') || model.startsWith('opencode/') || model.startsWith('opencode-go/'))) {
+    // OpenCode GO path: use opencode run with combined prompt
+    const combined = `${systemPrompt}\n\n---\n\n${userMessage}`
+    const safePrompt = combined.replace(/'/g, "'\\''")
+    const cmd = `OPENAI_API_KEY=${process.env.OPENAI_API_KEY} OPENROUTER_API_KEY=${process.env.OPENROUTER_API_KEY} OPENCODE_API_KEY=${process.env.OPENCODE_API_KEY} opencode run '${safePrompt}' --model ${model}`
+    const res = await execAsync(cmd, { timeout: 90000 })
+    stdout = res.stdout.trim()
+  } else {
+    // Claude CLI path
+    const safeSystem = systemPrompt.replace(/'/g, "'\\''")
+    const safeUser = userMessage.replace(/'/g, "'\\''")
+    const modelFlag = model ? `--model ${model} ` : ''
+    const cmd = `claude ${modelFlag}--system-prompt '${safeSystem}' -p '${safeUser}'`
+    const res = await execAsync(cmd, { timeout: 60000 })
+    stdout = res.stdout.trim()
+  }
+
+  const match = stdout.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error(`No JSON in response: ${stdout.slice(0, 200)}`)
   return JSON.parse(match[0])
 }
 
 async function runDebateEngine(proposalId: string, round: number) {
-  // Load agents from DB so system prompts are editable from the Agents config page
   const COUNCIL_SLUGS = ['orion', 'ares', 'atlas', 'iris', 'vesta']
   const dbAgents = await prisma.agent.findMany({
     where: { slug: { in: COUNCIL_SLUGS } },
-    select: { id: true, name: true, slug: true, systemPrompt: true },
+    select: { id: true, name: true, slug: true, systemPrompt: true, llmModel: true },
   })
   const councilAgents = COUNCIL_SLUGS.map(slug => {
     const db = dbAgents.find(a => a.slug === slug)
@@ -91,8 +107,8 @@ async function runDebateEngine(proposalId: string, round: number) {
       id: db?.id ?? fb.id,
       name: db?.name ?? fb.name,
       slug,
-      // If DB has a systemPrompt, use it + append vote instruction; else use hardcoded fallback (already includes it)
       systemPrompt: db?.systemPrompt ? db.systemPrompt + VOTE_INSTRUCTION : fb.systemPrompt,
+      llmModel: db?.llmModel ?? null,
     }
   })
 
@@ -125,7 +141,7 @@ ${itemsSummary}${prevContext}
 
 Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder solo con JSON.`
 
-      const result = await callAgentLLM(agent.systemPrompt, userMessage)
+      const result = await callAgentLLM(agent.systemPrompt, userMessage, agent.llmModel)
 
       await prisma.$executeRawUnsafe(
         `INSERT INTO "DebateMessage" ("proposalId", "agentId", "agentName", "agentSlug", content, round)

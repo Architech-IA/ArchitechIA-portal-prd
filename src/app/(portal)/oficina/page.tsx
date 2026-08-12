@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal } from 'lucide-react'
+import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal , Send } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import CouncilView from './CouncilView'
 
@@ -25,7 +25,7 @@ interface OrionMsg {
 }
 interface Agent {
   id: string; slug: string; name: string; role: string; area: string
-  personality: string; systemPrompt: string | null; taskTypes: string[]
+  personality: string; systemPrompt: string | null; llmModel: string | null; taskTypes: string[]
   repos: string[]; discordUserId: string | null; vaultPath: string | null
   status: string; areaId: string | null
 }
@@ -88,6 +88,10 @@ function OficinaPageInner() {
   const [form, setForm]         = useState<Partial<Agent>>({})
   const [saving, setSaving]     = useState(false)
   const [saved, setSaved]       = useState(false)
+  const [chatMsgs, setChatMsgs] = useState<{ role: 'user' | 'agent'; content: string }[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const agentChatEnd = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch('/api/areas').then(r => r.json()).then((data: Area[]) => {
@@ -149,7 +153,29 @@ function OficinaPageInner() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  function selectAgent(a: Agent) { setSelAgent(a); setForm(a); setSaved(false) }
+  function selectAgent(a: Agent) { setSelAgent(a); setForm(a); setSaved(false); setChatMsgs([]); setChatInput('') }
+
+  async function sendChat() {
+    if (!chatInput.trim() || !selAgent || chatLoading) return
+    const userMsg = chatInput.trim()
+    setChatInput('')
+    const updated = [...chatMsgs, { role: 'user' as const, content: userMsg }]
+    setChatMsgs(updated)
+    setChatLoading(true)
+    try {
+      const res = await fetch(`/api/agents/${selAgent.slug}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg, history: chatMsgs }),
+      })
+      const data = await res.json()
+      setChatMsgs(prev => [...prev, { role: 'agent', content: data.reply ?? data.error ?? 'Sin respuesta' }])
+    } catch {
+      setChatMsgs(prev => [...prev, { role: 'agent', content: 'Error de conexión.' }])
+    }
+    setChatLoading(false)
+    setTimeout(() => agentChatEnd.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+  }
 
   async function saveAgent() {
     if (!selAgent) return
@@ -263,134 +289,386 @@ function OficinaPageInner() {
         {sideView === 'agentes' ? (
           <div className="flex h-full overflow-hidden">
             {/* Agent list */}
-            <div className="w-48 flex-shrink-0 border-r border-white/5 overflow-y-auto"
-                 style={{ background: 'rgba(0,0,0,0.15)' }}>
-              <div className="px-3 pt-4 pb-2">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Agentes</span>
+            <div className="w-52 flex-shrink-0 border-r border-white/5 overflow-y-auto"
+                 style={{ background: 'rgba(5,5,14,0.5)' }}>
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.6)' }}>Agentes</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono" style={{ background: 'rgba(139,92,246,0.12)', color: 'rgba(167,139,250,0.5)' }}>
+                  {agents.length}
+                </span>
               </div>
-              {agents.map(a => (
+              <div className="py-1">
+              {agents.map(a => {
+                const isSelected = selAgent?.id === a.id
+                const statusColor = a.status === 'ACTIVE' ? '#10b981' : a.status === 'STANDBY' ? '#fbbf24' : '#374151'
+                return (
                 <button key={a.id} onClick={() => selectAgent(a)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-left transition-all hover:bg-white/5 group"
-                  style={selAgent?.id === a.id ? { background: 'rgba(167,139,250,0.1)', color: '#a78bfa' } : { color: '#6b7280' }}>
-                  <Circle size={6} className="flex-shrink-0"
-                    style={{ fill: a.status === 'ACTIVE' ? '#10b981' : '#374151', color: a.status === 'ACTIVE' ? '#10b981' : '#374151' }} />
+                  className={[
+                    'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors duration-150',
+                    isSelected
+                      ? 'bg-white/[0.07]'
+                      : 'hover:bg-white/[0.04]'
+                  ].join(' ')}>
+                  {/* Left accent */}
+                  <div className="w-0.5 h-7 rounded-full flex-shrink-0 transition-colors duration-150"
+                    style={{ background: isSelected ? '#a78bfa' : 'transparent' }} />
+                  {/* Status dot */}
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-150"
+                    style={{ background: statusColor, opacity: isSelected ? 1 : 0.7 }} />
+                  {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-semibold truncate group-hover:text-gray-300 transition-colors">{a.name}</div>
-                    <div className="text-[9px] text-gray-700 truncate">{a.role}</div>
+                    <div className="text-[12px] font-medium truncate transition-colors duration-150"
+                      style={{ color: isSelected ? '#e2e8f0' : 'rgba(255,255,255,0.5)' }}>
+                      {a.name}
+                    </div>
+                    <div className="text-[10px] truncate transition-colors duration-150"
+                      style={{ color: isSelected ? 'rgba(167,139,250,0.6)' : 'rgba(255,255,255,0.2)' }}>
+                      {a.role}
+                    </div>
                   </div>
                 </button>
-              ))}
+                )
+              })}
+              </div>
             </div>
 
-            {/* Agent edit form */}
+            {/* Agent edit form + Chat panel */}
             {selAgent ? (
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-2xl">
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-[13px] font-black text-gray-200">{selAgent.name}</h2>
-                      <p className="text-[10px] text-gray-600 font-mono">{selAgent.slug}</p>
+              <div className="flex flex-1 min-w-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto" style={{ background: 'rgba(6,6,16,0.0)' }}>
+                {/* Sticky top header bar */}
+                <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3"
+                  style={{ background: 'rgba(8,8,18,0.94)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.3),rgba(167,139,250,0.15))', border: '1px solid rgba(139,92,246,0.4)', color: '#c4b5fd' }}>
+                      {selAgent.name[0]}
                     </div>
-                    <button onClick={saveAgent} disabled={saving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all"
-                      style={saved
-                        ? { background: 'rgba(16,185,129,0.15)', color: '#10b981' }
-                        : { background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
-                      {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                      {saved ? 'Guardado' : saving ? 'Guardando...' : 'Guardar'}
+                    <div>
+                      <p className="text-[13px] font-bold text-white leading-none">{selAgent.name}</p>
+                      <p className="text-[10px] font-mono mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{selAgent.slug}</p>
+                    </div>
+                  </div>
+                  <button onClick={saveAgent} disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all duration-200"
+                    style={saved
+                      ? { background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }
+                      : saving
+                        ? { background: 'rgba(139,92,246,0.1)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.2)', opacity: 0.7 }
+                        : { background: 'linear-gradient(135deg,rgba(139,92,246,0.25),rgba(124,58,237,0.2))', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.35)' }}>
+                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                    {saved ? 'Guardado' : saving ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-5 max-w-2xl">
+
+                  {/* SECTION: Identidad */}
+                  <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(139,92,246,0.04)' }}>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#a78bfa' }} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.8)' }}>Identidad</span>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Nombre</label>
+                          <input value={form.name ?? ''}
+                            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                            className="w-full rounded-xl px-3 py-2.5 text-[13px] font-medium text-white outline-none transition-all duration-200"
+                            style={{ background: 'rgba(8,8,22,0.7)', border: '1px solid rgba(255,255,255,0.09)' }}
+                            onFocus={e => { e.currentTarget.style.border = '1px solid rgba(139,92,246,0.5)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.08)' }}
+                            onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Estado</label>
+                          <select value={form.status ?? 'ACTIVE'}
+                            onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                            className="w-full rounded-xl px-3 py-2.5 text-[13px] font-semibold outline-none transition-all duration-200 cursor-pointer"
+                            style={{
+                              background: 'rgba(8,8,22,0.7)',
+                              border: '1px solid rgba(255,255,255,0.09)',
+                              color: form.status === 'ACTIVE' ? '#34d399' : form.status === 'STANDBY' ? '#fbbf24' : '#6b7280'
+                            }}>
+                            <option value="ACTIVE" style={{ background: '#0d0d1a', color: '#34d399' }}>● ACTIVE</option>
+                            <option value="INACTIVE" style={{ background: '#0d0d1a', color: '#6b7280' }}>● INACTIVE</option>
+                            <option value="STANDBY" style={{ background: '#0d0d1a', color: '#fbbf24' }}>● STANDBY</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Rol</label>
+                          <input value={form.role ?? ''}
+                            onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                            className="w-full rounded-xl px-3 py-2.5 text-[13px] text-white outline-none transition-all duration-200"
+                            style={{ background: 'rgba(8,8,22,0.7)', border: '1px solid rgba(255,255,255,0.09)' }}
+                            onFocus={e => { e.currentTarget.style.border = '1px solid rgba(139,92,246,0.5)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.08)' }}
+                            onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Área</label>
+                          <input value={form.area ?? ''}
+                            onChange={e => setForm(f => ({ ...f, area: e.target.value }))}
+                            className="w-full rounded-xl px-3 py-2.5 text-[13px] text-white outline-none transition-all duration-200"
+                            style={{ background: 'rgba(8,8,22,0.7)', border: '1px solid rgba(255,255,255,0.09)' }}
+                            onFocus={e => { e.currentTarget.style.border = '1px solid rgba(139,92,246,0.5)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.08)' }}
+                            onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SECTION: Comportamiento */}
+                  <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(99,102,241,0.04)' }}>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#818cf8' }} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(129,140,248,0.8)' }}>Comportamiento</span>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Personalidad</label>
+                        <textarea value={form.personality ?? ''}
+                          onChange={e => setForm(f => ({ ...f, personality: e.target.value }))}
+                          rows={3}
+                          className="w-full rounded-xl px-3 py-2.5 text-[13px] text-gray-200 outline-none transition-all duration-200 resize-none leading-relaxed"
+                          style={{ background: 'rgba(8,8,22,0.7)', border: '1px solid rgba(255,255,255,0.09)' }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid rgba(99,102,241,0.5)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.08)' }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>System Prompt</label>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md" style={{ background: 'rgba(99,102,241,0.1)', color: 'rgba(129,140,248,0.7)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                            {(form.systemPrompt ?? '').length} chars
+                          </span>
+                        </div>
+                        <textarea value={form.systemPrompt ?? ''}
+                          onChange={e => setForm(f => ({ ...f, systemPrompt: e.target.value }))}
+                          rows={7}
+                          className="w-full rounded-xl px-3 py-2.5 text-[12px] text-gray-300 font-mono outline-none transition-all duration-200 resize-none leading-relaxed"
+                          style={{ background: 'rgba(5,5,15,0.8)', border: '1px solid rgba(255,255,255,0.07)', letterSpacing: '0.01em' }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid rgba(99,102,241,0.45)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.07)' }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.07)'; e.currentTarget.style.boxShadow = 'none' }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SECTION: Modelo LLM */}
+                  <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(5,150,105,0.04)' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#34d399' }} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(52,211,153,0.8)' }}>Modelo LLM</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(5,150,105,0.1)', color: 'rgba(52,211,153,0.7)', border: '1px solid rgba(5,150,105,0.2)' }}>
+                        {form.llmModel ? (form.llmModel.startsWith('opencode-go/') ? 'OpenCode GO' : form.llmModel.startsWith('opencode/') ? 'OpenCode' : 'Claude CLI') : 'Default'}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <select value={form.llmModel ?? ''}
+                        onChange={e => setForm(f => ({ ...f, llmModel: e.target.value || null }))}
+                        className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none transition-all duration-200 cursor-pointer"
+                        style={{ background: 'rgba(5,5,15,0.85)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.09)' }}>
+                        <optgroup label="— Claude CLI —" style={{ background: '#080812', color: '#7c3aed' }}>
+                          <option value="" style={{ background: '#080812', color: '#c4b5fd' }}>Default (Sonnet 5)</option>
+                          <option value="claude-fable-5" style={{ background: '#080812' }}>Claude Fable 5</option>
+                          <option value="claude-opus-4-8" style={{ background: '#080812' }}>Claude Opus 4.8</option>
+                          <option value="claude-sonnet-5" style={{ background: '#080812' }}>Claude Sonnet 5 ✓</option>
+                          <option value="claude-haiku-4-5-20251001" style={{ background: '#080812' }}>Claude Haiku 4.5</option>
+                        </optgroup>
+                        <optgroup label="— OpenCode GO (suscripción) —" style={{ background: '#080812', color: '#10b981' }}>
+                          <option value="opencode-go/qwen3.8-max" style={{ background: '#080812' }}>Qwen 3.8 Max</option>
+                          <option value="opencode-go/qwen3.7-max" style={{ background: '#080812' }}>Qwen 3.7 Max</option>
+                          <option value="opencode-go/qwen3.7-plus" style={{ background: '#080812' }}>Qwen 3.7 Plus</option>
+                          <option value="opencode-go/qwen3.6-plus" style={{ background: '#080812' }}>Qwen 3.6 Plus</option>
+                          <option value="opencode-go/glm-5.2" style={{ background: '#080812' }}>GLM-5.2</option>
+                          <option value="opencode-go/glm-5.1" style={{ background: '#080812' }}>GLM-5.1</option>
+                          <option value="opencode-go/minimax-m3" style={{ background: '#080812' }}>MiniMax M3</option>
+                          <option value="opencode-go/minimax-m2.7" style={{ background: '#080812' }}>MiniMax M2.7</option>
+                          <option value="opencode-go/mimo-v2.5-pro" style={{ background: '#080812' }}>MiMo V2.5 Pro</option>
+                          <option value="opencode-go/mimo-v2.5" style={{ background: '#080812' }}>MiMo V2.5</option>
+                          <option value="opencode-go/kimi-k3" style={{ background: '#080812' }}>Kimi K3</option>
+                          <option value="opencode-go/kimi-k2.7-code" style={{ background: '#080812' }}>Kimi K2.7 Code</option>
+                          <option value="opencode-go/kimi-k2.6" style={{ background: '#080812' }}>Kimi K2.6</option>
+                          <option value="opencode-go/deepseek-v4-pro" style={{ background: '#080812' }}>DeepSeek V4 Pro</option>
+                          <option value="opencode-go/deepseek-v4-flash" style={{ background: '#080812' }}>DeepSeek V4 Flash</option>
+                          <option value="opencode-go/grok-4.5" style={{ background: '#080812' }}>Grok 4.5</option>
+                          <option value="opencode-go/gpt-5.6-luna" style={{ background: '#080812' }}>GPT-5.6 Luna</option>
+                          <option value="opencode-go/hy3" style={{ background: '#080812' }}>Hy3</option>
+                        </optgroup>
+                        <optgroup label="— OpenCode (general) —" style={{ background: '#080812', color: '#6b7280' }}>
+                          <option value="opencode/claude-opus-5" style={{ background: '#080812' }}>Claude Opus 5</option>
+                          <option value="opencode/claude-sonnet-5" style={{ background: '#080812' }}>Claude Sonnet 5</option>
+                          <option value="opencode/gpt-5" style={{ background: '#080812' }}>GPT-5</option>
+                          <option value="opencode/gpt-5.5" style={{ background: '#080812' }}>GPT-5.5</option>
+                          <option value="opencode/gemini-3.1-pro" style={{ background: '#080812' }}>Gemini 3.1 Pro</option>
+                          <option value="opencode/gemini-3.5-flash" style={{ background: '#080812' }}>Gemini 3.5 Flash</option>
+                          <option value="opencode/deepseek-v4-pro" style={{ background: '#080812' }}>DeepSeek V4 Pro</option>
+                          <option value="opencode/kimi-k3" style={{ background: '#080812' }}>Kimi K3</option>
+                          <option value="opencode/glm-5.2" style={{ background: '#080812' }}>GLM-5.2</option>
+                          <option value="opencode/grok-4.5" style={{ background: '#080812' }}>Grok 4.5</option>
+                          <option value="opencode/minimax-m3" style={{ background: '#080812' }}>MiniMax M3</option>
+                          <option value="opencode/qwen3.5-plus" style={{ background: '#080812' }}>Qwen 3.5 Plus</option>
+                        </optgroup>
+                      </select>
+                      <p className="text-[10px] mt-2" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                        Usado por el motor de debate del Council al evaluar propuestas con este agente.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* SECTION: Integraciones */}
+                  <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(251,191,36,0.03)' }}>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#fbbf24' }} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(251,191,36,0.7)' }}>Integraciones</span>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Discord User ID</label>
+                          <input value={form.discordUserId ?? ''}
+                            onChange={e => setForm(f => ({ ...f, discordUserId: e.target.value || null }))}
+                            placeholder="123456789"
+                            className="w-full rounded-xl px-3 py-2.5 text-[13px] text-white outline-none transition-all duration-200"
+                            style={{ background: 'rgba(8,8,22,0.7)', border: '1px solid rgba(255,255,255,0.09)' }}
+                            onFocus={e => { e.currentTarget.style.border = '1px solid rgba(251,191,36,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(251,191,36,0.06)' }}
+                            onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Vault Path</label>
+                          <input value={form.vaultPath ?? ''}
+                            onChange={e => setForm(f => ({ ...f, vaultPath: e.target.value || null }))}
+                            placeholder="/agents/slug/"
+                            className="w-full rounded-xl px-3 py-2.5 text-[13px] text-white font-mono outline-none transition-all duration-200"
+                            style={{ background: 'rgba(8,8,22,0.7)', border: '1px solid rgba(255,255,255,0.09)' }}
+                            onFocus={e => { e.currentTarget.style.border = '1px solid rgba(251,191,36,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(251,191,36,0.06)' }}
+                            onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          Task Types <span className="normal-case font-normal opacity-60">(separados por coma)</span>
+                        </label>
+                        <input value={(form.taskTypes ?? []).join(', ')}
+                          onChange={e => setForm(f => ({ ...f, taskTypes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
+                          placeholder="code-review, feature, bug..."
+                          className="w-full rounded-xl px-3 py-2.5 text-[13px] text-white outline-none transition-all duration-200"
+                          style={{ background: 'rgba(8,8,22,0.7)', border: '1px solid rgba(255,255,255,0.09)' }}
+                          onFocus={e => { e.currentTarget.style.border = '1px solid rgba(251,191,36,0.4)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(251,191,36,0.06)' }}
+                          onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom save button */}
+                  <button onClick={saveAgent} disabled={saving}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-semibold transition-all duration-200"
+                    style={saved
+                      ? { background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }
+                      : saving
+                        ? { background: 'rgba(139,92,246,0.08)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.2)', opacity: 0.6 }
+                        : { background: 'linear-gradient(135deg,rgba(139,92,246,0.2),rgba(99,102,241,0.15))', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}>
+                    {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                    {saved ? 'Cambios guardados' : saving ? 'Guardando...' : 'Guardar configuración'}
+                  </button>
+                  <div className="h-6" />
+                </div>
+              </div>
+
+              {/* Chat panel */}
+              <div className="w-80 flex-shrink-0 flex flex-col border-l"
+                style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(4,4,12,0.7)' }}>
+                {/* Chat header */}
+                <div className="flex items-center gap-2.5 px-4 py-3 flex-shrink-0"
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(139,92,246,0.05)' }}>
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black"
+                    style={{ background: 'rgba(139,92,246,0.2)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}>
+                    {selAgent.name[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-white leading-none">Chat con {selAgent.name}</p>
+                    <p className="text-[9px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                      {selAgent.llmModel ? selAgent.llmModel.split('/').pop() : 'Claude Sonnet 5'}
+                    </p>
+                  </div>
+                  {chatMsgs.length > 0 && (
+                    <button onClick={() => setChatMsgs([])}
+                      className="text-[9px] px-2 py-1 rounded-lg transition-colors hover:bg-white/5"
+                      style={{ color: 'rgba(255,255,255,0.25)' }}>
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+                  {chatMsgs.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg mb-3"
+                        style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.15)' }}>
+                        💬
+                      </div>
+                      <p className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        Hablá con {selAgent.name}
+                      </p>
+                      <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.15)' }}>
+                        Usará su system prompt y modelo configurado
+                      </p>
+                    </div>
+                  )}
+                  {chatMsgs.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className="max-w-[85%] rounded-2xl px-3 py-2 text-[12px] leading-relaxed"
+                        style={msg.role === 'user'
+                          ? { background: 'rgba(139,92,246,0.2)', color: '#e2e8f0', borderBottomRightRadius: '4px', border: '1px solid rgba(139,92,246,0.25)' }
+                          : { background: 'rgba(255,255,255,0.05)', color: '#d1d5db', borderBottomLeftRadius: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        {msg.role === 'agent' && (
+                          <p className="text-[9px] font-bold mb-1" style={{ color: 'rgba(167,139,250,0.7)' }}>{selAgent.name}</p>
+                        )}
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex justify-start">
+                      <div className="rounded-2xl px-3 py-2.5 flex items-center gap-1.5"
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderBottomLeftRadius: '4px' }}>
+                        <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#a78bfa', animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#a78bfa', animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#a78bfa', animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={agentChatEnd} />
+                </div>
+
+                {/* Input */}
+                <div className="flex-shrink-0 px-3 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex gap-2 items-end">
+                    <textarea
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat() } }}
+                      placeholder={`Mensaje para ${selAgent.name}...`}
+                      rows={2}
+                      className="flex-1 rounded-xl px-3 py-2 text-[12px] text-white outline-none resize-none leading-relaxed"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', maxHeight: '96px' }}
+                      onFocus={e => { e.currentTarget.style.border = '1px solid rgba(139,92,246,0.45)' }}
+                      onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)' }}
+                    />
+                    <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()}
+                      className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150"
+                      style={chatInput.trim() && !chatLoading
+                        ? { background: 'rgba(139,92,246,0.3)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.4)' }
+                        : { background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      {chatLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
                     </button>
                   </div>
-
-                  <div className="space-y-4">
-                    {/* Name + Status row */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Nombre</label>
-                        <input value={form.name ?? ''}
-                          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                          className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-purple-500/40 transition-colors"
-                          style={{ background: 'rgba(255,255,255,0.04)' }} />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Status</label>
-                        <select value={form.status ?? 'ACTIVE'}
-                          onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                          className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-purple-500/40 transition-colors"
-                          style={{ background: 'rgba(20,20,35,0.95)' }}>
-                          <option value="ACTIVE">ACTIVE</option>
-                          <option value="INACTIVE">INACTIVE</option>
-                          <option value="STANDBY">STANDBY</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Role */}
-                    <div>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Rol</label>
-                      <input value={form.role ?? ''}
-                        onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                        className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-purple-500/40 transition-colors"
-                        style={{ background: 'rgba(255,255,255,0.04)' }} />
-                    </div>
-
-                    {/* Area */}
-                    <div>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Área</label>
-                      <input value={form.area ?? ''}
-                        onChange={e => setForm(f => ({ ...f, area: e.target.value }))}
-                        className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-purple-500/40 transition-colors"
-                        style={{ background: 'rgba(255,255,255,0.04)' }} />
-                    </div>
-
-                    {/* Personality */}
-                    <div>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Personalidad</label>
-                      <textarea value={form.personality ?? ''}
-                        onChange={e => setForm(f => ({ ...f, personality: e.target.value }))}
-                        rows={3}
-                        className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-purple-500/40 transition-colors resize-none"
-                        style={{ background: 'rgba(255,255,255,0.04)' }} />
-                    </div>
-
-                    {/* System Prompt */}
-                    <div>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">System Prompt</label>
-                      <textarea value={form.systemPrompt ?? ''}
-                        onChange={e => setForm(f => ({ ...f, systemPrompt: e.target.value }))}
-                        rows={6}
-                        className="w-full rounded-lg px-3 py-2 text-[11px] text-gray-300 font-mono border border-white/8 outline-none focus:border-purple-500/40 transition-colors resize-none leading-relaxed"
-                        style={{ background: 'rgba(255,255,255,0.03)' }} />
-                    </div>
-
-                    {/* Discord + Vault row */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Discord User ID</label>
-                        <input value={form.discordUserId ?? ''}
-                          onChange={e => setForm(f => ({ ...f, discordUserId: e.target.value || null }))}
-                          className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-purple-500/40 transition-colors"
-                          style={{ background: 'rgba(255,255,255,0.04)' }} />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Vault Path</label>
-                        <input value={form.vaultPath ?? ''}
-                          onChange={e => setForm(f => ({ ...f, vaultPath: e.target.value || null }))}
-                          className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 font-mono border border-white/8 outline-none focus:border-purple-500/40 transition-colors"
-                          style={{ background: 'rgba(255,255,255,0.04)' }} />
-                      </div>
-                    </div>
-
-                    {/* Task Types */}
-                    <div>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-1">Task Types <span className="normal-case font-normal">(separados por coma)</span></label>
-                      <input value={(form.taskTypes ?? []).join(', ')}
-                        onChange={e => setForm(f => ({ ...f, taskTypes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
-                        className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 border border-white/8 outline-none focus:border-purple-500/40 transition-colors"
-                        style={{ background: 'rgba(255,255,255,0.04)' }} />
-                    </div>
-                  </div>
+                  <p className="text-[9px] mt-1.5" style={{ color: 'rgba(255,255,255,0.15)' }}>Enter para enviar · Shift+Enter para nueva línea</p>
                 </div>
+              </div>
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center text-gray-700 text-sm">

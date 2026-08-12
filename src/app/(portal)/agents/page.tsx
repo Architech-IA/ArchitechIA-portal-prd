@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Bot, Plus, X, Circle, Pencil, Power } from 'lucide-react'
+import { Bot, Plus, X, Circle, Pencil, Power, Cpu } from 'lucide-react'
 
 interface Agent {
   id: string; slug: string; name: string; role: string; area: string
-  personality: string; systemPrompt?: string; taskTypes: string[]
+  personality: string; systemPrompt?: string; llmModel?: string; taskTypes: string[]
   repos: string[]; discordUserId?: string; vaultPath?: string; status: string
 }
 
@@ -14,9 +14,18 @@ const ROLE_COLOR: Record<string, string> = {
   Admin: 'text-violet-400', Finance: 'text-emerald-400',
 }
 
+const LLM_MODELS = [
+  { value: '', label: 'Default (claude CLI)' },
+  { value: 'claude-opus-5', label: 'Claude Opus 5 — máxima capacidad' },
+  { value: 'claude-sonnet-5', label: 'Claude Sonnet 5 — balanceado' },
+  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 — rápido' },
+  { value: 'claude-opus-4-5', label: 'Claude Opus 4.5' },
+  { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+]
+
 const emptyForm = (): Partial<Agent> => ({
   slug: '', name: '', role: 'Sales', area: '', personality: '',
-  systemPrompt: '', taskTypes: [], repos: [], status: 'ACTIVE',
+  systemPrompt: '', llmModel: '', taskTypes: [], repos: [], status: 'ACTIVE',
 })
 
 export default function AgentsPage() {
@@ -51,6 +60,8 @@ export default function AgentsPage() {
     await fetch(`/api/agents/${a.slug}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
     load(); if (selected?.slug === a.slug) setSelected({ ...selected, status: newStatus })
   }
+
+  const modelLabel = (m?: string) => LLM_MODELS.find(o => o.value === m)?.label ?? m ?? 'Default'
 
   return (
     <div className="flex h-full min-h-screen bg-[#0a0a0f]">
@@ -97,6 +108,12 @@ export default function AgentsPage() {
                 <div>
                   <h1 className="text-xl font-bold text-white">{selected.name}</h1>
                   <p className={`text-sm font-medium ${ROLE_COLOR[selected.role] ?? 'text-gray-400'}`}>{selected.role} · {selected.area}</p>
+                  {selected.llmModel && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Cpu size={10} className="text-violet-400" />
+                      <span className="text-xs text-violet-400 font-mono">{selected.llmModel}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -108,6 +125,13 @@ export default function AgentsPage() {
             <div className="space-y-4">
               <Section title="Personalidad">
                 <p className="text-sm text-gray-300 leading-relaxed">{selected.personality}</p>
+              </Section>
+              <Section title="Modelo LLM (Council)">
+                <div className="flex items-center gap-2">
+                  <Cpu size={12} className="text-violet-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-300 font-mono">{modelLabel(selected.llmModel)}</span>
+                </div>
+                {!selected.llmModel && <p className="text-xs text-gray-600 mt-1">Usa el modelo por defecto del claude CLI</p>}
               </Section>
               {selected.systemPrompt && (
                 <Section title="System Prompt">
@@ -177,6 +201,15 @@ export default function AgentsPage() {
                 <textarea rows={3} value={form.personality ?? ''} onChange={e => setForm(f => ({ ...f, personality: e.target.value }))}
                   placeholder="Descripción de personalidad y comportamiento..."
                   className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white resize-none placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50" />
+              </div>
+              {/* Modelo LLM */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Cpu size={10} /> Modelo LLM (Council)</label>
+                <select value={form.llmModel ?? ''} onChange={e => setForm(f => ({ ...f, llmModel: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                  {LLM_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+                <p className="text-[10px] text-gray-600 mt-1">Se usa al llamar claude CLI en el motor de debate del Council</p>
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">System Prompt</label>

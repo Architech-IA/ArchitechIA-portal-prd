@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const PUBLIC_PATHS = ['/login', '/api/auth', '/api/public-summary', '/api/vps', '/api/vps2', '/api/github'];
+const PUBLIC_PATHS = ['/login', '/api/auth', '/api/public-summary', '/api/vps', '/api/vps2', '/api/github', '/api/council/triggers/whatsapp'];
 
 const SUPERADMIN_ONLY = ['/traceability', '/graph', '/reportes'];
 

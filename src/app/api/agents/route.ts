@@ -8,12 +8,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { slug, name, role, area, personality, systemPrompt, taskTypes, repos, discordUserId, vaultPath } = body
+  const { slug, name, role, area, personality, systemPrompt, llmModel, taskTypes, repos, discordUserId, vaultPath } = body
   if (!slug || !name || !role || !area || !personality) {
     return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
   }
   const agent = await prisma.agent.create({
-    data: { slug, name, role, area, personality, systemPrompt, taskTypes: taskTypes ?? [], repos: repos ?? [], discordUserId, vaultPath: vaultPath ?? '/agents/' + slug + '/', status: 'ACTIVE' }
+    data: { slug, name, role, area, personality, systemPrompt, llmModel: llmModel || null, taskTypes: taskTypes ?? [], repos: repos ?? [], discordUserId, vaultPath: vaultPath ?? '/agents/' + slug + '/', status: 'ACTIVE' }
   })
   return NextResponse.json(agent, { status: 201 })
 }
