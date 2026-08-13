@@ -222,19 +222,20 @@ export default function CouncilView() {
     const content = chatInput.trim()
     if (!content || chatLoading) return
     const newMsg: ChatMsg = { role: 'user', content }
-    const updated = [...chatMessages, newMsg]
-    setChatMessages(updated)
+    setChatMessages(prev => [...prev, newMsg])
     setChatInput('')
     setChatLoading(true)
     try {
-      const res = await fetch('/api/council/chat', {
+      const res = await fetch('/api/agents/orion/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updated }),
+        body: JSON.stringify({ message: content }),
       })
       if (res.ok) {
         const { reply } = await res.json()
         setChatMessages(prev => [...prev, { role: 'assistant', content: reply }])
+        // Refresh history sidebar
+        fetch('/api/orion/chat').then(r => r.json()).then(d => setHistory(d.messages ?? [])).catch(() => {})
       }
     } finally {
       setChatLoading(false)
