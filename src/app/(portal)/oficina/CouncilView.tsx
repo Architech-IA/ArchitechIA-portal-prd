@@ -130,11 +130,12 @@ export default function CouncilView() {
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const [starting, setStarting] = useState(false)
   // Tab mode
-  const [mode, setMode] = useState<'proposals' | 'chat' | 'document'>('proposals')
+  const [mode, setMode] = useState<'proposals' | 'chat' | 'document'>('chat')
   // Chat mode
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [history, setHistory] = useState<ChatMsg[]>([])
   const [extracting, setExtracting] = useState(false)
   const [extracted, setExtracted] = useState<ExtractedProposal | null>(null)
   const [sendingToCouncil, setSendingToCouncil] = useState(false)
@@ -209,6 +210,13 @@ export default function CouncilView() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    fetch('/api/orion/chat?channelType=hub&channelId=consejo')
+      .then(r => r.json())
+      .then(d => setHistory(d.messages ?? []))
+      .catch(() => {})
+  }, [chatMessages])
 
   async function sendChatMessage() {
     const content = chatInput.trim()
@@ -458,20 +466,20 @@ export default function CouncilView() {
       <div className="flex items-center gap-1 px-3 py-2 border-b border-white/5 flex-shrink-0"
            style={{ background: 'rgba(0,0,0,0.2)' }}>
         <button
-          onClick={() => setMode('proposals')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-          style={mode === 'proposals'
-            ? { background: 'rgba(99,102,241,0.15)', color: '#6366f1' }
-            : { color: '#4b5563' }}>
-          <Vote size={12} /> Propuestas
-        </button>
-        <button
           onClick={() => setMode('chat')}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
           style={mode === 'chat'
             ? { background: 'rgba(99,102,241,0.15)', color: '#6366f1' }
             : { color: '#4b5563' }}>
           <MessageSquare size={12} /> Conversar con Orión
+        </button>
+        <button
+          onClick={() => setMode('proposals')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+          style={mode === 'proposals'
+            ? { background: 'rgba(99,102,241,0.15)', color: '#6366f1' }
+            : { color: '#4b5563' }}>
+          <Vote size={12} /> Council
         </button>
         <button
           onClick={() => setMode('document')}
@@ -731,6 +739,36 @@ export default function CouncilView() {
               sending={sendingToCouncil}
             />
           )}
+          {/* ── History sidebar ── */}
+          <div className="w-52 flex-shrink-0 flex flex-col border-l border-white/5 overflow-hidden"
+               style={{ background: 'rgba(0,0,0,0.15)' }}>
+            <div className="px-3 pt-3 pb-2 border-b border-white/5 flex-shrink-0">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Historial</span>
+            </div>
+            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1.5">
+              {history.length === 0 && (
+                <p className="text-[10px] text-gray-700 text-center pt-4">Sin historial previo</p>
+              )}
+              {history.map((msg, i) => (
+                <div key={i}
+                     className="rounded-lg px-2 py-1.5 cursor-pointer transition-all hover:opacity-80"
+                     style={msg.role === 'assistant'
+                       ? { background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.12)' }
+                       : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                     onClick={() => setChatInput(msg.role === 'user' ? msg.content : '')}>
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="text-[8px] font-black"
+                          style={{ color: msg.role === 'assistant' ? '#6366f1' : '#6b7280' }}>
+                      {msg.role === 'assistant' ? 'OR' : 'TÚ'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] leading-relaxed text-gray-400 line-clamp-3">
+                    {msg.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
       <div className="flex flex-1 overflow-hidden">

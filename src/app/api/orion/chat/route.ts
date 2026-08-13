@@ -166,3 +166,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const channelType = searchParams.get('channelType') ?? 'hub'
+  const channelId   = searchParams.get('channelId') ?? 'anonymous'
+  const conv = await prisma.agentConversation.findUnique({
+    where: { agentSlug_channelType_channelId: { agentSlug: 'orion', channelType, channelId } },
+    select: { messages: true, updatedAt: true },
+  })
+  return NextResponse.json({ messages: conv?.messages ?? [], updatedAt: conv?.updatedAt ?? null })
+}
