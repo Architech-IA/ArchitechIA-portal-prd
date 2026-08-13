@@ -168,12 +168,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const channelType = searchParams.get('channelType') ?? 'hub'
-  const channelId   = searchParams.get('channelId') ?? 'anonymous'
-  const conv = await prisma.agentConversation.findUnique({
-    where: { agentSlug_channelType_channelId: { agentSlug: 'orion', channelType, channelId } },
+  const { getToken } = await import('next-auth/jwt')
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const userId = (token?.sub ?? token?.id ?? 'anonymous') as string
+
+  // Return the most recent hub conversation for this user
+  const conv = await prisma.agentConversation.findFirst({
+    where: { agentSlug: 'orion', channelType: 'hub', channelId: userId },
     select: { messages: true, updatedAt: true },
+    orderBy: { updatedAt: 'desc' },
   })
   return NextResponse.json({ messages: conv?.messages ?? [], updatedAt: conv?.updatedAt ?? null })
 }

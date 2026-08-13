@@ -212,7 +212,7 @@ export default function CouncilView() {
   }, [messages])
 
   useEffect(() => {
-    fetch('/api/orion/chat?channelType=hub&channelId=consejo')
+    fetch('/api/orion/chat')
       .then(r => r.json())
       .then(d => setHistory(d.messages ?? []))
       .catch(() => {})
@@ -668,7 +668,7 @@ export default function CouncilView() {
                        style={msg.role === 'assistant'
                          ? { background: 'rgba(99,102,241,0.25)', color: '#6366f1', border: '1.5px solid rgba(99,102,241,0.4)' }
                          : { background: 'rgba(255,255,255,0.08)', color: '#9ca3af', border: '1.5px solid rgba(255,255,255,0.1)' }}>
-                    {msg.role === 'assistant' ? 'OR' : 'TÚ'}
+                    {msg.role === 'assistant' ? 'Orión' : 'Tú'}
                   </div>
                   <div className="max-w-[75%]">
                     <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed"
@@ -743,11 +743,11 @@ export default function CouncilView() {
           <div className="w-52 flex-shrink-0 flex flex-col border-l border-white/5 overflow-hidden"
                style={{ background: 'rgba(0,0,0,0.15)' }}>
             <div className="px-3 pt-3 pb-2 border-b border-white/5 flex-shrink-0">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Historial</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Historial</span>
             </div>
             <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1.5">
               {history.length === 0 && (
-                <p className="text-[10px] text-gray-700 text-center pt-4">Sin historial previo</p>
+                <p className="text-[10px] text-gray-500 text-center pt-6 px-2 leading-relaxed">Aún no hay mensajes guardados</p>
               )}
               {history.map((msg, i) => (
                 <div key={i}
@@ -758,11 +758,11 @@ export default function CouncilView() {
                      onClick={() => setChatInput(msg.role === 'user' ? msg.content : '')}>
                   <div className="flex items-center gap-1 mb-0.5">
                     <span className="text-[8px] font-black"
-                          style={{ color: msg.role === 'assistant' ? '#6366f1' : '#6b7280' }}>
+                          style={{ color: msg.role === 'assistant' ? '#818cf8' : '#9ca3af' }}>
                       {msg.role === 'assistant' ? 'OR' : 'TÚ'}
                     </span>
                   </div>
-                  <p className="text-[10px] leading-relaxed text-gray-400 line-clamp-3">
+                  <p className="text-[10px] leading-relaxed text-gray-300 line-clamp-3">
                     {msg.content}
                   </p>
                 </div>
