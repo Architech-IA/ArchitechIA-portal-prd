@@ -773,8 +773,17 @@ export default function CouncilView() {
           {/* ── History sidebar ── */}
           <div className="w-56 flex-shrink-0 flex flex-col border-l border-white/5 overflow-hidden"
                style={{ background: 'rgba(0,0,0,0.15)' }}>
-            <div className="px-3 pt-3 pb-2 border-b border-white/5 flex-shrink-0">
+            <div className="px-3 pt-3 pb-2 border-b border-white/5 flex-shrink-0 flex items-center justify-between">
               <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Historial</span>
+              {chatMessages.length > 0 && (
+                <button
+                  onClick={closeConversation}
+                  title="Cerrar conversación y guardar en historial"
+                  className="text-[9px] px-2 py-0.5 rounded-full font-medium transition-all hover:opacity-80 flex items-center gap-1"
+                  style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <Plus size={8} /> Nueva sesión
+                </button>
+              )}
             </div>
             <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
               {history.length === 0 && (
