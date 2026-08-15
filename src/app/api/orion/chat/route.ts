@@ -176,7 +176,7 @@ export async function GET(req: NextRequest) {
   })
   return NextResponse.json({
     sessions: (conv?.sessions as any[]) ?? [],
-    currentMsgCount: (conv?.messages as any[])?.length ?? 0,
+    messages: (conv?.messages as any[]) ?? [],
   })
 }
 

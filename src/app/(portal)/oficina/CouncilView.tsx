@@ -222,7 +222,10 @@ export default function CouncilView() {
   useEffect(() => {
     fetch('/api/orion/chat')
       .then(r => r.json())
-      .then(d => setHistory(d.sessions ?? []))
+      .then(d => {
+        setHistory(d.sessions ?? [])
+        if ((d.messages ?? []).length > 0) setChatMessages(d.messages)
+      })
       .catch(() => {})
   }, [])
 
