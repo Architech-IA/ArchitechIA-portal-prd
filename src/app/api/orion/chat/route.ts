@@ -73,7 +73,6 @@ export async function POST(req: NextRequest) {
   history.push({ role: 'user', content: message.trim() })
 
   try {
-    // ── OpenCode GO streaming (Hub) ──────────────────────────────────
     if (stream && isOpenCode) {
       const modelId = model.split('/').pop()!
       const upstream = await fetch(OPENCODE_URL, {
@@ -119,7 +118,6 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // ── Non-streaming (WhatsApp, Oficina) o Claude cualquier canal ───
     let reply = ''
 
     if (isOpenCode) {
@@ -144,7 +142,6 @@ export async function POST(req: NextRequest) {
       await saveHistory('orion', channelType, channelId, history)
     }
 
-    // Para Claude con stream=true desde Hub: envuelve en SSE simulado
     if (stream && isClaude) {
       const encoder = new TextEncoder()
       const readable = new ReadableStream({
@@ -167,16 +164,54 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// GET — returns past sessions (completed conversations) for the history sidebar
 export async function GET(req: NextRequest) {
   const { getToken } = await import('next-auth/jwt')
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   const userId = (token?.sub ?? token?.id ?? 'anonymous') as string
 
-  // Return the most recent hub conversation for this user
   const conv = await prisma.agentConversation.findFirst({
     where: { agentSlug: 'orion', channelType: 'hub', channelId: userId },
-    select: { messages: true, updatedAt: true },
-    orderBy: { updatedAt: 'desc' },
+    select: { sessions: true, messages: true },
   })
-  return NextResponse.json({ messages: conv?.messages ?? [], updatedAt: conv?.updatedAt ?? null })
+  return NextResponse.json({
+    sessions: (conv?.sessions as any[]) ?? [],
+    currentMsgCount: (conv?.messages as any[])?.length ?? 0,
+  })
+}
+
+// DELETE — closes the current conversation: moves messages → sessions, clears messages
+export async function DELETE(req: NextRequest) {
+  const { getToken } = await import('next-auth/jwt')
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const userId = (token?.sub ?? token?.id ?? 'anonymous') as string
+
+  const conv = await prisma.agentConversation.findFirst({
+    where: { agentSlug: 'orion', channelType: 'hub', channelId: userId },
+  })
+
+  const currentMsgs = (conv?.messages as Message[]) ?? []
+  if (currentMsgs.length === 0) {
+    return NextResponse.json({ ok: true, sessions: (conv?.sessions as any[]) ?? [] })
+  }
+
+  const firstUserMsg = currentMsgs.find(m => m.role === 'user')?.content ?? ''
+  const newSession = {
+    id: Date.now().toString(),
+    startedAt: conv?.createdAt ?? new Date(),
+    endedAt: new Date(),
+    preview: firstUserMsg.slice(0, 80),
+    messages: currentMsgs,
+  }
+
+  const existingSessions = (conv?.sessions as any[]) ?? []
+  const updatedSessions = [...existingSessions, newSession].slice(-20)
+
+  await prisma.agentConversation.upsert({
+    where: { agentSlug_channelType_channelId: { agentSlug: 'orion', channelType: 'hub', channelId: userId } },
+    create: { agentSlug: 'orion', channelType: 'hub', channelId: userId, messages: [], sessions: updatedSessions as any },
+    update: { messages: [], sessions: updatedSessions as any, updatedAt: new Date() },
+  })
+
+  return NextResponse.json({ ok: true, sessions: updatedSessions })
 }

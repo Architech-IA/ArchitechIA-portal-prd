@@ -899,6 +899,7 @@ model AgentConversation {
   channelId   String   // phone, userId, chatId, sessionId
   messages    Json     @default("[]")
   createdAt   DateTime @default(now())
+  sessions    Json     @default("[]")
   updatedAt   DateTime @updatedAt
 
   @@unique([agentSlug, channelType, channelId])

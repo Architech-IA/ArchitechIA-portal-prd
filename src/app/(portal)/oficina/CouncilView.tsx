@@ -53,6 +53,13 @@ interface VoteState {
 }
 
 interface ChatMsg { role: 'user' | 'assistant'; content: string }
+interface Session {
+  id: string
+  startedAt: string
+  endedAt: string
+  preview: string
+  messages: ChatMsg[]
+}
 interface ExtractedItem { type: string; title: string; description: string; areaSlug: string; priority: string }
 interface ExtractedProposal { title: string; description: string; items: ExtractedItem[]; _sourceFile?: string }
 
@@ -135,7 +142,8 @@ export default function CouncilView() {
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
-  const [history, setHistory] = useState<ChatMsg[]>([])
+  const [history, setHistory] = useState<Session[]>([])
+  const [expandedSession, setExpandedSession] = useState<string | null>(null)
   const [extracting, setExtracting] = useState(false)
   const [extracted, setExtracted] = useState<ExtractedProposal | null>(null)
   const [sendingToCouncil, setSendingToCouncil] = useState(false)
@@ -214,9 +222,9 @@ export default function CouncilView() {
   useEffect(() => {
     fetch('/api/orion/chat')
       .then(r => r.json())
-      .then(d => setHistory(d.messages ?? []))
+      .then(d => setHistory(d.sessions ?? []))
       .catch(() => {})
-  }, [chatMessages])
+  }, [])
 
   async function sendChatMessage() {
     const content = chatInput.trim()
@@ -234,8 +242,7 @@ export default function CouncilView() {
       if (res.ok) {
         const { reply } = await res.json()
         setChatMessages(prev => [...prev, { role: 'assistant', content: reply }])
-        // Refresh history sidebar
-        fetch('/api/orion/chat').then(r => r.json()).then(d => setHistory(d.messages ?? [])).catch(() => {})
+        // History refreshes only when closing a conversation, not on each message
       }
     } finally {
       setChatLoading(false)
@@ -255,6 +262,18 @@ export default function CouncilView() {
       if (res.ok) setExtracted(await res.json())
     } finally {
       setExtracting(false)
+    }
+  }
+
+  async function closeConversation() {
+    if (chatMessages.length === 0) return
+    const res = await fetch('/api/orion/chat', { method: 'DELETE' })
+    if (res.ok) {
+      const data = await res.json()
+      setHistory(data.sessions ?? [])
+      setChatMessages([])
+      setExtracted(null)
+      setExpandedSession(null)
     }
   }
 
@@ -741,33 +760,63 @@ export default function CouncilView() {
             />
           )}
           {/* ── History sidebar ── */}
-          <div className="w-52 flex-shrink-0 flex flex-col border-l border-white/5 overflow-hidden"
+          <div className="w-56 flex-shrink-0 flex flex-col border-l border-white/5 overflow-hidden"
                style={{ background: 'rgba(0,0,0,0.15)' }}>
-            <div className="px-3 pt-3 pb-2 border-b border-white/5 flex-shrink-0">
+            <div className="px-3 pt-3 pb-2 border-b border-white/5 flex-shrink-0 flex items-center justify-between">
               <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Historial</span>
-            </div>
-            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1.5">
-              {history.length === 0 && (
-                <p className="text-[10px] text-gray-500 text-center pt-6 px-2 leading-relaxed">Aún no hay mensajes guardados</p>
+              {chatMessages.length > 0 && (
+                <button
+                  onClick={closeConversation}
+                  title="Cerrar conversación y guardar en historial"
+                  className="text-[9px] px-2 py-0.5 rounded-full font-medium transition-all hover:opacity-80 flex items-center gap-1"
+                  style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <Plus size={8} style={{ transform: 'rotate(45deg)' }} /> Nueva
+                </button>
               )}
-              {history.map((msg, i) => (
-                <div key={i}
-                     className="rounded-lg px-2 py-1.5 cursor-pointer transition-all hover:opacity-80"
-                     style={msg.role === 'assistant'
-                       ? { background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.12)' }
-                       : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                     onClick={() => setChatInput(msg.role === 'user' ? msg.content : '')}>
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[8px] font-black"
-                          style={{ color: msg.role === 'assistant' ? '#818cf8' : '#9ca3af' }}>
-                      {msg.role === 'assistant' ? 'OR' : 'TÚ'}
-                    </span>
+            </div>
+            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
+              {history.length === 0 && (
+                <p className="text-[10px] text-gray-600 text-center pt-8 px-2 leading-relaxed">
+                  Las conversaciones cerradas aparecen aquí
+                </p>
+              )}
+              {[...history].reverse().map((session) => {
+                const date = new Date(session.endedAt)
+                const dateStr = date.toLocaleDateString('es', { day: '2-digit', month: 'short' })
+                const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
+                const isExpanded = expandedSession === session.id
+                return (
+                  <div key={session.id}
+                       className="rounded-lg overflow-hidden"
+                       style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+                    <button
+                      onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                      className="w-full text-left px-2 py-2 transition-all hover:bg-white/[0.03]">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[8px] text-gray-500">{dateStr} · {timeStr}</span>
+                        <span className="text-[8px] text-gray-600">{session.messages.length} msgs</span>
+                      </div>
+                      <p className="text-[10px] text-gray-300 line-clamp-2 leading-snug">{session.preview}</p>
+                    </button>
+                    {isExpanded && (
+                      <div className="px-2 pb-2 space-y-1.5 border-t border-white/5 pt-2 max-h-64 overflow-y-auto">
+                        {session.messages.map((msg, mi) => (
+                          <div key={mi} className="rounded px-1.5 py-1"
+                               style={msg.role === 'assistant'
+                                 ? { background: 'rgba(99,102,241,0.07)' }
+                                 : { background: 'rgba(255,255,255,0.03)' }}>
+                            <span className="text-[8px] font-bold"
+                                  style={{ color: msg.role === 'assistant' ? '#818cf8' : '#9ca3af' }}>
+                              {msg.role === 'assistant' ? 'Orión' : 'Tú'}
+                            </span>
+                            <p className="text-[9px] text-gray-400 leading-snug mt-0.5 line-clamp-4">{msg.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-[10px] leading-relaxed text-gray-300 line-clamp-3">
-                    {msg.content}
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
