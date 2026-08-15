@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
-import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   if (!await isAuthed(request)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -8,9 +7,10 @@ export async function POST(request: NextRequest) {
   const { message, sessionId } = body
   if (!message?.trim()) return NextResponse.json({ error: 'message requerido' }, { status: 400 })
 
-  // Usar userId como channelId para persistencia por usuario
-  const user = await prisma.user.findFirst({ select: { id: true } })
-  const channelId = sessionId ?? user?.id ?? 'oficina-anonymous'
+  // Usar el userId del token de sesión para persistencia correcta por usuario
+  const { getToken } = await import('next-auth/jwt')
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+  const channelId = sessionId ?? (token?.sub as string | undefined) ?? (token?.id as string | undefined) ?? 'oficina-anonymous'
 
   const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3003'
   const upstream = await fetch(`${baseUrl}/api/orion/chat`, {
