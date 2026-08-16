@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Save, Plus, Link2, Trash2, X, Loader2, Sparkles, MousePointer2, Layers } from 'lucide-react'
 
-const TW = 80
-const TH = 40
-const GRID = 6
-const SVG_W = 740
-const SVG_H = 460
+const TW = 108
+const TH = 54
+const GRID = 7
+const SVG_W = 900
+const SVG_H = 540
 const OX = SVG_W / 2
-const OY = 90
+const OY = 110
 
 type NodeType = 'server' | 'database' | 'api' | 'frontend' | 'queue' | 'cache' | 'external' | 'user'
 type EdgeType = 'data' | 'control' | 'event'
@@ -26,14 +26,14 @@ interface ArchData {
 }
 
 const NODE_CFG: Record<NodeType, { label: string; h: number; top: string; left: string; right: string; accent: string }> = {
-  server:   { label: 'Servidor',          h: 72, top: '#334155', left: '#1e293b', right: '#0f172a', accent: '#64748b' },
-  database: { label: 'Base de datos',     h: 36, top: '#1e3a8a', left: '#1e40af', right: '#172554', accent: '#3b82f6' },
-  api:      { label: 'API / Gateway',     h: 56, top: '#134e4a', left: '#0f766e', right: '#042f2e', accent: '#14b8a6' },
-  frontend: { label: 'Frontend',          h: 60, top: '#4c1d95', left: '#6d28d9', right: '#2e1065', accent: '#a78bfa' },
-  queue:    { label: 'Cola / Broker',     h: 44, top: '#78350f', left: '#b45309', right: '#451a03', accent: '#f59e0b' },
-  cache:    { label: 'Cache',             h: 30, top: '#7f1d1d', left: '#991b1b', right: '#450a0a', accent: '#f87171' },
-  external: { label: 'Servicio externo',  h: 52, top: '#312e81', left: '#4338ca', right: '#1e1b4b', accent: '#818cf8' },
-  user:     { label: 'Usuario / Cliente', h: 24, top: '#052e16', left: '#065f46', right: '#031e0f', accent: '#34d399' },
+  server:   { label: 'Servidor',          h: 54, top: '#334155', left: '#1e293b', right: '#0f172a', accent: '#64748b' },
+  database: { label: 'Base de datos',     h: 28, top: '#1e3a8a', left: '#1e40af', right: '#172554', accent: '#3b82f6' },
+  api:      { label: 'API / Gateway',     h: 42, top: '#134e4a', left: '#0f766e', right: '#042f2e', accent: '#14b8a6' },
+  frontend: { label: 'Frontend',          h: 46, top: '#4c1d95', left: '#6d28d9', right: '#2e1065', accent: '#a78bfa' },
+  queue:    { label: 'Cola / Broker',     h: 34, top: '#78350f', left: '#b45309', right: '#451a03', accent: '#f59e0b' },
+  cache:    { label: 'Cache',             h: 24, top: '#7f1d1d', left: '#991b1b', right: '#450a0a', accent: '#f87171' },
+  external: { label: 'Servicio externo',  h: 40, top: '#312e81', left: '#4338ca', right: '#1e1b4b', accent: '#818cf8' },
+  user:     { label: 'Usuario / Cliente', h: 20, top: '#052e16', left: '#065f46', right: '#031e0f', accent: '#34d399' },
 }
 
 const EDGE_CFG: Record<EdgeType, { stroke: string; dash: string; label: string }> = {
@@ -400,16 +400,24 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
                       strokeWidth="2" opacity="0.9" filter="url(#glow)"
                     />
                   )}
-                  <text x={g.labelX} y={g.labelY}
-                    fill={sel ? cfg.accent : '#cbd5e1'}
-                    fontSize="9.5" fontWeight={sel ? 700 : 500}
+                  <rect
+                    x={g.labelX - 38} y={g.labelY - 13}
+                    width="76" height="26" rx="4"
+                    fill="#020617" opacity="0.78"
+                    style={{ pointerEvents: "none" }}
+                  />
+                  <text
+                    x={g.labelX} y={g.labelY}
+                    fill={sel ? cfg.accent : "#e2e8f0"}
+                    fontSize="11" fontWeight={sel ? 700 : 600}
                     textAnchor="middle"
-                    style={{ paintOrder: 'stroke', stroke: '#030712', strokeWidth: 3, pointerEvents: 'none' }}>
-                    {node.label.length > 15 ? node.label.slice(0, 14) + '...' : node.label}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    {node.label.length > 12 ? node.label.slice(0, 11) + "..." : node.label}
                   </text>
-                  <text x={g.labelX} y={g.labelY + 11} fill={cfg.accent} fontSize="7.5"
-                    textAnchor="middle" opacity="0.7"
-                    style={{ paintOrder: 'stroke', stroke: '#030712', strokeWidth: 2, pointerEvents: 'none' }}>
+                  <text x={g.labelX} y={g.labelY + 13} fill={cfg.accent} fontSize="9"
+                    textAnchor="middle" opacity="0.9"
+                    style={{ pointerEvents: "none" }}>
                     {cfg.label}
                   </text>
                 </g>
