@@ -1,25 +1,23 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Plus, X, Eye, Pencil, Bold, Italic, Underline as UnderlineIcon, Heading2, Heading3, List, ListOrdered, Eraser } from 'lucide-react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
+import TextAlign from '@tiptap/extension-text-align'
+import { TextStyle, FontSize } from '@tiptap/extension-text-style'
+import {
+  Plus, X, Eye, Pencil,
+  Bold, Italic, Underline as UnderlineIcon,
+  Heading2, Heading3, List, ListOrdered, Eraser,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+} from 'lucide-react'
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-interface NoteTab {
-  id: string
-  name: string
-  content: string
-}
-
-interface TabbedNotesValue {
-  tabs: NoteTab[]
-}
-
-// ── Serialisation ─────────────────────────────────────────────────────────────
+interface NoteTab { id: string; name: string; content: string }
+interface TabbedNotesValue { tabs: NoteTab[] }
 
 function parse(raw: string): NoteTab[] {
   if (!raw) return [defaultTab(1)]
@@ -27,23 +25,34 @@ function parse(raw: string): NoteTab[] {
     const v = JSON.parse(raw) as TabbedNotesValue
     if (v && Array.isArray(v.tabs) && v.tabs.length > 0) return v.tabs
   } catch {}
-  // Legacy plain-text / HTML → single tab
   return [{ id: uid(), name: 'General', content: raw }]
 }
 
-function serialize(tabs: NoteTab[]): string {
-  return JSON.stringify({ tabs })
+function serialize(tabs: NoteTab[]): string { return JSON.stringify({ tabs }) }
+function uid() { return Math.random().toString(36).slice(2, 10) }
+function defaultTab(n: number): NoteTab { return { id: uid(), name: `Nota ${n}`, content: '' } }
+
+// ── Font-size helpers ─────────────────────────────────────────────────────────
+
+const FONT_SIZES = ['11px', '13px', '15px', '17px', '20px', '24px', '30px']
+const DEFAULT_FS = '15px'
+
+type AnyEditor = ReturnType<typeof useEditor>
+
+function getFontSize(editor: AnyEditor): string {
+  return (editor?.getAttributes('textStyle') as { fontSize?: string }).fontSize ?? DEFAULT_FS
 }
 
-function uid() {
-  return Math.random().toString(36).slice(2, 10)
+function stepFontSize(editor: AnyEditor, dir: 1 | -1) {
+  if (!editor) return
+  const cur = getFontSize(editor)
+  const idx = FONT_SIZES.indexOf(cur)
+  const base = idx === -1 ? FONT_SIZES.indexOf(DEFAULT_FS) : idx
+  const next = FONT_SIZES[Math.max(0, Math.min(FONT_SIZES.length - 1, base + dir))]
+  editor.chain().focus().setFontSize(next).run()
 }
 
-function defaultTab(n: number): NoteTab {
-  return { id: uid(), name: `Nota ${n}`, content: '' }
-}
-
-// ── Single-tab editor ─────────────────────────────────────────────────────────
+// ── Toolbar atoms ─────────────────────────────────────────────────────────────
 
 function ToolBtn({ onClick, active, title, children }: {
   onClick: () => void; active?: boolean; title: string; children: React.ReactNode
@@ -64,6 +73,8 @@ function Sep() {
   return <div className="w-px h-5 bg-gray-700 mx-0.5 self-center" />
 }
 
+// ── Single-tab editor ─────────────────────────────────────────────────────────
+
 function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) => void }) {
   const [viewMode, setViewMode] = useState(false)
 
@@ -72,6 +83,9 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
       StarterKit.configure({ heading: { levels: [2, 3] } }),
       Underline,
       Placeholder.configure({ placeholder: 'Escribí aquí las notas...' }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextStyle,
+      FontSize,
     ],
     content: tab.content || '',
     onUpdate({ editor }) { onChange(editor.getHTML()) },
@@ -83,6 +97,8 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
   if (!editor) return null
 
   const empty = (h: string) => !h || h === '<p></p>' || h.trim() === ''
+  const curFS = getFontSize(editor)
+  const fsIdx = FONT_SIZES.indexOf(curFS)
 
   return (
     <div>
@@ -93,17 +109,56 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
             <ToolBtn title="Negrita" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}><Bold size={13} /></ToolBtn>
             <ToolBtn title="Cursiva" onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')}><Italic size={13} /></ToolBtn>
             <ToolBtn title="Subrayado" onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')}><UnderlineIcon size={13} /></ToolBtn>
+
             <Sep />
+
             <ToolBtn title="Título H2" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })}><Heading2 size={13} /></ToolBtn>
             <ToolBtn title="Título H3" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })}><Heading3 size={13} /></ToolBtn>
+
             <Sep />
+
             <ToolBtn title="Lista con viñetas" onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')}><List size={13} /></ToolBtn>
             <ToolBtn title="Lista numerada" onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')}><ListOrdered size={13} /></ToolBtn>
+
             <Sep />
+
+            <ToolBtn title="Izquierda" onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })}><AlignLeft size={13} /></ToolBtn>
+            <ToolBtn title="Centrar" onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })}><AlignCenter size={13} /></ToolBtn>
+            <ToolBtn title="Derecha" onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })}><AlignRight size={13} /></ToolBtn>
+            <ToolBtn title="Justificar" onClick={() => editor.chain().focus().setTextAlign('justify').run()} active={editor.isActive({ textAlign: 'justify' })}><AlignJustify size={13} /></ToolBtn>
+
+            <Sep />
+
+            {/* Font size */}
+            <button
+              type="button" title="Reducir tamaño"
+              disabled={fsIdx === 0}
+              onClick={() => stepFontSize(editor, -1)}
+              className="px-1.5 py-1 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors leading-none"
+              style={{ fontSize: 11, fontWeight: 700 }}
+            >
+              A-
+            </button>
+            <span className="text-[10px] text-gray-500 w-6 text-center tabular-nums select-none">
+              {parseInt(curFS)}
+            </span>
+            <button
+              type="button" title="Aumentar tamaño"
+              disabled={fsIdx === FONT_SIZES.length - 1}
+              onClick={() => stepFontSize(editor, 1)}
+              className="px-1.5 py-1 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors leading-none"
+              style={{ fontSize: 13, fontWeight: 700 }}
+            >
+              A+
+            </button>
+
+            <Sep />
+
             <ToolBtn title="Limpiar formato" onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}><Eraser size={13} /></ToolBtn>
             <Sep />
           </>
         )}
+
         <ToolBtn title={viewMode ? 'Modo edición' : 'Vista previa'} onClick={() => setViewMode(v => !v)} active={viewMode}>
           {viewMode ? <Pencil size={13} /> : <Eye size={13} />}
         </ToolBtn>
@@ -127,10 +182,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface TabbedNotesProps {
-  value: string
-  onChange: (serialised: string) => void
-}
+interface TabbedNotesProps { value: string; onChange: (s: string) => void }
 
 export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   const [tabs, setTabs] = useState<NoteTab[]>(() => parse(value))
@@ -139,9 +191,7 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   const [editingName, setEditingName] = useState('')
   const renameRef = useRef<HTMLInputElement>(null)
 
-  const emit = useCallback((next: NoteTab[]) => {
-    onChange(serialize(next))
-  }, [onChange])
+  const emit = useCallback((next: NoteTab[]) => onChange(serialize(next)), [onChange])
 
   const updateTabContent = useCallback((id: string, html: string) => {
     setTabs(prev => {
@@ -152,27 +202,24 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   }, [emit])
 
   const addTab = () => {
-    const n = tabs.length + 1
-    const tab = defaultTab(n)
+    const tab = defaultTab(tabs.length + 1)
     const next = [...tabs, tab]
-    setTabs(next)
-    setActiveId(tab.id)
-    emit(next)
+    setTabs(next); setActiveId(tab.id); emit(next)
   }
 
   const removeTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     if (tabs.length === 1) return
+    const idx = tabs.findIndex(t => t.id === id)
     const next = tabs.filter(t => t.id !== id)
     setTabs(next)
-    if (activeId === id) setActiveId(next[Math.max(0, tabs.findIndex(t => t.id === id) - 1)].id)
+    if (activeId === id) setActiveId(next[Math.max(0, idx - 1)].id)
     emit(next)
   }
 
   const startRename = (tab: NoteTab, e: React.MouseEvent) => {
     e.stopPropagation()
-    setEditingId(tab.id)
-    setEditingName(tab.name)
+    setEditingId(tab.id); setEditingName(tab.name)
     setTimeout(() => renameRef.current?.select(), 30)
   }
 
@@ -180,9 +227,7 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
     if (!editingId) return
     const name = editingName.trim() || 'Sin nombre'
     const next = tabs.map(t => t.id === editingId ? { ...t, name } : t)
-    setTabs(next)
-    emit(next)
-    setEditingId(null)
+    setTabs(next); emit(next); setEditingId(null)
   }
 
   const activeTab = tabs.find(t => t.id === activeId) ?? tabs[0]
@@ -190,15 +235,15 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   return (
     <div className="rounded-xl border border-gray-700 bg-gray-800 overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-end gap-0 border-b border-gray-700 bg-gray-900/50 overflow-x-auto">
-        {tabs.map((tab, i) => {
+      <div className="flex items-end border-b border-gray-700 bg-gray-900/50 overflow-x-auto">
+        {tabs.map((tab) => {
           const isActive = tab.id === activeId
           return (
             <div
               key={tab.id}
               onClick={() => { if (editingId !== tab.id) setActiveId(tab.id) }}
               onDoubleClick={e => startRename(tab, e)}
-              className={`group relative flex items-center gap-1.5 px-3 py-2 cursor-pointer select-none border-r border-gray-700 transition-colors min-w-0 shrink-0 ${
+              className={`group relative flex items-center gap-1.5 px-3 py-2 cursor-pointer select-none border-r border-gray-700 transition-colors shrink-0 ${
                 isActive
                   ? 'bg-gray-800 text-white border-b-2 border-b-orange-500 -mb-px'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
@@ -242,11 +287,7 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
 
       {/* Active tab editor */}
       {activeTab && (
-        <TabEditor
-          key={activeTab.id}
-          tab={activeTab}
-          onChange={html => updateTabContent(activeTab.id, html)}
-        />
+        <TabEditor key={activeTab.id} tab={activeTab} onChange={html => updateTabContent(activeTab.id, html)} />
       )}
 
       <style>{`
