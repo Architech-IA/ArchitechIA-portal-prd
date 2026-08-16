@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
+
+const RichNotes = dynamic(() => import('./RichNotes'), { ssr: false })
 import { useParams } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import {
@@ -195,12 +198,10 @@ function PhasePanel({
       {/* Text editor */}
       <div>
         <label className="text-xs text-gray-500 uppercase tracking-wider mb-1.5 block">Notas y contenido</label>
-        <textarea
+        <RichNotes
           value={content}
-          onChange={e => setContent(e.target.value)}
-          rows={6}
+          onChange={setContent}
           placeholder={`Escribe aquí el contenido de la fase "${phase.label}"...`}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500 resize-none"
         />
       </div>
 

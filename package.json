@@ -18,6 +18,11 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
     "@prisma/client": "^6.2.1",
+    "@tiptap/extension-placeholder": "^3.30.1",
+    "@tiptap/extension-underline": "^3.30.1",
+    "@tiptap/pm": "^3.30.1",
+    "@tiptap/react": "^3.30.1",
+    "@tiptap/starter-kit": "^3.30.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/leaflet": "^1.9.21",
     "bcryptjs": "^3.0.3",
