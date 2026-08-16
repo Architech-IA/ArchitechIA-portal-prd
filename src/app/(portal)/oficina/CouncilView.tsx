@@ -61,6 +61,21 @@ interface Session {
   messages: ChatMsg[]
 }
 interface ExtractedItem { type: string; title: string; description: string; areaSlug: string; priority: string }
+
+function renderMd(text: string) {
+  return text.split('\n').map((line, li) => {
+    const parts: React.ReactNode[] = []
+    const re = /\*\*(.+?)\*\*/g
+    let last = 0, m: RegExpExecArray | null
+    while ((m = re.exec(line)) !== null) {
+      if (m.index > last) parts.push(line.slice(last, m.index))
+      parts.push(<strong key={m.index}>{m[1]}</strong>)
+      last = m.index + m[0].length
+    }
+    if (last < line.length) parts.push(line.slice(last))
+    return <span key={li}>{parts}{li < text.split('\n').length - 1 && <br />}</span>
+  })
+}
 interface ExtractedProposal { title: string; description: string; items: ExtractedItem[]; _sourceFile?: string }
 
 const AGENT_COLOR: Record<string, string> = {
@@ -698,7 +713,7 @@ export default function CouncilView() {
                          style={msg.role === 'assistant'
                            ? { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)', color: '#d1d5db' }
                            : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: '#e5e7eb' }}>
-                      {msg.content}
+                      {msg.role === 'assistant' ? renderMd(msg.content) : msg.content}
                     </div>
                   </div>
                 </div>
