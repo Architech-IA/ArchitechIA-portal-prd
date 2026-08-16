@@ -55,7 +55,8 @@ model Lead {
   proposals  Proposal[]
   activities Activity[]
   appInstances AppInstance[]
-  solucion   Solucion?
+  solucion      Solucion?
+  architecture  LeadArchitecture?
 }
 
 model Solucion {
@@ -904,4 +905,14 @@ model AgentConversation {
 
   @@unique([agentSlug, channelType, channelId])
   @@index([agentSlug, channelType])
+}
+
+model LeadArchitecture {
+  id        String   @id @default(cuid())
+  leadId    String   @unique
+  data      Json     @default("{}")
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 }

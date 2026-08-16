@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 
 const TabbedNotes = dynamic(() => import('./TabbedNotes'), { ssr: false })
+const ArchitectureTab = dynamic(() => import('./ArchitectureTab'), { ssr: false })
 import { useParams } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import {
@@ -554,7 +555,7 @@ export default function LeadHubPage() {
   const [phases, setPhases]   = useState<PhaseData[]>([])
   const [loading, setLoading] = useState(true)
   const [active, setActive]   = useState<string | null>(null)
-  const [tab, setTab]         = useState<'fases' | 'interacciones' | 'tareas' | 'propuesta'>('fases')
+  const [tab, setTab]         = useState<'fases' | 'interacciones' | 'tareas' | 'propuesta' | 'arquitectura'>('fases')
   const [interactions, setInteractions] = useState<Interaction[]>([])
   const [backlogItems, setBacklogItems] = useState<BacklogItem[]>([])
   const [proposal, setProposal]         = useState<Proposal | null>(null)
@@ -721,7 +722,7 @@ export default function LeadHubPage() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: '2px', padding: '10px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)' }}>
-          {([ { key: 'fases' as const, label: 'Fases', Icon: Clock }, { key: 'interacciones' as const, label: 'Interacciones', Icon: Phone }, { key: 'tareas' as const, label: 'Tareas', Icon: CheckSquare }, { key: 'propuesta' as const, label: 'Propuesta', Icon: Briefcase } ]).map(({ key, label, Icon }) => (
+          {([ { key: 'fases' as const, label: 'Fases', Icon: Clock }, { key: 'interacciones' as const, label: 'Interacciones', Icon: Phone }, { key: 'tareas' as const, label: 'Tareas', Icon: CheckSquare }, { key: 'propuesta' as const, label: 'Propuesta', Icon: Briefcase }, { key: 'arquitectura' as const, label: 'Arquitectura', Icon: Briefcase } ]).map(({ key, label, Icon }) => (
             <button key={key} onClick={() => setTab(key)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 14px 8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', borderBottom: tab === key ? '2px solid #f97316' : '2px solid transparent', background: tab === key ? 'rgba(249,115,22,0.07)' : 'transparent', color: tab === key ? '#f97316' : '#475569', borderRadius: '6px 6px 0 0', transition: 'all 0.15s' }}>
               <Icon size={11} />{label}
             </button>
@@ -773,6 +774,10 @@ export default function LeadHubPage() {
           {/* PROPUESTA */}
           {tab === 'propuesta' && (
             <HubPropuesta leadId={id} proposal={proposal} onSave={setProposal} />
+          )}
+
+          {tab === 'arquitectura' && (
+            <ArchitectureTab leadId={id} />
           )}
 
         </div>
