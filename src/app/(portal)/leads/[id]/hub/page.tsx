@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 
-const RichNotes = dynamic(() => import('./RichNotes'), { ssr: false })
+const TabbedNotes = dynamic(() => import('./TabbedNotes'), { ssr: false })
 import { useParams } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import {
@@ -198,10 +198,9 @@ function PhasePanel({
       {/* Text editor */}
       <div>
         <label className="text-xs text-gray-500 uppercase tracking-wider mb-1.5 block">Notas y contenido</label>
-        <RichNotes
+        <TabbedNotes
           value={content}
           onChange={setContent}
-          placeholder={`Escribe aquí el contenido de la fase "${phase.label}"...`}
         />
       </div>
 
