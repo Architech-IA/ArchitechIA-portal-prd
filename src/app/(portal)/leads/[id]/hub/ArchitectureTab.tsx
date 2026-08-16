@@ -204,26 +204,26 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
             value={arch.title}
             onChange={e => setArch(p => ({ ...p, title: e.target.value }))}
             placeholder="Nombre del sistema..."
-            className="bg-gray-900 text-white text-base font-semibold px-3.5 py-2.5 rounded-xl border border-gray-800 focus:border-orange-500/60 focus:outline-none focus:ring-2 focus:ring-orange-500/10 placeholder-gray-700 w-full transition-all"
+            className="bg-gray-900 text-white text-sm font-semibold px-3 py-2 rounded-xl border border-gray-800 focus:border-orange-500/60 focus:outline-none focus:ring-2 focus:ring-orange-500/10 placeholder-gray-700 w-full transition-all"
           />
           <input
             value={arch.description}
             onChange={e => setArch(p => ({ ...p, description: e.target.value }))}
             placeholder="Descripcion del sistema y su proposito..."
-            className="bg-transparent text-gray-500 text-sm px-3.5 py-1.5 rounded-xl border border-transparent hover:border-gray-800 focus:border-gray-700 focus:outline-none focus:bg-gray-900/50 placeholder-gray-700 w-full transition-all"
+            className="bg-transparent text-gray-500 text-xs px-3 py-1.5 rounded-xl border border-transparent hover:border-gray-800 focus:border-gray-700 focus:outline-none focus:bg-gray-900/50 placeholder-gray-700 w-full transition-all"
           />
         </div>
         <div className="flex items-center gap-2 shrink-0 pt-1">
           <button
             onClick={generate} disabled={generating || saving}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-500 active:bg-violet-700 disabled:opacity-50 text-white shadow-lg shadow-violet-900/30 transition-all active:scale-95"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-orange-600 hover:bg-orange-500 active:bg-orange-700 disabled:opacity-50 text-white shadow-md shadow-orange-900/20 transition-all active:scale-95"
           >
             {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             {generating ? 'Generando...' : 'Generar'}
           </button>
           <button
             onClick={save} disabled={saving || generating}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-orange-600 hover:bg-orange-500 active:bg-orange-700 disabled:opacity-50 text-white shadow-lg shadow-orange-900/30 transition-all active:scale-95"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-orange-600 hover:bg-orange-500 active:bg-orange-700 disabled:opacity-50 text-white shadow-md shadow-orange-900/20 transition-all active:scale-95"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Guardar
