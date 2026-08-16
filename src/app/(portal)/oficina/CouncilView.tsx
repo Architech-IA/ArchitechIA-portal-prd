@@ -835,7 +835,7 @@ export default function CouncilView() {
                   style={{ background: 'rgba(255,255,255,0.04)' }}
                 />
                 <button
-                  onClick={sendChatMessage}
+                  onClick={() => sendChatMessage()}
                   disabled={!chatInput.trim() || chatLoading}
                   className="px-3 py-2 rounded-xl transition-all flex-shrink-0"
                   style={{ background: 'rgba(99,102,241,0.2)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
