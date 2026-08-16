@@ -63,7 +63,7 @@ interface Session {
 interface ExtractedItem { type: string; title: string; description: string; areaSlug: string; priority: string }
 
 function renderMd(text: string) {
-  return text.split('\n').map((line, li) => {
+  return text.split('\n').map((line, li, arr) => {
     const parts: React.ReactNode[] = []
     const re = /\*\*(.+?)\*\*/g
     let last = 0, m: RegExpExecArray | null
@@ -73,8 +73,22 @@ function renderMd(text: string) {
       last = m.index + m[0].length
     }
     if (last < line.length) parts.push(line.slice(last))
-    return <span key={li}>{parts}{li < text.split('\n').length - 1 && <br />}</span>
+    return <span key={li}>{parts}{li < arr.length - 1 && <br />}</span>
   })
+}
+
+function parseOrionOptions(content: string): { prose: string; options: string[] } | null {
+  const lines = content.split('\n')
+  const firstOpt = lines.findIndex(l => /^\d+\.\s+\S/.test(l))
+  if (firstOpt === -1) return null
+  const options: string[] = []
+  for (let i = firstOpt; i < lines.length; i++) {
+    const m = lines[i].match(/^\d+\.\s+(.+)$/)
+    if (m) options.push(m[1].trim())
+  }
+  if (options.length < 2) return null
+  const prose = lines.slice(0, firstOpt).join('\n').replace(/^-{3,}\s*$/m, '').trim()
+  return { prose, options }
 }
 interface ExtractedProposal { title: string; description: string; items: ExtractedItem[]; _sourceFile?: string }
 
@@ -159,6 +173,9 @@ export default function CouncilView() {
   const [chatLoading, setChatLoading] = useState(false)
   const [history, setHistory] = useState<Session[]>([])
   const [expandedSession, setExpandedSession] = useState<string | null>(null)
+  const [otraRespuestaOpen, setOtraRespuestaOpen] = useState(false)
+  const [otraRespuestaText, setOtraRespuestaText] = useState('')
+  const otraRespuestaRef = useRef<HTMLInputElement>(null)
   const [extracting, setExtracting] = useState(false)
   const [extracted, setExtracted] = useState<ExtractedProposal | null>(null)
   const [sendingToCouncil, setSendingToCouncil] = useState(false)
@@ -244,12 +261,14 @@ export default function CouncilView() {
       .catch(() => {})
   }, [])
 
-  async function sendChatMessage() {
-    const content = chatInput.trim()
+  async function sendChatMessage(override?: string) {
+    const content = (override ?? chatInput).trim()
     if (!content || chatLoading) return
     const newMsg: ChatMsg = { role: 'user', content }
     setChatMessages(prev => [...prev, newMsg])
-    setChatInput('')
+    if (!override) setChatInput('')
+    setOtraRespuestaOpen(false)
+    setOtraRespuestaText('')
     setChatLoading(true)
     try {
       const res = await fetch('/api/agents/orion/chat', {
@@ -260,12 +279,15 @@ export default function CouncilView() {
       if (res.ok) {
         const { reply } = await res.json()
         setChatMessages(prev => [...prev, { role: 'assistant', content: reply }])
-        // History refreshes only when closing a conversation, not on each message
       }
     } finally {
       setChatLoading(false)
       setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
     }
+  }
+
+  function selectOption(text: string) {
+    sendChatMessage(text)
   }
 
   async function extractProposal() {
@@ -700,24 +722,80 @@ export default function CouncilView() {
                   <p className="text-[10px] text-gray-700 italic max-w-xs">"Orión, necesito implementar autenticación OAuth en el portal..."</p>
                 </div>
               )}
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
-                       style={msg.role === 'assistant'
-                         ? { background: 'rgba(99,102,241,0.25)', color: '#6366f1', border: '1.5px solid rgba(99,102,241,0.4)' }
-                         : { background: 'rgba(255,255,255,0.08)', color: '#9ca3af', border: '1.5px solid rgba(255,255,255,0.1)' }}>
-                    {msg.role === 'assistant' ? 'Orión' : 'Tú'}
-                  </div>
-                  <div className="max-w-[75%]">
-                    <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed"
+              {chatMessages.map((msg, i) => {
+                const isLastAssistant = msg.role === 'assistant' && i === chatMessages.length - 1 && !chatLoading
+                const parsed = isLastAssistant ? parseOrionOptions(msg.content) : null
+                return (
+                  <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
                          style={msg.role === 'assistant'
-                           ? { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)', color: '#d1d5db' }
-                           : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: '#e5e7eb' }}>
-                      {msg.role === 'assistant' ? renderMd(msg.content) : msg.content}
+                           ? { background: 'rgba(99,102,241,0.25)', color: '#6366f1', border: '1.5px solid rgba(99,102,241,0.4)' }
+                           : { background: 'rgba(255,255,255,0.08)', color: '#9ca3af', border: '1.5px solid rgba(255,255,255,0.1)' }}>
+                      {msg.role === 'assistant' ? 'OR' : 'Tú'}
+                    </div>
+                    <div className={msg.role === 'user' ? 'max-w-[75%]' : 'flex-1 min-w-0'}>
+                      {parsed ? (
+                        <div className="rounded-xl px-3 py-2.5 text-[11px] leading-relaxed"
+                             style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)', color: '#d1d5db' }}>
+                          {parsed.prose && <div className="mb-3">{renderMd(parsed.prose)}</div>}
+                          <div className="space-y-1.5">
+                            {parsed.options.map((opt, oi) => {
+                              const isOtra = /otra respuesta/i.test(opt)
+                              if (isOtra && otraRespuestaOpen) {
+                                return (
+                                  <div key={oi} className="flex gap-2 mt-1">
+                                    <input
+                                      ref={otraRespuestaRef}
+                                      autoFocus
+                                      value={otraRespuestaText}
+                                      onChange={e => setOtraRespuestaText(e.target.value)}
+                                      onKeyDown={e => e.key === 'Enter' && otraRespuestaText.trim() && selectOption(otraRespuestaText.trim())}
+                                      placeholder="Describí con tus palabras..."
+                                      className="flex-1 rounded-lg px-3 py-1.5 text-[11px] text-gray-200 border border-white/10 outline-none focus:border-indigo-500/50 transition-colors placeholder-gray-600"
+                                      style={{ background: 'rgba(255,255,255,0.06)' }}
+                                    />
+                                    <button
+                                      onClick={() => otraRespuestaText.trim() && selectOption(otraRespuestaText.trim())}
+                                      disabled={!otraRespuestaText.trim()}
+                                      className="px-2.5 py-1.5 rounded-lg transition-all disabled:opacity-40"
+                                      style={{ background: 'rgba(99,102,241,0.3)', color: '#818cf8' }}>
+                                      <Send size={11} />
+                                    </button>
+                                  </div>
+                                )
+                              }
+                              return (
+                                <button
+                                  key={oi}
+                                  onClick={() => isOtra
+                                    ? (setOtraRespuestaOpen(true), setTimeout(() => otraRespuestaRef.current?.focus(), 50))
+                                    : selectOption(`${oi + 1}. ${opt}`)}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all group"
+                                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.12)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.3)' }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)' }}>
+                                  <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold transition-colors"
+                                        style={{ background: isOtra ? 'rgba(251,191,36,0.15)' : 'rgba(99,102,241,0.2)', color: isOtra ? '#fbbf24' : '#818cf8' }}>
+                                    {isOtra ? '✎' : oi + 1}
+                                  </span>
+                                  <span className="text-[11px] text-gray-300 group-hover:text-white transition-colors">{opt}</span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl px-3 py-2 text-[11px] leading-relaxed"
+                             style={msg.role === 'assistant'
+                               ? { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)', color: '#d1d5db' }
+                               : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: '#e5e7eb' }}>
+                          {msg.role === 'assistant' ? renderMd(msg.content) : msg.content}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
               {chatLoading && (
                 <div className="flex gap-2.5">
                   <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
