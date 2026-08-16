@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Save, Plus, Link2, Trash2, X, Loader2 } from 'lucide-react'
+import { Save, Plus, Link2, Trash2, X, Loader2, Sparkles } from 'lucide-react'
 
 // ── Isometric constants ───────────────────────────────────────────────────────
 
@@ -106,6 +106,8 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
   const [arch, setArch] = useState<ArchData>(defaultData)
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState<string | null>(null)
   const [mode, setMode] = useState<'view' | 'add' | 'connect'>('view')
   const [addType, setAddType] = useState<NodeType>('server')
   const [selected, setSelected] = useState<string | null>(null)
@@ -123,6 +125,26 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
       .then(r => r.ok ? r.json() : { data: null })
       .then(j => { setArch(j.data ?? defaultData); setLoaded(true) })
       .catch(() => setLoaded(true))
+  }, [leadId])
+
+  const generate = useCallback(async () => {
+    setGenerating(true)
+    setGenError(null)
+    try {
+      const res = await fetch('/api/leads/architecture/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId }),
+      })
+      const j = await res.json()
+      if (!res.ok) throw new Error(j.error ?? 'Error al generar')
+      setArch(j.data)
+      setSelected(null)
+    } catch (e: unknown) {
+      setGenError(e instanceof Error ? e.message : 'Error desconocido')
+    } finally {
+      setGenerating(false)
+    }
   }, [leadId])
 
   const save = useCallback(async () => {
@@ -228,12 +250,31 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
           placeholder="Título del mapa de arquitectura..."
           className="flex-1 bg-transparent text-base font-semibold text-white placeholder-gray-600 border-b border-gray-700 focus:border-orange-500 focus:outline-none pb-1"
         />
-        <button onClick={save} disabled={saving}
+        <button
+          onClick={generate}
+          disabled={generating || saving}
+          title="Generar arquitectura automáticamente según el contexto del lead"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-700 hover:bg-violet-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors shrink-0"
+        >
+          {generating
+            ? <><Loader2 size={12} className="animate-spin" /> Generando…</>
+            : <><Sparkles size={12} /> Generar</>}
+        </button>
+        <button onClick={save} disabled={saving || generating}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors shrink-0"
         >
           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Guardar
         </button>
       </div>
+
+      {/* Generation error */}
+      {genError && (
+        <div className="flex items-center gap-2 bg-red-950/50 border border-red-800 text-red-400 text-xs px-3 py-2 rounded-lg">
+          <X size={12} className="shrink-0" />
+          <span className="flex-1">{genError}</span>
+          <button onClick={() => setGenError(null)} className="shrink-0 hover:text-red-200"><X size={11} /></button>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -275,6 +316,13 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
       <div className="flex gap-3">
         {/* SVG canvas */}
         <div className="flex-1 rounded-xl border border-gray-700 bg-gray-950 overflow-hidden relative" style={{ minWidth: 0 }}>
+          {generating && (
+            <div className="absolute inset-0 bg-gray-950/80 flex flex-col items-center justify-center z-10 gap-3">
+              <Loader2 size={28} className="animate-spin text-violet-400" />
+              <p className="text-sm text-violet-300 font-medium">Analizando contexto y generando arquitectura…</p>
+              <p className="text-xs text-gray-500">Esto puede tardar unos segundos</p>
+            </div>
+          )}
           <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', display: 'block' }}>
             <defs>
               {Object.entries(EDGE_CFG).map(([type, c]) => (
