@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, WheelEvent } from 'react'
 import { Save, Loader2, Sparkles, X, MousePointer2, Layers, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 
 type NodeType = 'server' | 'database' | 'api' | 'frontend' | 'queue' | 'cache' | 'external' | 'user'
-type EdgeType = 'data' | 'control' | 'event'
+type EdgeType = 'link'
 
 interface DiagNode {
   id: string; type: NodeType; label: string; description: string
@@ -29,9 +29,7 @@ const NODE_CFG: Record<NodeType, { label: string; accent: string; bg: string; ic
 }
 
 const EDGE_CFG: Record<EdgeType, { stroke: string; dash: string; label: string }> = {
-  data:    { stroke: '#38bdf8', dash: '',    label: 'Datos'   },
-  control: { stroke: '#fb923c', dash: '5 3', label: 'Control' },
-  event:   { stroke: '#c084fc', dash: '2 4', label: 'Evento'  },
+  link: { stroke: '#64748b', dash: '', label: 'Conexion' },
 }
 
 // Layout constants
@@ -502,18 +500,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                 </div>
               ))}
             </div>
-            <div className="pt-3 mt-2 border-t border-gray-800 flex flex-col gap-2">
-              <p className="text-[10px] text-gray-700 uppercase tracking-wider font-medium mb-0.5">Conexiones</p>
-              {Object.entries(EDGE_CFG).map(([type, c]) => (
-                <div key={type} className="flex items-center gap-2.5">
-                  <svg width="28" height="8" className="shrink-0">
-                    <line x1="1" y1="4" x2="22" y2="4" stroke={c.stroke} strokeWidth="1.5" strokeDasharray={c.dash} />
-                    <polygon points="18,1.5 24,4 18,6.5" fill={c.stroke} />
-                  </svg>
-                  <span className="text-[11px] text-gray-500">{c.label}</span>
-                </div>
-              ))}
-            </div>
+
             <p className="text-[10px] text-gray-700 mt-3">Scroll para zoom · Drag para mover · Click conexión para eliminar</p>
           </div>
         </div>

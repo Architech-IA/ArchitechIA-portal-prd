@@ -21,7 +21,7 @@ REGLAS:
 - Las conexiones deben representar flujos reales de datos/control entre componentes
 
 TIPOS DE NODOS: server | database | api | frontend | queue | cache | external | user
-TIPOS DE CONEXIÓN: data (flujo de datos) | control (configuración/orquestación) | event (eventos asíncronos)
+TIPO DE CONEXIÓN: siempre usa "link" — representa simplemente que dos componentes están conectados
 
 FORMATO DE SALIDA — devolvé ÚNICAMENTE el JSON, sin explicaciones ni markdown:
 {
