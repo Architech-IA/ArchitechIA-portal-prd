@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Save, Plus, Link2, Trash2, X, Loader2, Sparkles, MousePointer2, Layers } from 'lucide-react'
 
-const TW = 108
-const TH = 54
-const GRID = 7
-const SVG_W = 900
-const SVG_H = 540
+const TW = 98
+const TH = 49
+const GRID = 9
+const SVG_W = 1040
+const SVG_H = 600
 const OX = SVG_W / 2
-const OY = 110
+const OY = 115
 
 type NodeType = 'server' | 'database' | 'api' | 'frontend' | 'queue' | 'cache' | 'external' | 'user'
 type EdgeType = 'data' | 'control' | 'event'

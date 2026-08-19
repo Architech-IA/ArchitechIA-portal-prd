@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 const SYSTEM = `Sos un arquitecto de software experto en sistemas empresariales latinoamericanos.
 Dado el contexto de un proyecto de software, generás un mapa de arquitectura isométrico en JSON.
 
-REGLAS CRÍTICAS DEL GRID 7×7 (gridX y gridY de 0 a 6):
+REGLAS CRÍTICAS DEL GRID 9×9 (gridX y gridY de 0 a 8):
 - MÁXIMO 7 NODOS — elegí solo los componentes clave del sistema, no todos los detalles
 - NINGÚN nodo puede compartir posición (gridX, gridY) — posiciones únicas obligatorio
 - Separación mínima: dos nodos no pueden estar en posiciones adyacentes (diferencia < 2 en ambos ejes)
@@ -12,12 +12,13 @@ REGLAS CRÍTICAS DEL GRID 7×7 (gridX y gridY de 0 a 6):
 
 LAYOUT OBLIGATORIO — respetar estas zonas:
   • Usuario / cliente externo → gridX: 0, gridY: 0
-  • Frontend / app / portal  → gridX: 1, gridY: 2
-  • API Gateway / BFF        → gridX: 3, gridY: 2
-  • Servidor lógica negocio  → gridX: 4, gridY: 1  o  gridX: 5, gridY: 2
-  • Base de datos principal  → gridX: 5, gridY: 4
-  • Cola / broker / eventos  → gridX: 3, gridY: 5
-  • Servicio externo         → gridX: 6, gridY: 0  o  gridX: 6, gridY: 3
+  • Frontend / app / portal  → gridX: 1, gridY: 3
+  • API Gateway / BFF        → gridX: 3, gridY: 3
+  • Servidor lógica negocio  → gridX: 5, gridY: 2  o  gridX: 6, gridY: 3
+  • Base de datos principal  → gridX: 6, gridY: 6
+  • Cola / broker / eventos  → gridX: 4, gridY: 7
+  • Servicio externo         → gridX: 8, gridY: 1  o  gridX: 8, gridY: 4
+  • Cache / memoria          → gridX: 7, gridY: 5
   (Usá esas posiciones exactas o cercanas, nunca agrupes varios nodos en la misma zona)
 
 TIPOS DE NODOS: server | database | api | frontend | queue | cache | external | user
@@ -109,8 +110,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Cap to 8 nodes max
-    if (data.nodes.length > 8) {
-      data.nodes = data.nodes.slice(0, 8)
+    if (data.nodes.length > 9) {
+      data.nodes = data.nodes.slice(0, 9)
       const keepIds = new Set(data.nodes.map((n: Record<string, unknown>) => n.id))
       data.edges = data.edges.filter((e: Record<string, unknown>) => keepIds.has(e.from) && keepIds.has(e.to))
     }
@@ -119,15 +120,15 @@ export async function POST(req: NextRequest) {
     const usedPositions = new Set<string>()
     data.nodes = data.nodes.map((n: Record<string, unknown>, i: number) => {
       n = { ...n, id: n.id ?? `n${i}` }
-      let gx = Math.max(0, Math.min(6, Number(n.gridX) || 0))
-      let gy = Math.max(0, Math.min(6, Number(n.gridY) || 0))
+      let gx = Math.max(0, Math.min(8, Number(n.gridX) || 0))
+      let gy = Math.max(0, Math.min(8, Number(n.gridY) || 0))
       // Find an unoccupied cell
-      outer: for (let d = 0; d <= 6; d++) {
+      outer: for (let d = 0; d <= 8; d++) {
         for (let dx = -d; dx <= d; dx++) {
           for (let dy = -d; dy <= d; dy++) {
             if (Math.abs(dx) !== d && Math.abs(dy) !== d) continue
             const nx = gx + dx, ny = gy + dy
-            if (nx < 0 || nx > 6 || ny < 0 || ny > 6) continue
+            if (nx < 0 || nx > 8 || ny < 0 || ny > 8) continue
             const key = `${nx},${ny}`
             if (!usedPositions.has(key)) {
               usedPositions.add(key)
