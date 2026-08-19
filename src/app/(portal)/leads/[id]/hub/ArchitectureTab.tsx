@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Save, Plus, Link2, Trash2, X, Loader2, Sparkles, MousePointer2, Layers } from 'lucide-react'
 
 const TW = 98
@@ -88,6 +88,11 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
   const [edgeLabel, setEdgeLabel]   = useState('')
   const [edgeType, setEdgeType]     = useState<EdgeType>('data')
   const [hoveredCell, setHoveredCell] = useState<{gx:number;gy:number} | null>(null)
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+  const [dragOverCell, setDragOverCell]     = useState<{gx:number;gy:number} | null>(null)
+
+  const svgRef       = useRef<SVGSVGElement>(null)
+  const hasDraggedRef = useRef(false)
 
   useEffect(() => {
     fetch(`/api/leads/architecture?leadId=${leadId}`)
@@ -120,6 +125,47 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
       body: JSON.stringify({ leadId, data: arch }),
     }).finally(() => setSaving(false))
   }, [leadId, arch])
+
+  const patchNode = useCallback((id: string, patch: Partial<ArchNode>) => {
+    setArch(prev => ({ ...prev, nodes: prev.nodes.map(n => n.id === id ? { ...n, ...patch } : n) }))
+  }, [])
+
+  const screenToGrid = useCallback((clientX: number, clientY: number): {gx:number;gy:number} | null => {
+    const el = svgRef.current
+    if (!el) return null
+    const rect = el.getBoundingClientRect()
+    const svgX = (clientX - rect.left) / rect.width * SVG_W
+    const svgY = (clientY - rect.top) / rect.height * SVG_H
+    const u = (svgX - OX) * 2 / TW
+    const v = (svgY - OY) * 2 / TH
+    const gx = Math.round((u + v) / 2)
+    const gy = Math.round((v - u) / 2)
+    if (gx < 0 || gx >= GRID || gy < 0 || gy >= GRID) return null
+    return { gx, gy }
+  }, [])
+
+  useEffect(() => {
+    if (!draggingNodeId) return
+    const onMove = (e: MouseEvent) => {
+      hasDraggedRef.current = true
+      setDragOverCell(screenToGrid(e.clientX, e.clientY))
+    }
+    const onUp = (e: MouseEvent) => {
+      const cell = screenToGrid(e.clientX, e.clientY)
+      if (cell && hasDraggedRef.current) {
+        const occupied = arch.nodes.some(n => n.id !== draggingNodeId && n.gridX === cell.gx && n.gridY === cell.gy)
+        if (!occupied) patchNode(draggingNodeId, { gridX: cell.gx, gridY: cell.gy })
+      }
+      setDraggingNodeId(null)
+      setDragOverCell(null)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [draggingNodeId, arch.nodes, screenToGrid, patchNode])
 
   const occupied = new Set(arch.nodes.map(n => `${n.gridX},${n.gridY}`))
   const selNode  = arch.nodes.find(n => n.id === selected)
@@ -177,10 +223,6 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
 
   const delEdge = useCallback((id: string) => {
     setArch(prev => ({ ...prev, edges: prev.edges.filter(e => e.id !== id) }))
-  }, [])
-
-  const patchNode = useCallback((id: string, patch: Partial<ArchNode>) => {
-    setArch(prev => ({ ...prev, nodes: prev.nodes.map(n => n.id === id ? { ...n, ...patch } : n) }))
   }, [])
 
   const patchEdge = useCallback((id: string, patch: Partial<ArchEdge>) => {
@@ -316,7 +358,12 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
             </div>
           )}
 
-          <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', display: 'block' }}>
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+            style={{ width: '100%', display: 'block', cursor: draggingNodeId ? 'grabbing' : 'default' }}
+            onMouseLeave={() => { if (!draggingNodeId) setHoveredCell(null) }}
+          >
             <defs>
               {Object.entries(EDGE_CFG).map(([type, c]) => (
                 <marker key={type} id={`arr-${type}`} markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
@@ -337,19 +384,35 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               Array.from({ length: GRID }, (_, gx) => {
                 const { x: cx, y: cy } = toSvg(gx, gy)
                 const isOcc = occupied.has(`${gx},${gy}`)
+                const isDragTarget = dragOverCell?.gx === gx && dragOverCell?.gy === gy
+                const isDraggingNode = !!draggingNodeId && arch.nodes.find(n => n.id === draggingNodeId && n.gridX === gx && n.gridY === gy)
                 const isHov = hoveredCell?.gx === gx && hoveredCell?.gy === gy
-                const showHover = isHov && !isOcc && mode !== 'connect'
-                const isClickable = mode === 'add' ? !isOcc : mode === 'connect' ? isOcc : true
+                const canDrop = isDragTarget && !isOcc
+                const cantDrop = isDragTarget && isOcc && !isDraggingNode
+                const showHover = isHov && !isOcc && mode !== 'connect' && !draggingNodeId
+                const isClickable = draggingNodeId ? false : mode === 'add' ? !isOcc : mode === 'connect' ? isOcc : true
                 return (
                   <polygon key={`g${gx}-${gy}`}
                     points={`${cx},${cy} ${cx+TW/2},${cy+TH/2} ${cx},${cy+TH} ${cx-TW/2},${cy+TH/2}`}
-                    fill={showHover ? (mode === 'add' ? '#1e3a5f30' : '#1e293b15') : (mode === 'add' && !isOcc ? '#0f1929' : 'transparent')}
-                    stroke={showHover ? '#334155' : '#1e293b'}
-                    strokeWidth={showHover ? '1.5' : '0.8'}
+                    fill={
+                      canDrop    ? '#0d2a1a50' :
+                      cantDrop   ? '#2a0d0d40' :
+                      showHover  ? (mode === 'add' ? '#1e3a5f30' : '#1e293b15') :
+                      isDraggingNode ? '#1a2a0d30' :
+                      mode === 'add' && !isOcc ? '#0f1929' : 'transparent'
+                    }
+                    stroke={
+                      canDrop    ? '#22c55e' :
+                      cantDrop   ? '#ef4444' :
+                      showHover  ? '#334155' :
+                      isDraggingNode ? '#4ade80' :
+                      '#1e293b'
+                    }
+                    strokeWidth={canDrop || cantDrop || isDraggingNode ? '2' : showHover ? '1.5' : '0.8'}
                     style={{ cursor: isClickable ? 'pointer' : 'default' }}
-                    onClick={() => handleClick(gx, gy)}
-                    onMouseEnter={() => setHoveredCell({ gx, gy })}
-                    onMouseLeave={() => setHoveredCell(null)}
+                    onClick={() => { if (!draggingNodeId) handleClick(gx, gy) }}
+                    onMouseEnter={() => { if (!draggingNodeId) setHoveredCell({ gx, gy }) }}
+                    onMouseLeave={() => { if (!draggingNodeId) setHoveredCell(null) }}
                   />
                 )
               })
@@ -385,16 +448,35 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               const g   = geo(node.gridX, node.gridY, cfg.h)
               const sel   = selected === node.id
               const cFrom = connectFrom === node.id
+              const isDragging = draggingNodeId === node.id
               return (
-                <g key={node.id} style={{ cursor: 'pointer' }} onClick={() => handleClick(node.gridX, node.gridY)}>
+                <g
+                  key={node.id}
+                  style={{
+                    cursor: isDragging ? 'grabbing' : mode === 'view' ? 'grab' : 'pointer',
+                    opacity: isDragging ? 0.6 : 1,
+                    transition: isDragging ? 'none' : 'opacity 0.15s',
+                  }}
+                  onMouseDown={e => {
+                    if (mode !== 'view') return
+                    e.preventDefault()
+                    hasDraggedRef.current = false
+                    setDraggingNodeId(node.id)
+                    setSelected(node.id)
+                  }}
+                  onClick={() => {
+                    if (hasDraggedRef.current) { hasDraggedRef.current = false; return }
+                    handleClick(node.gridX, node.gridY)
+                  }}
+                >
                   <polygon points={g.left}  fill={cfg.left} />
                   <polygon points={g.right} fill={cfg.right} />
                   <polygon points={g.top} fill={cfg.top}
-                    stroke={sel ? cfg.accent : cFrom ? '#38bdf8' : '#0a0f1a'}
-                    strokeWidth={sel || cFrom ? 2 : 0.5}
-                    filter={sel || cFrom ? 'url(#glow)' : undefined}
+                    stroke={sel ? cfg.accent : cFrom ? '#38bdf8' : isDragging ? cfg.accent : '#0a0f1a'}
+                    strokeWidth={sel || cFrom || isDragging ? 2 : 0.5}
+                    filter={sel || cFrom || isDragging ? 'url(#glow)' : undefined}
                   />
-                  {(sel || cFrom) && (
+                  {(sel || cFrom || isDragging) && (
                     <polygon points={g.top} fill="none"
                       stroke={cFrom ? '#38bdf8' : cfg.accent}
                       strokeWidth="2" opacity="0.9" filter="url(#glow)"
