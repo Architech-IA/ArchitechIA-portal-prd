@@ -2,32 +2,35 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const SYSTEM = `Sos un arquitecto de software experto en sistemas empresariales latinoamericanos.
-Dado el contexto de un proyecto, genera un diagrama simple de componentes del sistema en JSON.
+Dado el contexto de un proyecto, genera un diagrama simple de STACK TECNOLOGICO en JSON.
 
-SISTEMA DE CAPAS — los componentes se ubican en columnas de izquierda a derecha:
-  layer 0 -> Usuario / cliente (quien usa el sistema)
-  layer 1 -> Frontend (app web, movil, portal)
-  layer 2 -> API / Gateway (punto de entrada backend)
-  layer 3 -> Servidor / logica de negocio
-  layer 4 -> Base de datos / cache / cola
-  layer 5 -> Servicios externos / terceros
+IMPORTANTE: este diagrama muestra COMO SE CONECTAN LOS COMPONENTES TECNICOS del sistema,
+NO los flujos de negocio ni las acciones del usuario.
+
+SISTEMA DE CAPAS — columnas de izquierda a derecha:
+  layer 0 -> Usuario / cliente
+  layer 1 -> Frontend (React, Vue, app movil, etc.)
+  layer 2 -> API / Gateway / BFF
+  layer 3 -> Backend / servicios / logica de negocio
+  layer 4 -> Persistencia (base de datos, cache, cola)
+  layer 5 -> Servicios externos / cloud
 
 REGLAS:
-- Entre 5 y 10 nodos - solo los componentes principales del sistema
-- row empieza en 0 dentro de cada layer (0, 1, 2 maximo 3 por layer)
-- label: nombre corto del componente, maximo 18 caracteres
-- description: tecnologia o rol brevisimo, maximo 30 caracteres (opcional)
-- Las conexiones representan simplemente que dos componentes se comunican
+- Entre 5 y 10 nodos - solo componentes tecnicos del stack
+- label: nombre del componente o tecnologia (ej: "React App", "Node.js API", "PostgreSQL", "Redis")
+- description: tipo o detalle tecnico muy breve (ej: "Next.js 14", "Express", "v14.2")
+- row empieza en 0, maximo 3 nodos por layer
+- edges: NO uses label en las conexiones. Solo indica que dos componentes se comunican.
 
-FORMATO DE SALIDA - devolver UNICAMENTE el JSON, sin markdown ni explicaciones:
+FORMATO DE SALIDA - UNICAMENTE el JSON, sin markdown:
 {
   "title": "...",
   "description": "...",
   "nodes": [
-    { "id": "n1", "label": "Usuario", "description": "Navegador web", "layer": 0, "row": 0 }
+    { "id": "n1", "label": "React App", "description": "Next.js 14", "layer": 1, "row": 0 }
   ],
   "edges": [
-    { "id": "e1", "from": "n1", "to": "n2", "label": "HTTPS" }
+    { "id": "e1", "from": "n1", "to": "n2" }
   ]
 }`
 
@@ -115,7 +118,7 @@ export async function POST(req: NextRequest) {
       return { ...n, layer, row }
     })
 
-    data.edges = data.edges.map((e: Record<string, unknown>, i: number) => ({ ...e, id: e.id ?? `e${i}` }))
+    data.edges = data.edges.map((e: Record<string, unknown>, i: number) => ({ id: e.id ?? `e${i}`, from: e.from, to: e.to }))
 
     return NextResponse.json({ data })
   } catch (err: unknown) {
