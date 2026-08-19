@@ -2,36 +2,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const SYSTEM = `Sos un arquitecto de software experto en sistemas empresariales latinoamericanos.
-Dado el contexto de un proyecto, generás un diagrama de arquitectura de componentes en JSON.
+Dado el contexto de un proyecto, genera un diagrama simple de componentes del sistema en JSON.
 
-ESTRUCTURA DEL DIAGRAMA — sistema de capas (layers):
-  • layer 0 — USUARIO: clientes, usuarios finales, sistemas externos que inician flujos
-  • layer 1 — FRONTEND: apps web, móvil, portales, dashboards
-  • layer 2 — API: gateways, BFF, servicios REST/GraphQL, autenticación
-  • layer 3 — SERVIDOR: lógica de negocio, microservicios, workers, motores
-  • layer 4 — DATOS: bases de datos, caché, colas, brokers, almacenamiento
-  • layer 5 — EXTERNO: servicios de terceros, integraciones, proveedores cloud
+SISTEMA DE CAPAS — los componentes se ubican en columnas de izquierda a derecha:
+  layer 0 -> Usuario / cliente (quien usa el sistema)
+  layer 1 -> Frontend (app web, movil, portal)
+  layer 2 -> API / Gateway (punto de entrada backend)
+  layer 3 -> Servidor / logica de negocio
+  layer 4 -> Base de datos / cache / cola
+  layer 5 -> Servicios externos / terceros
 
 REGLAS:
-- Máximo 12 nodos, mínimo 5 — mostrá solo los componentes clave
-- row empieza en 0 y sube dentro de cada layer (0, 1, 2, ...)
-- Máximo 3 nodos por layer
-- Los labels deben ser CORTOS: máximo 20 caracteres
-- La description debe ser una frase corta (máximo 40 chars) sobre el rol del componente
-- Las conexiones deben representar flujos reales de datos/control entre componentes
+- Entre 5 y 10 nodos - solo los componentes principales del sistema
+- row empieza en 0 dentro de cada layer (0, 1, 2 maximo 3 por layer)
+- label: nombre corto del componente, maximo 18 caracteres
+- description: tecnologia o rol brevisimo, maximo 30 caracteres (opcional)
+- Las conexiones representan simplemente que dos componentes se comunican
 
-TIPOS DE NODOS: server | database | api | frontend | queue | cache | external | user
-TIPO DE CONEXIÓN: siempre usa "link" — representa simplemente que dos componentes están conectados
-
-FORMATO DE SALIDA — devolvé ÚNICAMENTE el JSON, sin explicaciones ni markdown:
+FORMATO DE SALIDA - devolver UNICAMENTE el JSON, sin markdown ni explicaciones:
 {
   "title": "...",
   "description": "...",
   "nodes": [
-    { "id": "n1", "type": "user", "label": "Cliente Web", "description": "Usuario final del sistema", "layer": 0, "row": 0 }
+    { "id": "n1", "label": "Usuario", "description": "Navegador web", "layer": 0, "row": 0 }
   ],
   "edges": [
-    { "id": "e1", "from": "n1", "to": "n2", "label": "HTTPS", "type": "data" }
+    { "id": "e1", "from": "n1", "to": "n2", "label": "HTTPS" }
   ]
 }`
 
