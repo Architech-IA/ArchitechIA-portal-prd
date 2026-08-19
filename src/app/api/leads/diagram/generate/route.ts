@@ -2,35 +2,48 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const SYSTEM = `Sos un arquitecto de software experto en sistemas empresariales latinoamericanos.
-Dado el contexto de un proyecto, genera un diagrama simple de STACK TECNOLOGICO en JSON.
+Dado el contexto de un proyecto, generás un diagrama de ARQUITECTURA DE COMPONENTES en JSON.
 
-IMPORTANTE: este diagrama muestra COMO SE CONECTAN LOS COMPONENTES TECNICOS del sistema,
-NO los flujos de negocio ni las acciones del usuario.
+El diagrama muestra los componentes tecnicos del sistema y como se conectan.
+NO es un flujograma. NO muestra pasos ni flujos de proceso.
+Es un diagrama de arquitectura como los de Azure, AWS o draw.io.
 
-SISTEMA DE CAPAS — columnas de izquierda a derecha:
-  layer 0 -> Usuario / cliente
-  layer 1 -> Frontend (React, Vue, app movil, etc.)
-  layer 2 -> API / Gateway / BFF
-  layer 3 -> Backend / servicios / logica de negocio
-  layer 4 -> Persistencia (base de datos, cache, cola)
-  layer 5 -> Servicios externos / cloud
+POSICIONAMIENTO — los componentes se ubican en un plano 2D (coordenadas x, y de 0 a 10):
+  Zona superior (y=0-1):     Usuarios / clientes / navegadores
+  Zona media-alta (y=2-3):   Frontend — apps web, portales, dashboards
+  Zona central (y=4-5):      API / Gateway / Backend / servicios principales
+  Zona media-baja (y=6-7):   Base de datos, cache, colas, almacenamiento
+  Zona inferior (y=8-9):     Servicios externos, integraciones, cloud
+
+En el eje X (0-10) distribuís los componentes horizontalmente segun sea natural.
+No hay un orden fijo de izquierda a derecha — posicioná cada componente donde tenga sentido.
+Ejemplo: si hay 3 microservicios en el backend, ponelos en y=4 con x=2, x=5, x=8.
 
 REGLAS:
-- Entre 5 y 10 nodos - solo componentes tecnicos del stack
-- label: nombre del componente o tecnologia (ej: "React App", "Node.js API", "PostgreSQL", "Redis")
-- description: tipo o detalle tecnico muy breve (ej: "Next.js 14", "Express", "v14.2")
-- row empieza en 0, maximo 3 nodos por layer
-- edges: NO uses label en las conexiones. Solo indica que dos componentes se comunican.
+- Minimo 5 nodos, maximo 12 nodos — solo los componentes clave del stack
+- x e y son numeros de 0 a 10 (decimales permitidos, ej: 3.5)
+- Dos nodos no deben estar en la misma posicion exacta (separalos al menos 1.5 unidades)
+- label: nombre corto del componente, maximo 20 caracteres
+- description: tecnologia o rol brevísimo, maximo 30 caracteres (opcional)
+- Las conexiones representan que dos componentes se comunican o dependen entre si
+- NO pongas labels en las conexiones
 
-FORMATO DE SALIDA - UNICAMENTE el JSON, sin markdown:
+FORMATO DE SALIDA — devolvé UNICAMENTE el JSON, sin explicaciones ni markdown:
 {
   "title": "...",
   "description": "...",
   "nodes": [
-    { "id": "n1", "label": "React App", "description": "Next.js 14", "layer": 1, "row": 0 }
+    { "id": "n1", "label": "Usuario", "description": "Navegador web", "x": 5, "y": 0 },
+    { "id": "n2", "label": "Portal Web", "description": "React / Next.js", "x": 5, "y": 2.5 },
+    { "id": "n3", "label": "API Gateway", "description": "Express / REST", "x": 3, "y": 5 },
+    { "id": "n4", "label": "PostgreSQL", "description": "Base de datos", "x": 3, "y": 7 },
+    { "id": "n5", "label": "WhatsApp API", "description": "Integración", "x": 7, "y": 5 }
   ],
   "edges": [
-    { "id": "e1", "from": "n1", "to": "n2" }
+    { "id": "e1", "from": "n1", "to": "n2" },
+    { "id": "e2", "from": "n2", "to": "n3" },
+    { "id": "e3", "from": "n3", "to": "n4" },
+    { "id": "e4", "from": "n3", "to": "n5" }
   ]
 }`
 
@@ -77,7 +90,7 @@ export async function POST(req: NextRequest) {
     phaseNotes ? `\nNotas de fases:\n${phaseNotes}` : '',
   ].filter(Boolean).join('\n')
 
-  const prompt = `Contexto del proyecto:\n${context}\n\nGenerá el diagrama de arquitectura de componentes del sistema a construir para este cliente.`
+  const prompt = `Contexto del proyecto:\n${context}\n\nGenerá el diagrama de arquitectura de componentes del sistema a construir para este cliente. Usá posicionamiento 2D libre para que se vea como una arquitectura real, no como un flujograma.`
 
   try {
     const { exec } = await import('child_process')
@@ -105,20 +118,27 @@ export async function POST(req: NextRequest) {
       data.edges = data.edges.filter((e: Record<string, unknown>) => keepIds.has(e.from) && keepIds.has(e.to))
     }
 
-    // Normalize positions and dedupe (layer, row)
-    const usedPos = new Set<string>()
+    // Normalize positions: clamp x,y to [0,10] and resolve collisions
+    const usedPos: Array<{ x: number; y: number }> = []
     data.nodes = data.nodes.map((n: Record<string, unknown>, i: number) => {
       n = { ...n, id: n.id ?? `n${i}` }
-      let layer = Math.max(0, Math.min(5, Number(n.layer) || 0))
-      let row   = Math.max(0, Math.min(4, Number(n.row)   || 0))
-      for (let r = row; r <= row + 4; r++) {
-        const key = `${layer},${r}`
-        if (!usedPos.has(key)) { usedPos.add(key); row = r; break }
+      let x = Math.max(0, Math.min(10, parseFloat(String(n.x)) || 5))
+      let y = Math.max(0, Math.min(9, parseFloat(String(n.y)) || i * 2))
+      // Resolve collision: nudge until free
+      let tries = 0
+      while (usedPos.some(p => Math.abs(p.x - x) < 1.5 && Math.abs(p.y - y) < 1.5) && tries < 20) {
+        x = Math.min(10, x + 1.5)
+        if (x > 9) { x = 0; y = Math.min(9, y + 1.5) }
+        tries++
       }
-      return { ...n, layer, row }
+      usedPos.push({ x, y })
+      return { ...n, x, y }
     })
 
-    data.edges = data.edges.map((e: Record<string, unknown>, i: number) => ({ id: e.id ?? `e${i}`, from: e.from, to: e.to }))
+    // Strip edge labels, keep only from/to/id
+    data.edges = data.edges.map((e: Record<string, unknown>, i: number) => ({
+      id: e.id ?? `e${i}`, from: e.from, to: e.to,
+    }))
 
     return NextResponse.json({ data })
   } catch (err: unknown) {
