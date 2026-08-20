@@ -201,13 +201,7 @@ async function getAgentConfig(): Promise<{ systemPrompt: string; model: string }
 // ── LLM callers ───────────────────────────────────────────────────────────────
 
 async function callClaude(model: string, systemPrompt: string, history: Message[]): Promise<string> {
-  const { exec } = await import('child_process')
-  const { promisify } = await import('util')
-  const execAsync = promisify(exec)
-
-  const sq  = "'"
-  const esc = sq + "\\'" + sq
-  const safe = (s: string) => s.split(sq).join(esc)
+  const { spawn } = await import('child_process')
 
   const historyLines = history
     .slice(0, -1)
@@ -217,9 +211,23 @@ async function callClaude(model: string, systemPrompt: string, history: Message[
   const lastMsg = history[history.length - 1].content
   const fullMsg = historyLines ? `${historyLines}\nUsuario: ${lastMsg}` : lastMsg
 
-  const cmd = `claude --model ${model} --system-prompt '${safe(systemPrompt)}' -p '${safe(fullMsg)}'`
-  const result = await execAsync(cmd, { timeout: 90_000 })
-  return result.stdout.trim()
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', [
+      '--model', model,
+      '--system-prompt', systemPrompt,
+      '-p', fullMsg,
+    ], { timeout: 90_000 })
+
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (d: Buffer) => { stdout += d.toString() })
+    child.stderr.on('data', (d: Buffer) => { stderr += d.toString() })
+    child.on('close', (code: number | null) => {
+      if (code !== 0 && !stdout.trim()) reject(new Error(stderr || `claude exited ${code}`))
+      else resolve(stdout.trim())
+    })
+    child.on('error', reject)
+  })
 }
 
 // ── POST ──────────────────────────────────────────────────────────────────────
