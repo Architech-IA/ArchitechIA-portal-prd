@@ -672,7 +672,7 @@ export default function LeadHubPage() {
             <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2.5 pb-1.5">Pipeline</p>
             <div className="relative px-2 pb-2">
               {/* Vertical rail — single line behind all dots */}
-              <div className="absolute left-[22px] top-3 bottom-3 w-px bg-gray-800" />
+              <div className="absolute left-[27px] top-5 bottom-5 w-px bg-gray-800" />
 
               {PHASES.map((phase, i) => {
                 const status   = getPhaseStatus(phase.key)
