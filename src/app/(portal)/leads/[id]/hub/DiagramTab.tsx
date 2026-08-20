@@ -128,7 +128,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       })
       const j = await res.json()
       if (!res.ok) throw new Error(j.error ?? 'Error al generar')
-      setDiag(j.data); setSelected(null); setVp({ x: 0, y: 0, scale: 1 })
+      setDiag(j.data); setSelected(null); setTimeout(fitView, 50)
     } catch (e: unknown) {
       setGenError(e instanceof Error ? e.message : 'Error desconocido')
     } finally { setGenerating(false) }
@@ -141,6 +141,31 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       body: JSON.stringify({ leadId, data: diag }),
     }).finally(() => setSaving(false))
   }, [leadId, diag])
+
+  const fitView = useCallback(() => {
+    if (!svgRef.current || diag.nodes.length === 0) { setVp({ x: 0, y: 0, scale: 1 }); return }
+    const rect = svgRef.current.getBoundingClientRect()
+    const cW = rect.width, cH = rect.height
+    const margin = 48
+
+    const xs = diag.nodes.map(n => snap(n.x) * CELL + PAD)
+    const ys = diag.nodes.map(n => snap(n.y) * CELL + PAD)
+    const minX = Math.min(...xs)
+    const minY = Math.min(...ys)
+    const maxX = Math.max(...xs) + W
+    const maxY = Math.max(...ys) + H
+
+    const contentW = maxX - minX
+    const contentH = maxY - minY
+    const scale = Math.min(
+      (cW - margin * 2) / contentW,
+      (cH - margin * 2) / contentH,
+      1.5
+    )
+    const x = (cW - contentW * scale) / 2 - minX * scale
+    const y = (cH - contentH * scale) / 2 - minY * scale
+    setVp({ x, y, scale })
+  }, [diag.nodes])
 
   const onWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
     e.preventDefault()
@@ -228,7 +253,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             {[
               { icon: <ZoomIn size={13} />, fn: () => setVp(v => ({ ...v, scale: Math.min(3, v.scale * 1.2) })) },
               { icon: <ZoomOut size={13} />, fn: () => setVp(v => ({ ...v, scale: Math.max(0.25, v.scale * 0.83) })) },
-              { icon: <Maximize2 size={12} />, fn: () => setVp({ x: 0, y: 0, scale: 1 }) },
+              { icon: <Maximize2 size={12} />, fn: fitView },
             ].map((b, i) => (
               <button key={i} onClick={b.fn} className="w-7 h-7 flex items-center justify-center bg-gray-900/80 border border-gray-800 rounded-lg text-gray-600 hover:text-white hover:border-gray-600 transition-all">
                 {b.icon}
