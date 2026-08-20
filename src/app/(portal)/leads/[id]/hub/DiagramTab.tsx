@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Save, Loader2, Sparkles, X, ZoomIn, ZoomOut, Maximize2, Download } from 'lucide-react'
+import { Save, Loader2, Sparkles, X, ZoomIn, ZoomOut, Maximize2, Download, Info } from 'lucide-react'
 
 interface DiagNode {
   id: string; label: string; description?: string; type?: string; x: number; y: number
@@ -277,12 +277,34 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       {/* Toolbar */}
       <div className="flex items-start gap-3">
         <div className="flex-1 flex flex-col gap-1.5">
-          <label htmlFor="diag-title" className="sr-only">Nombre del diagrama</label>
-          <input id="diag-title" value={diag.title}
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="diag-title" className="sr-only">Nombre del diagrama</label>
+            <input id="diag-title" value={diag.title}
             onChange={e => setDiag(p => ({ ...p, title: e.target.value }))}
             placeholder="Nombre del diagrama..."
             className="bg-gray-900 text-white text-sm font-semibold px-3 py-2 rounded-xl border border-gray-800 focus:border-orange-500/60 focus:outline-none w-full transition-all"
           />
+            {/* Info tooltip */}
+            <div className="relative group shrink-0">
+              <button aria-label="Atajos del diagrama"
+                className="w-6 h-6 flex items-center justify-center rounded-full text-gray-600 hover:text-gray-300 hover:bg-gray-800 transition-all">
+                <Info size={13} />
+              </button>
+              <div className="absolute left-1/2 -translate-x-1/2 top-8 z-20 hidden group-hover:flex flex-col gap-1
+                bg-gray-900 border border-gray-700 rounded-xl px-3 py-2.5 shadow-xl w-64 pointer-events-none">
+                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-900 border-l border-t border-gray-700 rotate-45" />
+                {[
+                  ['Doble click', 'en celda vacía para agregar'],
+                  ['Shift + drag', 'entre nodos para conectar'],
+                  ['Drag', 'para mover componentes'],
+                ].map(([key, desc]) => (
+                  <p key={key} className="text-[11px] leading-snug text-gray-400">
+                    <span className="font-semibold text-gray-200">{key}</span> — {desc}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
           <label htmlFor="diag-desc" className="sr-only">Descripción del diagrama</label>
           <input id="diag-desc" value={diag.description}
             onChange={e => setDiag(p => ({ ...p, description: e.target.value }))}
@@ -312,10 +334,6 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           </button>
         </div>
       </div>
-
-      <p className="text-[11px] text-gray-500 -mt-1">
-        Doble click en celda vacía para agregar · Shift+drag entre nodos para conectar · Drag para mover
-      </p>
 
       {genError && (
         <div className="flex items-center gap-2 bg-red-950/40 border border-red-900/50 text-red-400 text-xs px-4 py-2.5 rounded-xl">
