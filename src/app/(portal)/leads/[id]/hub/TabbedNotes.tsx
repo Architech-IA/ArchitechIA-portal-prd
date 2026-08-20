@@ -90,7 +90,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
     content: tab.content || '',
     onUpdate({ editor }) { onChange(editor.getHTML()) },
     editorProps: {
-      attributes: { class: 'rich-notes-editor focus:outline-none min-h-[120px] text-sm text-white leading-relaxed' },
+      attributes: { class: 'rich-notes-editor focus:outline-none min-h-[360px] text-sm text-white leading-relaxed' },
     },
   }, [tab.id])
 
@@ -233,9 +233,9 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   const activeTab = tabs.find(t => t.id === activeId) ?? tabs[0]
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 overflow-hidden">
+    <div className="rounded-xl border border-gray-700/50 bg-[#1a1d23] overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-end border-b border-gray-700 bg-gray-900/50 overflow-x-auto">
+      <div className="flex items-end border-b border-gray-700/40 bg-[#14171e] overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = tab.id === activeId
           return (
