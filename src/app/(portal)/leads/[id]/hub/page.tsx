@@ -666,55 +666,68 @@ export default function LeadHubPage() {
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="flex-1 overflow-y-auto py-2 px-2">
-          {PHASES.map((phase, i) => {
-            const status   = getPhaseStatus(phase.key)
-            const isActive = active === phase.key
-            const c        = COLOR_MAP[phase.color]
-            const hasData  = getPhaseData(phase.key) !== null
+        {/* Timeline — panel */}
+        <div className="flex-1 overflow-y-auto px-3 py-3">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2.5 pb-1.5">Pipeline</p>
+            <div className="relative px-2 pb-2">
+              {/* Vertical rail — single line behind all dots */}
+              <div className="absolute left-[22px] top-3 bottom-3 w-px bg-gray-800" />
 
-            return (
-              <div key={phase.key} className="relative">
-                {/* Connector line */}
-                {i < PHASES.length - 1 && (
-                  <div className={`absolute left-[0.9rem] top-8 w-0.5 h-6 ${status === 'done' ? 'bg-orange-500/40' : 'bg-gray-800'}`} />
-                )}
+              {PHASES.map((phase, i) => {
+                const status   = getPhaseStatus(phase.key)
+                const isActive = active === phase.key
+                const c        = COLOR_MAP[phase.color]
+                const hasData  = getPhaseData(phase.key) !== null
+                const isDone   = status === 'done'
+                const isActSt  = status === 'active'
 
-                <button
-                  onClick={() => setActive(isActive ? null : phase.key)}
-                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all mb-0.5 text-left ${
-                    isActive ? `${c.bg} ${c.border} border` : 'hover:bg-gray-800/60'
-                  }`}
-                >
-                  {/* Status icon */}
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    status === 'done'   ? 'bg-orange-500/20 ring-2 ring-orange-500/30' :
-                    status === 'active' ? `${c.bg} ring-2 ${c.ring}` :
-                                         'bg-gray-800'
-                  }`}>
-                    {status === 'done'
-                      ? <CheckCircle2 size={11} className="text-orange-400" />
-                      : status === 'active'
-                      ? <div className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />
-                      : <Circle size={10} className="text-gray-700" />
-                    }
-                  </div>
+                return (
+                  <button
+                    key={phase.key}
+                    onClick={() => { setActive(phase.key); setTab('fases') }}
+                    className={`relative z-10 w-full flex items-center gap-2.5 px-2 py-2 rounded-xl transition-all duration-150 mb-0.5 text-left group ${
+                      isActive
+                        ? `${c.bg} ${c.border} border`
+                        : 'border border-transparent hover:bg-white/[0.04] hover:border-white/[0.06]'
+                    }`}
+                  >
+                    {/* Dot — sits on top of the rail */}
+                    <div className={`relative z-10 w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-150 ${
+                      isDone  ? 'bg-orange-500/20 ring-2 ring-orange-500/40' :
+                      isActSt ? `${c.bg} ring-2 ${c.ring}` :
+                                'bg-gray-900 ring-1 ring-gray-700/80'
+                    }`}>
+                      {isDone
+                        ? <CheckCircle2 size={12} className="text-orange-400" />
+                        : isActSt
+                        ? <div className={`w-2 h-2 rounded-full ${c.dot} animate-pulse`} />
+                        : <Circle size={10} className="text-gray-700 group-hover:text-gray-600 transition-colors" />
+                      }
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium ${isActive ? c.text : status === 'done' ? 'text-gray-300' : status === 'active' ? 'text-white' : 'text-gray-500'}`}>
-                      {phase.label}
-                    </p>
-                    {hasData && (
-                      <p className="text-[9px] text-orange-400/70">Con contenido</p>
-                    )}
-                  </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-semibold leading-tight transition-colors duration-150 ${
+                        isActive ? c.text :
+                        isDone   ? 'text-gray-300' :
+                        isActSt  ? 'text-white' :
+                                   'text-gray-500 group-hover:text-gray-400'
+                      }`}>
+                        {phase.label}
+                      </p>
+                      {hasData && (
+                        <p className="text-[9px] text-orange-400/60 mt-0.5">Con contenido</p>
+                      )}
+                    </div>
 
-                  <ChevronRight size={11} className={`flex-shrink-0 transition-transform ${isActive ? `rotate-90 ${c.text}` : 'text-gray-700'}`} />
-                </button>
-              </div>
-            )
-          })}
+                    <ChevronRight size={11} className={`flex-shrink-0 transition-all duration-150 ${
+                      isActive ? `${c.text} opacity-100` : 'text-gray-700 opacity-0 group-hover:opacity-60'
+                    }`} />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
