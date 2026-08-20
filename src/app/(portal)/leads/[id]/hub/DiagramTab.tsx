@@ -20,6 +20,11 @@ const TYPE_COLOR: Record<string, string> = {
   user: '#8b5cf6', frontend: '#3b82f6', api: '#06b6d4',
   backend: '#f59e0b', database: '#10b981', queue: '#eab308', external: '#6b7280',
 }
+// Short label shown in the node as text fallback (not color-only)
+const TYPE_ABBR: Record<string, string> = {
+  user: 'USR', frontend: 'FE', api: 'API',
+  backend: 'BE', database: 'DB', queue: 'MQ', external: 'EXT',
+}
 const NODE_TYPES = Object.keys(TYPE_COLOR)
 function tc(type?: string) { return TYPE_COLOR[type ?? ''] ?? '#3a5a7a' }
 
@@ -61,6 +66,12 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   const origin    = useRef({ mx: 0, my: 0, vx: 0, vy: 0 })
   const panMoved  = useRef(false)
   const hasDragged = useRef(false)
+  // Detect system reduced-motion preference to skip CSS transitions
+  const reducedMotion = useRef(
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+  const nodeTrans = reducedMotion.current ? 'none' : 'fill 0.12s, stroke 0.12s'
+  const opaTrans  = reducedMotion.current ? 'none' : 'opacity 0.12s'
 
   useEffect(() => { vpRef.current = vp }, [vp])
   useEffect(() => { diagRef.current = diag }, [diag])
@@ -255,7 +266,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
     : false
 
   if (!loaded) return (
-    <div className="flex items-center justify-center h-64 text-gray-600 gap-2">
+    <div className="flex items-center justify-center h-64 text-gray-500 gap-2">
       <Loader2 size={18} className="animate-spin" /> Cargando...
     </div>
   )
@@ -266,41 +277,50 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       {/* Toolbar */}
       <div className="flex items-start gap-3">
         <div className="flex-1 flex flex-col gap-1.5">
-          <input value={diag.title} onChange={e => setDiag(p => ({ ...p, title: e.target.value }))}
+          <label htmlFor="diag-title" className="sr-only">Nombre del diagrama</label>
+          <input id="diag-title" value={diag.title}
+            onChange={e => setDiag(p => ({ ...p, title: e.target.value }))}
             placeholder="Nombre del diagrama..."
             className="bg-gray-900 text-white text-sm font-semibold px-3 py-2 rounded-xl border border-gray-800 focus:border-orange-500/60 focus:outline-none w-full transition-all"
           />
-          <input value={diag.description} onChange={e => setDiag(p => ({ ...p, description: e.target.value }))}
+          <label htmlFor="diag-desc" className="sr-only">Descripción del diagrama</label>
+          <input id="diag-desc" value={diag.description}
+            onChange={e => setDiag(p => ({ ...p, description: e.target.value }))}
             placeholder="Descripción..."
             className="bg-transparent text-gray-500 text-xs px-3 py-1.5 rounded-xl border border-transparent hover:border-gray-800 focus:outline-none w-full transition-all"
           />
         </div>
         <div className="flex gap-2 shrink-0 pt-1">
+          {/* Primary action */}
           <button onClick={generate} disabled={generating || saving}
+            aria-label="Generar diagrama con IA"
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white transition-all active:scale-95">
             {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             {generating ? 'Generando...' : 'Generar'}
           </button>
           <button onClick={exportPng}
+            aria-label="Exportar como PNG"
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-300 transition-all active:scale-95">
             <Download size={14} /> PNG
           </button>
+          {/* Secondary action — outline style to distinguish from primary */}
           <button onClick={save} disabled={saving || generating}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white transition-all active:scale-95">
+            aria-label="Guardar diagrama"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border border-orange-600/60 text-orange-400 hover:bg-orange-600/10 disabled:opacity-50 transition-all active:scale-95">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Guardar
           </button>
         </div>
       </div>
 
-      <p className="text-[11px] text-gray-700 -mt-1">
+      <p className="text-[11px] text-gray-500 -mt-1">
         Doble click en celda vacía para agregar · Shift+drag entre nodos para conectar · Drag para mover
       </p>
 
       {genError && (
         <div className="flex items-center gap-2 bg-red-950/40 border border-red-900/50 text-red-400 text-xs px-4 py-2.5 rounded-xl">
           <X size={13} className="shrink-0" /><span className="flex-1">{genError}</span>
-          <button onClick={() => setGenError(null)}><X size={12} /></button>
+          <button onClick={() => setGenError(null)} aria-label="Cerrar error"><X size={12} /></button>
         </div>
       )}
 
@@ -310,11 +330,12 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
 
           <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
             {[
-              { icon: <ZoomIn size={13} />, fn: () => setVp(v => ({ ...v, scale: Math.min(3, v.scale * 1.2) })) },
-              { icon: <ZoomOut size={13} />, fn: () => setVp(v => ({ ...v, scale: Math.max(0.25, v.scale * 0.83) })) },
-              { icon: <Maximize2 size={12} />, fn: fitView },
+              { icon: <ZoomIn size={13} />, fn: () => setVp(v => ({ ...v, scale: Math.min(3, v.scale * 1.2) })), label: 'Acercar' },
+              { icon: <ZoomOut size={13} />, fn: () => setVp(v => ({ ...v, scale: Math.max(0.25, v.scale * 0.83) })), label: 'Alejar' },
+              { icon: <Maximize2 size={12} />, fn: fitView, label: 'Ajustar vista' },
             ].map((b, i) => (
-              <button key={i} onClick={b.fn} className="w-7 h-7 flex items-center justify-center bg-gray-900/80 border border-gray-800 rounded-lg text-gray-600 hover:text-white hover:border-gray-600 transition-all">
+              <button key={i} onClick={b.fn} aria-label={b.label}
+                className="w-7 h-7 flex items-center justify-center bg-gray-900/80 border border-gray-800 rounded-lg text-gray-500 hover:text-white hover:border-gray-600 transition-all">
                 {b.icon}
               </button>
             ))}
@@ -335,8 +356,8 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
 
           {!generating && diag.nodes.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
-              <p className="text-sm text-gray-700">Sin diagrama</p>
-              <p className="text-xs text-gray-800">Generá o hacé doble click para agregar componentes</p>
+              <p className="text-sm text-gray-400">Sin diagrama</p>
+              <p className="text-xs text-gray-500">Generá o hacé doble click para agregar componentes</p>
             </div>
           )}
 
@@ -372,7 +393,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                   strokeWidth="2" strokeDasharray="4 3" />
               )}
 
-              {/* Edges */}
+              {/* Edges — increased contrast (#3d7ab0 instead of #2e4a6a) */}
               {diag.edges.map(edge => {
                 const fn = diag.nodes.find(n => n.id === edge.from)
                 const tn = diag.nodes.find(n => n.id === edge.to)
@@ -381,8 +402,8 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                 const isSel = selected === fn.id || selected === tn.id
                 return (
                   <line key={edge.id} x1={fa.cx} y1={fa.cy} x2={ta.cx} y2={ta.cy}
-                    stroke={isSel ? '#f97316' : '#2e4a6a'} strokeWidth={isSel ? 2.5 : 1.5}
-                    opacity={selected && !isSel ? 0.1 : 1} />
+                    stroke={isSel ? '#f97316' : '#3d7ab0'} strokeWidth={isSel ? 2.5 : 1.5}
+                    opacity={selected && !isSel ? 0.15 : 1} />
                 )
               })}
 
@@ -411,7 +432,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                     style={{
                       cursor: connectFrom ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
                       opacity: selected && !sel && !connected ? 0.2 : isDragging ? 0.5 : 1,
-                      transition: isDragging ? 'none' : 'opacity 0.12s',
+                      transition: opaTrans,
                     }}
                     onMouseEnter={() => setHoveredNode(node.id)}
                     onMouseLeave={() => setHoveredNode(null)}
@@ -423,18 +444,25 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                     )}
                     <rect x={x} y={y} width={W} height={H} rx="8"
                       fill={fill} stroke={stroke} strokeWidth={sw}
-                      style={{ transition: 'fill 0.12s, stroke 0.12s' }} />
-                    {/* Type color bar */}
+                      style={{ transition: nodeTrans }} />
+                    {/* Color bar (visual accent) */}
                     <rect x={x + 1} y={y + 1} width={W - 2} height={4} rx="4" fill={color} opacity="0.85" />
+                    {/* Type abbreviation badge — text fallback so color is not the only indicator */}
+                    {node.type && (
+                      <text x={x + W - 7} y={y + 14} textAnchor="end" fontSize="8" fontWeight={700}
+                        fill={color} opacity="0.75" style={{ pointerEvents: 'none', letterSpacing: '0.04em' }}>
+                        {TYPE_ABBR[node.type] ?? node.type.slice(0, 3).toUpperCase()}
+                      </text>
+                    )}
                     <text x={x + W / 2} y={y + (node.description ? H / 2 - 1 : H / 2 + 6)}
                       textAnchor="middle" fontSize="15" fontWeight={700} fill={txtFill}
-                      style={{ pointerEvents: 'none', transition: 'fill 0.12s' }}>
+                      style={{ pointerEvents: 'none', transition: nodeTrans }}>
                       {node.label.length > 20 ? node.label.slice(0, 19) + '…' : node.label}
                     </text>
                     {node.description && (
                       <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="12"
-                        fill={hov ? '#94a3b8' : '#64748b'}
-                        style={{ pointerEvents: 'none', transition: 'fill 0.12s' }}>
+                        fill={hov ? '#94a3b8' : '#7a9ab8'}
+                        style={{ pointerEvents: 'none', transition: nodeTrans }}>
                         {node.description.length > 26 ? node.description.slice(0, 25) + '…' : node.description}
                       </text>
                     )}
@@ -450,25 +478,25 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           <div className="w-56 shrink-0 bg-gray-900 rounded-2xl border border-gray-800 p-4 flex flex-col gap-3 self-start">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-orange-400 truncate">{selNode.label}</span>
-              <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-gray-300"><X size={12} /></button>
+              <button onClick={() => setSelected(null)} aria-label="Cerrar panel" className="text-gray-600 hover:text-gray-300"><X size={12} /></button>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Nombre</label>
-              <input value={selNode.label}
+              <label htmlFor="node-label" className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Nombre</label>
+              <input id="node-label" value={selNode.label}
                 onChange={e => setDiag(p => ({ ...p, nodes: p.nodes.map(n => n.id === selNode.id ? { ...n, label: e.target.value } : n) }))}
                 className="bg-gray-800 text-white text-sm px-2.5 py-1.5 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 w-full"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Descripción</label>
-              <input value={selNode.description ?? ''}
+              <label htmlFor="node-desc" className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Descripción</label>
+              <input id="node-desc" value={selNode.description ?? ''}
                 onChange={e => setDiag(p => ({ ...p, nodes: p.nodes.map(n => n.id === selNode.id ? { ...n, description: e.target.value } : n) }))}
                 className="bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 w-full"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Tipo</label>
-              <select value={selNode.type ?? ''}
+              <label htmlFor="node-type" className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Tipo</label>
+              <select id="node-type" value={selNode.type ?? ''}
                 onChange={e => setDiag(p => ({ ...p, nodes: p.nodes.map(n => n.id === selNode.id ? { ...n, type: e.target.value || undefined } : n) }))}
                 className="bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 w-full">
                 <option value="">— sin tipo —</option>
@@ -483,14 +511,15 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               if (!edges.length) return null
               return (
                 <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-800">
-                  <p className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Conectado con</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Conectado con</p>
                   {edges.map(edge => {
                     const other = diag.nodes.find(n => n.id === (edge.from === selNode.id ? edge.to : edge.from))
                     return (
                       <div key={edge.id} className="flex items-center gap-1.5 group text-[11px] text-gray-400">
-                        <span className="text-gray-700">—</span>
+                        <span className="text-gray-600">—</span>
                         <span className="flex-1 truncate">{other?.label}</span>
                         <button onClick={() => setDiag(p => ({ ...p, edges: p.edges.filter(e2 => e2.id !== edge.id) }))}
+                          aria-label={`Eliminar conexión con ${other?.label}`}
                           className="opacity-0 group-hover:opacity-100 text-red-500"><X size={9} /></button>
                       </div>
                     )
@@ -508,12 +537,13 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
         )}
       </div>
 
-      {/* Type legend */}
-      <div className="flex flex-wrap gap-2">
+      {/* Type legend — 12px text for readability */}
+      <div className="flex flex-wrap gap-3">
         {NODE_TYPES.map(t => (
-          <div key={t} className="flex items-center gap-1.5 text-[10px] text-gray-600">
-            <div className="w-2 h-2 rounded-full" style={{ background: TYPE_COLOR[t] }} />
-            {t}
+          <div key={t} className="flex items-center gap-1.5 text-xs text-gray-400">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: TYPE_COLOR[t] }} />
+            <span className="font-medium" style={{ color: TYPE_COLOR[t] }}>{TYPE_ABBR[t]}</span>
+            <span className="text-gray-500">{t}</span>
           </div>
         ))}
       </div>
