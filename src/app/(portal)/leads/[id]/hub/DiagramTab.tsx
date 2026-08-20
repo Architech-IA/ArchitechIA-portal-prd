@@ -46,8 +46,9 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   const [genError, setGenError]     = useState<string | null>(null)
   const [selected, setSelected]     = useState<string | null>(null)
   const [vp, setVp]                 = useState({ x: 0, y: 0, scale: 1 })
-  const [dragTarget, setDragTarget] = useState<{ gx: number; gy: number } | null>(null)
+  const [dragTarget, setDragTarget]     = useState<{ gx: number; gy: number } | null>(null)
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+  const [hoveredNode, setHoveredNode]   = useState<string | null>(null)
 
   const svgRef    = useRef<SVGSVGElement>(null)
   const vpRef     = useRef(vp)
@@ -309,11 +310,16 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               {/* Nodes */}
               {diag.nodes.map(node => {
                 const { x, y } = nodeRect(node)
-                const sel = selected === node.id
+                const sel      = selected === node.id
+                const hov      = hoveredNode === node.id && !draggingNodeId
                 const isDragging = draggingNodeId === node.id
                 const connected = !!selected && !sel && diag.edges.some(
                   e => (e.from === selected && e.to === node.id) || (e.to === selected && e.from === node.id)
                 )
+                const fill   = sel ? '#1a2d40' : hov ? '#1e2a38' : '#161c27'
+                const stroke = sel ? '#f97316' : hov ? '#5a8ab0' : connected ? '#4a6080' : '#2a3a50'
+                const sw     = sel ? 2 : hov ? 2 : 1.5
+                const labelColor = sel ? '#f97316' : hov ? '#f1f5f9' : '#e2e8f0'
                 return (
                   <g key={node.id} data-node="1"
                     style={{
@@ -321,26 +327,36 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                       opacity: selected && !sel && !connected ? 0.2 : isDragging ? 0.5 : 1,
                       transition: isDragging ? 'none' : 'opacity 0.12s',
                     }}
+                    onMouseEnter={() => setHoveredNode(node.id)}
+                    onMouseLeave={() => setHoveredNode(null)}
                     onMouseDown={e => startNodeDrag(e, node.id)}
                     onClick={e => {
                       e.stopPropagation()
                       if (hasDragged.current) return
                       setSelected(sel ? null : node.id)
                     }}>
+                    {/* Glow on hover/select */}
+                    {(hov || sel) && (
+                      <rect x={x - 3} y={y - 3} width={W + 6} height={H + 6} rx="11"
+                        fill="none"
+                        stroke={sel ? '#f97316' : '#3a6a94'}
+                        strokeWidth="1" opacity="0.35"
+                      />
+                    )}
                     <rect x={x} y={y} width={W} height={H} rx="8"
-                      fill={sel ? '#152030' : '#161c27'}
-                      stroke={sel ? '#f97316' : connected ? '#4a6080' : '#2a3a50'}
-                      strokeWidth={sel ? 2 : 1.5}
+                      fill={fill} stroke={stroke} strokeWidth={sw}
+                      style={{ transition: 'fill 0.12s, stroke 0.12s' }}
                     />
                     <text x={x + W / 2} y={y + (node.description ? H / 2 - 1 : H / 2 + 6)}
                       textAnchor="middle" fontSize="13" fontWeight={700}
-                      fill={sel ? '#f97316' : '#e2e8f0'}
-                      style={{ pointerEvents: 'none' }}>
+                      fill={labelColor}
+                      style={{ pointerEvents: 'none', transition: 'fill 0.12s' }}>
                       {node.label.length > 20 ? node.label.slice(0, 19) + '…' : node.label}
                     </text>
                     {node.description && (
-                      <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="10" fill="#64748b"
-                        style={{ pointerEvents: 'none' }}>
+                      <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="10"
+                        fill={hov ? '#94a3b8' : '#64748b'}
+                        style={{ pointerEvents: 'none', transition: 'fill 0.12s' }}>
                         {node.description.length > 26 ? node.description.slice(0, 25) + '…' : node.description}
                       </text>
                     )}
