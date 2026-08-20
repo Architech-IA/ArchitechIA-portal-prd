@@ -379,7 +379,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                       {node.label.length > 20 ? node.label.slice(0, 19) + '…' : node.label}
                     </text>
                     {node.description && (
-                      <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="11" fill={hov ? '#94a3b8' : '#64748b'}
+                      <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="12" fill={hov ? '#94a3b8' : '#64748b'}
                         style={{ pointerEvents: 'none', transition: 'fill 0.12s' }}>
                         {node.description.length > 26 ? node.description.slice(0, 25) + '…' : node.description}
                       </text>
