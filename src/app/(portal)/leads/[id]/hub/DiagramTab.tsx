@@ -272,7 +272,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   )
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 h-full">
 
       {/* Toolbar */}
       <div className="flex items-start gap-3">
@@ -336,9 +336,9 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
         </div>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-1 min-h-0">
         {/* Canvas */}
-        <div className="flex-1 rounded-2xl border border-gray-700 bg-[#111318] overflow-hidden relative" style={{ minHeight: 480 }}>
+        <div className="flex-1 rounded-2xl border border-gray-700 bg-[#111318] overflow-hidden relative h-full">
 
           <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
             {[
@@ -374,7 +374,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           )}
 
           <svg ref={svgRef}
-            style={{ width: '100%', height: '100%', minHeight: 480, display: 'block',
+            style={{ width: '100%', height: '100%', display: 'block',
               cursor: connectFrom ? 'crosshair' : panning.current ? 'grabbing' : 'default', userSelect: 'none' }}
             onWheel={onWheel} onMouseDown={onSvgDown} onMouseMove={onSvgMove} onMouseUp={onSvgUp}
             onDoubleClick={onSvgDblClick} onMouseLeave={() => { panning.current = false }}>
@@ -550,7 +550,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       </div>
 
       {/* Type legend — 12px text for readability */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 shrink-0">
         {NODE_TYPES.map(t => (
           <div key={t} className="flex items-center gap-1.5 text-xs text-gray-400">
             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: TYPE_COLOR[t] }} />

@@ -730,7 +730,7 @@ export default function LeadHubPage() {
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className={`flex-1 ${tab === 'diagrama' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
 
           {/* FASES */}
           {tab === 'fases' && (active ? (
@@ -782,7 +782,7 @@ export default function LeadHubPage() {
           )}
 
           {tab === 'diagrama' && (
-            <div className="p-6"><DiagramTab leadId={id} /></div>
+            <div className="p-4 flex-1 flex flex-col min-h-0"><DiagramTab leadId={id} /></div>
           )}
 
         </div>
