@@ -171,6 +171,7 @@ export default function CouncilView() {
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [leadContextLoaded, setLeadContextLoaded] = useState<string | null>(null)
   const [history, setHistory] = useState<Session[]>([])
   const [expandedSession, setExpandedSession] = useState<string | null>(null)
   const [otraRespuestaOpen, setOtraRespuestaOpen] = useState(false)
@@ -277,8 +278,9 @@ export default function CouncilView() {
         body: JSON.stringify({ message: content }),
       })
       if (res.ok) {
-        const { reply } = await res.json()
-        setChatMessages(prev => [...prev, { role: 'assistant', content: reply }])
+        const data = await res.json()
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+        if (data.leadContextLoaded) setLeadContextLoaded(data.leadContextLoaded)
       }
     } finally {
       setChatLoading(false)
@@ -312,6 +314,7 @@ export default function CouncilView() {
       const data = await res.json()
       setHistory(data.sessions ?? [])
       setChatMessages([])
+      setLeadContextLoaded(null)
       setExtracted(null)
       setExpandedSession(null)
     }
@@ -338,6 +341,7 @@ export default function CouncilView() {
         await loadProposals()
         setExtracted(null)
         setChatMessages([])
+      setLeadContextLoaded(null)
         setMode('proposals')
         setSelectedId(proposal.id)
       }
@@ -821,6 +825,14 @@ export default function CouncilView() {
               </div>
             )}
 
+            {/* Lead context indicator */}
+            {leadContextLoaded && (
+              <div className="mx-4 mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                <span style={{ fontSize: '11px', color: '#818cf8' }}>📂</span>
+                <span style={{ fontSize: '11px', color: '#818cf8', flex: 1 }}>Contexto cargado: <strong>{leadContextLoaded}</strong></span>
+                <button onClick={() => setLeadContextLoaded(null)} style={{ fontSize: '10px', color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>✕</button>
+              </div>
+            )}
             {/* Input */}
             <div className="px-4 pb-4 flex-shrink-0 border-t border-white/5 pt-3">
               <div className="flex gap-2">

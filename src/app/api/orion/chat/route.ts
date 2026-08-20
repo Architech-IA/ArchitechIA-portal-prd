@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { parseUTC5 } from '@/lib/timezone'
 
 const OPENCODE_URL  = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY  = process.env.OPENCODE_API_KEY ?? ''
@@ -9,6 +10,166 @@ const DEFAULT_MODEL = 'opencode-go/kimi-k2.5'
 const DEFAULT_SYSTEM = `Eres Orión, CEO y orquestador de ArchiTechIA. Coordinas, sintetizas y alineas. No tomas partido — buscas consenso, resumes posiciones y defines próximos pasos claros. Siempre respondés en el idioma del usuario.`
 
 type Message = { role: 'user' | 'assistant'; content: string }
+
+// ── Lead context skill ────────────────────────────────────────────────────────
+
+const LEAD_TRIGGERS = /\b(lee|leé|leer|revisa|revisar|analiza|analizar|contextualiza|contextualizar|valida|validar|resume|resumir|hub|lead)\b/i
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function extractCompanyName(message: string): string | null {
+  // Quoted name: "Previsora" or 'Previsora'
+  const quoted = message.match(/["']([^"']{3,60})["']/)
+  if (quoted) return quoted[1].trim()
+
+  // "lead de X" / "hub de X" / "el lead X"
+  const pattern = message.match(/\b(?:lead|hub|empresa|cliente)\s+(?:de\s+|del\s+)?([A-ZÁÉÍÓÚÜÑ][A-Za-záéíóúüñ\s&\.]{2,50})/i)
+  if (pattern) return pattern[1].trim()
+
+  // Trigger word + subsequent capitalized words
+  const triggerMatch = message.match(/(?:lee|revisa|analiza|contextualiza|valida|resume)\s+(?:el\s+lead\s+(?:de\s+)?)?([A-ZÁÉÍÓÚÜÑ][A-Za-záéíóúüñ\s&\.]{2,50})/i)
+  if (triggerMatch) return triggerMatch[1].trim()
+
+  return null
+}
+
+async function fetchLeadContext(companyName: string): Promise<string | null> {
+  const leads = await prisma.lead.findMany({
+    where: { companyName: { contains: companyName, mode: 'insensitive' } },
+    take: 1,
+    include: {
+      proposals: { orderBy: { createdAt: 'desc' }, take: 1 },
+      activities: {
+        where: { type: { in: ['CALL', 'EMAIL', 'MEETING', 'WHATSAPP'] } },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        include: {
+          user: { select: { name: true } },
+          meeting: { select: { title: true, type: true, status: true, date: true, location: true, link: true } },
+        },
+      },
+      solucion: {
+        include: {
+          backlogItems: {
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+            include: { sprint: { select: { name: true, sprintCode: true } } },
+          },
+        },
+      },
+    },
+  })
+
+  if (!leads.length) return null
+  const lead = leads[0]
+
+  // Hub phases
+  const hubPhases = await prisma.leadHub.findMany({
+    where: { leadId: lead.id },
+    include: { files: { select: { name: true, size: true, uploadedBy: true } } },
+  })
+
+  const STATUS_LABELS: Record<string, string> = {
+    NEW: 'Nuevo', CONTACTED: 'Contactado', QUALIFIED: 'Calificado',
+    PROPOSAL_SENT: 'Propuesta enviada', NEGOTIATION: 'Negociación',
+    WON: 'Ganado', LOST: 'Perdido',
+  }
+
+  const INT_LABELS: Record<string, string> = { CALL: 'Llamada', EMAIL: 'Email', MEETING: 'Reunión', WHATSAPP: 'WhatsApp' }
+  const MEET_STATUS: Record<string, string> = { SCHEDULED: 'Programada', COMPLETED: 'Completada', CANCELLED: 'Cancelada' }
+
+  const lines: string[] = []
+  lines.push(`━━━ CONTEXTO DEL LEAD: ${lead.companyName.toUpperCase()} ━━━`)
+  lines.push(`Empresa: ${lead.companyName}`)
+  lines.push(`Contacto: ${lead.contactName} | ${lead.email}${lead.phone ? ' | ' + lead.phone : ''}`)
+  lines.push(`Estado: ${STATUS_LABELS[lead.status] ?? lead.status}`)
+  lines.push(`Valor estimado: $${lead.estimatedValue.toLocaleString('es-CO')}`)
+  lines.push(`Origen: ${lead.source}`)
+  if (lead.scope) lines.push(`Alcance: ${lead.scope}`)
+  if (lead.notes) lines.push(`Notas generales: ${lead.notes}`)
+  lines.push('')
+
+  // Hub phases
+  const PHASE_LABELS: Record<string, string> = {
+    identificacion: 'Identificación', contacto: 'Contacto', diagnostico: 'Diagnóstico',
+    demo: 'Demo', propuesta: 'Propuesta', negociacion: 'Negociación', resultado: 'Resultado',
+  }
+  const PHASES_ORDER = ['identificacion', 'contacto', 'diagnostico', 'demo', 'propuesta', 'negociacion', 'resultado']
+
+  lines.push('📋 FASES DEL HUB:')
+  for (const phaseKey of PHASES_ORDER) {
+    const hub = hubPhases.find(h => h.phase === phaseKey)
+    const label = PHASE_LABELS[phaseKey] ?? phaseKey
+    if (!hub || !hub.content) {
+      lines.push(`  [${label}] Sin contenido`)
+    } else {
+      const text = stripHtml(hub.content)
+      lines.push(`  [${label}]:`)
+      text.split('\n').filter(Boolean).forEach(l => lines.push(`    ${l}`))
+      if (hub.files.length > 0) {
+        lines.push(`    Archivos adjuntos: ${hub.files.map(f => f.name).join(', ')}`)
+      }
+    }
+  }
+  lines.push('')
+
+  // Interactions
+  if (lead.activities.length > 0) {
+    lines.push('🗣️ INTERACCIONES (más recientes):')
+    for (const act of lead.activities) {
+      const date = new Date(act.date ?? act.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+      if (act.meeting) {
+        lines.push(`  • REUNIÓN VINCULADA | ${date} | ${act.user?.name ?? 'Sistema'}`)
+        lines.push(`    Título: ${act.meeting.title} | ${MEET_STATUS[act.meeting.status] ?? act.meeting.status}`)
+        if (act.meeting.location) lines.push(`    Lugar: ${act.meeting.location}`)
+      } else {
+        lines.push(`  • ${INT_LABELS[act.type] ?? act.type} | ${date} | ${act.user?.name ?? 'Sistema'}: ${act.description}`)
+      }
+    }
+    lines.push('')
+  }
+
+  // Proposal
+  if (lead.proposals.length > 0) {
+    const p = lead.proposals[0]
+    const PROP_STATUS: Record<string, string> = { DRAFT: 'Borrador', SENT: 'Enviada', ACCEPTED: 'Aceptada', REJECTED: 'Rechazada' }
+    lines.push('📄 PROPUESTA:')
+    lines.push(`  Título: ${p.title}`)
+    lines.push(`  Estado: ${PROP_STATUS[p.status] ?? p.status} | Monto: $${p.amount.toLocaleString('es-CO')}`)
+    if (p.description) lines.push(`  Descripción: ${p.description.slice(0, 300)}`)
+    lines.push('')
+  }
+
+  // Backlog / solution
+  if (lead.solucion?.backlogItems.length) {
+    const items = lead.solucion.backlogItems
+    const STATUS_ITEM: Record<string, string> = { TODO: 'Por hacer', IN_PROGRESS: 'En progreso', DONE: 'Hecho', BACKLOG: 'Backlog' }
+    lines.push(`🗂️ SOLUCIÓN ASOCIADA: ${lead.solucion.nombre}`)
+    lines.push(`  Backlog items (${items.length}):`)
+    for (const item of items.slice(0, 15)) {
+      lines.push(`    - [${STATUS_ITEM[item.status] ?? item.status}] ${item.title}${item.sprint ? ' (' + item.sprint.name + ')' : ''}`)
+    }
+    lines.push('')
+  }
+
+  lines.push('━━━ FIN CONTEXTO DEL LEAD ━━━')
+  return lines.join('\n')
+}
+
+// ── Conversation persistence ──────────────────────────────────────────────────
 
 async function loadHistory(agentSlug: string, channelType: string, channelId: string): Promise<Message[]> {
   const conv = await prisma.agentConversation.findUnique({
@@ -37,6 +198,8 @@ async function getAgentConfig(): Promise<{ systemPrompt: string; model: string }
   }
 }
 
+// ── LLM callers ───────────────────────────────────────────────────────────────
+
 async function callClaude(model: string, systemPrompt: string, history: Message[]): Promise<string> {
   const { exec } = await import('child_process')
   const { promisify } = await import('util')
@@ -59,15 +222,36 @@ async function callClaude(model: string, systemPrompt: string, history: Message[
   return result.stdout.trim()
 }
 
+// ── POST ──────────────────────────────────────────────────────────────────────
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const { message, channelType = 'portal', channelId = 'anonymous', stream = false } = body
 
   if (!message?.trim()) return NextResponse.json({ error: 'message requerido' }, { status: 400 })
 
-  const { systemPrompt, model } = await getAgentConfig()
+  const { systemPrompt: baseSystemPrompt, model } = await getAgentConfig()
   const isOpenCode = model.startsWith('opencode-go/') || model.startsWith('opencode/')
   const isClaude   = model.startsWith('claude')
+
+  // ── Lead skill: detect intent and inject context ──
+  let systemPrompt = baseSystemPrompt
+  let leadContextNote = ''
+
+  if (LEAD_TRIGGERS.test(message)) {
+    const companyName = extractCompanyName(message)
+    if (companyName) {
+      try {
+        const context = await fetchLeadContext(companyName)
+        if (context) {
+          systemPrompt = `${baseSystemPrompt}\n\nEl usuario te ha pedido que analices un lead. A continuación está toda la información disponible del lead en el sistema. Úsala para responder con precisión y profundidad.\n\n${context}`
+          leadContextNote = companyName
+        }
+      } catch (e) {
+        console.error('[Orion] Lead context fetch error:', e)
+      }
+    }
+  }
 
   const history = await loadHistory('orion', channelType, channelId)
   history.push({ role: 'user', content: message.trim() })
@@ -78,7 +262,7 @@ export async function POST(req: NextRequest) {
       const upstream = await fetch(OPENCODE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}` },
-        body: JSON.stringify({ model: modelId, messages: [{ role: 'system', content: systemPrompt }, ...history], max_tokens: 1024, stream: true }),
+        body: JSON.stringify({ model: modelId, messages: [{ role: 'system', content: systemPrompt }, ...history], max_tokens: 2048, stream: true }),
         signal: AbortSignal.timeout(60_000),
       })
       if (!upstream.ok) return NextResponse.json({ error: await upstream.text() }, { status: upstream.status })
@@ -125,8 +309,8 @@ export async function POST(req: NextRequest) {
       const res = await fetch(OPENCODE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}` },
-        body: JSON.stringify({ model: modelId, messages: [{ role: 'system', content: systemPrompt }, ...history], max_tokens: 1024 }),
-        signal: AbortSignal.timeout(30_000),
+        body: JSON.stringify({ model: modelId, messages: [{ role: 'system', content: systemPrompt }, ...history], max_tokens: 2048 }),
+        signal: AbortSignal.timeout(60_000),
       })
       if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: res.status })
       const data = await res.json()
@@ -156,7 +340,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    return NextResponse.json({ reply })
+    return NextResponse.json({ reply, leadContextLoaded: leadContextNote || undefined })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[Orion] LLM error', msg.slice(0, 300))
@@ -164,7 +348,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET — returns past sessions (completed conversations) for the history sidebar
+// ── GET — past sessions ───────────────────────────────────────────────────────
+
 export async function GET(req: NextRequest) {
   const { getToken } = await import('next-auth/jwt')
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
@@ -180,7 +365,8 @@ export async function GET(req: NextRequest) {
   })
 }
 
-// DELETE — closes the current conversation: moves messages → sessions, clears messages
+// ── DELETE — close session ────────────────────────────────────────────────────
+
 export async function DELETE(req: NextRequest) {
   const { getToken } = await import('next-auth/jwt')
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
