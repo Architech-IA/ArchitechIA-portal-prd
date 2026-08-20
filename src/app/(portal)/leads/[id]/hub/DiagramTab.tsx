@@ -47,14 +47,14 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   const [selected, setSelected]     = useState<string | null>(null)
   const [vp, setVp]                 = useState({ x: 0, y: 0, scale: 1 })
   const [dragTarget, setDragTarget] = useState<{ gx: number; gy: number } | null>(null)
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
 
-  const svgRef       = useRef<SVGSVGElement>(null)
-  const vpRef        = useRef(vp)
-  const panning      = useRef(false)
-  const origin       = useRef({ mx: 0, my: 0, vx: 0, vy: 0 })
-  const panMoved     = useRef(false)
-  const draggingId   = useRef<string | null>(null)
-  const hasDragged   = useRef(false)
+  const svgRef    = useRef<SVGSVGElement>(null)
+  const vpRef     = useRef(vp)
+  const panning   = useRef(false)
+  const origin    = useRef({ mx: 0, my: 0, vx: 0, vy: 0 })
+  const panMoved  = useRef(false)
+  const hasDragged = useRef(false)
 
   useEffect(() => { vpRef.current = vp }, [vp])
 
@@ -65,35 +65,32 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       .catch(() => setLoaded(true))
   }, [leadId])
 
-  // Convert mouse event to SVG content coords
+  // Convert client coords → SVG content coords (accounts for pan/zoom)
   const clientToSvg = useCallback((clientX: number, clientY: number) => {
     const el = svgRef.current; if (!el) return null
     const rect = el.getBoundingClientRect()
-    const px = (clientX - rect.left) / rect.width  * el.viewBox?.baseVal?.width  || clientX - rect.left
-    const py = (clientY - rect.top)  / rect.height * el.viewBox?.baseVal?.height || clientY - rect.top
-    const vp = vpRef.current
-    return { svgX: (px - vp.x) / vp.scale, svgY: (py - vp.y) / vp.scale }
+    const px = (clientX - rect.left)
+    const py = (clientY - rect.top)
+    const { x, y, scale } = vpRef.current
+    return { svgX: (px - x) / scale, svgY: (py - y) / scale }
   }, [])
 
-  // Document-level drag listeners (attached when a node drag starts)
+  // Document-level listeners — only active while dragging a node
   useEffect(() => {
-    if (!draggingId.current) return
+    if (!draggingNodeId) return
 
     const onMove = (e: MouseEvent) => {
       hasDragged.current = true
       const c = clientToSvg(e.clientX, e.clientY)
-      if (!c) return
-      const cell = svgToGrid(c.svgX, c.svgY)
-      setDragTarget(cell)
+      setDragTarget(c ? svgToGrid(c.svgX, c.svgY) : null)
     }
 
     const onUp = (e: MouseEvent) => {
-      const id = draggingId.current
-      draggingId.current = null
+      const id = draggingNodeId
+      setDraggingNodeId(null)
       setDragTarget(null)
 
-      if (!hasDragged.current || !id) return
-
+      if (!hasDragged.current) return
       const c = clientToSvg(e.clientX, e.clientY)
       if (!c) return
       const cell = svgToGrid(c.svgX, c.svgY)
@@ -112,13 +109,13 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
     }
-  }, [clientToSvg])
+  }, [draggingNodeId, clientToSvg])
 
   const startNodeDrag = (e: React.MouseEvent, nodeId: string) => {
     e.stopPropagation()
     e.preventDefault()
-    draggingId.current = nodeId
     hasDragged.current = false
+    setDraggingNodeId(nodeId)
   }
 
   const generate = useCallback(async () => {
@@ -185,7 +182,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
 
   // Is the drag target cell occupied by another node?
   const targetOccupied = dragTarget
-    ? diag.nodes.some(n => n.id !== draggingId.current && snap(n.x) === dragTarget.gx && snap(n.y) === dragTarget.gy)
+    ? diag.nodes.some(n => n.id !== draggingNodeId && snap(n.x) === dragTarget.gx && snap(n.y) === dragTarget.gy)
     : false
 
   return (
@@ -313,7 +310,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               {diag.nodes.map(node => {
                 const { x, y } = nodeRect(node)
                 const sel = selected === node.id
-                const isDragging = draggingId.current === node.id
+                const isDragging = draggingNodeId === node.id
                 const connected = !!selected && !sel && diag.edges.some(
                   e => (e.from === selected && e.to === node.id) || (e.to === selected && e.from === node.id)
                 )
