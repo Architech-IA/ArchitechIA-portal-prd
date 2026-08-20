@@ -27,6 +27,8 @@ REGLAS:
 - Dos nodos no pueden compartir la misma celda (x,y) — separalos siempre
 - label: nombre corto del componente, maximo 20 caracteres
 - description: tecnologia o rol brevísimo, maximo 30 caracteres (opcional)
+- type: uno de estos valores exactos según el rol del componente:
+    user | frontend | api | backend | database | queue | external
 - Las conexiones representan que dos componentes se comunican o dependen entre si
 - NO pongas labels en las conexiones
 
@@ -35,7 +37,7 @@ FORMATO DE SALIDA — devolvé UNICAMENTE el JSON, sin explicaciones ni markdown
   "title": "...",
   "description": "...",
   "nodes": [
-    { "id": "n1", "label": "Usuario", "description": "Navegador web", "x": 0, "y": 2 },
+    { "id": "n1", "label": "Usuario", "description": "Navegador web", "type": "user", "x": 0, "y": 2 },
     { "id": "n2", "label": "Portal Web", "description": "React / Next.js", "x": 2, "y": 2 },
     { "id": "n3", "label": "API Gateway", "description": "Express / REST", "x": 4, "y": 2 },
     { "id": "n4", "label": "Servicio Core", "description": "Node.js", "x": 6, "y": 1 },
