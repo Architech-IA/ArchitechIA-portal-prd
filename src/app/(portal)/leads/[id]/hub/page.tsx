@@ -233,38 +233,7 @@ function PhasePanel({
             onChange={e => { Array.from(e.target.files ?? []).forEach(uploadFile); e.target.value = '' }}
           />
 
-      {/* Files */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs text-gray-500 uppercase tracking-wider">Archivos adjuntos</label>
-        </div>
 
-        {data?.files.length === 0 || !data ? null : (
-          <div className="space-y-2">
-            {data.files.map(f => (
-              <div key={f.id} className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2">
-                <FileText size={14} className={c.text} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{f.name}</p>
-                  <p className="text-[10px] text-gray-500">{formatBytes(f.size)} · {f.uploadedBy}</p>
-                </div>
-                <button onClick={() => downloadFile(f.id, f.name)} className="text-gray-500 hover:text-white transition-colors" title="Descargar">
-                  <Download size={13} />
-                </button>
-                <button onClick={() => deleteFile(f.id)} disabled={deletingFile === f.id} className="text-gray-600 hover:text-red-400 transition-colors" title="Eliminar">
-                  {deletingFile === f.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {data?.updatedBy && (
-          <p className="text-[10px] text-gray-600">
-            Última actualización por <span className="text-gray-500">{data.updatedBy}</span> · {new Date(data.updatedAt).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </p>
-        )}
       </div>
     </div>
   )
