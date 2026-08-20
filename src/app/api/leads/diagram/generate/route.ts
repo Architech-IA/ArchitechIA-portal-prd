@@ -8,21 +8,20 @@ El diagrama muestra los componentes tecnicos del sistema y como se conectan.
 NO es un flujograma. NO muestra pasos ni flujos de proceso.
 Es un diagrama de arquitectura como los de Azure, AWS o draw.io.
 
-POSICIONAMIENTO — los componentes se ubican en un plano 2D (coordenadas x, y de 0 a 10):
-  Zona superior (y=0-1):     Usuarios / clientes / navegadores
-  Zona media-alta (y=2-3):   Frontend — apps web, portales, dashboards
-  Zona central (y=4-5):      API / Gateway / Backend / servicios principales
-  Zona media-baja (y=6-7):   Base de datos, cache, colas, almacenamiento
-  Zona inferior (y=8-9):     Servicios externos, integraciones, cloud
+POSICIONAMIENTO — cuadricula 2D con coordenadas ENTERAS x (0-9) e y (0-8):
+  y=0: Usuarios / clientes / navegadores
+  y=2: Frontend — apps web, portales, dashboards, apps moviles
+  y=4: API / Gateway / BFF / punto de entrada al backend
+  y=6: Backend — servicios, microservicios, logica de negocio, workers
+  y=8: Datos — base de datos, cache, colas, almacenamiento; o Externos si aplica
 
-En el eje X (0-10) distribuís los componentes horizontalmente segun sea natural.
-No hay un orden fijo de izquierda a derecha — posicioná cada componente donde tenga sentido.
-Ejemplo: si hay 3 microservicios en el backend, ponelos en y=4 con x=2, x=5, x=8.
+  En x distribuís horizontalmente: x=0 izquierda, x=9 derecha.
+  Ejemplo con 3 microservicios en backend: x=2,y=6 / x=5,y=6 / x=8,y=6
 
 REGLAS:
-- Minimo 5 nodos, maximo 12 nodos — solo los componentes clave del stack
-- x e y son numeros de 0 a 10 (decimales permitidos, ej: 3.5)
-- Dos nodos no deben estar en la misma posicion exacta (separalos al menos 1.5 unidades)
+- Minimo 5 nodos, maximo 10 nodos — solo los componentes clave del stack
+- x e y deben ser ENTEROS de 0 a 9 — sin decimales
+- Dos nodos no pueden compartir la misma celda (x,y) — separalos siempre
 - label: nombre corto del componente, maximo 20 caracteres
 - description: tecnologia o rol brevísimo, maximo 30 caracteres (opcional)
 - Las conexiones representan que dos componentes se comunican o dependen entre si
@@ -34,10 +33,10 @@ FORMATO DE SALIDA — devolvé UNICAMENTE el JSON, sin explicaciones ni markdown
   "description": "...",
   "nodes": [
     { "id": "n1", "label": "Usuario", "description": "Navegador web", "x": 5, "y": 0 },
-    { "id": "n2", "label": "Portal Web", "description": "React / Next.js", "x": 5, "y": 2.5 },
-    { "id": "n3", "label": "API Gateway", "description": "Express / REST", "x": 3, "y": 5 },
-    { "id": "n4", "label": "PostgreSQL", "description": "Base de datos", "x": 3, "y": 7 },
-    { "id": "n5", "label": "WhatsApp API", "description": "Integración", "x": 7, "y": 5 }
+    { "id": "n2", "label": "Portal Web", "description": "React / Next.js", "x": 5, "y": 2 },
+    { "id": "n3", "label": "API Gateway", "description": "Express / REST", "x": 3, "y": 4 },
+    { "id": "n4", "label": "PostgreSQL", "description": "Base de datos", "x": 3, "y": 8 },
+    { "id": "n5", "label": "WhatsApp API", "description": "Integración", "x": 7, "y": 6 }
   ],
   "edges": [
     { "id": "e1", "from": "n1", "to": "n2" },
@@ -118,20 +117,20 @@ export async function POST(req: NextRequest) {
       data.edges = data.edges.filter((e: Record<string, unknown>) => keepIds.has(e.from) && keepIds.has(e.to))
     }
 
-    // Normalize positions: clamp x,y to [0,10] and resolve collisions
-    const usedPos: Array<{ x: number; y: number }> = []
+    // Normalize positions: snap to integer grid [0-9], resolve collisions
+    const usedPos = new Set<string>()
     data.nodes = data.nodes.map((n: Record<string, unknown>, i: number) => {
       n = { ...n, id: n.id ?? `n${i}` }
-      let x = Math.max(0, Math.min(10, parseFloat(String(n.x)) || 5))
-      let y = Math.max(0, Math.min(9, parseFloat(String(n.y)) || i * 2))
-      // Resolve collision: nudge until free
+      let x = Math.max(0, Math.min(9, Math.round(parseFloat(String(n.x)) || 5)))
+      let y = Math.max(0, Math.min(8, Math.round(parseFloat(String(n.y)) || (i % 5) * 2)))
+      // Resolve collision by nudging x then wrapping to next row
       let tries = 0
-      while (usedPos.some(p => Math.abs(p.x - x) < 1.5 && Math.abs(p.y - y) < 1.5) && tries < 20) {
-        x = Math.min(10, x + 1.5)
-        if (x > 9) { x = 0; y = Math.min(9, y + 1.5) }
+      while (usedPos.has(`${x},${y}`) && tries < 30) {
+        x = x + 1
+        if (x > 9) { x = 0; y = Math.min(8, y + 2) }
         tries++
       }
-      usedPos.push({ x, y })
+      usedPos.add(`${x},${y}`)
       return { ...n, x, y }
     })
 

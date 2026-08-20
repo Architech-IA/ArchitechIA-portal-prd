@@ -25,17 +25,22 @@ interface DiagData {
 }
 
 // Canvas grid → SVG pixels
-const CELL = 90
-const W = 150
-const H = 52
+const CELL = 100       // grid cell size in px
+const W = 160
+const H = 56
 const PAD = 60
+const GRID_COLS = 11   // 0..10
+const GRID_ROWS = 10   // 0..9
+
+// Snap node coords to nearest integer grid cell
+function snap(v: number) { return Math.round(v) }
 
 function svgPos(n: DiagNode) {
-  return { cx: PAD + n.x * CELL + W / 2, cy: PAD + n.y * CELL + H / 2 }
+  return { cx: PAD + snap(n.x) * CELL + W / 2, cy: PAD + snap(n.y) * CELL + H / 2 }
 }
 
 function nodeRect(n: DiagNode) {
-  return { x: PAD + n.x * CELL, y: PAD + n.y * CELL }
+  return { x: PAD + snap(n.x) * CELL, y: PAD + snap(n.y) * CELL }
 }
 
 const defaultData: DiagData = { title: '', description: '', nodes: [], edges: [] }
@@ -192,7 +197,31 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             onWheel={onWheel} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp}
             onMouseLeave={() => { panning.current = false }}>
 
+            <defs>
+              <pattern id="dotgrid" width={CELL} height={CELL} patternUnits="userSpaceOnUse"
+                patternTransform={`translate(${vp.x % CELL},${vp.y % CELL}) scale(${vp.scale})`}>
+                <circle cx={CELL / 2} cy={CELL / 2} r="1" fill="#111e2e" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dotgrid)" />
+
             <g transform={`translate(${vp.x},${vp.y}) scale(${vp.scale})`}>
+
+              {/* Grid lines (subtle) */}
+              {Array.from({ length: GRID_COLS + 1 }, (_, i) => (
+                <line key={`v${i}`}
+                  x1={PAD + i * CELL - W / 2} y1={PAD - CELL / 2}
+                  x2={PAD + i * CELL - W / 2} y2={PAD + GRID_ROWS * CELL + CELL / 2}
+                  stroke="#0d1824" strokeWidth="1"
+                />
+              ))}
+              {Array.from({ length: GRID_ROWS + 1 }, (_, i) => (
+                <line key={`h${i}`}
+                  x1={PAD - CELL / 2} y1={PAD + i * CELL - H / 2}
+                  x2={PAD + GRID_COLS * CELL + CELL / 2} y2={PAD + i * CELL - H / 2}
+                  stroke="#0d1824" strokeWidth="1"
+                />
+              ))}
 
               {/* Connection lines — drawn first (below nodes) */}
               {diag.edges.map(edge => {
