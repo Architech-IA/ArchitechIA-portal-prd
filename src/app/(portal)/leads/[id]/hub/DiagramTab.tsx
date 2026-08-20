@@ -7,40 +7,33 @@ interface DiagNode {
   id: string
   label: string
   description?: string
-  x: number   // 0-10 grid
-  y: number   // 0-10 grid
+  x: number
+  y: number
 }
+interface DiagEdge { id: string; from: string; to: string }
+interface DiagData { title: string; description: string; nodes: DiagNode[]; edges: DiagEdge[] }
 
-interface DiagEdge {
-  id: string
-  from: string
-  to: string
-}
-
-interface DiagData {
-  title: string
-  description: string
-  nodes: DiagNode[]
-  edges: DiagEdge[]
-}
-
-// Canvas grid → SVG pixels
-const CELL = 100       // grid cell size in px
+const CELL = 100
 const W = 160
 const H = 56
 const PAD = 60
-const GRID_COLS = 11   // 0..10
-const GRID_ROWS = 10   // 0..9
+const GRID_COLS = 11
+const GRID_ROWS = 10
 
-// Snap node coords to nearest integer grid cell
 function snap(v: number) { return Math.round(v) }
-
 function svgPos(n: DiagNode) {
   return { cx: PAD + snap(n.x) * CELL + W / 2, cy: PAD + snap(n.y) * CELL + H / 2 }
 }
-
 function nodeRect(n: DiagNode) {
   return { x: PAD + snap(n.x) * CELL, y: PAD + snap(n.y) * CELL }
+}
+
+// SVG coords → grid cell (integer)
+function svgToGrid(svgX: number, svgY: number): { gx: number; gy: number } | null {
+  const gx = Math.round((svgX - PAD - W / 2) / CELL)
+  const gy = Math.round((svgY - PAD - H / 2) / CELL)
+  if (gx < 0 || gx >= GRID_COLS || gy < 0 || gy >= GRID_ROWS) return null
+  return { gx, gy }
 }
 
 const defaultData: DiagData = { title: '', description: '', nodes: [], edges: [] }
@@ -53,11 +46,17 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   const [genError, setGenError]     = useState<string | null>(null)
   const [selected, setSelected]     = useState<string | null>(null)
   const [vp, setVp]                 = useState({ x: 0, y: 0, scale: 1 })
+  const [dragTarget, setDragTarget] = useState<{ gx: number; gy: number } | null>(null)
 
-  const svgRef  = useRef<SVGSVGElement>(null)
-  const panning = useRef(false)
-  const origin  = useRef({ mx: 0, my: 0, vx: 0, vy: 0 })
-  const moved   = useRef(false)
+  const svgRef       = useRef<SVGSVGElement>(null)
+  const vpRef        = useRef(vp)
+  const panning      = useRef(false)
+  const origin       = useRef({ mx: 0, my: 0, vx: 0, vy: 0 })
+  const panMoved     = useRef(false)
+  const draggingId   = useRef<string | null>(null)
+  const hasDragged   = useRef(false)
+
+  useEffect(() => { vpRef.current = vp }, [vp])
 
   useEffect(() => {
     fetch(`/api/leads/diagram?leadId=${leadId}`)
@@ -65,6 +64,62 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       .then(j => { setDiag(j.data ?? defaultData); setLoaded(true) })
       .catch(() => setLoaded(true))
   }, [leadId])
+
+  // Convert mouse event to SVG content coords
+  const clientToSvg = useCallback((clientX: number, clientY: number) => {
+    const el = svgRef.current; if (!el) return null
+    const rect = el.getBoundingClientRect()
+    const px = (clientX - rect.left) / rect.width  * el.viewBox?.baseVal?.width  || clientX - rect.left
+    const py = (clientY - rect.top)  / rect.height * el.viewBox?.baseVal?.height || clientY - rect.top
+    const vp = vpRef.current
+    return { svgX: (px - vp.x) / vp.scale, svgY: (py - vp.y) / vp.scale }
+  }, [])
+
+  // Document-level drag listeners (attached when a node drag starts)
+  useEffect(() => {
+    if (!draggingId.current) return
+
+    const onMove = (e: MouseEvent) => {
+      hasDragged.current = true
+      const c = clientToSvg(e.clientX, e.clientY)
+      if (!c) return
+      const cell = svgToGrid(c.svgX, c.svgY)
+      setDragTarget(cell)
+    }
+
+    const onUp = (e: MouseEvent) => {
+      const id = draggingId.current
+      draggingId.current = null
+      setDragTarget(null)
+
+      if (!hasDragged.current || !id) return
+
+      const c = clientToSvg(e.clientX, e.clientY)
+      if (!c) return
+      const cell = svgToGrid(c.svgX, c.svgY)
+      if (!cell) return
+
+      setDiag(prev => {
+        const occupied = prev.nodes.some(n => n.id !== id && snap(n.x) === cell.gx && snap(n.y) === cell.gy)
+        if (occupied) return prev
+        return { ...prev, nodes: prev.nodes.map(n => n.id === id ? { ...n, x: cell.gx, y: cell.gy } : n) }
+      })
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [clientToSvg])
+
+  const startNodeDrag = (e: React.MouseEvent, nodeId: string) => {
+    e.stopPropagation()
+    e.preventDefault()
+    draggingId.current = nodeId
+    hasDragged.current = false
+  }
 
   const generate = useCallback(async () => {
     setGenerating(true); setGenError(null)
@@ -100,24 +155,23 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
     })
   }, [])
 
-  const onDown = (e: React.MouseEvent) => {
+  const onSvgDown = (e: React.MouseEvent) => {
     if ((e.target as Element).closest('[data-node]')) return
-    panning.current = true; moved.current = false
+    panning.current = true; panMoved.current = false
     origin.current = { mx: e.clientX, my: e.clientY, vx: vp.x, vy: vp.y }
   }
-  const onMove = (e: React.MouseEvent) => {
+  const onSvgMove = (e: React.MouseEvent) => {
     if (!panning.current) return
-    moved.current = true
+    panMoved.current = true
     setVp(v => ({ ...v, x: origin.current.vx + e.clientX - origin.current.mx, y: origin.current.vy + e.clientY - origin.current.my }))
   }
-  const onUp = (e: React.MouseEvent) => {
+  const onSvgUp = (e: React.MouseEvent) => {
     panning.current = false
-    if (!moved.current && !(e.target as Element).closest('[data-node]')) setSelected(null)
+    if (!panMoved.current && !(e.target as Element).closest('[data-node]')) setSelected(null)
   }
 
   const selNode = diag.nodes.find(n => n.id === selected)
 
-  // Edge: line between nearest box edges (not center-to-center)
   function edgeLine(fn: DiagNode, tn: DiagNode) {
     const fa = svgPos(fn), ta = svgPos(tn)
     return { x1: fa.cx, y1: fa.cy, x2: ta.cx, y2: ta.cy }
@@ -128,6 +182,11 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       <Loader2 size={18} className="animate-spin" /> Cargando...
     </div>
   )
+
+  // Is the drag target cell occupied by another node?
+  const targetOccupied = dragTarget
+    ? diag.nodes.some(n => n.id !== draggingId.current && snap(n.x) === dragTarget.gx && snap(n.y) === dragTarget.gy)
+    : false
 
   return (
     <div className="flex flex-col gap-4">
@@ -193,8 +252,9 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             </div>
           )}
 
-          <svg ref={svgRef} style={{ width: '100%', height: '100%', minHeight: 480, display: 'block', cursor: panning.current ? 'grabbing' : 'default', userSelect: 'none' }}
-            onWheel={onWheel} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp}
+          <svg ref={svgRef}
+            style={{ width: '100%', height: '100%', minHeight: 480, display: 'block', cursor: panning.current ? 'grabbing' : 'default', userSelect: 'none' }}
+            onWheel={onWheel} onMouseDown={onSvgDown} onMouseMove={onSvgMove} onMouseUp={onSvgUp}
             onMouseLeave={() => { panning.current = false }}>
 
             <defs>
@@ -207,23 +267,32 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
 
             <g transform={`translate(${vp.x},${vp.y}) scale(${vp.scale})`}>
 
-              {/* Grid lines (subtle) */}
+              {/* Grid lines */}
               {Array.from({ length: GRID_COLS + 1 }, (_, i) => (
                 <line key={`v${i}`}
                   x1={PAD + i * CELL - W / 2} y1={PAD - CELL / 2}
                   x2={PAD + i * CELL - W / 2} y2={PAD + GRID_ROWS * CELL + CELL / 2}
-                  stroke="#0d1824" strokeWidth="1"
-                />
+                  stroke="#0d1824" strokeWidth="1" />
               ))}
               {Array.from({ length: GRID_ROWS + 1 }, (_, i) => (
                 <line key={`h${i}`}
                   x1={PAD - CELL / 2} y1={PAD + i * CELL - H / 2}
                   x2={PAD + GRID_COLS * CELL + CELL / 2} y2={PAD + i * CELL - H / 2}
-                  stroke="#0d1824" strokeWidth="1"
-                />
+                  stroke="#0d1824" strokeWidth="1" />
               ))}
 
-              {/* Connection lines — drawn first (below nodes) */}
+              {/* Drag target highlight */}
+              {dragTarget && (
+                <rect
+                  x={PAD + dragTarget.gx * CELL} y={PAD + dragTarget.gy * CELL}
+                  width={W} height={H} rx="7"
+                  fill={targetOccupied ? '#3f0a0a' : '#0a2a10'}
+                  stroke={targetOccupied ? '#ef4444' : '#22c55e'}
+                  strokeWidth="2" strokeDasharray="4 3"
+                />
+              )}
+
+              {/* Edges */}
               {diag.edges.map(edge => {
                 const fn = diag.nodes.find(n => n.id === edge.from)
                 const tn = diag.nodes.find(n => n.id === edge.to)
@@ -244,13 +313,23 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               {diag.nodes.map(node => {
                 const { x, y } = nodeRect(node)
                 const sel = selected === node.id
+                const isDragging = draggingId.current === node.id
                 const connected = !!selected && !sel && diag.edges.some(
                   e => (e.from === selected && e.to === node.id) || (e.to === selected && e.from === node.id)
                 )
                 return (
                   <g key={node.id} data-node="1"
-                    style={{ cursor: 'pointer', opacity: selected && !sel && !connected ? 0.2 : 1, transition: 'opacity 0.12s' }}
-                    onClick={e => { e.stopPropagation(); setSelected(sel ? null : node.id) }}>
+                    style={{
+                      cursor: isDragging ? 'grabbing' : 'grab',
+                      opacity: selected && !sel && !connected ? 0.2 : isDragging ? 0.5 : 1,
+                      transition: isDragging ? 'none' : 'opacity 0.12s',
+                    }}
+                    onMouseDown={e => startNodeDrag(e, node.id)}
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (hasDragged.current) return
+                      setSelected(sel ? null : node.id)
+                    }}>
                     <rect x={x} y={y} width={W} height={H} rx="7"
                       fill={sel ? '#0f1e2d' : '#0d1520'}
                       stroke={sel ? '#f97316' : connected ? '#334155' : '#1a2535'}
@@ -315,8 +394,10 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                 </div>
               )
             })()}
-            <button onClick={() => { setDiag(p => ({ ...p, nodes: p.nodes.filter(n => n.id !== selNode.id), edges: p.edges.filter(e => e.from !== selNode.id && e.to !== selNode.id) })); setSelected(null) }}
-              className="mt-1 text-xs text-red-500 border border-red-500/20 hover:bg-red-500/10 py-1.5 rounded-lg transition-all">
+            <button onClick={() => {
+              setDiag(p => ({ ...p, nodes: p.nodes.filter(n => n.id !== selNode.id), edges: p.edges.filter(e => e.from !== selNode.id && e.to !== selNode.id) }))
+              setSelected(null)
+            }} className="mt-1 text-xs text-red-500 border border-red-500/20 hover:bg-red-500/10 py-1.5 rounded-lg transition-all">
               Eliminar
             </button>
           </div>
