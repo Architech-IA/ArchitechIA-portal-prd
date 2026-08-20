@@ -13,12 +13,12 @@ interface DiagNode {
 interface DiagEdge { id: string; from: string; to: string }
 interface DiagData { title: string; description: string; nodes: DiagNode[]; edges: DiagEdge[] }
 
-const CELL = 100
+const CELL = 110
 const W = 160
 const H = 56
 const PAD = 60
-const GRID_COLS = 11
-const GRID_ROWS = 10
+const GRID_COLS = 12   // wide (horizontal)
+const GRID_ROWS = 6    // short (vertical)
 
 function snap(v: number) { return Math.round(v) }
 function svgPos(n: DiagNode) {
