@@ -32,6 +32,22 @@ function stripHtml(html: string): string {
     .trim()
 }
 
+function parseHubContent(raw: string | null): string {
+  if (!raw) return ''
+  // TabbedNotes JSON format: {"tabs":[{"name":"Tab","content":"<p>...</p>"},...]}
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed?.tabs && Array.isArray(parsed.tabs)) {
+      return parsed.tabs
+        .filter((t: any) => t.content && t.content !== '<p></p>')
+        .map((t: any) => `[${t.name}]\n${stripHtml(t.content)}`)
+        .join('\n\n')
+    }
+  } catch {}
+  // Plain HTML fallback
+  return stripHtml(raw)
+}
+
 function extractCompanyName(message: string): string | null {
   // Quoted name: "Previsora" or 'Previsora'
   const quoted = message.match(/["']([^"']{3,60})["']/)
@@ -126,10 +142,10 @@ async function fetchLeadContext(companyName: string): Promise<string | null> {
 
   // Hub phases
   const PHASE_LABELS: Record<string, string> = {
-    identificacion: 'Identificación', contacto: 'Contacto', diagnostico: 'Diagnóstico',
-    demo: 'Demo', propuesta: 'Propuesta', negociacion: 'Negociación', resultado: 'Resultado',
+    NEW: 'Identificación', CONTACTED: 'Contacto', DIAGNOSIS: 'Diagnóstico',
+    DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta', NEGOTIATION: 'Negociación', WON: 'Resultado',
   }
-  const PHASES_ORDER = ['identificacion', 'contacto', 'diagnostico', 'demo', 'propuesta', 'negociacion', 'resultado']
+  const PHASES_ORDER = ['NEW', 'CONTACTED', 'DIAGNOSIS', 'DEMO_VALIDATION', 'PROPOSAL_SENT', 'NEGOTIATION', 'WON']
 
   lines.push('📋 FASES DEL HUB:')
   for (const phaseKey of PHASES_ORDER) {
@@ -138,7 +154,7 @@ async function fetchLeadContext(companyName: string): Promise<string | null> {
     if (!hub || !hub.content) {
       lines.push(`  [${label}] Sin contenido`)
     } else {
-      const text = stripHtml(hub.content)
+      const text = parseHubContent(hub.content)
       lines.push(`  [${label}]:`)
       text.split('\n').filter(Boolean).forEach(l => lines.push(`    ${l}`))
       if (hub.files.length > 0) {

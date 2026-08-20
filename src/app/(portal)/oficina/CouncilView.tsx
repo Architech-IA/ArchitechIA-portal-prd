@@ -86,8 +86,11 @@ function parseOrionOptions(content: string): { prose: string; options: string[] 
     const m = lines[i].match(/^\d+\.\s+(.+)$/)
     if (m) options.push(m[1].trim())
   }
-  if (options.length < 2) return null
+  if (options.length < 2 || options.length > 5) return null
   const prose = lines.slice(0, firstOpt).join('\n').replace(/^-{3,}\s*$/m, '').trim()
+  // Only render as options when Orion is genuinely asking the user to choose
+  const isAskingChoice = /[?¿]|elegí|seleccioná|cuál|cuáles|qué preferís|qué querés|cómo querés|qué te gustaría/i.test(prose)
+  if (!isAskingChoice) return null
   return { prose, options }
 }
 interface ExtractedProposal { title: string; description: string; items: ExtractedItem[]; _sourceFile?: string }
