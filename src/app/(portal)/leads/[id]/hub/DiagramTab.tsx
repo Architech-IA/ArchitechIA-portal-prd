@@ -373,14 +373,13 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                       style={{ transition: 'fill 0.12s, stroke 0.12s' }}
                     />
                     <text x={x + W / 2} y={y + (node.description ? H / 2 - 1 : H / 2 + 6)}
-                      textAnchor="middle" fontSize="13" fontWeight={700}
+                      textAnchor="middle" fontSize="15" fontWeight={700}
                       fill={labelColor}
                       style={{ pointerEvents: 'none', transition: 'fill 0.12s' }}>
                       {node.label.length > 20 ? node.label.slice(0, 19) + '…' : node.label}
                     </text>
                     {node.description && (
-                      <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="10"
-                        fill={hov ? '#94a3b8' : '#64748b'}
+                      <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="11" fill={hov ? '#94a3b8' : '#64748b'}
                         style={{ pointerEvents: 'none', transition: 'fill 0.12s' }}>
                         {node.description.length > 26 ? node.description.slice(0, 25) + '…' : node.description}
                       </text>
