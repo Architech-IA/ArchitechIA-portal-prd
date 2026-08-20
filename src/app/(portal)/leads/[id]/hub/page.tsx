@@ -12,6 +12,7 @@ import {
   CheckCircle2, Circle, Clock, Loader2,
   Save, Paperclip, X, Download, Trash2, FileText,
   ChevronRight, Phone, Mail, Users, Briefcase, CheckSquare, Square, Plus,
+  Search, Link2, ExternalLink, Calendar,
 } from 'lucide-react'
 
 interface Lead {
@@ -36,6 +37,12 @@ interface HubFile {
   createdAt: string
 }
 
+interface MeetingRef {
+  id: string; title: string; type: string; status: string
+  date: string; endDate: string | null; link: string | null
+  attendees: string | null; location: string | null
+}
+
 interface Interaction {
   id: string
   type: 'CALL' | 'EMAIL' | 'MEETING' | 'WHATSAPP'
@@ -43,6 +50,7 @@ interface Interaction {
   date: string
   createdAt: string
   user: { name: string }
+  meeting?: MeetingRef | null
 }
 
 interface BacklogItem {
@@ -257,52 +265,168 @@ function HubInteracciones({ leadId, items, onAdd }: {
   items: Interaction[]
   onAdd: (i: Interaction) => void
 }) {
+  const [mode, setMode]   = useState<'manual' | 'meeting'>('manual')
   const [type, setType]   = useState<'CALL' | 'EMAIL' | 'MEETING' | 'WHATSAPP'>('CALL')
   const [desc, setDesc]   = useState('')
   const [date, setDate]   = useState(new Date().toISOString().split('T')[0])
   const [saving, setSaving] = useState(false)
+  // Meeting picker state
+  const [meetings, setMeetings] = useState<MeetingRef[]>([])
+  const [meetSearch, setMeetSearch] = useState('')
+  const [loadingMeet, setLoadingMeet] = useState(false)
+  const [linkedMeetId, setLinkedMeetId] = useState<string | null>(null)
+
+  const loadMeetings = async () => {
+    if (meetings.length > 0) return
+    setLoadingMeet(true)
+    const res = await fetch('/api/meetings')
+    if (res.ok) setMeetings(await res.json())
+    setLoadingMeet(false)
+  }
+
+  const switchMode = (m: 'manual' | 'meeting') => {
+    setMode(m)
+    setLinkedMeetId(null)
+    if (m === 'meeting') loadMeetings()
+  }
 
   const add = async () => {
-    if (!desc.trim()) return
+    if (mode === 'manual' && !desc.trim()) return
+    if (mode === 'meeting' && !linkedMeetId) return
     setSaving(true)
+    const body = mode === 'meeting'
+      ? { meetingId: linkedMeetId, type: 'MEETING' }
+      : { type, description: desc, date }
     const res = await fetch(`/api/leads/${leadId}/interactions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, description: desc, date }),
+      body: JSON.stringify(body),
     })
     if (res.ok) {
       const created = await res.json()
       onAdd(created)
       setDesc('')
+      setLinkedMeetId(null)
+      setMeetSearch('')
     }
     setSaving(false)
   }
 
+  const STATUS_LABELS: Record<string, string> = { SCHEDULED: 'Programada', COMPLETED: 'Completada', CANCELLED: 'Cancelada' }
+  const STATUS_COLORS: Record<string, React.CSSProperties> = {
+    SCHEDULED: { background: 'rgba(59,130,246,0.15)', color: '#93c5fd', border: '1px solid rgba(59,130,246,0.3)' },
+    COMPLETED: { background: 'rgba(34,197,94,0.15)', color: '#86efac', border: '1px solid rgba(34,197,94,0.3)' },
+    CANCELLED: { background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)' },
+  }
+  const MEET_TYPE_LABELS: Record<string, string> = {
+    INTERNAL_DAILY: 'Daily', INTERNAL_WORKSHOP: 'Workshop',
+    COMMERCIAL: 'Comercial', ADVISORY: 'Asesoría', PROVIDER: 'Proveedores',
+  }
+
+  const filteredMeetings = meetings.filter(m =>
+    m.title.toLowerCase().includes(meetSearch.toLowerCase()) ||
+    (MEET_TYPE_LABELS[m.type] || m.type).toLowerCase().includes(meetSearch.toLowerCase())
+  )
+
   const boxStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px' }
   const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '7px 10px', fontSize: '12px', color: '#f1f5f9', outline: 'none', width: '100%' }
+  const linkedMeeting = linkedMeetId ? meetings.find(m => m.id === linkedMeetId) : null
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
       {/* Agregar */}
       <div style={{ ...boxStyle, padding: '14px' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Nueva interacción</p>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-          {(['CALL','EMAIL','MEETING','WHATSAPP'] as const).map(t => (
-            <button key={t} onClick={() => setType(t)}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: type === t ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.08)', background: type === t ? 'rgba(249,115,22,0.1)' : 'transparent', color: type === t ? '#f97316' : '#475569' }}>
-              {INT_ICONS[t]}{INT_LABELS[t]}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Nueva interacción</p>
+          {/* Mode toggle */}
+          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '3px' }}>
+            <button onClick={() => switchMode('manual')}
+              style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: 'none', background: mode === 'manual' ? 'rgba(249,115,22,0.15)' : 'transparent', color: mode === 'manual' ? '#f97316' : '#475569', transition: 'all 0.15s' }}>
+              Manual
             </button>
-          ))}
+            <button onClick={() => switchMode('meeting')}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: 'none', background: mode === 'meeting' ? 'rgba(249,115,22,0.15)' : 'transparent', color: mode === 'meeting' ? '#f97316' : '#475569', transition: 'all 0.15s' }}>
+              <Calendar size={11} />Vincular reunión
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inputStyle, width: '140px', flexShrink: 0, colorScheme: 'dark' }} />
-          <input placeholder="Descripción de la interacción..." value={desc} onChange={e => setDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} style={inputStyle} />
-          <button onClick={add} disabled={saving || !desc.trim()}
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', border: 'none', background: 'linear-gradient(135deg,#f97316,#ea580c)', color: '#fff', opacity: saving ? 0.6 : 1, flexShrink: 0 }}>
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}Agregar
-          </button>
-        </div>
+
+        {mode === 'manual' && (
+          <>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              {(['CALL','EMAIL','MEETING','WHATSAPP'] as const).map(t => (
+                <button key={t} onClick={() => setType(t)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: type === t ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.08)', background: type === t ? 'rgba(249,115,22,0.1)' : 'transparent', color: type === t ? '#f97316' : '#475569' }}>
+                  {INT_ICONS[t]}{INT_LABELS[t]}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inputStyle, width: '140px', flexShrink: 0, colorScheme: 'dark' }} />
+              <input placeholder="Descripción de la interacción..." value={desc} onChange={e => setDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} style={inputStyle} />
+              <button onClick={add} disabled={saving || !desc.trim()}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', border: 'none', background: 'linear-gradient(135deg,#f97316,#ea580c)', color: '#fff', opacity: saving ? 0.6 : 1, flexShrink: 0 }}>
+                {saving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}Agregar
+              </button>
+            </div>
+          </>
+        )}
+
+        {mode === 'meeting' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Search */}
+            <div style={{ position: 'relative' }}>
+              <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#475569', pointerEvents: 'none' }} />
+              <input
+                placeholder="Buscar reunión por nombre o tipo..."
+                value={meetSearch}
+                onChange={e => setMeetSearch(e.target.value)}
+                style={{ ...inputStyle, paddingLeft: '30px' }}
+              />
+            </div>
+            {/* Meeting list */}
+            <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {loadingMeet ? (
+                <div style={{ textAlign: 'center', padding: '16px', color: '#475569', fontSize: '12px' }}>
+                  <Loader2 size={14} className="animate-spin" style={{ display: 'inline-block', marginRight: '6px' }} />Cargando reuniones...
+                </div>
+              ) : filteredMeetings.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '16px', color: '#334155', fontSize: '12px' }}>No se encontraron reuniones</div>
+              ) : filteredMeetings.map(m => {
+                const isSelected = linkedMeetId === m.id
+                return (
+                  <button key={m.id} onClick={() => setLinkedMeetId(isSelected ? null : m.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', border: isSelected ? '1px solid rgba(249,115,22,0.5)' : '1px solid rgba(255,255,255,0.06)', background: isSelected ? 'rgba(249,115,22,0.08)' : 'rgba(255,255,255,0.02)', cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.12s' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Calendar size={14} style={{ color: '#f97316' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                        <span style={{ fontSize: '12px', color: '#f1f5f9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</span>
+                        <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', flexShrink: 0, ...(STATUS_COLORS[m.status] || STATUS_COLORS['SCHEDULED']) }}>{STATUS_LABELS[m.status] || m.status}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', color: '#475569' }}>{MEET_TYPE_LABELS[m.type] || m.type}</span>
+                        <span style={{ fontSize: '10px', color: '#334155' }}>·</span>
+                        <span style={{ fontSize: '10px', color: '#475569' }}>{new Date(m.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      </div>
+                    </div>
+                    {isSelected && <CheckCircle2 size={15} style={{ color: '#f97316', flexShrink: 0 }} />}
+                  </button>
+                )
+              })}
+            </div>
+            {/* Vincular button */}
+            {linkedMeeting && (
+              <button onClick={add} disabled={saving}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', border: 'none', background: 'linear-gradient(135deg,#f97316,#ea580c)', color: '#fff', opacity: saving ? 0.6 : 1 }}>
+                {saving ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
+                Vincular "{linkedMeeting.title}"
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Lista */}
@@ -311,16 +435,50 @@ function HubInteracciones({ leadId, items, onAdd }: {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {items.map(item => (
-            <div key={item.id} style={{ ...boxStyle, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <div style={{ marginTop: '2px', flexShrink: 0 }}>{INT_ICONS[item.type]}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '2px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{INT_LABELS[item.type]}</span>
-                  <span style={{ fontSize: '10px', color: '#334155' }}>{new Date(item.date || item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                  <span style={{ fontSize: '10px', color: '#334155' }}>· {item.user?.name ?? 'Sistema'}</span>
+            <div key={item.id} style={{ ...boxStyle, padding: '10px 14px' }}>
+              {item.meeting ? (
+                /* ── Meeting-linked card ── */
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                    <Calendar size={14} style={{ color: '#f97316' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '3px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Reunión vinculada</span>
+                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', ...(STATUS_COLORS[item.meeting.status] || STATUS_COLORS['SCHEDULED']) }}>{STATUS_LABELS[item.meeting.status] || item.meeting.status}</span>
+                      <span style={{ fontSize: '10px', color: '#334155' }}>· {item.user?.name ?? 'Sistema'}</span>
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#f1f5f9', fontWeight: 600, margin: '0 0 3px' }}>{item.meeting.title}</p>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '11px', color: '#475569' }}>{MEET_TYPE_LABELS[item.meeting.type] || item.meeting.type}</span>
+                      <span style={{ fontSize: '11px', color: '#475569' }}>
+                        {new Date(item.meeting.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {item.meeting.location && <span style={{ fontSize: '11px', color: '#334155' }}>📍 {item.meeting.location}</span>}
+                      {item.meeting.link && (
+                        <a href={item.meeting.link} target="_blank" rel="noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#60a5fa', textDecoration: 'none' }}
+                          onClick={e => e.stopPropagation()}>
+                          <ExternalLink size={11} />Unirse
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{item.description}</p>
-              </div>
+              ) : (
+                /* ── Manual interaction card ── */
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <div style={{ marginTop: '2px', flexShrink: 0 }}>{INT_ICONS[item.type]}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{INT_LABELS[item.type]}</span>
+                      <span style={{ fontSize: '10px', color: '#334155' }}>{new Date(item.date || item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      <span style={{ fontSize: '10px', color: '#334155' }}>· {item.user?.name ?? 'Sistema'}</span>
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{item.description}</p>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
