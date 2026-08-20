@@ -221,7 +221,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
       )}
 
       <div className="flex gap-4">
-        <div className="flex-1 rounded-2xl border border-gray-800 bg-[#080d16] overflow-hidden relative" style={{ minHeight: 480 }}>
+        <div className="flex-1 rounded-2xl border border-gray-700 bg-[#111318] overflow-hidden relative" style={{ minHeight: 480 }}>
 
           <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
             {[
@@ -257,7 +257,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             <defs>
               <pattern id="dotgrid" width={CELL} height={CELL} patternUnits="userSpaceOnUse"
                 patternTransform={`translate(${vp.x % CELL},${vp.y % CELL}) scale(${vp.scale})`}>
-                <circle cx={CELL / 2} cy={CELL / 2} r="1" fill="#111e2e" />
+                <circle cx={CELL / 2} cy={CELL / 2} r="1" fill="#1e2127" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#dotgrid)" />
@@ -269,13 +269,13 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                 <line key={`v${i}`}
                   x1={PAD + i * CELL - W / 2} y1={PAD - CELL / 2}
                   x2={PAD + i * CELL - W / 2} y2={PAD + GRID_ROWS * CELL + CELL / 2}
-                  stroke="#0d1824" strokeWidth="1" />
+                  stroke="#181b20" strokeWidth="1" />
               ))}
               {Array.from({ length: GRID_ROWS + 1 }, (_, i) => (
                 <line key={`h${i}`}
                   x1={PAD - CELL / 2} y1={PAD + i * CELL - H / 2}
                   x2={PAD + GRID_COLS * CELL + CELL / 2} y2={PAD + i * CELL - H / 2}
-                  stroke="#0d1824" strokeWidth="1" />
+                  stroke="#181b20" strokeWidth="1" />
               ))}
 
               {/* Drag target highlight */}
