@@ -49,8 +49,28 @@ function extractCompanyName(message: string): string | null {
 }
 
 async function fetchLeadContext(companyName: string): Promise<string | null> {
+  // Search by each word so "Previsora Seguros" finds "Seguros La Previsora"
+  const words = companyName.split(/\s+/).filter(w => w.length > 3)
+  const searchConditions = words.length > 0
+    ? words.map(w => ({ companyName: { contains: w, mode: 'insensitive' as const } }))
+    : [{ companyName: { contains: companyName, mode: 'insensitive' as const } }]
+
+  const leadCandidates = await prisma.lead.findMany({
+    where: { OR: searchConditions },
+    take: 5,
+    select: { id: true, companyName: true },
+  })
+
+  // Pick the lead whose name matches the most words
+  const scored = leadCandidates.map(l => ({
+    id: l.id,
+    score: words.filter(w => l.companyName.toLowerCase().includes(w.toLowerCase())).length,
+  })).sort((a, b) => b.score - a.score)
+
+  if (!scored.length) return null
+
   const leads = await prisma.lead.findMany({
-    where: { companyName: { contains: companyName, mode: 'insensitive' } },
+    where: { id: scored[0].id },
     take: 1,
     include: {
       proposals: { orderBy: { createdAt: 'desc' }, take: 1 },
