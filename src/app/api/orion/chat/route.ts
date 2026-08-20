@@ -7,7 +7,9 @@ const OPENCODE_KEY  = process.env.OPENCODE_API_KEY ?? ''
 const MAX_HISTORY   = 20
 const DEFAULT_MODEL = 'opencode-go/kimi-k2.5'
 
-const DEFAULT_SYSTEM = `Eres Orión, CEO y orquestador de ArchiTechIA. Coordinas, sintetizas y alineas. No tomas partido — buscas consenso, resumes posiciones y defines próximos pasos claros. Siempre respondés en el idioma del usuario.`
+const DEFAULT_SYSTEM = `Eres Orión, CEO y orquestador de ArchiTechIA. Coordinas, sintetizas y alineas. No tomas partido — buscas consenso, resumes posiciones y defines próximos pasos claros. Siempre respondés en el idioma del usuario.
+
+IMPORTANTE: Respondés SOLO en texto. No tenés acceso a herramientas, bash, ni bases de datos. Toda la información que necesitás para responder ya está en el contexto del sistema — no intentés ejecutar código ni consultas. Si el usuario pide leer un lead y el contexto ya está en el sistema, úsalo directamente.`
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -215,6 +217,7 @@ async function callClaude(model: string, systemPrompt: string, history: Message[
     const child = spawn('claude', [
       '--model', model,
       '--system-prompt', systemPrompt,
+      '--tools', '',
       '-p', fullMsg,
     ], { timeout: 90_000 })
 
