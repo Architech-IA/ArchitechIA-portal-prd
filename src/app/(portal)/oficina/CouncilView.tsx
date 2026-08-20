@@ -79,18 +79,35 @@ function renderMd(text: string) {
 
 function parseOrionOptions(content: string): { prose: string; options: string[] } | null {
   const lines = content.split('\n')
-  const firstOpt = lines.findIndex(l => /^\d+\.\s+\S/.test(l))
-  if (firstOpt === -1) return null
+
+  // Find all numbered list blocks
+  const blocks: { start: number; end: number }[] = []
+  let blockStart = -1
+  for (let i = 0; i < lines.length; i++) {
+    const isNum = /^\d+\.\s+\S/.test(lines[i])
+    if (isNum && blockStart === -1) blockStart = i
+    if (!isNum && blockStart !== -1) { blocks.push({ start: blockStart, end: i }); blockStart = -1 }
+  }
+  if (blockStart !== -1) blocks.push({ start: blockStart, end: lines.length })
+
+  if (blocks.length === 0) return null
+
+  // Use the LAST block — it's most likely the actual options after a question
+  const last = blocks[blocks.length - 1]
   const options: string[] = []
-  for (let i = firstOpt; i < lines.length; i++) {
+  for (let i = last.start; i < last.end; i++) {
     const m = lines[i].match(/^\d+\.\s+(.+)$/)
     if (m) options.push(m[1].trim())
   }
-  if (options.length < 2 || options.length > 5) return null
-  const prose = lines.slice(0, firstOpt).join('\n').replace(/^-{3,}\s*$/m, '').trim()
-  // Only render as options when Orion is genuinely asking the user to choose
-  const isAskingChoice = /[?¿]|elegí|seleccioná|cuál|cuáles|qué preferís|qué querés|cómo querés|qué te gustaría/i.test(prose)
-  if (!isAskingChoice) return null
+  if (options.length < 2 || options.length > 6) return null
+
+  // The prose is everything before this block
+  const prose = lines.slice(0, last.start).join('\n').replace(/^-{3,}\s*$/m, '').trim()
+
+  // Only render as buttons if there's a question somewhere before the options
+  const hasQuestion = /[?¿]|elegí|seleccioná|cuál|cuáles|qué preferís|qué querés|cómo querés|qué te gustaría|confirmás|confirmas/i.test(prose)
+  if (!hasQuestion) return null
+
   return { prose, options }
 }
 interface ExtractedProposal { title: string; description: string; items: ExtractedItem[]; _sourceFile?: string }
