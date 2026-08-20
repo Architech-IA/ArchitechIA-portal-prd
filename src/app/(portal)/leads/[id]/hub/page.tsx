@@ -221,7 +221,7 @@ function PhasePanel({
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+      <div className="flex-1 overflow-hidden flex flex-col px-8 py-6">
         {/* Text editor */}
         <TabbedNotes value={content} onChange={setContent} />
 

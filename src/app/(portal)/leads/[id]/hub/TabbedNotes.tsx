@@ -90,7 +90,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
     content: tab.content || '',
     onUpdate({ editor }) { onChange(editor.getHTML()) },
     editorProps: {
-      attributes: { class: 'rich-notes-editor focus:outline-none min-h-[360px] text-sm text-white leading-relaxed' },
+      attributes: { class: 'rich-notes-editor focus:outline-none flex-1 text-sm text-white leading-relaxed' },
     },
   }, [tab.id])
 
@@ -101,7 +101,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
   const fsIdx = FONT_SIZES.indexOf(curFS)
 
   return (
-    <div>
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 flex-wrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
         {!viewMode && (
@@ -166,7 +166,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
       </div>
 
       {/* Content */}
-      <div className="px-4 py-3" style={{ background: "rgba(0,0,0,0.08)" }}>
+      <div className="flex-1 overflow-y-auto px-4 py-3" style={{ background: "rgba(0,0,0,0.08)" }}>
         {viewMode ? (
           <div
             className={`rich-notes-view text-sm leading-relaxed min-h-[100px] ${empty(tab.content) ? 'text-gray-600 italic' : 'text-gray-100'}`}
@@ -233,7 +233,7 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   const activeTab = tabs.find(t => t.id === activeId) ?? tabs[0]
 
   return (
-    <div className="relative rounded-2xl overflow-hidden" style={{
+    <div className="relative rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0" style={{
       background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
       backdropFilter: 'blur(40px) saturate(200%)',
       WebkitBackdropFilter: 'blur(40px) saturate(200%)',
@@ -295,7 +295,9 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
 
       {/* Active tab editor */}
       {activeTab && (
-        <TabEditor key={activeTab.id} tab={activeTab} onChange={html => updateTabContent(activeTab.id, html)} />
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <TabEditor key={activeTab.id} tab={activeTab} onChange={html => updateTabContent(activeTab.id, html)} />
+        </div>
       )}
 
       <style>{`
