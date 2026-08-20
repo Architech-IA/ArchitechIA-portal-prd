@@ -631,7 +631,7 @@ export default function LeadHubPage() {
     <div className="flex overflow-hidden" style={{ height: "calc(100vh - 52px)" }}>
 
       {/* Timeline sidebar */}
-      <div className="w-72 flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
+      <div className="w-[250px] flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
 
         {/* Widget info general del lead */}
         <div style={{ margin: '12px', marginBottom: '0', padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
