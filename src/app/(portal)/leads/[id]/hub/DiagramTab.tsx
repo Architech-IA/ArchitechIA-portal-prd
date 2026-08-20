@@ -305,12 +305,6 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               </div>
             </div>
           </div>
-          <label htmlFor="diag-desc" className="sr-only">Descripción del diagrama</label>
-          <input id="diag-desc" value={diag.description}
-            onChange={e => setDiag(p => ({ ...p, description: e.target.value }))}
-            placeholder="Descripción..."
-            className="bg-transparent text-gray-500 text-xs px-3 py-1.5 rounded-xl border border-transparent hover:border-gray-800 focus:outline-none w-full transition-all"
-          />
         </div>
         <div className="flex gap-2 shrink-0 pt-1">
           {/* Primary action */}
