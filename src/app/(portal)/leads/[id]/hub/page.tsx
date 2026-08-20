@@ -747,7 +747,7 @@ export default function LeadHubPage() {
 
           {/* FASES */}
           {tab === 'fases' && (active ? (
-            <PhasePanel phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
+            <PhasePanel key={active} phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-4">
