@@ -239,15 +239,7 @@ function PhasePanel({
           <label className="text-xs text-gray-500 uppercase tracking-wider">Archivos adjuntos</label>
         </div>
 
-        {data?.files.length === 0 || !data ? (
-          <div
-            className="border-2 border-dashed border-gray-800 rounded-xl p-6 text-center text-gray-600 text-xs cursor-pointer hover:border-gray-700 transition-colors"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Paperclip size={20} className="mx-auto mb-2 opacity-40" />
-            Arrastra archivos o haz click para adjuntar
-          </div>
-        ) : (
+        {data?.files.length === 0 || !data ? null : (
           <div className="space-y-2">
             {data.files.map(f => (
               <div key={f.id} className="flex items-center gap-3 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-2">
