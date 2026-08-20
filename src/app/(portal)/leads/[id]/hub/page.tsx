@@ -724,7 +724,12 @@ export default function LeadHubPage() {
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: '2px', padding: '0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)' }}>
           {([ { key: 'fases' as const, label: 'Fases', Icon: Clock }, { key: 'interacciones' as const, label: 'Interacciones', Icon: Phone }, { key: 'tareas' as const, label: 'Tareas', Icon: CheckSquare }, { key: 'propuesta' as const, label: 'Propuesta', Icon: Briefcase }, { key: 'arquitectura' as const, label: 'Arquitectura', Icon: Briefcase }, { key: 'diagrama' as const, label: 'Diagrama', Icon: Briefcase } ]).map(({ key, label, Icon }) => (
-            <button key={key} onClick={() => setTab(key)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 14px 8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', borderBottom: tab === key ? '2px solid #f97316' : '2px solid transparent', background: tab === key ? 'rgba(249,115,22,0.07)' : 'transparent', color: tab === key ? '#f97316' : '#475569', borderRadius: '6px 6px 0 0', transition: 'all 0.15s' }}>
+            <button key={key} onClick={() => setTab(key)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 ${
+                tab === key
+                  ? 'border-b-orange-500 bg-orange-500/[0.07] text-orange-400'
+                  : 'border-b-transparent bg-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+              }`}>
               <Icon size={11} />{label}
             </button>
           ))}
