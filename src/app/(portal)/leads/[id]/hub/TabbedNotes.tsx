@@ -60,8 +60,8 @@ function ToolBtn({ onClick, active, title, children }: {
   return (
     <button
       type="button" title={title} onClick={onClick}
-      className={`p-1.5 rounded transition-colors ${
-        active ? 'bg-orange-500/20 text-orange-400' : 'text-gray-400 hover:text-white hover:bg-gray-700'
+      className={`p-1.5 rounded-lg transition-colors ${
+        active ? 'text-orange-400' : 'text-gray-400 hover:text-white'
       }`}
     >
       {children}
@@ -70,7 +70,7 @@ function ToolBtn({ onClick, active, title, children }: {
 }
 
 function Sep() {
-  return <div className="w-px h-5 bg-gray-700 mx-0.5 self-center" />
+  return <div className="w-px h-4 mx-0.5 self-center" style={{ background: "rgba(255,255,255,0.08)" }} />
 }
 
 // ── Single-tab editor ─────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-700 flex-wrap">
+      <div className="flex items-center gap-0.5 px-2 py-1.5 flex-wrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
         {!viewMode && (
           <>
             <ToolBtn title="Negrita" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}><Bold size={13} /></ToolBtn>
@@ -134,7 +134,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
               type="button" title="Reducir tamaño"
               disabled={fsIdx === 0}
               onClick={() => stepFontSize(editor, -1)}
-              className="px-1.5 py-1 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors leading-none"
+              className="px-1.5 py-1 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors leading-none"
               style={{ fontSize: 11, fontWeight: 700 }}
             >
               A-
@@ -146,7 +146,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
               type="button" title="Aumentar tamaño"
               disabled={fsIdx === FONT_SIZES.length - 1}
               onClick={() => stepFontSize(editor, 1)}
-              className="px-1.5 py-1 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors leading-none"
+              className="px-1.5 py-1 rounded-lg text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors leading-none"
               style={{ fontSize: 13, fontWeight: 700 }}
             >
               A+
@@ -166,7 +166,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
       </div>
 
       {/* Content */}
-      <div className="px-4 py-3">
+      <div className="px-4 py-3" style={{ background: "rgba(0,0,0,0.08)" }}>
         {viewMode ? (
           <div
             className={`rich-notes-view text-sm leading-relaxed min-h-[100px] ${empty(tab.content) ? 'text-gray-600 italic' : 'text-gray-100'}`}
@@ -233,9 +233,17 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   const activeTab = tabs.find(t => t.id === activeId) ?? tabs[0]
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-[#1a1d23] overflow-hidden">
+    <div className="relative rounded-2xl overflow-hidden" style={{
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+      backdropFilter: 'blur(40px) saturate(200%)',
+      WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+      border: '1px solid rgba(255,255,255,0.11)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.18), 0 24px 56px rgba(0,0,0,0.45)',
+    }}>
+      {/* Specular highlight strip */}
+      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18) 40%, rgba(255,255,255,0.08) 60%, transparent)' }} />
       {/* Tab bar */}
-      <div className="flex items-end border-b border-gray-700/40 bg-[#14171e] overflow-x-auto">
+      <div className="flex items-end overflow-x-auto" style={{ background: 'rgba(0,0,0,0.22)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         {tabs.map((tab) => {
           const isActive = tab.id === activeId
           return (
@@ -243,12 +251,12 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
               key={tab.id}
               onClick={() => { if (editingId !== tab.id) setActiveId(tab.id) }}
               onDoubleClick={e => startRename(tab, e)}
-              className={`group relative flex items-center gap-1.5 px-3 py-2 cursor-pointer select-none border-r border-gray-700 transition-colors shrink-0 ${
+              className={`group relative flex items-center gap-1.5 px-3 py-2 cursor-pointer select-none transition-colors shrink-0 ${
                 isActive
-                  ? 'bg-gray-800 text-white border-b-2 border-b-orange-500 -mb-px'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                  ? 'text-white border-b-2 border-b-orange-400 -mb-px'
+                  : 'text-gray-400 hover:text-gray-200'
               }`}
-              style={{ maxWidth: 160 }}
+              style={{ maxWidth: 160, background: tab.id === activeId ? 'rgba(255,255,255,0.07)' : 'transparent', borderRight: '1px solid rgba(255,255,255,0.06)' }}
             >
               {editingId === tab.id ? (
                 <input
@@ -279,7 +287,7 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
         <button
           onClick={addTab}
           title="Agregar tab"
-          className="px-2.5 py-2 text-gray-500 hover:text-orange-400 hover:bg-gray-800/50 transition-colors shrink-0"
+          className="px-2.5 py-2 text-gray-500 hover:text-orange-400 transition-colors shrink-0"
         >
           <Plus size={14} />
         </button>
