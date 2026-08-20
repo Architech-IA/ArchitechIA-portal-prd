@@ -13,12 +13,12 @@ interface DiagNode {
 interface DiagEdge { id: string; from: string; to: string }
 interface DiagData { title: string; description: string; nodes: DiagNode[]; edges: DiagEdge[] }
 
-const CELL = 110
-const W = 160
-const H = 56
-const PAD = 60
-const GRID_COLS = 12   // wide (horizontal)
-const GRID_ROWS = 6    // short (vertical)
+const CELL = 130
+const W = 190
+const H = 68
+const PAD = 50
+const GRID_COLS = 12
+const GRID_ROWS = 6
 
 function snap(v: number) { return Math.round(v) }
 function svgPos(n: DiagNode) {
@@ -299,9 +299,9 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                 return (
                   <line key={edge.id}
                     x1={x1} y1={y1} x2={x2} y2={y2}
-                    stroke={isSel ? '#f97316' : '#1e2d40'}
-                    strokeWidth={isSel ? 2 : 1.5}
-                    opacity={selected && !isSel ? 0.08 : 1}
+                    stroke={isSel ? '#f97316' : '#2e4a6a'}
+                    strokeWidth={isSel ? 2.5 : 1.5}
+                    opacity={selected && !isSel ? 0.1 : 1}
                   />
                 )
               })}
@@ -327,21 +327,21 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                       if (hasDragged.current) return
                       setSelected(sel ? null : node.id)
                     }}>
-                    <rect x={x} y={y} width={W} height={H} rx="7"
-                      fill={sel ? '#0f1e2d' : '#0d1520'}
-                      stroke={sel ? '#f97316' : connected ? '#334155' : '#1a2535'}
-                      strokeWidth={sel ? 2 : 1}
+                    <rect x={x} y={y} width={W} height={H} rx="8"
+                      fill={sel ? '#152030' : '#161c27'}
+                      stroke={sel ? '#f97316' : connected ? '#4a6080' : '#2a3a50'}
+                      strokeWidth={sel ? 2 : 1.5}
                     />
-                    <text x={x + W / 2} y={y + (node.description ? H / 2 - 3 : H / 2 + 5)}
-                      textAnchor="middle" fontSize="12" fontWeight={600}
-                      fill={sel ? '#f97316' : '#cbd5e1'}
+                    <text x={x + W / 2} y={y + (node.description ? H / 2 - 1 : H / 2 + 6)}
+                      textAnchor="middle" fontSize="13" fontWeight={700}
+                      fill={sel ? '#f97316' : '#e2e8f0'}
                       style={{ pointerEvents: 'none' }}>
-                      {node.label.length > 18 ? node.label.slice(0, 17) + '…' : node.label}
+                      {node.label.length > 20 ? node.label.slice(0, 19) + '…' : node.label}
                     </text>
                     {node.description && (
-                      <text x={x + W / 2} y={y + H / 2 + 13} textAnchor="middle" fontSize="9" fill="#334155"
+                      <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="10" fill="#64748b"
                         style={{ pointerEvents: 'none' }}>
-                        {node.description.length > 24 ? node.description.slice(0, 23) + '…' : node.description}
+                        {node.description.length > 26 ? node.description.slice(0, 25) + '…' : node.description}
                       </text>
                     )}
                   </g>
