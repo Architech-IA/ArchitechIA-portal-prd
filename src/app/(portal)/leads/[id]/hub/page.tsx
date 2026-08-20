@@ -196,45 +196,47 @@ function PhasePanel({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Text editor */}
-      <div>
-        <label className="text-xs text-gray-500 uppercase tracking-wider mb-1.5 block">Notas y contenido</label>
-        <TabbedNotes
-          value={content}
-          onChange={setContent}
-        />
-      </div>
-
-      {/* Save button */}
-      <button
-        onClick={save}
-        disabled={saving}
-        className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-      >
-        {saving ? <Loader2 size={14} className="animate-spin" /> : saved ? <CheckCircle2 size={11} /> : <Save size={14} />}
-        {saving ? 'Guardando...' : saved ? '¡Guardado!' : 'Guardar'}
-      </button>
-
-      {/* Files */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs text-gray-500 uppercase tracking-wider">Archivos adjuntos</label>
+    <div className="flex flex-col h-full min-h-0">
+      {/* Header: title + actions */}
+      <div className="flex items-center justify-between px-8 py-4 border-b border-white/[0.05] shrink-0">
+        <h2 className="text-xl font-bold text-white">{phase.desc}</h2>
+        <div className="flex items-center gap-2">
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600 transition-all"
           >
             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
-            {uploading ? 'Subiendo...' : 'Adjuntar archivo'}
+            {uploading ? 'Subiendo...' : 'Adjuntar'}
           </button>
-          <input
+          <button
+            onClick={save}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+          >
+            {saving ? <Loader2 size={13} className="animate-spin" /> : saved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+            {saving ? 'Guardando...' : saved ? '¡Guardado!' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+        {/* Text editor */}
+        <TabbedNotes value={content} onChange={setContent} />
+
+        <input
             ref={fileRef}
             type="file"
             multiple
             className="hidden"
             onChange={e => { Array.from(e.target.files ?? []).forEach(uploadFile); e.target.value = '' }}
           />
+
+      {/* Files */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs text-gray-500 uppercase tracking-wider">Archivos adjuntos</label>
         </div>
 
         {data?.files.length === 0 || !data ? (
@@ -267,10 +269,11 @@ function PhasePanel({
       </div>
 
       {data?.updatedBy && (
-        <p className="text-[10px] text-gray-600">
-          Última actualización por <span className="text-gray-500">{data.updatedBy}</span> · {new Date(data.updatedAt).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-        </p>
-      )}
+          <p className="text-[10px] text-gray-600">
+            Última actualización por <span className="text-gray-500">{data.updatedBy}</span> · {new Date(data.updatedAt).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -748,28 +751,11 @@ export default function LeadHubPage() {
           ))}
         </div>
 
-        <div className={`flex-1 ${tab === 'diagrama' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+        <div className={`flex-1 ${tab === 'diagrama' || tab === 'fases' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
 
           {/* FASES */}
           {tab === 'fases' && (active ? (
-            <div className="max-w-3xl mx-auto p-8">
-              {(() => {
-                const phase = PHASES.find(p => p.key === active)!
-                const c = COLOR_MAP[phase.color]
-                return (
-                  <>
-                    <div className="mb-6">
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text} ${c.border} border mb-2`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                        {phase.label}
-                      </div>
-                      <h2 className="text-2xl font-bold text-white">{phase.desc}</h2>
-                    </div>
-                    <PhasePanel phase={phase} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
-                  </>
-                )
-              })()}
-            </div>
+            <PhasePanel phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-4">
