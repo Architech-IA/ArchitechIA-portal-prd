@@ -456,6 +456,26 @@ export default function CouncilView() {
     }
   }
 
+  async function startDebateFor(proposalId: string, round: number) {
+    setStarting(true)
+    try {
+      const res = await fetch(`/api/council/proposals/${proposalId}/debate/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ round }),
+      })
+      if (res.ok) {
+        setSelectedId(proposalId)
+        setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'DEBATING' } : p))
+        await loadDetail(proposalId)
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
+      }
+    } finally {
+      setStarting(false)
+    }
+  }
+
   const byRound = messages.reduce<Record<number, DebateMsg[]>>((acc, m) => {
     acc[m.round] = acc[m.round] ?? []
     acc[m.round].push(m)
@@ -1151,7 +1171,7 @@ export default function CouncilView() {
               </div>
             )}
 
-            {/* REVISED banner — shows link to child round-2 proposal */}
+            {/* REVISED banner — shows link + retry button for child round-2 proposal */}
             {selectedProposal.status === 'REVISED' && (() => {
               const child = proposals.find(p => p.metadata?.originalProposalId === selectedProposal.id)
               return (
@@ -1163,14 +1183,29 @@ export default function CouncilView() {
                   <p className="text-[10px] text-gray-400 leading-snug">
                     El consejo no alcanzó el umbral de aprobación. Se generó automáticamente una segunda ronda de debate.
                   </p>
-                  {child ? (
-                    <button
-                      onClick={() => setSelectedId(child.id)}
-                      className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-80"
-                      style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}>
-                      ⚖️ Ir a Ronda 2 — {child.title}
-                    </button>
-                  ) : (
+                  {child && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedId(child.id)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-80"
+                        style={{ background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)' }}>
+                        ↗ Ver Ronda 2
+                      </button>
+                      {child.status === 'PENDING' && (
+                        <button
+                          onClick={() => startDebateFor(child.id, 2)}
+                          disabled={starting}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-80 disabled:opacity-50"
+                          style={{ background: 'rgba(99,102,241,0.2)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.4)' }}>
+                          {starting ? <><span className="animate-spin text-[10px]">⚙️</span> Iniciando...</> : <>⚖️ Reintentar debate</>}
+                        </button>
+                      )}
+                      {child.status === 'DEBATING' && (
+                        <span className="text-[9px] animate-pulse" style={{ color: '#6366f1' }}>⚙️ Debatiendo ronda 2...</span>
+                      )}
+                    </div>
+                  )}
+                  {!child && (
                     <p className="mt-1.5 text-[9px] text-gray-600">La propuesta de ronda 2 aún no fue creada.</p>
                   )}
                 </div>
