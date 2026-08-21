@@ -1198,12 +1198,12 @@ export default function CouncilView() {
             {/* Proposed items section */}
             {selectedProposal.items && selectedProposal.items.length > 0 && (
               <div className="border-t border-white/5 px-4 py-3 flex-shrink-0"
-                   style={{ background: 'rgba(0,0,0,0.15)' }}>
+                   style={{ background: 'rgba(0,0,0,0.15)', maxHeight: '9rem' }}>
                 <div className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-2 flex items-center gap-1.5">
                   <ListChecks size={10} />
-                  Items propuestos
+                  Items propuestos · {selectedProposal.items.length}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 overflow-y-auto" style={{ maxHeight: '5.5rem' }}>
                   {selectedProposal.items.map((item: any, i: number) => (
                     <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px]"
                          style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.2)' }}>
