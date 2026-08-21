@@ -1111,7 +1111,7 @@ export default function CouncilView() {
                   )}
                 </div>
                 {/* Iniciar debate button for PENDING/REVISED */}
-                {(selectedProposal.status === 'PENDING' || selectedProposal.status === 'REVISED') && (
+                {selectedProposal.status === 'PENDING' && (
                   <button
                     onClick={startDebate}
                     disabled={starting}
