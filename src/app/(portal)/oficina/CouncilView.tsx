@@ -60,7 +60,9 @@ interface Session {
   preview: string
   messages: ChatMsg[]
 }
-interface ExtractedItem { type: string; title: string; description: string; areaSlug: string; priority: string }
+interface ExtractedTask { title: string; description: string; areaSlug: string; priority: string }
+interface ExtractedSprint { name: string; goal: string; tasks: ExtractedTask[] }
+interface ExtractedEpic { name: string; description: string }
 
 function renderMd(text: string) {
   return text.split('\n').map((line, li, arr) => {
@@ -110,7 +112,7 @@ function parseOrionOptions(content: string): { prose: string; options: string[] 
 
   return { prose, options }
 }
-interface ExtractedProposal { title: string; description: string; items: ExtractedItem[]; _sourceFile?: string }
+interface ExtractedProposal { title: string; description: string; epic?: ExtractedEpic; sprints?: ExtractedSprint[]; items?: { type: string; title: string; description: string; areaSlug: string; priority: string }[]; _sourceFile?: string }
 
 const AGENT_COLOR: Record<string, string> = {
   orion: '#6366f1',
@@ -344,6 +346,16 @@ export default function CouncilView() {
     if (!extracted) return
     setSendingToCouncil(true)
     try {
+      // Flatten sprints→tasks into items for the proposals API
+      const flatItems = extracted.sprints
+        ? extracted.sprints.flatMap(s => s.tasks.map(t => ({
+            type: 'TASK',
+            title: t.title,
+            description: `[${s.name}] ${t.description}`,
+            areaSlug: t.areaSlug,
+            priority: t.priority,
+          })))
+        : (extracted.items ?? [])
       const res = await fetch('/api/council/proposals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -351,7 +363,7 @@ export default function CouncilView() {
           title: extracted.title,
           description: extracted.description,
           inputChannel: 'CONVERSATION',
-          items: extracted.items,
+          items: flatItems,
           createdByAgentId: 'agent_orion_001',
           createdByAgentName: 'Orión',
         }),
@@ -464,6 +476,9 @@ export default function CouncilView() {
     onSend: () => void
     sending: boolean
   }) {
+    const PRIORITY_COLOR: Record<string, string> = {
+      CRITICAL: '#ef4444', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#6b7280',
+    }
     return (
       <div className="w-72 flex-shrink-0 border-l border-white/5 flex flex-col overflow-hidden"
            style={{ background: 'rgba(0,0,0,0.2)' }}>
@@ -474,12 +489,7 @@ export default function CouncilView() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {data._sourceFile && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
-              <FileText size={10} style={{ color: '#3b82f6' }} />
-              <span className="text-[9px] text-gray-500 truncate">{data._sourceFile}</span>
-            </div>
-          )}
+          {/* Title */}
           <div>
             <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Título</label>
             <input
@@ -489,47 +499,73 @@ export default function CouncilView() {
               style={{ background: 'rgba(255,255,255,0.04)' }}
             />
           </div>
+          {/* Description */}
           <div>
             <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Descripción</label>
             <textarea
               value={data.description}
               onChange={e => onChangeData({ ...data, description: e.target.value })}
-              rows={3}
+              rows={2}
               className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-300 border border-white/8 outline-none focus:border-indigo-500/40 resize-none"
               style={{ background: 'rgba(255,255,255,0.04)' }}
             />
           </div>
-          <div>
-            <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-2 block">
-              Items · {data.items.length}
-            </label>
+          {/* Epic */}
+          {data.epic && (
+            <div className="rounded-lg p-2.5" style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>Épica</span>
+              </div>
+              <p className="text-[10px] font-semibold text-gray-200 mb-0.5">{data.epic.name}</p>
+              <p className="text-[9px] text-gray-500 leading-snug">{data.epic.description}</p>
+            </div>
+          )}
+          {/* Sprints + Tasks */}
+          {data.sprints && data.sprints.length > 0 && (
             <div className="space-y-2">
-              {data.items.map((item, idx) => (
-                <div key={idx} className="rounded-lg p-2.5 border"
-                     style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.15)' }}>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase"
-                          style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1' }}>
-                      {item.type}
-                    </span>
-                    <span className="text-[8px] text-gray-700 ml-auto">{item.priority}</span>
-                    <button
-                      onClick={() => onChangeData({ ...data, items: data.items.filter((_, i) => i !== idx) })}
-                      className="text-gray-700 hover:text-red-400 transition-colors">
-                      <Trash2 size={9} />
-                    </button>
+              <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 block">
+                Sprints · {data.sprints.length}
+              </label>
+              {data.sprints.map((sprint, si) => (
+                <div key={si} className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <div className="px-2.5 py-2" style={{ background: 'rgba(99,102,241,0.1)' }}>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}>Sprint {si + 1}</span>
+                    </div>
+                    <p className="text-[10px] font-semibold text-gray-200">{sprint.name}</p>
+                    {sprint.goal && <p className="text-[9px] text-gray-500 mt-0.5 leading-snug">{sprint.goal}</p>}
                   </div>
-                  <input
-                    value={item.title}
-                    onChange={e => onChangeData({ ...data, items: data.items.map((it, i) => i === idx ? { ...it, title: e.target.value } : it) })}
-                    className="w-full rounded px-2 py-1 text-[10px] font-semibold text-gray-200 border border-white/6 outline-none focus:border-indigo-500/30 mb-1"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}
-                  />
-                  <div className="text-[9px] text-gray-600">{item.areaSlug}</div>
+                  <div className="px-2 pb-2 pt-1.5 space-y-1.5" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                    {sprint.tasks.map((task, ti) => (
+                      <div key={ti} className="rounded px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <span className="text-[7px] font-bold uppercase" style={{ color: PRIORITY_COLOR[task.priority] ?? '#6b7280' }}>{task.priority}</span>
+                          <span className="text-[7px] text-gray-700 ml-auto">{task.areaSlug}</span>
+                        </div>
+                        <p className="text-[9px] text-gray-300 font-medium leading-snug">{task.title}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          )}
+          {/* Fallback: legacy flat items */}
+          {!data.sprints && data.items && data.items.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 block">Items · {data.items.length}</label>
+              {data.items.map((item, idx) => (
+                <div key={idx} className="rounded-lg p-2.5 border" style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.15)' }}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1' }}>{item.type}</span>
+                    <span className="text-[8px] text-gray-700 ml-auto">{item.priority}</span>
+                  </div>
+                  <p className="text-[10px] font-semibold text-gray-200">{item.title}</p>
+                  <p className="text-[9px] text-gray-600 mt-0.5">{item.areaSlug}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="p-3 border-t border-white/5 flex-shrink-0">
           <button
