@@ -209,6 +209,8 @@ export default function CouncilView() {
   const [docStatus, setDocStatus] = useState<'idle' | 'processing' | 'done' | 'error'>('idle')
   const [docError, setDocError] = useState<string>('')
   const [docExtracted, setDocExtracted] = useState<ExtractedProposal | null>(null)
+  const [escalationInstructions, setEscalationInstructions] = useState('')
+  const [escalationAction, setEscalationAction] = useState<string | null>(null)
   const [sendingDocToCouncil, setSendingDocToCouncil] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Trigger config
@@ -473,6 +475,50 @@ export default function CouncilView() {
       }
     } finally {
       setStarting(false)
+    }
+  }
+
+  async function handleEscalatedAction(proposalId: string, action: 'APPROVED' | 'REJECTED' | 'RETRY') {
+    setEscalationAction(action)
+    try {
+      if (action === 'APPROVED' || action === 'REJECTED') {
+        await fetch(`/api/council/proposals/${proposalId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: action }),
+        })
+        setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: action } : p))
+        await loadDetail(proposalId)
+      } else {
+        // RETRY: create new round proposal with instructions in metadata
+        const current = proposals.find(p => p.id === proposalId)
+        if (!current) return
+        const res = await fetch('/api/council/proposals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `[Revisada R3] ${current.title.replace(/^\[Revisada.*?\]\s*/, '')}`,
+            description: current.description,
+            inputChannel: current.inputChannel,
+            items: current.items,
+            createdByAgentId: current.createdByAgentId ?? 'agent_orion_001',
+            createdByAgentName: current.createdByAgentName ?? 'Orión',
+            metadata: {
+              originalProposalId: proposalId,
+              escalatedRound: true,
+              humanInstructions: escalationInstructions || null,
+            },
+          }),
+        })
+        if (res.ok) {
+          const newProposal = await res.json()
+          await loadProposals()
+          setEscalationInstructions('')
+          await startDebateFor(newProposal.id, 3)
+        }
+      }
+    } finally {
+      setEscalationAction(null)
     }
   }
 
@@ -1157,16 +1203,46 @@ export default function CouncilView() {
               </div>
             </div>
 
-            {/* Escalated banner */}
+            {/* Escalated banner — human decision required */}
             {selectedProposal.status === 'ESCALATED' && (
-              <div className="mx-4 mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2.5 flex-shrink-0"
-                   style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
-                <span className="text-base flex-shrink-0">🚨</span>
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f97316' }}>Escalada al socio</div>
-                  <p className="text-[10px] text-gray-400 leading-snug mt-0.5">
-                    No alcanzó umbral en 2 rondas. Requiere decisión humana: aprobar, rechazar o pedir revisión con instrucciones.
-                  </p>
+              <div className="mx-4 mt-3 rounded-xl px-3 py-3 flex-shrink-0"
+                   style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f97316' }}>🚨 Escalada — requiere decisión del socio</span>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-snug mb-3">
+                  El consejo no alcanzó umbral en 2 rondas. Aprobá, rechazá o iniciá una nueva ronda con instrucciones adicionales.
+                </p>
+                <textarea
+                  value={escalationInstructions}
+                  onChange={e => setEscalationInstructions(e.target.value)}
+                  placeholder="Instrucciones para el consejo (opcional para nueva ronda)..."
+                  rows={2}
+                  className="w-full rounded-lg px-2.5 py-1.5 text-[10px] text-gray-300 border border-white/8 outline-none focus:border-orange-500/40 resize-none mb-2.5"
+                  style={{ background: 'rgba(255,255,255,0.04)' }}
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleEscalatedAction(selectedProposal.id, 'APPROVED')}
+                    disabled={!!escalationAction}
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                    style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                    {escalationAction === 'APPROVED' ? '...' : '✅ Aprobar'}
+                  </button>
+                  <button
+                    onClick={() => handleEscalatedAction(selectedProposal.id, 'REJECTED')}
+                    disabled={!!escalationAction}
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                    style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
+                    {escalationAction === 'REJECTED' ? '...' : '❌ Rechazar'}
+                  </button>
+                  <button
+                    onClick={() => handleEscalatedAction(selectedProposal.id, 'RETRY')}
+                    disabled={!!escalationAction}
+                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                    style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
+                    {escalationAction === 'RETRY' ? '...' : '🔄 Nueva ronda'}
+                  </button>
                 </div>
               </div>
             )}
