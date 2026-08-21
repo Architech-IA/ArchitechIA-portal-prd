@@ -1095,6 +1095,16 @@ export default function CouncilView() {
                       <span className="text-[8px] px-1.5 py-0.5 rounded font-mono"
                             style={{ background: 'rgba(139,92,246,0.15)', color: '#8b5cf6' }}>Ronda {selectedProposal.round}</span>
                     )}
+                    {/* Link to original if this is a revisada proposal */}
+                    {selectedProposal.metadata?.originalProposalId && (() => {
+                      const orig = proposals.find(p => p.id === selectedProposal.metadata.originalProposalId)
+                      if (!orig) return null
+                      return (
+                        <button onClick={() => setSelectedId(orig.id)}
+                          className="text-[8px] px-1.5 py-0.5 rounded underline underline-offset-2 transition-opacity hover:opacity-80"
+                          style={{ color: '#8b5cf6' }}>↩ Ver original</button>
+                      )
+                    })()}
                     <span className="text-[9px] text-gray-600">{CHANNEL_LABEL[selectedProposal.inputChannel]}</span>
                     <span className="text-[9px] text-gray-700 ml-auto">{formatTs(selectedProposal.createdAt)}</span>
                   </div>
@@ -1135,11 +1145,37 @@ export default function CouncilView() {
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f97316' }}>Escalada al socio</div>
                   <p className="text-[10px] text-gray-400 leading-snug mt-0.5">
-                    La propuesta no alcanzó umbral en 2 rondas. Requiere decisión humana: aprobar, rechazar o pedir revisión con instrucciones.
+                    No alcanzó umbral en 2 rondas. Requiere decisión humana: aprobar, rechazar o pedir revisión con instrucciones.
                   </p>
                 </div>
               </div>
             )}
+
+            {/* REVISED banner — shows link to child round-2 proposal */}
+            {selectedProposal.status === 'REVISED' && (() => {
+              const child = proposals.find(p => p.metadata?.originalProposalId === selectedProposal.id)
+              return (
+                <div className="mx-4 mt-3 rounded-xl px-3 py-2.5 flex-shrink-0"
+                     style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#8b5cf6' }}>🔄 Ronda 1 completada — score insuficiente</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 leading-snug">
+                    El consejo no alcanzó el umbral de aprobación. Se generó automáticamente una segunda ronda de debate.
+                  </p>
+                  {child ? (
+                    <button
+                      onClick={() => setSelectedId(child.id)}
+                      className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:opacity-80"
+                      style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)' }}>
+                      ⚖️ Ir a Ronda 2 — {child.title}
+                    </button>
+                  ) : (
+                    <p className="mt-1.5 text-[9px] text-gray-600">La propuesta de ronda 2 aún no fue creada.</p>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Debate messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
