@@ -211,6 +211,9 @@ export default function CouncilView() {
   const [docExtracted, setDocExtracted] = useState<ExtractedProposal | null>(null)
   const [escalationInstructions, setEscalationInstructions] = useState('')
   const [escalationAction, setEscalationAction] = useState<string | null>(null)
+  const [synthesizing, setSynthesizing] = useState(false)
+  const [synthesis, setSynthesis] = useState<any | null>(null)
+  const [creatingBacklog, setCreatingBacklog] = useState(false)
   const [sendingDocToCouncil, setSendingDocToCouncil] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Trigger config
@@ -520,6 +523,32 @@ export default function CouncilView() {
     } finally {
       setEscalationAction(null)
     }
+  }
+
+  async function synthesizeProposal(proposalId: string) {
+    setSynthesizing(true)
+    setSynthesis(null)
+    try {
+      const res = await fetch(`/api/council/proposals/${proposalId}/finalize`, { method: 'POST' })
+      if (res.ok) setSynthesis(await res.json())
+    } finally { setSynthesizing(false) }
+  }
+
+  async function createBacklog(proposalId: string) {
+    if (!synthesis) return
+    setCreatingBacklog(true)
+    try {
+      const res = await fetch(`/api/council/proposals/${proposalId}/create-backlog`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ epic: synthesis.epic, sprints: synthesis.sprints }),
+      })
+      if (res.ok) {
+        setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'APPROVED' } : p))
+        setSynthesis(null)
+        await loadDetail(proposalId)
+      }
+    } finally { setCreatingBacklog(false) }
   }
 
   const byRound = messages.reduce<Record<number, DebateMsg[]>>((acc, m) => {
@@ -1205,45 +1234,95 @@ export default function CouncilView() {
 
             {/* Escalated banner — human decision required */}
             {selectedProposal.status === 'ESCALATED' && (
-              <div className="mx-4 mt-3 rounded-xl px-3 py-3 flex-shrink-0"
-                   style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)' }}>
-                <div className="flex items-center gap-2 mb-2">
+              <div className="mx-4 mt-3 flex-shrink-0 space-y-2">
+                {/* Main decision banner */}
+                <div className="rounded-xl px-3 py-3" style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)' }}>
                   <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f97316' }}>🚨 Escalada — requiere decisión del socio</span>
+                  <p className="text-[10px] text-gray-400 leading-snug mt-1 mb-3">
+                    El consejo no alcanzó umbral en 2 rondas. Podés aprobar, rechazar, dar una nueva ronda, o pedir al consejo que sintetice el plan final.
+                  </p>
+                  <textarea
+                    value={escalationInstructions}
+                    onChange={e => setEscalationInstructions(e.target.value)}
+                    placeholder="Instrucciones adicionales para nueva ronda (opcional)..."
+                    rows={2}
+                    className="w-full rounded-lg px-2.5 py-1.5 text-[10px] text-gray-300 border border-white/8 outline-none focus:border-orange-500/40 resize-none mb-2.5"
+                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'APPROVED')} disabled={!!escalationAction || synthesizing}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                      style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                      {escalationAction === 'APPROVED' ? '...' : '✅ Aprobar'}
+                    </button>
+                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'REJECTED')} disabled={!!escalationAction || synthesizing}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                      style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
+                      {escalationAction === 'REJECTED' ? '...' : '❌ Rechazar'}
+                    </button>
+                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'RETRY')} disabled={!!escalationAction || synthesizing}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
+                      style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>
+                      {escalationAction === 'RETRY' ? '...' : '🔄 Nueva ronda'}
+                    </button>
+                    <button onClick={() => synthesizeProposal(selectedProposal.id)} disabled={synthesizing || !!escalationAction}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 ml-auto"
+                      style={{ background: 'rgba(139,92,246,0.18)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.35)' }}>
+                      {synthesizing ? <><span className="animate-spin text-[10px]">⚙️</span> Sintetizando...</> : '⚡ Síntesis del Consejo'}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-[10px] text-gray-400 leading-snug mb-3">
-                  El consejo no alcanzó umbral en 2 rondas. Aprobá, rechazá o iniciá una nueva ronda con instrucciones adicionales.
-                </p>
-                <textarea
-                  value={escalationInstructions}
-                  onChange={e => setEscalationInstructions(e.target.value)}
-                  placeholder="Instrucciones para el consejo (opcional para nueva ronda)..."
-                  rows={2}
-                  className="w-full rounded-lg px-2.5 py-1.5 text-[10px] text-gray-300 border border-white/8 outline-none focus:border-orange-500/40 resize-none mb-2.5"
-                  style={{ background: 'rgba(255,255,255,0.04)' }}
-                />
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleEscalatedAction(selectedProposal.id, 'APPROVED')}
-                    disabled={!!escalationAction}
-                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
-                    style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                    {escalationAction === 'APPROVED' ? '...' : '✅ Aprobar'}
-                  </button>
-                  <button
-                    onClick={() => handleEscalatedAction(selectedProposal.id, 'REJECTED')}
-                    disabled={!!escalationAction}
-                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
-                    style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
-                    {escalationAction === 'REJECTED' ? '...' : '❌ Rechazar'}
-                  </button>
-                  <button
-                    onClick={() => handleEscalatedAction(selectedProposal.id, 'RETRY')}
-                    disabled={!!escalationAction}
-                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
-                    style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}>
-                    {escalationAction === 'RETRY' ? '...' : '🔄 Nueva ronda'}
-                  </button>
-                </div>
+                {/* Synthesis result */}
+                {synthesis && (
+                  <div className="rounded-xl px-3 py-3 space-y-3" style={{ background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.3)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#a78bfa' }}>⚡ Plan sintetizado por el Consejo</span>
+                      <button onClick={() => setSynthesis(null)} className="text-gray-600 hover:text-gray-400"><span className="text-[11px]">✕</span></button>
+                    </div>
+                    {/* Epic */}
+                    <div className="rounded-lg p-2.5" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <div className="text-[8px] font-bold uppercase tracking-widest mb-1" style={{ color: '#10b981' }}>Épica</div>
+                      <p className="text-[10px] font-semibold text-gray-200">{synthesis.epic?.name}</p>
+                      <p className="text-[9px] text-gray-500 mt-0.5">{synthesis.epic?.description}</p>
+                      {synthesis.epic?.startDate && <p className="text-[8px] text-gray-600 mt-1">{synthesis.epic.startDate} → {synthesis.epic.endDate}</p>}
+                    </div>
+                    {/* Sprints */}
+                    <div className="space-y-2">
+                      {(synthesis.sprints ?? []).map((sp: any, si: number) => (
+                        <div key={si} className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.2)' }}>
+                          <div className="px-2.5 py-2" style={{ background: 'rgba(99,102,241,0.1)' }}>
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}>Sprint {si+1}</span>
+                              <span className="text-[8px] text-gray-600 ml-auto">{sp.areaSlug}</span>
+                            </div>
+                            <p className="text-[10px] font-semibold text-gray-200">{sp.name}</p>
+                            {sp.goal && <p className="text-[9px] text-gray-500 mt-0.5">{sp.goal}</p>}
+                            {sp.startDate && <p className="text-[8px] text-gray-600 mt-0.5">{sp.startDate} → {sp.endDate}</p>}
+                          </div>
+                          <div className="px-2 pb-2 pt-1.5 space-y-1" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                            {(sp.tasks ?? []).map((t: any, ti: number) => (
+                              <div key={ti} className="rounded px-2 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <span className="text-[7px] font-bold uppercase" style={{ color: t.priority === 'CRITICAL' ? '#ef4444' : t.priority === 'HIGH' ? '#f97316' : t.priority === 'MEDIUM' ? '#eab308' : '#6b7280' }}>{t.priority}</span>
+                                  <span className="text-[7px] text-gray-700 ml-auto">{t.areaSlug}{t.assigneeName ? ' · ' + t.assigneeName : ''}</span>
+                                </div>
+                                <p className="text-[9px] text-gray-300 font-medium leading-snug">{t.title}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Create in Backlog button */}
+                    <button
+                      onClick={() => createBacklog(selectedProposal.id)}
+                      disabled={creatingBacklog}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
+                      style={{ background: 'rgba(139,92,246,0.25)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.5)' }}>
+                      {creatingBacklog ? <><span className="animate-spin">⚙️</span> Creando...</> : '🚀 Crear Épica, Sprints y Tasks en Backlog'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
