@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal , Send } from 'lucide-react'
+import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import CouncilView from './CouncilView'
 
@@ -79,6 +79,8 @@ function OficinaPageInner() {
   const [roomSearch, setRoomSearch] = useState("")
   const [roomsOpen, setRoomsOpen] = useState(true)
   const [configOpen, setConfigOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [councilMode, setCouncilMode] = useState<'proposals' | 'chat' | 'document'>('chat')
 
   // Config / Agentes view
   const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory'>('rooms')
@@ -207,16 +209,18 @@ function OficinaPageInner() {
     <div className="flex h-full overflow-hidden">
 
       {/* ── Left: Sidebar ── */}
-      <div className="w-56 flex-shrink-0 flex flex-col border-r border-white/5 overflow-hidden overflow-x-hidden"
-           style={{ background: 'rgba(0,0,0,0.25)' }}>
+      <div className="relative flex-shrink-0 flex transition-all duration-300 ease-in-out"
+           style={{ width: sidebarOpen ? '224px' : '0px' }}>
+        <div className="w-56 flex-shrink-0 flex flex-col border-r border-white/5 overflow-hidden"
+             style={{ background: 'rgba(0,0,0,0.25)', opacity: sidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>
 
         {/* Rooms section */}
         <div className="overflow-y-auto overflow-x-hidden">
           <button onClick={() => setRoomsOpen(o => !o)}
-            className="w-full flex items-center justify-between px-3 pt-4 pb-2 group hover:opacity-80 transition-opacity">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Rooms</span>
-            <ChevronRight size={10} className="text-gray-600 transition-transform flex-shrink-0"
-              style={{ transform: roomsOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+            className="w-full flex items-center justify-between px-3 pt-4 pb-2 group hover:bg-white/5 transition-colors rounded-lg">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">Rooms</span>
+            <ChevronRight size={11} className="transition-transform flex-shrink-0"
+              style={{ color: roomsOpen ? '#6366f1' : '#4b5563', transform: roomsOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
           {roomsOpen && areas.map(area => (
             <div key={area.id}>
@@ -260,10 +264,10 @@ function OficinaPageInner() {
         {/* Config section */}
         <div className="flex-shrink-0 border-t border-white/5 pt-1 pb-2">
           <button onClick={() => setConfigOpen(o => !o)}
-            className="w-full flex items-center justify-between px-3 pt-2 pb-1 group hover:opacity-80 transition-opacity">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500">Config</span>
-            <ChevronRight size={10} className="text-gray-600 transition-transform flex-shrink-0"
-              style={{ transform: configOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+            className="w-full flex items-center justify-between px-3 pt-2 pb-1 group hover:bg-white/5 transition-colors rounded-lg">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">Config</span>
+            <ChevronRight size={11} className="transition-transform flex-shrink-0"
+              style={{ color: configOpen ? '#6366f1' : '#4b5563', transform: configOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
           {configOpen && <button
             onClick={() => setSideView('agentes')}
@@ -281,6 +285,18 @@ function OficinaPageInner() {
           </button>}
         </div>
       </div>
+      </div>
+
+      {/* Sidebar toggle button */}
+      <button
+        onClick={() => setSidebarOpen(o => !o)}
+        className="flex-shrink-0 flex items-center justify-center w-4 hover:w-5 transition-all duration-200 group z-10"
+        style={{ background: 'rgba(0,0,0,0.2)', borderRight: '1px solid rgba(255,255,255,0.05)' }}
+        title={sidebarOpen ? 'Ocultar sidebar' : 'Mostrar sidebar'}>
+        <span style={{ color: '#f97316', fontSize: '13px', fontWeight: 900 }}>
+          {sidebarOpen ? '‹' : '›'}
+        </span>
+      </button>
 
       {/* ── Center: Content ── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -694,6 +710,31 @@ function OficinaPageInner() {
                     <div className="text-[11px] font-black tracking-widest uppercase" style={{ color: selected.color }}>{selected.name}</div>
                   </div>
 
+                  {/* Council tabs */}
+                  {isConsejo && (
+                    <>
+                      <div className="w-px h-4 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                      <div className="flex items-center gap-0.5 rounded-xl px-1 py-0.5"
+                           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <button onClick={() => setCouncilMode('chat')}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"
+                          style={councilMode === 'chat' ? { background: 'rgba(99,102,241,0.2)', color: '#818cf8' } : { color: '#6b7280' }}>
+                          Conversar con Orión
+                        </button>
+                        <button onClick={() => setCouncilMode('proposals')}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"
+                          style={councilMode === 'proposals' ? { background: 'rgba(99,102,241,0.2)', color: '#818cf8' } : { color: '#6b7280' }}>
+                          Council
+                        </button>
+                        <button onClick={() => setCouncilMode('document')}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"
+                          style={councilMode === 'document' ? { background: 'rgba(59,130,246,0.2)', color: '#60a5fa' } : { color: '#6b7280' }}>
+                          Documento
+                        </button>
+                      </div>
+                    </>
+                  )}
+
                   {/* Spacer */}
                   <div className="flex-1" />
 
@@ -745,7 +786,7 @@ function OficinaPageInner() {
 
                 {/* ── CHAT MODE for backlog-hub / council ── */}
                 {isConsejo ? (
-                  <CouncilView />
+                  <CouncilView mode={councilMode} setMode={setCouncilMode} />
                 ) : isBacklogHub ? (
                   <div className="flex-1 flex flex-col overflow-hidden">
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">

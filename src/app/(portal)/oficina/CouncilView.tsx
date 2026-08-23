@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle, Upload, FileText, Settings, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle, Upload, FileText, Settings, ToggleLeft, ToggleRight, Info } from 'lucide-react'
 
 interface Proposal {
   id: string
@@ -129,6 +129,13 @@ const STATUS_COLOR: Record<string, string> = {
   REJECTED: '#ef4444',
   ESCALATED: '#f97316',
   REVISED: '#8b5cf6',
+  ADJUSTING: '#f59e0b',
+  ADJUST_READY: '#fb923c',
+  ADJUST_QUESTIONS: '#fb923c',
+  PLANNING: '#6366f1',
+  PLAN_READY: '#10b981',
+  PLAN_QUESTIONS: '#3b82f6',
+  EXECUTING: '#059669',
 }
 
 const CHANNEL_LABEL: Record<string, string> = {
@@ -176,7 +183,7 @@ function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function CouncilView() {
+export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { mode?: 'proposals' | 'chat' | 'document', setMode?: (m: 'proposals' | 'chat' | 'document') => void } = {}) {
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -187,8 +194,11 @@ export default function CouncilView() {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const [starting, setStarting] = useState(false)
+  const [showDesc, setShowDesc] = useState(false)
   // Tab mode
   const [mode, setMode] = useState<'proposals' | 'chat' | 'document'>('chat')
+  const activeMode = modeProp ?? mode
+  const setActiveMode: (m: 'proposals' | 'chat' | 'document') => void = setModeProp ?? setMode
   // Chat mode
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
@@ -213,6 +223,12 @@ export default function CouncilView() {
   const [escalationAction, setEscalationAction] = useState<string | null>(null)
   const [negotiating, setNegotiating] = useState(false)
   const [creatingBacklog, setCreatingBacklog] = useState(false)
+  const [humanComment, setHumanComment] = useState('')
+  const [submittingComment, setSubmittingComment] = useState(false)
+  const [approvingPlan, setApprovingPlan] = useState(false)
+  const [deletingProposal, setDeletingProposal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [planApproved, setPlanApproved] = useState(false)
   const [sendingDocToCouncil, setSendingDocToCouncil] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Trigger config
@@ -247,12 +263,17 @@ export default function CouncilView() {
 
   async function loadDetail(id: string) {
     setDetailLoading(true)
-    const [msgRes, voteRes] = await Promise.all([
+    const [msgRes, voteRes, propRes] = await Promise.all([
       fetch(`/api/council/proposals/${id}/messages`),
       fetch(`/api/council/proposals/${id}/votes`),
+      fetch(`/api/council/proposals/${id}`),
     ])
     if (msgRes.ok) setMessages(await msgRes.json())
     if (voteRes.ok) setVoteState(await voteRes.json())
+    if (propRes.ok) {
+      const updated = await propRes.json()
+      setProposals(prev => prev.map(p => p.id === id ? { ...p, ...updated, messages: undefined, votes: undefined } : p))
+    }
     setDetailLoading(false)
   }
 
@@ -268,7 +289,7 @@ export default function CouncilView() {
     loadDetail(selectedId)
     if (pollRef.current) clearInterval(pollRef.current)
     const p = proposals.find(pr => pr.id === selectedId)
-    if (p?.status === 'DEBATING') {
+    if (['DEBATING','PLANNING','ADJUSTING'].includes(p?.status ?? '')) {
       pollRef.current = setInterval(() => loadDetail(selectedId), 5000)
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
@@ -378,7 +399,7 @@ export default function CouncilView() {
         setExtracted(null)
         setChatMessages([])
       setLeadContextLoaded(null)
-        setMode('proposals')
+        setActiveMode('proposals')
         setSelectedId(proposal.id)
       }
     } finally {
@@ -432,7 +453,7 @@ export default function CouncilView() {
         setDocExtracted(null)
         setDocFile(null)
         setDocStatus('idle')
-        setMode('proposals')
+        setActiveMode('proposals')
         setSelectedId(proposal.id)
       }
     } finally {
@@ -529,11 +550,95 @@ export default function CouncilView() {
     try {
       const res = await fetch(`/api/council/proposals/${proposalId}/negotiate`, { method: 'POST' })
       if (res.ok) {
-        // Reload proposal (metadata.negotiatedPlan now set) + messages (new negotiation round)
-        await loadProposals()
-        await loadDetail(proposalId)
+        // 202 = negotiation started in background; update UI optimistically + start polling
+        setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'DEBATING' } : p))
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
+        loadDetail(proposalId)
       }
     } finally { setNegotiating(false) }
+  }
+
+  async function submitHumanComment(proposalId: string, phase: 'plan' | 'adjust') {
+    const comment = humanComment.trim()
+    if (!comment) return
+    setSubmittingComment(true)
+    try {
+      const endpoint = phase === 'plan'
+        ? `/api/council/proposals/${proposalId}/plan/start`
+        : `/api/council/proposals/${proposalId}/adjust/start`
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ humanComment: comment }),
+      })
+      if (res.ok) {
+        setHumanComment('')
+        setProposals(prev => prev.map(p => p.id === proposalId
+          ? { ...p, status: phase === 'plan' ? 'PLANNING' : 'ADJUSTING' } : p))
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
+      }
+    } finally { setSubmittingComment(false) }
+  }
+
+  async function startPlanning(proposalId: string) {
+    setStarting(true)
+    try {
+      const res = await fetch(`/api/council/proposals/${proposalId}/plan/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (res.ok) {
+        setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'PLANNING' } : p))
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
+      }
+    } finally { setStarting(false) }
+  }
+
+  async function approvePlan(proposalId: string) {
+    setApprovingPlan(true)
+    try {
+      const res = await fetch(`/api/council/proposals/${proposalId}/plan/approve`, { method: 'POST' })
+      if (res.ok) {
+        setPlanApproved(true)
+        setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'EXECUTING' } : p))
+        await loadDetail(proposalId)
+      }
+    } finally { setApprovingPlan(false) }
+  }
+
+  async function approveAdjustments(proposalId: string) {
+    setStarting(true)
+    try {
+      // Apply adjustments then trigger planning
+      const res = await fetch(`/api/council/proposals/${proposalId}/plan/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (res.ok) {
+        setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'PLANNING' } : p))
+        if (pollRef.current) clearInterval(pollRef.current)
+        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
+      }
+    } finally { setStarting(false) }
+  }
+
+  async function deleteProposal(proposalId: string) {
+    setDeletingProposal(true)
+    try {
+      const res = await fetch(`/api/council/proposals/${proposalId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setProposals(prev => prev.filter(p => p.id !== proposalId))
+        setSelectedId(null)
+        setMessages([])
+        setVoteState(null)
+        setShowDeleteConfirm(false)
+      }
+    } finally { setDeletingProposal(false) }
   }
 
   async function createBacklog(proposalId: string, plan: any) {
@@ -552,10 +657,14 @@ export default function CouncilView() {
   }
 
   const byRound = messages.reduce<Record<number, DebateMsg[]>>((acc, m) => {
-    acc[m.round] = acc[m.round] ?? []
-    acc[m.round].push(m)
+    if (m.round < 10) {
+      acc[m.round] = acc[m.round] ?? []
+      acc[m.round].push(m)
+    }
     return acc
   }, {})
+  const planningMsgs = messages.filter(m => m.round >= 10 && m.round < 20)
+  const adjustingMsgs = messages.filter(m => m.round >= 20)
 
   // ── Shared extracted proposal preview panel ──
   function ExtractedPreview({
@@ -677,39 +786,7 @@ export default function CouncilView() {
 
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
-      {/* ── Tab bar ── */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-white/5 flex-shrink-0"
-           style={{ background: 'rgba(0,0,0,0.2)' }}>
-        <button
-          onClick={() => setMode('chat')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-          style={mode === 'chat'
-            ? { background: 'rgba(99,102,241,0.15)', color: '#6366f1' }
-            : { color: '#4b5563' }}>
-          <MessageSquare size={12} /> Conversar con Orión
-        </button>
-        <button
-          onClick={() => setMode('proposals')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-          style={mode === 'proposals'
-            ? { background: 'rgba(99,102,241,0.15)', color: '#6366f1' }
-            : { color: '#4b5563' }}>
-          <Vote size={12} /> Council
-        </button>
-        <button
-          onClick={() => setMode('document')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-          style={mode === 'document'
-            ? { background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }
-            : { color: '#4b5563' }}>
-          <FileText size={12} /> Documento
-        </button>
-        <div className="ml-auto">
-          <button onClick={() => setShowTriggerConfig(prev => !prev)} title="Configurar triggers" className="p-1.5 rounded-lg transition-colors" style={showTriggerConfig ? { background: "rgba(99,102,241,0.15)", color: "#6366f1" } : { color: "#4b5563" }}>
-            <Settings size={12} />
-          </button>
-        </div>
-      </div>
+
       {showTriggerConfig && (
         <div className="absolute z-50 right-3 top-12 w-72 rounded-xl shadow-2xl border border-white/10 p-4" style={{ background: "rgba(15,15,25,0.97)" }}>
           <div className="flex items-center justify-between mb-3">
@@ -733,7 +810,7 @@ export default function CouncilView() {
         </div>
       )}
 
-      {mode === 'document' ? (
+      {activeMode === 'document' ? (
         /* ── DOCUMENT MODE ── */
         <div className="flex flex-1 overflow-hidden">
           {/* Upload / process panel */}
@@ -857,7 +934,7 @@ export default function CouncilView() {
             />
           )}
         </div>
-      ) : mode === 'chat' ? (
+      ) : activeMode === 'chat' ? (
         /* ── CHAT MODE ── */
         <div className="flex flex-1 overflow-hidden">
           {/* Chat panel */}
@@ -1118,6 +1195,11 @@ export default function CouncilView() {
             <option value="APPROVED">Aprobadas</option>
             <option value="REJECTED">Rechazadas</option>
             <option value="ESCALATED">Escaladas</option>
+            <option value="ADJUSTING">Ajustando</option>
+            <option value="ADJUST_READY">Ajuste listo</option>
+            <option value="PLANNING">Planificando</option>
+            <option value="PLAN_READY">Plan listo</option>
+            <option value="EXECUTING">Ejecutando</option>
           </select>
         </div>
 
@@ -1203,10 +1285,22 @@ export default function CouncilView() {
                     <span className="text-[9px] text-gray-600">{CHANNEL_LABEL[selectedProposal.inputChannel]}</span>
                     <span className="text-[9px] text-gray-700 ml-auto">{formatTs(selectedProposal.createdAt)}</span>
                   </div>
-                  <h2 className="text-[13px] font-black text-gray-200 mt-1 leading-snug">{selectedProposal.title}</h2>
-                  {selectedProposal.description && (
-                    <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">{selectedProposal.description}</p>
-                  )}
+                  <div className="flex items-start gap-1.5 mt-1">
+                    <h2 className="text-[13px] font-black text-gray-200 leading-snug flex-1">{selectedProposal.title}</h2>
+                    {selectedProposal.description && (
+                      <div className="relative flex-shrink-0 mt-0.5">
+                        <button onClick={() => setShowDesc(v => !v)} className="p-0.5 rounded hover:bg-white/8 transition-colors" title="Ver descripción">
+                          <Info size={12} className="text-gray-500 hover:text-gray-300" />
+                        </button>
+                        {showDesc && (
+                          <div className="absolute right-0 top-5 z-50 w-72 rounded-xl px-3 py-2.5 shadow-xl"
+                               style={{ background: "rgba(18,18,30,0.97)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                            <p className="text-[11px] text-gray-400 leading-relaxed">{selectedProposal.description}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {/* Source file badge */}
                   {selectedProposal.metadata?.sourceFile && (
                     <div className="flex items-center gap-1 mt-1.5">
@@ -1229,12 +1323,23 @@ export default function CouncilView() {
                     )}
                   </button>
                 )}
+                {selectedProposal.status === 'APPROVED' && !selectedProposal.metadata?.councilPlan && (
+                  <button
+                    onClick={() => startPlanning(selectedProposal.id)}
+                    disabled={starting}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all flex-shrink-0"
+                    style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                    {starting ? <><Loader2 size={11} className="animate-spin" /> Planificando...</> : <>Planificar ejecucion</>}
+                  </button>
+                )}
               </div>
             </div>
 
+            {/* ── Single scroll zone: banners + debate ── */}
+            <div className="flex-1 overflow-y-auto">
             {/* Escalated banner — human decision required */}
             {selectedProposal.status === 'ESCALATED' && (
-              <div className="mx-4 mt-3 flex-shrink-0 space-y-2">
+              <div className="mx-4 mt-3 space-y-2">
                 {/* Main decision banner */}
                 <div className="rounded-xl px-3 py-3" style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)' }}>
                   <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#f97316' }}>🚨 Escalada — requiere decisión del socio</span>
@@ -1250,17 +1355,17 @@ export default function CouncilView() {
                     style={{ background: 'rgba(255,255,255,0.04)' }}
                   />
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'APPROVED')} disabled={!!escalationAction || synthesizing}
+                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'APPROVED')} disabled={!!escalationAction || negotiating}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
                       style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
                       {escalationAction === 'APPROVED' ? '...' : '✅ Aprobar'}
                     </button>
-                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'REJECTED')} disabled={!!escalationAction || synthesizing}
+                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'REJECTED')} disabled={!!escalationAction || negotiating}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
                       style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)' }}>
                       {escalationAction === 'REJECTED' ? '...' : '❌ Rechazar'}
                     </button>
-                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'RETRY')} disabled={!!escalationAction || synthesizing}
+                    <button onClick={() => handleEscalatedAction(selectedProposal.id, 'RETRY')} disabled={!!escalationAction || negotiating}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-50"
                       style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>
                       {escalationAction === 'RETRY' ? '...' : '🔄 Nueva ronda'}
@@ -1367,8 +1472,239 @@ export default function CouncilView() {
               )
             })()}
 
+            {/* ADJUSTING banner */}
+            {["ADJUSTING", "ADJUST_QUESTIONS"].includes(selectedProposal.status) && (
+              <div className="mx-4 mt-3 rounded-xl px-3 py-3" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)" }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Loader2 size={12} className="animate-spin" style={{ color: "#f59e0b" }} />
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#f59e0b" }}>Consejo debatiendo ajustes...</span>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-snug">Los agentes analizan las razones de rechazo y definen cambios para hacer la propuesta aprobable.</p>
+                {selectedProposal.metadata?.adjustmentQuestions && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(245,158,11,0.7)" }}>El consejo necesita mas info:</p>
+                    {(selectedProposal.metadata.adjustmentQuestions as string[]).map((q, qi) => (
+                      <p key={qi} className="text-[9px] text-gray-400">• {q}</p>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-3 flex gap-2">
+                  <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "adjust") }}
+                    placeholder="Agregar contexto al debate de ajustes..."
+                    className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                    style={{ background: "rgba(255,255,255,0.04)" }} />
+                  <button onClick={() => submitHumanComment(selectedProposal.id, "adjust")} disabled={submittingComment || !humanComment.trim()}
+                    className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all disabled:opacity-40"
+                    style={{ background: "rgba(245,158,11,0.2)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.35)" }}>
+                    <Send size={11} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ADJUST_READY banner */}
+            {selectedProposal.status === "ADJUST_READY" && (() => {
+              const adj = selectedProposal.metadata?.adjustmentProposal
+              return (
+                <div className="mx-4 mt-3 rounded-xl px-3 py-3 space-y-3" style={{ background: "rgba(251,146,60,0.07)", border: "1px solid rgba(251,146,60,0.3)" }}>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#fb923c" }}>Ajustes propuestos por el Consejo</span>
+                  {adj ? (
+                    <>
+                      {(adj.adjustmentRationale || adj.agentConsensus) && (
+                        <p className="text-[10px] text-gray-400 leading-snug">{adj.adjustmentRationale ?? adj.agentConsensus}</p>
+                      )}
+                      {adj.keyChanges && (adj.keyChanges as any[]).length > 0 && (
+                        <div className="space-y-2">
+                          {(adj.keyChanges as any[]).map((change, ci) => (
+                            <div key={ci} className="rounded-lg p-2.5" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c" }}>{change.aspect}</span>
+                                {change.agentSupporting && <span className="text-[8px] text-gray-600 ml-auto">{change.agentSupporting}</span>}
+                              </div>
+                              {change.from && <p className="text-[9px] text-gray-500 mb-0.5">Antes: {change.from}</p>}
+                              <p className="text-[9px] font-semibold text-gray-200">Propuesto: {change.to}</p>
+                              {change.rationale && <p className="text-[9px] text-gray-600 mt-0.5">{change.rationale}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "adjust") }}
+                            placeholder="Comentario antes de aprobar los ajustes..."
+                            className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                            style={{ background: "rgba(255,255,255,0.04)" }} />
+                          <button onClick={() => submitHumanComment(selectedProposal.id, "adjust")} disabled={submittingComment || !humanComment.trim()}
+                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
+                            style={{ background: "rgba(251,146,60,0.2)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.35)" }}>
+                            <Send size={11} />
+                          </button>
+                        </div>
+                        <button onClick={() => approveAdjustments(selectedProposal.id)} disabled={starting}
+                          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
+                          style={{ background: "rgba(16,185,129,0.15)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)" }}>
+                          {starting ? <><Loader2 size={11} className="animate-spin" /> Procesando...</> : <> Aprobar ajustes y pasar a planificacion</>}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-[10px] text-gray-600">Sin ajustes generados.</p>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* PLANNING banner */}
+            {["PLANNING", "PLAN_QUESTIONS"].includes(selectedProposal.status) && (
+              <div className="mx-4 mt-3 rounded-xl px-3 py-3" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.3)" }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Loader2 size={12} className="animate-spin" style={{ color: "#818cf8" }} />
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#818cf8" }}>Consejo planificando la ejecucion...</span>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-snug">Los agentes definen Epica, Sprints y Tasks con area/agente responsable obligatorio.</p>
+                {selectedProposal.metadata?.councilQuestions && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(99,102,241,0.8)" }}>El consejo necesita mas info:</p>
+                    {(selectedProposal.metadata.councilQuestions as string[]).map((q, qi) => (
+                      <p key={qi} className="text-[9px] text-gray-400">• {q}</p>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-3 flex gap-2">
+                  <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "plan") }}
+                    placeholder="Agregar contexto al plan..."
+                    className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                    style={{ background: "rgba(255,255,255,0.04)" }} />
+                  <button onClick={() => submitHumanComment(selectedProposal.id, "plan")} disabled={submittingComment || !humanComment.trim()}
+                    className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
+                    style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.35)" }}>
+                    <Send size={11} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* PLAN_READY banner */}
+            {selectedProposal.status === "PLAN_READY" && (() => {
+              const plan = selectedProposal.metadata?.councilPlan
+              const PC: Record<string, string> = { CRITICAL: "#ef4444", HIGH: "#f97316", MEDIUM: "#eab308", LOW: "#6b7280" }
+              return (
+                <div className="mx-4 mt-3 rounded-xl px-3 py-3 space-y-3" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.3)" }}>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#10b981" }}>Plan listo para revision</span>
+                  {plan ? (
+                    <>
+                      {plan.planRationale && <p className="text-[10px] text-gray-400 leading-snug italic">{plan.planRationale}</p>}
+                      {(plan.solucionPropuesta || plan.solucionId) && (
+                        <div className="rounded-lg p-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                          <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: "#10b981" }}>Solucion</p>
+                          <p className="text-[10px] font-semibold text-gray-200 mt-0.5">{plan.solucionPropuesta?.name ?? ("Existente: " + plan.solucionId)}</p>
+                          {plan.solucionPropuesta?.description && <p className="text-[9px] text-gray-500 mt-0.5">{plan.solucionPropuesta.description}</p>}
+                        </div>
+                      )}
+                      {plan.epic && (
+                        <div className="rounded-lg p-2" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
+                          <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: "#10b981" }}>Epica</p>
+                          <p className="text-[10px] font-semibold text-gray-200 mt-0.5">{plan.epic.name}</p>
+                          {plan.epic.description && <p className="text-[9px] text-gray-500 mt-0.5">{plan.epic.description}</p>}
+                          {plan.epic.estimatedWeeks && <p className="text-[8px] text-gray-600 mt-0.5">{plan.epic.estimatedWeeks} semanas estimadas</p>}
+                        </div>
+                      )}
+                      {plan.sprints && (plan.sprints as any[]).length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-[8px] font-bold uppercase tracking-widest text-gray-500">Sprints · {(plan.sprints as any[]).length}</p>
+                          {(plan.sprints as any[]).map((sp, si) => (
+                            <div key={si} className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.2)" }}>
+                              <div className="px-2.5 py-2" style={{ background: "rgba(99,102,241,0.1)" }}>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>Sprint {si+1}</span>
+                                  <span className="text-[8px] text-indigo-400/60 ml-auto">{sp.areaSlug}</span>
+                                  {sp.estimatedWeeks && <span className="text-[8px] text-gray-600">{sp.estimatedWeeks}w</span>}
+                                </div>
+                                <p className="text-[10px] font-semibold text-gray-200">{sp.name}</p>
+                                {sp.goal && <p className="text-[9px] text-gray-500 mt-0.5">{sp.goal}</p>}
+                              </div>
+                              <div className="px-2 pb-2 pt-1.5 space-y-1" style={{ background: "rgba(0,0,0,0.15)" }}>
+                                {((sp.tasks ?? []) as any[]).map((t, ti) => (
+                                  <div key={ti} className="rounded px-2 py-1.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                    <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                                      <span className="text-[7px] font-bold uppercase" style={{ color: PC[t.priority] ?? "#6b7280" }}>{t.priority}</span>
+                                      <span className="text-[7px] text-indigo-400/70 ml-1">{t.areaSlug}</span>
+                                      {t.agentSlug && <span className="text-[7px] text-gray-600">· {t.agentSlug}</span>}
+                                      {t.estimatedHours && <span className="text-[7px] text-gray-700 ml-auto">{t.estimatedHours}h</span>}
+                                    </div>
+                                    <p className="text-[9px] text-gray-300 font-medium leading-snug">{t.title}</p>
+                                    {t.rationaleArea && <p className="text-[8px] text-gray-600 mt-0.5 italic">{t.rationaleArea}</p>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "plan") }}
+                            placeholder="Ajuste al plan antes de aprobar..."
+                            className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                            style={{ background: "rgba(255,255,255,0.04)" }} />
+                          <button onClick={() => submitHumanComment(selectedProposal.id, "plan")} disabled={submittingComment || !humanComment.trim()}
+                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
+                            style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.35)" }}>
+                            <Send size={11} />
+                          </button>
+                        </div>
+                        {planApproved ? (
+                          <div className="flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold"
+                               style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
+                            Plan aprobado — Backlog creado exitosamente
+                          </div>
+                        ) : (
+                          <button onClick={() => approvePlan(selectedProposal.id)} disabled={approvingPlan}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
+                            style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.4)" }}>
+                            {approvingPlan ? <><Loader2 size={11} className="animate-spin" /> Creando backlog...</> : <> Aprobar plan — crear Epica, Sprints y Tasks en Backlog</>}
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-gray-500">Sin plan generado. El consejo puede generarlo ahora.</p>
+                      <button onClick={() => startPlanning(selectedProposal.id)} disabled={starting}
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold disabled:opacity-50"
+                        style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)" }}>
+                        {starting ? <><Loader2 size={11} className="animate-spin" /> Iniciando...</> : <>Generar plan</>}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* EXECUTING banner */}
+            {selectedProposal.status === "EXECUTING" && (
+              <div className="mx-4 mt-3 rounded-xl px-3 py-3" style={{ background: "rgba(5,150,105,0.1)", border: "1px solid rgba(5,150,105,0.35)" }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[14px]">🚀</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#059669" }}>Plan en ejecucion — Backlog creado</span>
+                </div>
+                {selectedProposal.metadata?.executionResult && (() => {
+                  const r = selectedProposal.metadata.executionResult as any
+                  return (
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      {(r.epics?.length ?? 0)} epica · {(r.sprints?.length ?? 0)} sprints · {r.tasks ?? 0} tasks creados.
+                    </p>
+                  )
+                })()}
+              </div>
+            )}
+
             {/* Debate messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            <div className="px-4 py-4 space-y-4">
               {detailLoading && messages.length === 0 ? (
                 <div className="flex items-center gap-2 justify-center py-8 text-gray-600 text-xs">
                   <Loader2 size={12} className="animate-spin" /> Cargando debate...
@@ -1378,68 +1714,126 @@ export default function CouncilView() {
                   <span className="text-3xl opacity-20">🔇</span>
                   <p className="text-[11px] text-gray-700">El debate no ha comenzado.</p>
                 </div>
-              ) : Object.entries(byRound).map(([round, msgs]) => (
-                <div key={round}>
-                  {/* Round divider */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="h-px flex-1" style={{ background: 'rgba(139,92,246,0.2)' }} />
-                    <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
-                          style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>
-                      Ronda {round}
-                    </span>
-                    <div className="h-px flex-1" style={{ background: 'rgba(139,92,246,0.2)' }} />
-                  </div>
-
-                  {/* Messages in this round */}
-                  <div className="space-y-3">
-                    {msgs.map(msg => {
-                      const color = agentColor(msg.agentSlug, msg.agentName)
-                      return (
-                        <div key={msg.id} className="flex gap-2.5">
-                          {/* Avatar */}
-                          <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
-                               style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
-                            {agentInitials(msg.agentName)}
-                          </div>
-                          {/* Bubble */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2 mb-1">
-                              <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
-                              <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
+              ) : (
+                <>
+                  {/* PLANNING phase messages */}
+                  {planningMsgs.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-px flex-1" style={{ background: 'rgba(99,102,241,0.25)' }} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+                              style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+                          🧠 Debate · Planificación
+                        </span>
+                        <div className="h-px flex-1" style={{ background: 'rgba(99,102,241,0.25)' }} />
+                      </div>
+                      <div className="space-y-3">
+                        {planningMsgs.map(msg => {
+                          const color = agentColor(msg.agentSlug, msg.agentName)
+                          return (
+                            <div key={msg.id} className="flex gap-2.5">
+                              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
+                                   style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
+                                {agentInitials(msg.agentName)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
+                                  <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
+                                </div>
+                                <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
+                                     style={{ background: color + '0a', border: `1px solid ${color}18` }}>
+                                  {msg.content}
+                                </div>
+                              </div>
                             </div>
-                            <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
-                                 style={{ background: color + '0a', border: `1px solid ${color}18` }}>
-                              {msg.content}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-              <div ref={chatEndRef} />
-            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-            {/* Proposed items section */}
-            {selectedProposal.items && selectedProposal.items.length > 0 && (
-              <div className="border-t border-white/5 px-4 py-3 flex-shrink-0"
-                   style={{ background: 'rgba(0,0,0,0.15)', maxHeight: '9rem' }}>
-                <div className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-2 flex items-center gap-1.5">
-                  <ListChecks size={10} />
-                  Items propuestos · {selectedProposal.items.length}
-                </div>
-                <div className="flex flex-wrap gap-1.5 overflow-y-auto" style={{ maxHeight: '5.5rem' }}>
-                  {selectedProposal.items.map((item: any, i: number) => (
-                    <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px]"
-                         style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.2)' }}>
-                      <span>{ITEM_TYPE_LABEL[item.type] ?? '📋 ' + (item.type ?? 'item')}</span>
-                      {item.title && <span className="text-gray-300 font-semibold">{item.title}</span>}
+                  {/* ADJUSTING phase messages */}
+                  {adjustingMsgs.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.25)' }} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+                              style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24' }}>
+                          🔄 Debate · Ajustes
+                        </span>
+                        <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.25)' }} />
+                      </div>
+                      <div className="space-y-3">
+                        {adjustingMsgs.map(msg => {
+                          const color = agentColor(msg.agentSlug, msg.agentName)
+                          return (
+                            <div key={msg.id} className="flex gap-2.5">
+                              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
+                                   style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
+                                {agentInitials(msg.agentName)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
+                                  <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
+                                </div>
+                                <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
+                                     style={{ background: color + '0a', border: `1px solid ${color}18` }}>
+                                  {msg.content}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VOTE DEBATE messages by round */}
+                  {Object.entries(byRound).map(([round, msgs]) => (
+                    <div key={round}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-px flex-1" style={{ background: 'rgba(139,92,246,0.2)' }} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+                              style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>
+                          Ronda {round}
+                        </span>
+                        <div className="h-px flex-1" style={{ background: 'rgba(139,92,246,0.2)' }} />
+                      </div>
+                      <div className="space-y-3">
+                        {msgs.map(msg => {
+                          const color = agentColor(msg.agentSlug, msg.agentName)
+                          return (
+                            <div key={msg.id} className="flex gap-2.5">
+                              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
+                                   style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
+                                {agentInitials(msg.agentName)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
+                                  <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
+                                </div>
+                                <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
+                                     style={{ background: color + '0a', border: `1px solid ${color}18` }}>
+                                  {msg.agentSlug === 'orion' && msg.content.includes('{') ? msg.content.split('{')[0].trim() : msg.content}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   ))}
-                </div>
-              </div>
-            )}
+                </>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+            </div>{/* end scroll zone */}
+
+            {/* Proposed items section */}
+
           </>
         )}
       </div>
@@ -1543,6 +1937,62 @@ export default function CouncilView() {
                 </div>
               )
             })()}
+            {/* Config / Sesion panel */}
+            <div className="border-t border-white/[0.06] pt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-600">Sesion</span>
+                <button
+                  onClick={() => setShowDeleteConfirm(v => !v)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold transition-all hover:opacity-80"
+                  style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  <Trash2 size={9} /> Borrar
+                </button>
+              </div>
+              {/* Delete confirm */}
+              {showDeleteConfirm && (
+                <div className="rounded-lg p-2.5 space-y-2" style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                  <p className="text-[9px] text-gray-400 leading-snug">Borra la propuesta, sus votos y mensajes de debate. No se puede deshacer.</p>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => deleteProposal(selectedProposal!.id)}
+                      disabled={deletingProposal}
+                      className="flex-1 py-1.5 rounded text-[9px] font-bold transition-all disabled:opacity-50"
+                      style={{ background: "rgba(239,68,68,0.2)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}>
+                      {deletingProposal ? "Borrando..." : "Si, borrar"}
+                    </button>
+                    <button onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 py-1.5 rounded text-[9px] font-bold transition-all"
+                      style={{ background: "rgba(255,255,255,0.04)", color: "#6b7280", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* Config fields */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] text-gray-700">Canal</span>
+                  <span className="text-[8px] font-medium text-gray-500">{selectedProposal!.inputChannel}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] text-gray-700">Ronda</span>
+                  <span className="text-[8px] font-medium text-gray-500">{selectedProposal!.round}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] text-gray-700">Creado por</span>
+                  <span className="text-[8px] font-medium text-gray-500 truncate max-w-[90px]">{selectedProposal!.createdByAgentName ?? "—"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] text-gray-700">Estado</span>
+                  <span className="text-[8px] font-bold" style={{ color: STATUS_COLOR[selectedProposal!.status] ?? "#6b7280" }}>{selectedProposal!.status}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] text-gray-700">Mensajes</span>
+                  <span className="text-[8px] font-medium text-gray-500">{messages.length}</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
       </div>

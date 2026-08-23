@@ -36,3 +36,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!rows.length) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(rows[0])
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const { id } = await params
+  await prisma.$executeRawUnsafe(`DELETE FROM "DebateMessage" WHERE "proposalId" = $1`, id)
+  await prisma.$executeRawUnsafe(`DELETE FROM "AgentVote" WHERE "proposalId" = $1`, id)
+  await prisma.$executeRawUnsafe(`DELETE FROM "CouncilProposal" WHERE id = $1`, id)
+  return NextResponse.json({ deleted: true })
+}

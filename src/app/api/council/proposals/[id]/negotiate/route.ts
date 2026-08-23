@@ -91,6 +91,89 @@ async function insertMessage(proposalId: string, agentId: string, agentName: str
   )
 }
 
+async function runNegotiation(id: string) {
+  try {
+    const [proposal] = await prisma.$queryRawUnsafe<any[]>(`SELECT * FROM "CouncilProposal" WHERE id = $1`, id)
+    if (!proposal) return
+
+    const history = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT "agentName", content, round FROM "DebateMessage" WHERE "proposalId" = $1 ORDER BY round, "createdAt"`, id
+    )
+    const votes = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT "agentName", vote, argument, weight FROM "AgentVote" WHERE "proposalId" = $1 ORDER BY round, "createdAt"`, id
+    )
+    const maxRound = history.reduce((m: number, msg: any) => Math.max(m, msg.round), 0)
+    const negotiationRound = maxRound + 1
+
+    const debateSummary = history.map((m: any) => `[R${m.round}] ${m.agentName}: ${m.content}`).join('\n')
+    const voteSummary = votes.map((v: any) => `${v.agentName} (x${v.weight}): ${v.vote ? 'APROBÓ' : 'RECHAZÓ'} — ${v.argument}`).join('\n')
+    const itemsSummary = ((proposal.items as any[]) ?? []).map((i: any) => `- ${i.title}`).join('\n')
+
+    const proposalContext = [
+      `PROPUESTA: ${proposal.title}`,
+      proposal.description ?? '',
+      `Items: ${itemsSummary}`,
+      '',
+      'DEBATE PREVIO:',
+      debateSummary,
+      '',
+      'VOTOS:',
+      voteSummary,
+    ].join('\n')
+
+    // 1. Orión opening
+    const orionOpening = await callClaude(ORION_OPENING_SYSTEM, proposalContext)
+    await insertMessage(id, 'agent_orion_001', 'Orión', 'orion', orionOpening, negotiationRound)
+
+    // 2. Each agent responds (errors are caught so one failure doesn't stop the rest)
+    const agentResponses: string[] = []
+    for (const agent of COUNCIL_AGENTS) {
+      try {
+        const agentPrompt = proposalContext + '\n\nPROPUESTA DE AJUSTES DE ORIÓN:\n' + orionOpening
+        const response = await callClaude(agentNegotiationSystem(agent.name, agent.role), agentPrompt)
+        await insertMessage(id, agent.id, agent.name, agent.slug, response, negotiationRound)
+        agentResponses.push(`${agent.name}: ${response}`)
+      } catch (e) {
+        console.error(`[negotiate] ${agent.name} failed:`, e)
+      }
+    }
+
+    // 3. Orión closing — synthesizes final plan as JSON
+    const closingPrompt = [
+      proposalContext,
+      '',
+      'PROPUESTA DE AJUSTES DE ORIÓN:',
+      orionOpening,
+      '',
+      'RESPUESTAS DEL CONSEJO:',
+      agentResponses.join('\n\n'),
+      '',
+      'Cerrá la negociación con el plan final consensuado.',
+    ].join('\n')
+
+    const orionClosing = await callClaude(ORION_CLOSING_SYSTEM, closingPrompt)
+    await insertMessage(id, 'agent_orion_001', 'Orión', 'orion', orionClosing, negotiationRound)
+
+    const jsonMatch = orionClosing.match(/\{[\s\S]*\}/)
+    let negotiatedPlan = null
+    if (jsonMatch) {
+      try { negotiatedPlan = JSON.parse(jsonMatch[0]) } catch {}
+    }
+
+    const existingMeta = (proposal.metadata as Record<string, unknown>) ?? {}
+    await prisma.$executeRawUnsafe(
+      `UPDATE "CouncilProposal" SET status = 'ESCALATED', metadata = $2::jsonb, "updatedAt" = NOW() WHERE id = $1`,
+      id, JSON.stringify({ ...existingMeta, negotiatedPlan })
+    )
+  } catch (e) {
+    console.error('[negotiate] runNegotiation failed:', e)
+    // Revert to ESCALATED so user can retry
+    await prisma.$executeRawUnsafe(
+      `UPDATE "CouncilProposal" SET status = 'ESCALATED', "updatedAt" = NOW() WHERE id = $1`, id
+    ).catch(() => {})
+  }
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   const { id } = await params
@@ -98,76 +181,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const [proposal] = await prisma.$queryRawUnsafe<any[]>(`SELECT * FROM "CouncilProposal" WHERE id = $1`, id)
   if (!proposal) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Get full debate history
-  const history = await prisma.$queryRawUnsafe<any[]>(
-    `SELECT "agentName", content, round FROM "DebateMessage" WHERE "proposalId" = $1 ORDER BY round, "createdAt"`, id
-  )
-  const votes = await prisma.$queryRawUnsafe<any[]>(
-    `SELECT "agentName", vote, argument, weight FROM "AgentVote" WHERE "proposalId" = $1 ORDER BY round, "createdAt"`, id
-  )
-  const maxRound = history.reduce((m: number, msg: any) => Math.max(m, msg.round), 0)
-  const negotiationRound = maxRound + 1
+  if (proposal.status === 'DEBATING') {
+    return NextResponse.json({ status: 'DEBATING', message: 'Negociación ya en curso' }, { status: 202 })
+  }
 
-  // Mark proposal as DEBATING
+  // Mark as DEBATING immediately and return — negotiation runs in background
   await prisma.$executeRawUnsafe(`UPDATE "CouncilProposal" SET status = 'DEBATING', "updatedAt" = NOW() WHERE id = $1`, id)
+  runNegotiation(id).catch(e => console.error('[negotiate] background error:', e))
 
-  const debateSummary = history.map((m: any) => `[R${m.round}] ${m.agentName}: ${m.content}`).join('\n')
-  const voteSummary = votes.map((v: any) => `${v.agentName} (×${v.weight}): ${v.vote ? 'APROBÓ' : 'RECHAZÓ'} — ${v.argument}`).join('\n')
-  const itemsSummary = (proposal.items ?? []).map((i: any) => `- ${i.title}`).join('\n')
-
-  const proposalContext = `PROPUESTA: ${proposal.title}
-${proposal.description ?? ''}
-Items: ${itemsSummary}
-
-DEBATE PREVIO:
-${debateSummary}
-
-VOTOS:
-${voteSummary}`
-
-  // 1. Orión opening
-  const orionOpening = await callClaude(ORION_OPENING_SYSTEM, proposalContext)
-  await insertMessage(id, 'agent_orion_001', 'Orión', 'orion', orionOpening, negotiationRound)
-
-  // 2. Each agent responds
-  const agentResponses: string[] = []
-  for (const agent of COUNCIL_AGENTS) {
-    const agentPrompt = `${proposalContext}
-
-PROPUESTA DE AJUSTES DE ORIÓN:
-${orionOpening}`
-    const response = await callClaude(agentNegotiationSystem(agent.name, agent.role), agentPrompt)
-    await insertMessage(id, agent.id, agent.name, agent.slug, response, negotiationRound)
-    agentResponses.push(`${agent.name}: ${response}`)
-  }
-
-  // 3. Orión closing — synthesizes plan
-  const closingPrompt = `${proposalContext}
-
-PROPUESTA DE AJUSTES DE ORIÓN:
-${orionOpening}
-
-RESPUESTAS DEL CONSEJO:
-${agentResponses.join('\n\n')}
-
-Cerrá la negociación con el plan final consensuado.`
-
-  const orionClosing = await callClaude(ORION_CLOSING_SYSTEM, closingPrompt)
-  await insertMessage(id, 'agent_orion_001', 'Orión', 'orion', orionClosing, negotiationRound)
-
-  // Extract JSON plan from Orión's closing
-  const jsonMatch = orionClosing.match(/\{[\s\S]*\}/)
-  let negotiatedPlan = null
-  if (jsonMatch) {
-    try { negotiatedPlan = JSON.parse(jsonMatch[0]) } catch {}
-  }
-
-  // Store plan in metadata + mark ESCALATED again (waiting for human to create backlog)
-  const existingMeta = proposal.metadata ?? {}
-  await prisma.$executeRawUnsafe(
-    `UPDATE "CouncilProposal" SET status = 'ESCALATED', metadata = $2::jsonb, "updatedAt" = NOW() WHERE id = $1`,
-    id, JSON.stringify({ ...existingMeta, negotiatedPlan })
-  )
-
-  return NextResponse.json({ success: true, round: negotiationRound, hasPlan: !!negotiatedPlan })
+  return NextResponse.json({ status: 'DEBATING' }, { status: 202 })
 }

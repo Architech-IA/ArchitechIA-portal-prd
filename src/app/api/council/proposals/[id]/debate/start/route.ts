@@ -3,6 +3,8 @@ import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { runPlanningEngine } from '../../plan/start/route'
+import { runAdjustmentEngine } from '../../adjust/start/route'
 
 const execAsync = promisify(exec)
 
@@ -187,51 +189,18 @@ Analiza esta propuesta desde tu perspectiva y emite tu voto. Recuerda responder 
 
   if (weightedScore >= THRESHOLD) {
     await prisma.$executeRawUnsafe(
-      `UPDATE "CouncilProposal" SET status = 'APPROVED', "updatedAt" = NOW() WHERE id = $1`, proposalId
+      `UPDATE "CouncilProposal" SET status = 'PLANNING', "updatedAt" = NOW() WHERE id = $1`, proposalId
     )
-    const items: any[] = proposal.items ?? []
-    for (const item of items) {
-      if (item.type === 'task') {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO "BacklogItem" (title, description, status, priority, "itemType", "areaId", "epicId", "sprintId", "createdByAgentId", "createdByAgentName")
-           VALUES ($1,$2,'BACKLOG',$3,'TASK',$4,$5,$6,$7,$8)`,
-          item.title ?? 'Task sin título', item.description ?? null,
-          item.priority ?? 'MEDIUM', item.areaId ?? null,
-          proposal.epicId ?? item.epicId ?? null,
-          proposal.sprintId ?? item.sprintId ?? null,
-          'agent_orion_001', 'Orión'
-        )
-      } else if (item.type === 'sprint') {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO "Sprint" (name, goal, status, "epicId", "ownerAreaId", "responsibleId", "responsibleName")
-           VALUES ($1,$2,'PLANNED',$3,$4,$5,$6)`,
-          item.title ?? 'Sprint', item.goal ?? null,
-          proposal.epicId ?? item.epicId ?? null,
-          item.areaId ?? null, 'agent_orion_001', 'Orión'
-        )
-      }
-    }
+    runPlanningEngine(proposalId, null).catch(err => console.error('[PlanningEngine] Fatal:', err))
   } else if (round >= 2) {
     await prisma.$executeRawUnsafe(
       `UPDATE "CouncilProposal" SET status = 'ESCALATED', "updatedAt" = NOW() WHERE id = $1`, proposalId
     )
   } else {
     await prisma.$executeRawUnsafe(
-      `UPDATE "CouncilProposal" SET status = 'REVISED', "updatedAt" = NOW() WHERE id = $1`, proposalId
+      `UPDATE "CouncilProposal" SET status = 'ADJUSTING', "updatedAt" = NOW() WHERE id = $1`, proposalId
     )
-    const [original] = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT * FROM "CouncilProposal" WHERE id = $1`, proposalId
-    )
-    if (original) {
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "CouncilProposal" (title, description, status, "inputChannel", items, round, "epicId", "sprintId", "solucionId", "createdByAgentId", "createdByAgentName", metadata)
-         VALUES ($1,$2,'PENDING',$3,$4::jsonb,2,$5,$6,$7,$8,$9,$10::jsonb)`,
-        `[Revisada] ${original.title}`, original.description, original.inputChannel,
-        JSON.stringify(original.items), original.epicId, original.sprintId, original.solucionId,
-        original.createdByAgentId, original.createdByAgentName,
-        JSON.stringify({ originalProposalId: proposalId, revisedRound: 2, ...(original.metadata ?? {}) })
-      )
-    }
+    runAdjustmentEngine(proposalId, null).catch(err => console.error('[AdjustmentEngine] Fatal:', err))
   }
 }
 

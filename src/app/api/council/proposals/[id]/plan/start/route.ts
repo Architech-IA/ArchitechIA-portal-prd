@@ -1,0 +1,271 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { isAuthed } from '@/lib/apiAuth'
+import { prisma } from '@/lib/prisma'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
+
+const PLANNING_AGENTS = [
+  {
+    slug: 'atlas',
+    role: 'operativo',
+    prompt: `Eres Atlas, Operations Manager de ArchiTechIA.
+Analiza la propuesta aprobada y define el alcance operativo:
+- Cuantos sprints necesita y de cuanto tiempo
+- Que areas del equipo deben involucrarse y por que
+- Que dependencias tecnicas existen
+- Riesgos operativos y como mitigarlos
+Sé concreto. Propone nombres de sprints y areas responsables.
+Responde en prosa, 3-5 oraciones.`,
+  },
+  {
+    slug: 'vesta',
+    role: 'financiero',
+    prompt: `Eres Vesta, Finance & Legal Lead de ArchiTechIA.
+Analiza el plan operativo propuesto y evalua:
+- Distribucion de esfuerzo por area (alta/media/baja)
+- Si el alcance es financieramente razonable
+- Que tasks tienen mayor ROI y cuales son nice-to-have
+- Prioridades desde la perspectiva de costo-beneficio
+Ajusta o valida lo propuesto por Atlas. Responde en prosa, 3-4 oraciones.`,
+  },
+  {
+    slug: 'ares',
+    role: 'comercial',
+    prompt: `Eres Ares, Sales Lead de ArchiTechIA.
+Define el angulo comercial del plan:
+- Que sprint o entregable genera valor visible para el cliente primero
+- Como se conecta esto con el pipeline actual
+- Que tasks de demos, presales o comunicacion comercial son necesarias
+- Propone tasks especificas con el area Sales & Presales
+Responde en prosa, 3-4 oraciones.`,
+  },
+  {
+    slug: 'iris',
+    role: 'marketing',
+    prompt: `Eres Iris, Marketing & Brand Lead de ArchiTechIA.
+Define el angulo de comunicacion del plan:
+- Como se comunica el lanzamiento de esta iniciativa (interno y externo)
+- Que tasks de marketing o documentacion son necesarias
+- En que sprint deberia incluirse el componente de comunicacion
+- Propone tasks concretas con el area Marketing & Brand
+Responde en prosa, 3-4 oraciones.`,
+  },
+  {
+    slug: 'orion',
+    role: 'estrategico',
+    prompt: `Eres Orion, CEO operacional de ArchiTechIA.
+Con los inputs de Atlas (operativo), Vesta (financiero), Ares (comercial) e Iris (marketing),
+sintetiza el plan de ejecucion definitivo como JSON.
+CRITICO: cada task DEBE tener areaSlug. Si el area no existe, proponla con prefix "new:".
+Responde EXCLUSIVAMENTE con JSON valido sin markdown ni texto extra.`,
+  },
+]
+
+async function callLLM(systemPrompt: string, userMessage: string, model?: string | null): Promise<string> {
+  let stdout: string
+  if (model && (model.startsWith('openai/') || model.startsWith('openrouter/') || model.startsWith('opencode/'))) {
+    const combined = `${systemPrompt}\n\n---\n\n${userMessage}`
+    const safe = combined.replace(/'/g, "'\\''")
+    const cmd = `OPENAI_API_KEY=${process.env.OPENAI_API_KEY} OPENROUTER_API_KEY=${process.env.OPENROUTER_API_KEY} opencode run '${safe}' --model ${model}`
+    const res = await execAsync(cmd, { timeout: 120000 })
+    stdout = res.stdout.trim()
+  } else {
+    const safeS = systemPrompt.replace(/'/g, "'\\''")
+    const safeU = userMessage.replace(/'/g, "'\\''")
+    const mf = model ? `--model ${model} ` : ''
+    const cmd = `claude ${mf}--system-prompt '${safeS}' -p '${safeU}'`
+    const res = await execAsync(cmd, { timeout: 90000 })
+    stdout = res.stdout.trim()
+  }
+  return stdout.trim()
+}
+
+export async function runPlanningEngine(proposalId: string, humanComment: string | null) {
+  const PLANNING_ROUND = 10
+
+  const [proposal] = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT * FROM "CouncilProposal" WHERE id = $1`, proposalId
+  )
+  if (!proposal) return
+
+  // Load DB agent configs (model overrides)
+  const dbAgents = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT slug, id, "systemPrompt", "llmModel" FROM "Agent" WHERE slug IN ('orion','atlas','vesta','ares','iris')`
+  )
+
+  const solutions = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT id, nombre, descripcion FROM "Solucion" ORDER BY "createdAt" DESC LIMIT 15`
+  )
+  const areas = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT id, name, slug FROM "Area" ORDER BY name LIMIT 30`
+  )
+  const agents = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT id, name, slug FROM "Agent" WHERE status = 'ACTIVE' LIMIT 20`
+  )
+
+  const solutionsList = (solutions as any[]).length
+    ? (solutions as any[]).map((s: any) => `  - ID:"${s.id}" Nombre:"${s.nombre}"${s.descripcion ? ' - ' + s.descripcion : ''}`).join('\n')
+    : '  (ninguna aun)'
+  const areasList = (areas as any[]).length
+    ? (areas as any[]).map((a: any) => `  - slug:"${a.slug}" Nombre:"${a.name}"`).join('\n')
+    : '  (ninguna - proponer con "new:nombre")'
+  const agentsList = (agents as any[]).length
+    ? (agents as any[]).map((a: any) => `  - slug:"${a.slug}" Nombre:"${a.name}"`).join('\n')
+    : '  (ninguno)'
+
+  const debateVotes = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT "agentName", argument, vote FROM "AgentVote" WHERE "proposalId" = $1 ORDER BY "createdAt"`, proposalId
+  )
+  const voteSummary = (debateVotes as any[]).map((v: any) =>
+    `  ${v.agentName} (${v.vote ? 'APROBO' : 'RECHAZO'}): ${v.argument ?? ''}`
+  ).join('\n')
+
+  const humanCtx = humanComment ? `\n\nCOMENTARIO DEL USUARIO:\n${humanComment}` : ''
+  const existingPlan = proposal.metadata?.councilPlan
+    ? `\n\nPLAN PREVIO (refinar con el comentario del usuario):\n${JSON.stringify(proposal.metadata.councilPlan, null, 2)}`
+    : ''
+
+  const baseContext = `PROPUESTA APROBADA:
+Titulo: ${proposal.title}
+Descripcion: ${proposal.description ?? 'Sin descripcion'}
+
+DEBATE DE VOTACION (por que fue aprobada):
+${voteSummary || '  (no disponible)'}
+${humanCtx}
+${existingPlan}
+
+SOLUCIONES EXISTENTES:
+${solutionsList}
+
+AREAS DISPONIBLES (usar estos slugs en las tasks):
+${areasList}
+
+AGENTES DISPONIBLES:
+${agentsList}`
+
+  // Delete previous planning messages for this proposal (round=10)
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM "DebateMessage" WHERE "proposalId" = $1 AND round = ${PLANNING_ROUND}`, proposalId
+  )
+
+  const conversationHistory: string[] = []
+  let finalPlan: any = null
+
+  for (const agent of PLANNING_AGENTS) {
+    const dbAgent = (dbAgents as any[]).find((a: any) => a.slug === agent.slug)
+    const agentId = dbAgent?.id ?? `agent_${agent.slug}_001`
+    const agentName = agent.slug.charAt(0).toUpperCase() + agent.slug.slice(1)
+    const model = dbAgent?.llmModel ?? null
+
+    const prevContext = conversationHistory.length > 0
+      ? `\n\nDEBATE DE PLANIFICACION HASTA AHORA:\n${conversationHistory.join('\n\n')}`
+      : ''
+
+    let userMsg: string
+    if (agent.slug === 'orion') {
+      userMsg = `${baseContext}${prevContext}
+
+Con todo lo anterior, genera el JSON del plan de ejecucion definitivo.
+Incluye: solucionId (o solucionPropuesta), epic, sprints con tasks.
+Cada task DEBE tener areaSlug. Puedes proponer areas con "new:nombre-area".
+
+Formato JSON exacto:
+{"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":null,"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"title":"...","description":"...","areaSlug":"...","agentSlug":null,"priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
+    } else {
+      userMsg = `${baseContext}${prevContext}
+
+${agent.prompt}
+
+Enfocate en tu area de expertise. Sé especifico con nombres de areas y tasks.`
+    }
+
+    try {
+      const response = await callLLM(agent.prompt, userMsg, model)
+
+      if (agent.slug === 'orion') {
+        // Try to parse JSON plan from Orion's response
+        const match = response.match(/\{[\s\S]*\}/)
+        if (match) {
+          try {
+            finalPlan = JSON.parse(match[0])
+          } catch {}
+        }
+
+        // Store Orion's synthesis message (prose version without the raw JSON)
+        const prose = response.replace(/\{[\s\S]*\}/, '').trim() || 'Plan sintetizado y definido.'
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "DebateMessage" ("proposalId", "agentId", "agentName", "agentSlug", content, round)
+           VALUES ($1, $2, $3, $4, $5, ${PLANNING_ROUND})`,
+          proposalId, agentId, agentName + ' (Planificacion)', agent.slug,
+          prose || 'Sintetizando plan de ejecucion...'
+        )
+      } else {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "DebateMessage" ("proposalId", "agentId", "agentName", "agentSlug", content, round)
+           VALUES ($1, $2, $3, $4, $5, ${PLANNING_ROUND})`,
+          proposalId, agentId, agentName + ' (Planificacion)', agent.slug, response
+        )
+        conversationHistory.push(`${agentName}: ${response}`)
+      }
+    } catch (err) {
+      console.error(`[PlanningEngine] Error with ${agent.slug}:`, err)
+    }
+  }
+
+  if (finalPlan && finalPlan.needsMoreInfo && finalPlan.questions?.length > 0) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "CouncilProposal"
+       SET status = 'PLAN_QUESTIONS',
+           metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+           "updatedAt" = NOW()
+       WHERE id = $1`,
+      proposalId,
+      JSON.stringify({ councilQuestions: finalPlan.questions, councilPlanDraft: finalPlan })
+    )
+  } else if (finalPlan) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "CouncilProposal"
+       SET status = 'PLAN_READY',
+           metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+           "updatedAt" = NOW()
+       WHERE id = $1`,
+      proposalId,
+      JSON.stringify({ councilPlan: finalPlan })
+    )
+  } else {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "CouncilProposal"
+       SET status = 'PLAN_READY',
+           metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+           "updatedAt" = NOW()
+       WHERE id = $1`,
+      proposalId,
+      JSON.stringify({ planError: 'No se pudo generar plan estructurado — revisa los logs del servidor.' })
+    )
+  }
+}
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const { id } = await params
+  const body = await req.json().catch(() => ({}))
+  const humanComment: string | null = body.humanComment ?? null
+
+  const [proposal] = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT id, status FROM "CouncilProposal" WHERE id = $1`, id
+  )
+  if (!proposal) return NextResponse.json({ error: 'Propuesta no encontrada' }, { status: 404 })
+  if (!['APPROVED', 'PLANNING', 'PLAN_QUESTIONS', 'PLAN_READY', 'ADJUST_READY'].includes(proposal.status)) {
+    return NextResponse.json({ error: `Estado invalido: ${proposal.status}` }, { status: 400 })
+  }
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "CouncilProposal" SET status = 'PLANNING', "updatedAt" = NOW() WHERE id = $1`, id
+  )
+
+  runPlanningEngine(id, humanComment).catch(err => console.error('[Plan/start] Fatal:', err))
+
+  return NextResponse.json({ started: true, status: 'PLANNING', proposalId: id })
+}
