@@ -1,7 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { buildTaskContext } from '@/lib/context/buildTaskContext'
+import { runVerifier } from '@/lib/executor/taskVerifier'
+import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { writeFileSync, unlinkSync } from 'fs'
+import { randomUUID } from 'crypto'
 
 const execAsync = promisify(exec)
 
@@ -26,13 +30,11 @@ export async function resolveAgent(task: {
   assigneeId: string | null
   assigneeName: string | null
 }): Promise<{ agentId: string; agentName: string; strategy: 'CODE' | 'LLM' }> {
-  // 1. Use task's explicit assignee
   if (task.assigneeId && task.assigneeName) {
     const strategy = task.areaId && CODE_AREAS.has(task.areaId) ? 'CODE' : 'LLM'
     return { agentId: task.assigneeId, agentName: task.assigneeName, strategy }
   }
 
-  // 2. Use area's defaultAgent
   if (task.areaId) {
     const [area] = await prisma.$queryRawUnsafe(
       `SELECT "defaultAgentId", "defaultAgentName", "executionStrategy" FROM "Area" WHERE id = $1`,
@@ -48,64 +50,48 @@ export async function resolveAgent(task: {
     }
   }
 
-  // 3. Fallback to Orión
-  return {
-    agentId: 'cmsii11qf0003l0w1jikaxygb',
-    agentName: 'Orión',
-    strategy: 'LLM',
-  }
+  return { agentId: 'cmsii11qf0003l0w1jikaxygb', agentName: 'Orión', strategy: 'LLM' }
 }
 
 export async function dispatchTask(taskId: string): Promise<DispatchResult> {
   const [task] = await prisma.$queryRawUnsafe(
-    `SELECT id, title, description, "taskCode", "areaId", "assigneeId", "assigneeName", status
+    `SELECT id, title, description, "taskCode", "areaId", "sprintId", "assigneeId", "assigneeName", status
      FROM "BacklogItem" WHERE id = $1`,
     taskId
   ) as {
     id: string; title: string; description: string | null;
-    taskCode: string; areaId: string | null;
+    taskCode: string; areaId: string | null; sprintId: string | null;
     assigneeId: string | null; assigneeName: string | null; status: string
   }[]
 
   if (!task) throw new Error(`Task ${taskId} not found`)
-  if (task.status === 'DONE') throw new Error(`Task ${taskId} already DONE`)
+  if (task.status === 'DONE') throw new Error(`Task ${taskId} ya está DONE`)
 
   const { agentId, agentName, strategy } = await resolveAgent(task)
 
-  // Mark task as IN_PROGRESS + fechaInicio
   await prisma.$executeRawUnsafe(
-    `UPDATE "BacklogItem" SET status='IN_PROGRESS', "fechaInicio"=NOW() WHERE id=$1`,
+    `UPDATE "BacklogItem" SET status='IN_PROGRESS', "fechaInicio"=NOW(), "fechaEjecucion"=NOW() WHERE id=$1`,
     taskId
   )
 
-  // Create TaskExecution record
   const [exec_] = await prisma.$queryRawUnsafe(
     `INSERT INTO "TaskExecution" (id,"backlogItemId","agentId","agentName",status,"startedAt")
-     VALUES (gen_random_uuid()::text,$1,$2,$3,'RUNNING',NOW())
-     RETURNING id`,
+     VALUES (gen_random_uuid()::text,$1,$2,$3,'RUNNING',NOW()) RETURNING id`,
     taskId, agentId, agentName
   ) as { id: string }[]
 
-  // Fire execution in background (non-blocking)
   const context = await buildTaskContext(taskId)
-  runExecutor({ taskId, execId: exec_.id, task, agentId, agentName, strategy, context })
+
+  runExecutor({ taskId, execId: exec_.id, task, agentName, strategy, context })
     .catch(err => console.error(`[EXECUTOR] Task ${taskId} failed:`, err))
 
-  return {
-    taskId,
-    taskCode: task.taskCode,
-    agentId,
-    agentName,
-    strategy,
-    started: true,
-  }
+  return { taskId, taskCode: task.taskCode, agentId, agentName, strategy, started: true }
 }
 
 async function runExecutor(opts: {
   taskId: string
   execId: string
-  task: { title: string; description: string | null }
-  agentId: string
+  task: { title: string; description: string | null; sprintId?: string | null }
   agentName: string
   strategy: 'CODE' | 'LLM'
   context: string
@@ -113,28 +99,35 @@ async function runExecutor(opts: {
   const { taskId, execId, task, agentName, strategy, context } = opts
   const startMs = Date.now()
 
-  const prompt = `${context}\n\n---\nEjecuta la siguiente tarea como ${agentName}:\n${task.title}\n${task.description ?? ''}`
+  const prompt = [
+    context,
+    '---',
+    `Eres ${agentName}. Ejecuta la siguiente tarea:`,
+    task.title,
+    task.description ?? '',
+  ].join('\n\n')
+
+  // Write prompt to temp file — avoids all shell escaping issues
+  const tmpFile = `/tmp/claude_prompt_${randomUUID()}.txt`
+  writeFileSync(tmpFile, prompt, 'utf8')
 
   let resultSummary = ''
   let finalStatus = 'DONE'
 
   try {
-    if (strategy === 'CODE') {
-      const { stdout, stderr } = await execAsync(
-        `claude --print "${prompt.replace(/"/g, '\\"')}"`,
-        { timeout: 600_000, maxBuffer: 10 * 1024 * 1024 }
-      )
-      resultSummary = (stdout || stderr || '(no output)').substring(0, 2000)
-    } else {
-      const { stdout, stderr } = await execAsync(
-        `claude --print "${prompt.replace(/"/g, '\\"')}"`,
-        { timeout: 300_000, maxBuffer: 5 * 1024 * 1024 }
-      )
-      resultSummary = (stdout || stderr || '(no output)').substring(0, 2000)
-    }
+    const timeout = strategy === 'CODE' ? 600_000 : 300_000
+    const maxBuffer = strategy === 'CODE' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
+
+    const { stdout, stderr } = await execAsync(
+      `claude --print < ${tmpFile}`,
+      { timeout, maxBuffer }
+    )
+    resultSummary = (stdout || stderr || '(sin output)').trim().substring(0, 2000)
   } catch (err: unknown) {
     finalStatus = 'FAILED'
     resultSummary = `Error: ${err instanceof Error ? err.message : String(err)}`.substring(0, 2000)
+  } finally {
+    try { unlinkSync(tmpFile) } catch { /* ignore */ }
   }
 
   const durationMs = Date.now() - startMs
@@ -147,18 +140,44 @@ async function runExecutor(opts: {
     execId, finalStatus, resultSummary, durationMs, context.substring(0, 4000)
   )
 
-  // Update BacklogItem
+  // Run verifier
+  let verifiedStatus = finalStatus
   if (finalStatus === 'DONE') {
-    await prisma.$executeRawUnsafe(
-      `UPDATE "BacklogItem" SET status='DONE', "fechaFin"=NOW(), resultado=$2 WHERE id=$1`,
-      taskId, resultSummary.substring(0, 500)
-    )
-  } else {
-    await prisma.$executeRawUnsafe(
-      `UPDATE "BacklogItem" SET status='FAILED', "fechaFin"=NOW(), resultado=$2 WHERE id=$1`,
-      taskId, resultSummary.substring(0, 500)
-    )
+    try {
+      const verifierResult = await runVerifier({
+        taskTitle: task.title,
+        taskDescription: task.description,
+        acceptanceCriteria: [], // populated from councilPlan when available
+        resultSummary,
+      })
+      verifiedStatus = verifierResult.passed ? 'DONE' : 'FAILED'
+
+      // Save checklist in TaskExecution artifacts
+      await prisma.$executeRawUnsafe(
+        `UPDATE "TaskExecution" SET artifacts=$2::jsonb WHERE id=$1`,
+        execId, JSON.stringify(verifierResult.checklist)
+      )
+    } catch {
+      // Verifier error → keep DONE
+    }
   }
 
-  console.log(`[EXECUTOR] ${opts.task.title} → ${finalStatus} (${durationMs}ms)`)
+  // Update BacklogItem with final verified status
+  await prisma.$executeRawUnsafe(
+    `UPDATE "BacklogItem"
+     SET status=$2, "fechaFin"=NOW(), resultado=$3
+     WHERE id=$1`,
+    taskId, verifiedStatus, resultSummary.substring(0, 500)
+  )
+
+  console.log(`[EXECUTOR] ${task.title} → ${verifiedStatus} (${Math.round(durationMs / 1000)}s)`)
+
+  // Check if sprint is complete → REVIEW_PENDING
+  if (task.sprintId) {
+    try {
+      await checkSprintCompletion(task.sprintId)
+    } catch (err) {
+      console.error('[SPRINT_MONITOR] Error:', err)
+    }
+  }
 }
