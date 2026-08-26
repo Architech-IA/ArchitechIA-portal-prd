@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import { useSession } from 'next-auth/react'
-import { Plus, LayoutGrid, List, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye, Upload, CheckSquare, Square, Rocket, Calendar, Layers, Map as MapIcon } from 'lucide-react'
+import { Plus, LayoutGrid, List, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Pencil, Trash2, Filter, Eye, Upload, CheckSquare, Square, Rocket, Calendar, Layers, Map as MapIcon, Play } from 'lucide-react'
 import BacklogItemDetail from '@/components/BacklogItemDetail'
 
 interface Solucion {
@@ -404,6 +404,7 @@ export default function BacklogPage() {
   const [form, setForm]     = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [confirmDel, setConfirmDel] = useState<BacklogItem | null>(null)
+  const [dispatching, setDispatching] = useState<string | null>(null)
   const [filterType, setFilterType]     = useState('')
   const [filterPriority, setFilterPriority] = useState('')
   const [filterSolution, setFilterSolution] = useState('')
@@ -588,6 +589,28 @@ export default function BacklogPage() {
       body: JSON.stringify({ ...item, status: newStatus, solucionId: item.solucionId, assigneeName: item.assigneeName }),
     })
     if (res.ok) { const updated = await res.json(); setItems(prev => prev.map(i => i.id === updated.id ? updated : i)) }
+  }
+
+  const dispatchTask = async (item: BacklogItem) => {
+    if (dispatching) return
+    setDispatching(item.id)
+    try {
+      const res = await fetch('/api/executor/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: item.id }),
+      })
+      if (res.ok) {
+        setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'IN_PROGRESS' } : i))
+      } else {
+        const err = await res.json()
+        alert('Error al ejecutar: ' + (err.error ?? 'desconocido'))
+      }
+    } catch {
+      alert('Error de red al despachar la tarea')
+    } finally {
+      setDispatching(null)
+    }
   }
 
   const filtered = items.filter(i => {
@@ -789,6 +812,19 @@ export default function BacklogPage() {
                               <TypeBadge type={item.type} />
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                              {item.status === 'BACKLOG' && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); dispatchTask(item) }}
+                                  disabled={dispatching === item.id}
+                                  title="Ejecutar"
+                                  className="transition-colors disabled:opacity-50"
+                                  style={{ color: dispatching === item.id ? '#f97316' : '#6b7280' }}
+                                  onMouseEnter={e => { if (dispatching !== item.id) (e.currentTarget as HTMLButtonElement).style.color = '#f97316' }}
+                                  onMouseLeave={e => { if (dispatching !== item.id) (e.currentTarget as HTMLButtonElement).style.color = '#6b7280' }}
+                                >
+                                  {dispatching === item.id ? <Loader2 size={11} className="animate-spin" /> : <Play size={11} />}
+                                </button>
+                              )}
                               <button onClick={() => setViewItem(item)} className="text-gray-500 hover:text-blue-400 transition-colors"><Eye size={11} /></button>
                             </div>
                           </div>
@@ -878,6 +914,19 @@ export default function BacklogPage() {
                       <td className="px-4 py-3 text-center"><PointsBadge points={item.points} /></td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
+                          {item.status === 'BACKLOG' && (
+                            <button
+                              onClick={() => dispatchTask(item)}
+                              disabled={dispatching === item.id}
+                              title="Ejecutar con agente"
+                              className="transition-colors disabled:opacity-50"
+                              style={{ color: dispatching === item.id ? '#f97316' : '#6b7280' }}
+                              onMouseEnter={e => { if (dispatching !== item.id) (e.currentTarget as HTMLButtonElement).style.color = '#f97316' }}
+                              onMouseLeave={e => { if (dispatching !== item.id) (e.currentTarget as HTMLButtonElement).style.color = '#6b7280' }}
+                            >
+                              {dispatching === item.id ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
+                            </button>
+                          )}
                           <button onClick={() => setViewItem(item)} className="text-gray-500 hover:text-blue-400 transition-colors"><Eye size={13} /></button>
                           <button onClick={() => openEdit(item)} className="text-gray-500 hover:text-white transition-colors"><Pencil size={13} /></button>
                           <button onClick={() => setConfirmDel(item)} className="text-gray-600 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
