@@ -581,6 +581,7 @@ function HubPropuesta({ leadId, proposal, onSave }: {
   const [deletingDoc, setDeletingDoc]   = useState<string | null>(null)
   const [previewDoc, setPreviewDoc]     = useState<ProposalDoc | null>(null)
   const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set())
+  const [hoveredDocId, setHoveredDocId] = useState<string | null>(null)
   const [pendingUpload, setPendingUpload] = useState<{ file: File; existing: ProposalDoc } | null>(null)
   const docFileRef = useRef<HTMLInputElement>(null)
 
@@ -745,7 +746,10 @@ function HubPropuesta({ leadId, proposal, onSave }: {
                 const expanded = expandedHistory.has(d.id)
                 return (
                   <div key={d.id}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)' }}>
+                    <div
+                      onMouseEnter={() => setHoveredDocId(d.id)}
+                      onMouseLeave={() => setHoveredDocId(prev => prev === d.id ? null : prev)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '6px', background: hoveredDocId === d.id ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)', transition: 'background 150ms ease' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                         <FileText size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
                         <div style={{ minWidth: 0 }}>
