@@ -12,20 +12,23 @@ import {
   CheckCircle2, Circle, Clock, Loader2,
   Save, Paperclip, X, Download, Trash2, FileText,
   ChevronRight, Phone, Mail, Users, Briefcase, CheckSquare, Square, Plus,
-  Search, Link2, ExternalLink, Calendar, Eye, History,
+  Search, Link2, ExternalLink, Calendar, Eye, History, Pencil,
 } from 'lucide-react'
 
 interface Lead {
   id: string
   companyName: string
   contactName: string
+  email: string
+  phone: string | null
   status: string
   estimatedValue: number
   scope: string | null
   source: string
+  solucionAsociada: string | null
   notes: string | null
   createdAt: string
-  user: { name: string }
+  user: { id: string; name: string }
 }
 
 interface HubFile {
@@ -107,6 +110,11 @@ const PHASES = [
 ]
 
 const STATUS_ORDER = PHASES.map(p => p.key)
+
+const EMPTY_LEAD_FORM = {
+  companyName: '', contactName: '', email: '', phone: '',
+  status: 'NEW', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
+}
 
 const COLOR_MAP: Record<string, { dot: string; ring: string; bg: string; text: string; border: string }> = {
   blue:   { dot: 'bg-blue-500',   ring: 'ring-blue-500/30',   bg: 'bg-blue-500/10',   text: 'text-blue-400',   border: 'border-blue-500/30'   },
@@ -864,14 +872,58 @@ export default function LeadHubPage() {
   const [interactions, setInteractions] = useState<Interaction[]>([])
   const [backlogItems, setBacklogItems] = useState<BacklogItem[]>([])
   const [proposal, setProposal]         = useState<Proposal | null>(null)
+  const [showEditLead, setShowEditLead] = useState(false)
+  const [editFormData, setEditFormData] = useState(EMPTY_LEAD_FORM)
+  const [editSaving, setEditSaving]     = useState(false)
+  const [editError, setEditError]       = useState('')
+  const [users, setUsers]               = useState<{ id: string; name: string }[]>([])
+
+  const openEditLead = () => {
+    if (!lead) return
+    setEditFormData({
+      companyName: lead.companyName, contactName: lead.contactName, email: lead.email,
+      phone: lead.phone || '', status: lead.status, source: lead.source,
+      solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '',
+      estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id,
+    })
+    setEditError('')
+    setShowEditLead(true)
+  }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEditSaving(true)
+    setEditError('')
+    try {
+      const res = await fetch(`/api/leads/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setLead(updated)
+        setShowEditLead(false)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setEditError(data.error || `Error ${res.status}`)
+      }
+    } catch {
+      setEditError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setEditSaving(false)
+    }
+  }
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/leads/${id}`).then(r => r.json()),
       fetch(`/api/leads/hub-phase?leadId=${id}`).then(r => r.json()),
-    ]).then(([l, p]) => {
+      fetch('/api/users').then(r => r.json()),
+    ]).then(([l, p, u]) => {
       setLead(l)
       setPhases(Array.isArray(p) ? p : [])
+      setUsers(Array.isArray(u) ? u : [])
       setLoading(false)
       setActions(
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -939,7 +991,7 @@ export default function LeadHubPage() {
 
         {/* Widget info general del lead */}
         <div style={{ margin: '12px', marginBottom: '0', padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Info del Lead</p>
+          <p style={{ fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Info Lead</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
               <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Contacto</span>
@@ -967,6 +1019,10 @@ export default function LeadHubPage() {
               <span style={{ fontSize: '10px', color: '#475569' }}>Creado</span>
               <span style={{ fontSize: '10px', fontWeight: 600, color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </div>
+            <button onClick={openEditLead}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginTop: '4px', padding: '6px', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#94a3b8', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}>
+              <Pencil size={11} /> Editar información
+            </button>
           </div>
         </div>
 
@@ -1093,6 +1149,91 @@ export default function LeadHubPage() {
         </div>
       </div>
 
+      {showEditLead && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)' }}>
+          <div style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '24px', backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: '28px', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(12px)' }}>
+              <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Editar Lead</h2>
+              <button onClick={() => setShowEditLead(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#94a3b8', cursor: 'pointer', fontSize: '15px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            </div>
+            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+                <div>
+                  <label style={editLabelCls}>Empresa</label>
+                  <input type="text" required value={editFormData.companyName} onChange={e => setEditFormData({ ...editFormData, companyName: e.target.value })} style={editInputCls} />
+                </div>
+                <div>
+                  <label style={editLabelCls}>Alcance</label>
+                  <input type="text" value={editFormData.scope} onChange={e => setEditFormData({ ...editFormData, scope: e.target.value })} style={editInputCls} />
+                </div>
+                <div>
+                  <label style={editLabelCls}>Solución</label>
+                  <select value={editFormData.solucionAsociada} onChange={e => setEditFormData({ ...editFormData, solucionAsociada: e.target.value })} style={editInputCls}>
+                    <option value="" style={{ background: '#0f172a' }}>Seleccionar...</option>
+                    {['Project', 'Demo', 'Partnership', 'Products', 'Intern', 'Presales'].map(v => <option key={v} value={v} style={{ background: '#0f172a' }}>{v}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+                <div>
+                  <label style={editLabelCls}>Contacto</label>
+                  <input type="text" required value={editFormData.contactName} onChange={e => setEditFormData({ ...editFormData, contactName: e.target.value })} style={editInputCls} />
+                </div>
+                <div>
+                  <label style={editLabelCls}>Email</label>
+                  <input type="email" required value={editFormData.email} onChange={e => setEditFormData({ ...editFormData, email: e.target.value })} style={editInputCls} />
+                </div>
+                <div>
+                  <label style={editLabelCls}>Teléfono</label>
+                  <input type="text" value={editFormData.phone} onChange={e => setEditFormData({ ...editFormData, phone: e.target.value })} style={editInputCls} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+                <div>
+                  <label style={editLabelCls}>Estado</label>
+                  <select value={editFormData.status} onChange={e => setEditFormData({ ...editFormData, status: e.target.value })} style={editInputCls}>
+                    {PHASES.map(p => <option key={p.key} value={p.key} style={{ background: '#0f172a' }}>{p.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={editLabelCls}>Fuente</label>
+                  <select required value={editFormData.source} onChange={e => setEditFormData({ ...editFormData, source: e.target.value })} style={editInputCls}>
+                    <option value="" style={{ background: '#0f172a' }}>Seleccionar...</option>
+                    {['Directo', 'Referido', 'Partnership'].map(v => <option key={v} value={v} style={{ background: '#0f172a' }}>{v}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={editLabelCls}>Responsable</label>
+                  <select required value={editFormData.userId} onChange={e => setEditFormData({ ...editFormData, userId: e.target.value })} style={editInputCls}>
+                    <option value="" style={{ background: '#0f172a' }}>Seleccionar...</option>
+                    {users.map(u => <option key={u.id} value={u.id} style={{ background: '#0f172a' }}>{u.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style={editLabelCls}>Valor Estimado</label>
+                <input type="number" value={editFormData.estimatedValue} onChange={e => setEditFormData({ ...editFormData, estimatedValue: e.target.value })} style={editInputCls} />
+              </div>
+              <div>
+                <label style={editLabelCls}>Notas</label>
+                <textarea value={editFormData.notes} onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })} rows={3} style={{ ...editInputCls, resize: 'vertical' as const }} />
+              </div>
+              {editError && <div style={{ padding: '10px 14px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '13px' }}>{editError}</div>}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '4px' }}>
+                <button type="button" onClick={() => setShowEditLead(false)} style={{ padding: '8px 18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9px', color: '#94a3b8', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
+                <button type="submit" disabled={editSaving} style={{ padding: '8px 20px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: '9px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', opacity: editSaving ? 0.6 : 1 }}>
+                  {editSaving && <Loader2 size={14} className="animate-spin" />}
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
+
+const editInputCls: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9px', color: '#f1f5f9', outline: 'none', width: '100%', padding: '8px 12px', fontSize: '13px' }
+const editLabelCls: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }
