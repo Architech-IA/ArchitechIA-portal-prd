@@ -757,12 +757,10 @@ function HubPropuesta({ leadId, proposal, onSave }: {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '4px', flexShrink: 0, alignItems: 'center' }}>
-                        {history.length > 0 && (
-                          <button onClick={() => toggleHistory(d.id)} title="Historial de versiones"
-                            style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 7px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '10px' }}>
-                            <History size={12} /> {history.length}
-                          </button>
-                        )}
+                        <button onClick={() => toggleHistory(d.id)} title="Historial de versiones"
+                          style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 7px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '10px' }}>
+                          <History size={12} /> {history.length}
+                        </button>
                         <button onClick={() => setPreviewDoc(d)} title="Vista previa"
                           style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#a3e635', cursor: 'pointer' }}>
                           <Eye size={13} />
@@ -779,7 +777,11 @@ function HubPropuesta({ leadId, proposal, onSave }: {
                     </div>
                     {expanded && (
                       <div style={{ marginLeft: '22px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: '10px' }}>
-                        {history.map(h => (
+                        {history.length === 0 ? (
+                          <p style={{ fontSize: '10px', color: '#475569', padding: '4px 8px' }}>
+                            Versión original (v1) · sin versiones anteriores
+                          </p>
+                        ) : history.map(h => (
                           <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', borderRadius: '5px', background: 'rgba(255,255,255,0.02)' }}>
                             <div style={{ minWidth: 0 }}>
                               <p style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.name}</p>
