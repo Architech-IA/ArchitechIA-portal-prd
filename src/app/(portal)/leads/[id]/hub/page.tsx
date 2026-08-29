@@ -12,7 +12,7 @@ import {
   CheckCircle2, Circle, Clock, Loader2,
   Save, Paperclip, X, Download, Trash2, FileText,
   ChevronRight, Phone, Mail, Users, Briefcase, CheckSquare, Square, Plus,
-  Search, Link2, ExternalLink, Calendar,
+  Search, Link2, ExternalLink, Calendar, Eye, History,
 } from 'lucide-react'
 
 interface Lead {
@@ -80,6 +80,9 @@ interface ProposalDoc {
   name: string
   url: string
   type: string
+  version: number
+  archived: boolean
+  replacesId: string | null
   createdAt: string
 }
 
@@ -575,11 +578,40 @@ function HubPropuesta({ leadId, proposal, onSave }: {
   const [docType, setDocType]   = useState('presentacion')
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [deletingDoc, setDeletingDoc]   = useState<string | null>(null)
+  const [previewDoc, setPreviewDoc]     = useState<ProposalDoc | null>(null)
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set())
+  const [pendingUpload, setPendingUpload] = useState<{ file: File; existing: ProposalDoc } | null>(null)
   const docFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { setDocs(proposal?.documents ?? []) }, [proposal?.id])
 
-  const uploadDocument = async (file: File) => {
+  const activeDocs = docs.filter(d => !d.archived)
+
+  const getHistory = (doc: ProposalDoc): ProposalDoc[] => {
+    const chain: ProposalDoc[] = []
+    let current = docs.find(d => d.id === doc.replacesId)
+    while (current) {
+      chain.push(current)
+      current = docs.find(d => d.id === current!.replacesId)
+    }
+    return chain
+  }
+
+  const toggleHistory = (docId: string) => {
+    setExpandedHistory(prev => {
+      const next = new Set(prev)
+      next.has(docId) ? next.delete(docId) : next.add(docId)
+      return next
+    })
+  }
+
+  const handleFileSelected = (file: File) => {
+    const existing = activeDocs.find(d => d.type === docType)
+    if (existing) setPendingUpload({ file, existing })
+    else uploadDocument(file)
+  }
+
+  const uploadDocument = async (file: File, replacesId?: string) => {
     if (file.size > 10 * 1024 * 1024) { alert('Máximo 10MB por archivo'); return }
     setUploadingDoc(true)
     try {
@@ -608,17 +640,21 @@ function HubPropuesta({ leadId, proposal, onSave }: {
       const res = await fetch(`/api/proposals/${activeProposal!.id}/documents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: file.name, type: docType, url: dataUrl }),
+        body: JSON.stringify({ name: file.name, type: docType, url: dataUrl, replacesId }),
       })
       if (res.ok) {
         const newDoc = await res.json()
-        setDocs(prev => [newDoc, ...prev])
+        setDocs(prev => {
+          const updated = replacesId ? prev.map(d => d.id === replacesId ? { ...d, archived: true } : d) : prev
+          return [newDoc, ...updated]
+        })
       } else {
         const err = await res.json().catch(() => ({}))
         alert(`Error subiendo documento: ${err.error ?? res.status}`)
       }
     } finally {
       setUploadingDoc(false)
+      setPendingUpload(null)
       if (docFileRef.current) docFileRef.current.value = ''
     }
   }
@@ -630,6 +666,8 @@ function HubPropuesta({ leadId, proposal, onSave }: {
     a.target = '_blank'
     a.click()
   }
+
+  const getMimeType = (url: string) => url.startsWith('data:') ? url.slice(5, url.indexOf(';')) : ''
 
   const deleteDocument = async (docId: string) => {
     if (!proposal?.id) return
@@ -664,7 +702,7 @@ function HubPropuesta({ leadId, proposal, onSave }: {
                   <option key={key} value={key}>{label}</option>
                 ))}
               </select>
-              <input ref={docFileRef} type="file" hidden onChange={e => { const f = e.target.files?.[0]; if (f) uploadDocument(f) }} />
+              <input ref={docFileRef} type="file" hidden onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelected(f) }} />
               <button onClick={() => docFileRef.current?.click()} disabled={uploadingDoc}
                 style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: uploadingDoc ? 'not-allowed' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#94a3b8', opacity: uploadingDoc ? 0.6 : 1 }}>
                 {uploadingDoc ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
@@ -673,36 +711,132 @@ function HubPropuesta({ leadId, proposal, onSave }: {
             </div>
           </div>
 
-          {docs.length === 0 ? (
+          {pendingUpload && (
+            <div style={{ marginBottom: '12px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.25)' }}>
+              <p style={{ fontSize: '11px', color: '#fdba74', marginBottom: '8px' }}>
+                Ya existe <strong>{pendingUpload.existing.name}</strong> en la categoría {DOC_TYPE_LABELS[docType] ?? docType}. ¿Qué querés hacer con <strong>{pendingUpload.file.name}</strong>?
+              </p>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button onClick={() => uploadDocument(pendingUpload.file, pendingUpload.existing.id)}
+                  style={{ padding: '5px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: 'none', background: '#f97316', color: '#fff' }}>
+                  Reemplazar (nueva versión)
+                </button>
+                <button onClick={() => uploadDocument(pendingUpload.file)}
+                  style={{ padding: '5px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#e2e8f0' }}>
+                  Agregar como adicional
+                </button>
+                <button onClick={() => { setPendingUpload(null); if (docFileRef.current) docFileRef.current.value = '' }}
+                  style={{ padding: '5px 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: 'none', background: 'transparent', color: '#94a3b8' }}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeDocs.length === 0 ? (
             <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', padding: '12px 0' }}>
               Sin documentos. Adjunta presentación, propuesta técnica, cotización o requerimientos.
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {docs.map(d => (
-                <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                    <FileText size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: '12px', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</p>
-                      <p style={{ fontSize: '10px', color: '#475569' }}>{DOC_TYPE_LABELS[d.type] ?? d.type}</p>
+              {activeDocs.map(d => {
+                const history = getHistory(d)
+                const expanded = expandedHistory.has(d.id)
+                return (
+                  <div key={d.id}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <FileText size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: '12px', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</p>
+                          <p style={{ fontSize: '10px', color: '#475569' }}>
+                            {DOC_TYPE_LABELS[d.type] ?? d.type}
+                            {d.version > 1 && <span style={{ color: '#fdba74' }}> · v{d.version}</span>}
+                          </p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0, alignItems: 'center' }}>
+                        {history.length > 0 && (
+                          <button onClick={() => toggleHistory(d.id)} title="Historial de versiones"
+                            style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 7px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '10px' }}>
+                            <History size={12} /> {history.length}
+                          </button>
+                        )}
+                        <button onClick={() => setPreviewDoc(d)} title="Vista previa"
+                          style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#a3e635', cursor: 'pointer' }}>
+                          <Eye size={13} />
+                        </button>
+                        <button onClick={() => downloadDocument(d)} title="Descargar"
+                          style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#60a5fa', cursor: 'pointer' }}>
+                          <Download size={13} />
+                        </button>
+                        <button onClick={() => deleteDocument(d.id)} disabled={deletingDoc === d.id} title="Eliminar"
+                          style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#f87171', cursor: deletingDoc === d.id ? 'not-allowed' : 'pointer' }}>
+                          {deletingDoc === d.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                        </button>
+                      </div>
                     </div>
+                    {expanded && (
+                      <div style={{ marginLeft: '22px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: '10px' }}>
+                        {history.map(h => (
+                          <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', borderRadius: '5px', background: 'rgba(255,255,255,0.02)' }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.name}</p>
+                              <p style={{ fontSize: '9px', color: '#475569' }}>v{h.version} · archivado · {new Date(h.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '2px' }}>
+                              <button onClick={() => setPreviewDoc(h)} title="Vista previa"
+                                style={{ padding: '4px', borderRadius: '4px', border: 'none', background: 'transparent', color: '#a3e635', cursor: 'pointer' }}>
+                                <Eye size={11} />
+                              </button>
+                              <button onClick={() => downloadDocument(h)} title="Descargar"
+                                style={{ padding: '4px', borderRadius: '4px', border: 'none', background: 'transparent', color: '#60a5fa', cursor: 'pointer' }}>
+                                <Download size={11} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                    <button onClick={() => downloadDocument(d)} title="Descargar"
-                      style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#60a5fa', cursor: 'pointer' }}>
-                      <Download size={13} />
-                    </button>
-                    <button onClick={() => deleteDocument(d.id)} disabled={deletingDoc === d.id} title="Eliminar"
-                      style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#f87171', cursor: deletingDoc === d.id ? 'not-allowed' : 'pointer' }}>
-                      {deletingDoc === d.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
       </div>
+
+      {previewDoc && (
+        <div onClick={() => setPreviewDoc(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+              <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600 }}>{previewDoc.name}</p>
+              <button onClick={() => setPreviewDoc(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8' }}>
+                <X size={16} />
+              </button>
+            </div>
+            {(() => {
+              const mime = getMimeType(previewDoc.url)
+              if (mime.startsWith('image/')) {
+                return <img src={previewDoc.url} alt={previewDoc.name} style={{ maxWidth: '80vw', maxHeight: '75vh', objectFit: 'contain', borderRadius: '6px' }} />
+              }
+              if (mime === 'application/pdf') {
+                return <iframe src={previewDoc.url} title={previewDoc.name} style={{ width: '80vw', height: '75vh', border: 'none', borderRadius: '6px', background: '#fff' }} />
+              }
+              return (
+                <div style={{ padding: '32px 48px', textAlign: 'center' }}>
+                  <p style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '12px' }}>Vista previa no disponible para este tipo de archivo.</p>
+                  <button onClick={() => downloadDocument(previewDoc)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none', background: '#f97316', color: '#fff' }}>
+                    <Download size={13} /> Descargar
+                  </button>
+                </div>
+              )
+            })()}
+          </div>
+        </div>
+      )}
 
     </div>
   )

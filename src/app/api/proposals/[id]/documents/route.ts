@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const { id: proposalId } = await params
-  const { name, url, type, stage } = await req.json()
+  const { name, url, type, stage, replacesId } = await req.json()
 
   if (!name || !url) return NextResponse.json({ error: 'name y url son requeridos' }, { status: 400 })
 
@@ -36,8 +36,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (size > MAX_SIZE) return NextResponse.json({ error: 'Archivo muy grande (máx 10MB)' }, { status: 400 })
   }
 
-  const doc = await prisma.proposalDocument.create({
-    data: { proposalId, name, url, type: type || 'otro', stage: stage || null },
+  let version = 1
+  if (replacesId) {
+    const prev = await prisma.proposalDocument.findFirst({ where: { id: replacesId, proposalId } })
+    if (!prev) return NextResponse.json({ error: 'Documento a reemplazar no encontrado' }, { status: 404 })
+    version = prev.version + 1
+  }
+
+  const doc = await prisma.$transaction(async (tx) => {
+    const created = await tx.proposalDocument.create({
+      data: { proposalId, name, url, type: type || 'otro', stage: stage || null, version, replacesId: replacesId || null },
+    })
+    if (replacesId) {
+      await tx.proposalDocument.update({ where: { id: replacesId }, data: { archived: true } })
+    }
+    return created
   })
 
   return NextResponse.json(doc)
