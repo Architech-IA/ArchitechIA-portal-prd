@@ -558,13 +558,6 @@ function HubTareas({ leadId, items, onToggle }: {
   )
 }
 
-const PROPOSAL_STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  DRAFT:    { label: 'Borrador',   color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' },
-  SENT:     { label: 'Enviada',    color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'  },
-  ACCEPTED: { label: 'Aceptada',   color: '#4ade80', bg: 'rgba(74,222,128,0.1)'  },
-  REJECTED: { label: 'Rechazada',  color: '#f87171', bg: 'rgba(248,113,113,0.1)' },
-}
-
 const DOC_TYPE_LABELS: Record<string, string> = {
   presentacion: 'Presentación (PPT)',
   tecnico:      'Documento Técnico',
@@ -578,12 +571,6 @@ function HubPropuesta({ leadId, proposal, onSave }: {
   proposal: Proposal | null
   onSave: (p: Proposal) => void
 }) {
-  const [title, setTitle]   = useState(proposal?.title ?? '')
-  const [desc, setDesc]     = useState(proposal?.description ?? '')
-  const [amount, setAmount] = useState(proposal?.amount?.toString() ?? '')
-  const [status, setStatus] = useState(proposal?.status ?? 'DRAFT')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved]   = useState(false)
   const [docs, setDocs]         = useState<ProposalDoc[]>(proposal?.documents ?? [])
   const [docType, setDocType]   = useState('presentacion')
   const [uploadingDoc, setUploadingDoc] = useState(false)
@@ -601,7 +588,7 @@ function HubPropuesta({ leadId, proposal, onSave }: {
         const createRes = await fetch(`/api/leads/${leadId}/proposal`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: title.trim() || 'Propuesta', description: desc, amount: parseFloat(amount) || 0, status }),
+          body: JSON.stringify({ title: 'Propuesta', description: '', amount: 0, status: 'DRAFT' }),
         })
         if (!createRes.ok) {
           const err = await createRes.json().catch(() => ({}))
@@ -659,102 +646,11 @@ function HubPropuesta({ leadId, proposal, onSave }: {
     }
   }
 
-  const save = async () => {
-    if (!title.trim()) return
-    setSaving(true)
-    const res = await fetch(`/api/leads/${leadId}/proposal`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: desc, amount: parseFloat(amount) || 0, status }),
-    })
-    if (res.ok) {
-      const p = await res.json()
-      onSave(p)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    }
-    setSaving(false)
-  }
-
-  const changeStatus = async (s: string) => {
-    if (!proposal?.id) return
-    const res = await fetch(`/api/leads/${leadId}/proposal`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: s }),
-    })
-    if (res.ok) {
-      const p = await res.json()
-      onSave(p)
-      setStatus(p.status)
-    }
-  }
-
   const boxStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '16px' }
   const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '8px 10px', fontSize: '12px', color: '#f1f5f9', outline: 'none', width: '100%' }
-  const labelStyle: React.CSSProperties = { fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '5px', display: 'block' }
 
   return (
     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-      {/* Form */}
-      <div style={boxStyle}>
-        <p style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
-          {proposal ? 'Propuesta comercial' : 'Crear propuesta'}
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
-          <div>
-            <label style={labelStyle}>Título</label>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Propuesta de implementación..." style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Valor (USD)</label>
-            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" style={inputStyle} />
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '12px' }}>
-          <label style={labelStyle}>Descripción / condiciones</label>
-          <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Alcance, condiciones, términos de pago..." rows={4} style={{ ...inputStyle, resize: 'vertical' as const }} />
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Estado */}
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {Object.entries(PROPOSAL_STATUS_LABELS).map(([key, val]) => (
-              <button key={key} onClick={() => proposal ? changeStatus(key) : setStatus(key)}
-                style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: status === key ? `1px solid ${val.color}` : '1px solid rgba(255,255,255,0.08)', background: status === key ? val.bg : 'transparent', color: status === key ? val.color : '#334155' }}>
-                {val.label}
-              </button>
-            ))}
-          </div>
-
-          <button onClick={save} disabled={saving || !title.trim()}
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', border: 'none', background: saved ? 'rgba(34,197,94,0.2)' : 'linear-gradient(135deg,#f97316,#ea580c)', color: saved ? '#4ade80' : '#fff', opacity: saving ? 0.6 : 1 }}>
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-            {saved ? 'Guardado' : 'Guardar'}
-          </button>
-        </div>
-      </div>
-
-      {/* Fechas si ya existe */}
-      {proposal && (proposal.sentDate || proposal.acceptedDate) && (
-        <div style={{ ...boxStyle, padding: '10px 14px', display: 'flex', gap: '24px' }}>
-          {proposal.sentDate && (
-            <div>
-              <p style={{ fontSize: '10px', color: '#475569', marginBottom: '2px' }}>Enviada</p>
-              <p style={{ fontSize: '12px', fontWeight: 600, color: '#60a5fa' }}>{new Date(proposal.sentDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-            </div>
-          )}
-          {proposal.acceptedDate && (
-            <div>
-              <p style={{ fontSize: '10px', color: '#475569', marginBottom: '2px' }}>Aceptada</p>
-              <p style={{ fontSize: '12px', fontWeight: 600, color: '#4ade80' }}>{new Date(proposal.acceptedDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Documentos de la propuesta */}
       <div style={boxStyle}>
