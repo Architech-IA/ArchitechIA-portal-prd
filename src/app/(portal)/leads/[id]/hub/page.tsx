@@ -603,7 +603,11 @@ function HubPropuesta({ leadId, proposal, onSave }: {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: title.trim() || 'Propuesta', description: desc, amount: parseFloat(amount) || 0, status }),
         })
-        if (!createRes.ok) return
+        if (!createRes.ok) {
+          const err = await createRes.json().catch(() => ({}))
+          alert(`Error creando propuesta: ${err.error ?? createRes.status}`)
+          return
+        }
         activeProposal = await createRes.json()
         onSave(activeProposal!)
       }
@@ -622,6 +626,9 @@ function HubPropuesta({ leadId, proposal, onSave }: {
       if (res.ok) {
         const newDoc = await res.json()
         setDocs(prev => [newDoc, ...prev])
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(`Error subiendo documento: ${err.error ?? res.status}`)
       }
     } finally {
       setUploadingDoc(false)
