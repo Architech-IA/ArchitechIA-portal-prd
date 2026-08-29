@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
   const leadsByStatus     = groupCount(allLeads,     'status');
   const proposalsByStatus = groupCount(allProposals, 'status');
   const projectsByStatus  = groupCount(allProjects,  'status');
-  const industriaLeads    = groupCount(allLeads,     'source');
+  const industriaLeads    = groupCount(allLeads,     'source', 'source');
 
   const leadsInactivos = allLeads
     .filter(l => !['WON', 'LOST'].includes(l.status) && l.updatedAt < hace7dias)
@@ -176,11 +176,11 @@ export async function GET(request: NextRequest) {
   });
 }
 
-function groupCount<T extends Record<string, unknown>>(arr: T[], key: keyof T) {
+function groupCount<T extends Record<string, unknown>>(arr: T[], key: keyof T, outKey: string = 'status') {
   const map: Record<string, number> = {};
   for (const item of arr) {
-    const val = String(item[key]);
+    const val = String(item[key] ?? 'sin-dato');
     map[val] = (map[val] || 0) + 1;
   }
-  return Object.entries(map).map(([status, _count]) => ({ status, _count }));
+  return Object.entries(map).map(([k, _count]) => ({ [outKey]: k, _count }));
 }

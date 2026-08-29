@@ -72,7 +72,15 @@ interface Proposal {
   acceptedDate: string | null
   user: { name: string }
   tasks: { id: string; title: string; completed: boolean }[]
-  documents: { id: string; name: string; url: string }[]
+  documents: ProposalDoc[]
+}
+
+interface ProposalDoc {
+  id: string
+  name: string
+  url: string
+  type: string
+  createdAt: string
 }
 
 interface PhaseData {
@@ -557,6 +565,14 @@ const PROPOSAL_STATUS_LABELS: Record<string, { label: string; color: string; bg:
   REJECTED: { label: 'Rechazada',  color: '#f87171', bg: 'rgba(248,113,113,0.1)' },
 }
 
+const DOC_TYPE_LABELS: Record<string, string> = {
+  presentacion: 'Presentación (PPT)',
+  tecnico:      'Documento Técnico',
+  cotizacion:   'Cotización',
+  requerimiento: 'Requerimiento',
+  otro:         'Otro',
+}
+
 function HubPropuesta({ leadId, proposal, onSave }: {
   leadId: string
   proposal: Proposal | null
@@ -568,6 +584,62 @@ function HubPropuesta({ leadId, proposal, onSave }: {
   const [status, setStatus] = useState(proposal?.status ?? 'DRAFT')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved]   = useState(false)
+  const [docs, setDocs]         = useState<ProposalDoc[]>(proposal?.documents ?? [])
+  const [docType, setDocType]   = useState('presentacion')
+  const [uploadingDoc, setUploadingDoc] = useState(false)
+  const [deletingDoc, setDeletingDoc]   = useState<string | null>(null)
+  const docFileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { setDocs(proposal?.documents ?? []) }, [proposal?.id])
+
+  const uploadDocument = async (file: File) => {
+    if (!proposal?.id) { alert('Guarda la propuesta antes de adjuntar documentos.'); return }
+    if (file.size > 10 * 1024 * 1024) { alert('Máximo 10MB por archivo'); return }
+    setUploadingDoc(true)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      const res = await fetch(`/api/proposals/${proposal.id}/documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: file.name, type: docType, url: dataUrl }),
+      })
+      if (res.ok) {
+        const newDoc = await res.json()
+        setDocs(prev => [newDoc, ...prev])
+      }
+    } finally {
+      setUploadingDoc(false)
+      if (docFileRef.current) docFileRef.current.value = ''
+    }
+  }
+
+  const downloadDocument = (doc: ProposalDoc) => {
+    const a = document.createElement('a')
+    a.href = doc.url
+    a.download = doc.name
+    a.target = '_blank'
+    a.click()
+  }
+
+  const deleteDocument = async (docId: string) => {
+    if (!proposal?.id) return
+    setDeletingDoc(docId)
+    try {
+      await fetch(`/api/proposals/${proposal.id}/documents`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ docId }),
+      })
+      setDocs(prev => prev.filter(d => d.id !== docId))
+    } finally {
+      setDeletingDoc(null)
+    }
+  }
 
   const save = async () => {
     if (!title.trim()) return
@@ -661,6 +733,60 @@ function HubPropuesta({ leadId, proposal, onSave }: {
             <div>
               <p style={{ fontSize: '10px', color: '#475569', marginBottom: '2px' }}>Aceptada</p>
               <p style={{ fontSize: '12px', fontWeight: 600, color: '#4ade80' }}>{new Date(proposal.acceptedDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Documentos de la propuesta */}
+      {proposal && (
+        <div style={boxStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Documentos
+            </p>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <select value={docType} onChange={e => setDocType(e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }}>
+                {Object.entries(DOC_TYPE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+              <input ref={docFileRef} type="file" hidden onChange={e => { const f = e.target.files?.[0]; if (f) uploadDocument(f) }} />
+              <button onClick={() => docFileRef.current?.click()} disabled={uploadingDoc}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: uploadingDoc ? 'not-allowed' : 'pointer', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#94a3b8', opacity: uploadingDoc ? 0.6 : 1 }}>
+                {uploadingDoc ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
+                {uploadingDoc ? 'Subiendo...' : 'Adjuntar'}
+              </button>
+            </div>
+          </div>
+
+          {docs.length === 0 ? (
+            <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', padding: '12px 0' }}>
+              Sin documentos. Adjunta presentación, propuesta técnica, cotización o requerimientos.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {docs.map(d => (
+                <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <FileText size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: '12px', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</p>
+                      <p style={{ fontSize: '10px', color: '#475569' }}>{DOC_TYPE_LABELS[d.type] ?? d.type}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                    <button onClick={() => downloadDocument(d)} title="Descargar"
+                      style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#60a5fa', cursor: 'pointer' }}>
+                      <Download size={13} />
+                    </button>
+                    <button onClick={() => deleteDocument(d.id)} disabled={deletingDoc === d.id} title="Eliminar"
+                      style={{ padding: '5px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#f87171', cursor: deletingDoc === d.id ? 'not-allowed' : 'pointer' }}>
+                      {deletingDoc === d.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

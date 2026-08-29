@@ -116,9 +116,12 @@ model ProposalTask {
 model ProposalDocument {
   id         String   @id @default(cuid())
   name       String
-  url        String
-  type       String   @default("file")
+  url        String   @default("")
+  type       String   @default("file") // categoria: presentacion, tecnico, cotizacion, requerimiento, otro
   stage      String? // fase del pipeline: NEW, CONTACTED, QUALIFIED, etc.
+  size       Int?
+  mimeType   String?
+  base64     String?  @db.Text
   proposalId String
   proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
