@@ -990,9 +990,9 @@ export default function LeadHubPage() {
       <div className="w-[250px] flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
 
         {/* Widget info general del lead */}
-        <div style={{ margin: '12px', marginBottom: '0', padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Info Lead</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        <div style={{ margin: '10px', marginBottom: '0', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
+          <p style={{ fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Info Lead</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
               <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Contacto</span>
               <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
@@ -1027,9 +1027,9 @@ export default function LeadHubPage() {
         </div>
 
         {/* Timeline — panel */}
-        <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className="flex-1 overflow-y-auto px-3 pt-1.5 pb-3">
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2.5 pb-1.5">Pipeline</p>
+            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2 pb-1">Pipeline</p>
             <div className="relative px-2 pb-2">
               {/* Vertical rail — single line behind all dots */}
               <div className="absolute left-[27px] top-5 bottom-5 w-px bg-gray-800" />
