@@ -124,6 +124,7 @@ model ProposalDocument {
   base64     String?  @db.Text
   version    Int      @default(1)
   archived   Boolean  @default(false)
+  previewUrl String?  @db.Text
   replacesId String?
   replaces   ProposalDocument?  @relation("DocVersions", fields: [replacesId], references: [id])
   replacedBy ProposalDocument[] @relation("DocVersions")

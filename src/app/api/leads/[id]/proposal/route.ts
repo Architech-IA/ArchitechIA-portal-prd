@@ -7,7 +7,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params
   const proposal = await prisma.proposal.findFirst({
     where: { leadId: id },
-    include: { tasks: { orderBy: { createdAt: 'asc' } }, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, createdAt: true } }, user: { select: { name: true } } },
+    include: { tasks: { orderBy: { createdAt: 'asc' } }, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, previewUrl: true, createdAt: true } }, user: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(proposal)
@@ -29,12 +29,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     proposal = await prisma.proposal.update({
       where: { id: existing.id },
       data: { title, description, amount: Number(amount) || 0, status: status ?? existing.status },
-      include: { tasks: true, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, createdAt: true } }, user: { select: { name: true } } },
+      include: { tasks: true, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, previewUrl: true, createdAt: true } }, user: { select: { name: true } } },
     })
   } else {
     proposal = await prisma.proposal.create({
       data: { title, description, amount: Number(amount) || 0, leadId: id, userId: user.id },
-      include: { tasks: true, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, createdAt: true } }, user: { select: { name: true } } },
+      include: { tasks: true, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, previewUrl: true, createdAt: true } }, user: { select: { name: true } } },
     })
   }
   return NextResponse.json(proposal)
@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const updated = await prisma.proposal.update({
     where: { id: existing.id },
     data: { status, sentDate: status === 'SENT' ? new Date() : undefined, acceptedDate: status === 'ACCEPTED' ? new Date() : undefined },
-    include: { tasks: true, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, createdAt: true } }, user: { select: { name: true } } },
+    include: { tasks: true, documents: { select: { id: true, name: true, url: true, type: true, version: true, archived: true, replacesId: true, previewUrl: true, createdAt: true } }, user: { select: { name: true } } },
   })
   return NextResponse.json(updated)
 }

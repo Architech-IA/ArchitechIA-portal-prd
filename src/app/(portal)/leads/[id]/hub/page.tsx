@@ -83,6 +83,7 @@ interface ProposalDoc {
   version: number
   archived: boolean
   replacesId: string | null
+  previewUrl: string | null
   createdAt: string
 }
 
@@ -818,6 +819,9 @@ function HubPropuesta({ leadId, proposal, onSave }: {
             </div>
             {(() => {
               const mime = getMimeType(previewDoc.url)
+              if (previewDoc.previewUrl) {
+                return <iframe src={previewDoc.previewUrl} title={previewDoc.name} style={{ width: '80vw', height: '75vh', border: 'none', borderRadius: '6px', background: '#fff' }} />
+              }
               if (mime.startsWith('image/')) {
                 return <img src={previewDoc.url} alt={previewDoc.name} style={{ maxWidth: '80vw', maxHeight: '75vh', objectFit: 'contain', borderRadius: '6px' }} />
               }
