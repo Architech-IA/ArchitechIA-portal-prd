@@ -593,17 +593,28 @@ function HubPropuesta({ leadId, proposal, onSave }: {
   useEffect(() => { setDocs(proposal?.documents ?? []) }, [proposal?.id])
 
   const uploadDocument = async (file: File) => {
-    if (!proposal?.id) { alert('Guarda la propuesta antes de adjuntar documentos.'); return }
     if (file.size > 10 * 1024 * 1024) { alert('Máximo 10MB por archivo'); return }
     setUploadingDoc(true)
     try {
+      let activeProposal = proposal
+      if (!activeProposal?.id) {
+        const createRes = await fetch(`/api/leads/${leadId}/proposal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title.trim() || 'Propuesta', description: desc, amount: parseFloat(amount) || 0, status }),
+        })
+        if (!createRes.ok) return
+        activeProposal = await createRes.json()
+        onSave(activeProposal!)
+      }
+
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result as string)
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
-      const res = await fetch(`/api/proposals/${proposal.id}/documents`, {
+      const res = await fetch(`/api/proposals/${activeProposal!.id}/documents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: file.name, type: docType, url: dataUrl }),
@@ -739,8 +750,7 @@ function HubPropuesta({ leadId, proposal, onSave }: {
       )}
 
       {/* Documentos de la propuesta */}
-      {proposal && (
-        <div style={boxStyle}>
+      <div style={boxStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <p style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Documentos
@@ -789,8 +799,7 @@ function HubPropuesta({ leadId, proposal, onSave }: {
               ))}
             </div>
           )}
-        </div>
-      )}
+      </div>
 
     </div>
   )
