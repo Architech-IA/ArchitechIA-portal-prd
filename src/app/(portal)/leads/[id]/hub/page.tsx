@@ -1027,10 +1027,10 @@ export default function LeadHubPage() {
         </div>
 
         {/* Timeline — panel */}
-        <div className="flex-1 overflow-y-auto px-3 pt-1.5 pb-3">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-3 pt-1.5 pb-3 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
             <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2 pb-1">Pipeline</p>
-            <div className="relative px-2 pb-2">
+            <div className="relative flex-1 px-2 pb-2">
               {/* Vertical rail — single line behind all dots */}
               <div className="absolute left-[27px] top-5 bottom-5 w-px bg-gray-800" />
 
