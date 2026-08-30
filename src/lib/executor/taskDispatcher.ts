@@ -4,8 +4,22 @@ import { runVerifier } from '@/lib/executor/taskVerifier'
 import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
 
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
+const OPENCODE_URL    = 'https://opencode.ai/zen/v1/chat/completions'
 const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
-const OPENCODE_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.7-max'
+const OPENCODE_FALLBACK_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.7-max'
+
+// Resuelve el modelo OpenCode a usar para un agente segun su llmModel configurado.
+// Si el agente tiene un modelo claude-* o no tiene nada configurado, cae al modelo
+// global de fallback (el motor MASD nunca usa el CLI de claude para ejecutar).
+function resolveOpenCodeModel(llmModel: string | null | undefined): { apiUrl: string; modelId: string } {
+  if (llmModel?.startsWith('opencode-go/')) {
+    return { apiUrl: OPENCODE_GO_URL, modelId: llmModel.slice('opencode-go/'.length) }
+  }
+  if (llmModel?.startsWith('opencode/')) {
+    return { apiUrl: OPENCODE_URL, modelId: llmModel.slice('opencode/'.length) }
+  }
+  return { apiUrl: OPENCODE_GO_URL, modelId: OPENCODE_FALLBACK_MODEL }
+}
 
 const CODE_AREAS = new Set([
   '947ca771-fe9e-4c3f-bfea-2ef2e27986c6', // Development
@@ -20,6 +34,14 @@ export type DispatchResult = {
   agentName: string
   strategy: 'CODE' | 'LLM'
   started: boolean
+}
+
+async function loadAgentProfile(agentId: string): Promise<{ llmModel: string | null; systemPrompt: string | null }> {
+  const [agent] = await prisma.$queryRawUnsafe(
+    `SELECT "llmModel", "systemPrompt" FROM "Agent" WHERE id = $1`,
+    agentId
+  ) as { llmModel: string | null; systemPrompt: string | null }[]
+  return agent ?? { llmModel: null, systemPrompt: null }
 }
 
 export async function resolveAgent(task: {
@@ -66,6 +88,7 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
   if (task.status === 'DONE') throw new Error(`Task ${taskId} ya está DONE`)
 
   const { agentId, agentName, strategy } = await resolveAgent(task)
+  const agentProfile = await loadAgentProfile(agentId)
 
   await prisma.$executeRawUnsafe(
     `UPDATE "BacklogItem" SET status='IN_PROGRESS', "fechaInicio"=NOW(), "fechaEjecucion"=NOW() WHERE id=$1`,
@@ -80,7 +103,7 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
 
   const context = await buildTaskContext(taskId)
 
-  runExecutor({ taskId, execId: exec_.id, task, agentName, strategy, context })
+  runExecutor({ taskId, execId: exec_.id, task, agentName, agentProfile, strategy, context })
     .catch(err => console.error(`[EXECUTOR] Task ${taskId} failed:`, err))
 
   return { taskId, taskCode: task.taskCode, agentId, agentName, strategy, started: true }
@@ -91,13 +114,15 @@ async function runExecutor(opts: {
   execId: string
   task: { title: string; description: string | null; sprintId?: string | null }
   agentName: string
+  agentProfile: { llmModel: string | null; systemPrompt: string | null }
   strategy: 'CODE' | 'LLM'
   context: string
 }) {
-  const { taskId, execId, task, agentName, strategy, context } = opts
+  const { taskId, execId, task, agentName, agentProfile, strategy, context } = opts
   const startMs = Date.now()
 
-  const systemPrompt = `Eres ${agentName}, agente de ArchiTechIA ejecutando una tarea del Motor Agéntico SDD.`
+  const systemPrompt = agentProfile.systemPrompt
+    ?? `Eres ${agentName}, agente de ArchiTechIA ejecutando una tarea del Motor Agéntico SDD.`
   const userPrompt = [
     context,
     '---',
@@ -106,19 +131,21 @@ async function runExecutor(opts: {
     task.description ?? '',
   ].join('\n\n')
 
+  const { apiUrl, modelId } = resolveOpenCodeModel(agentProfile.llmModel)
+
   let resultSummary = ''
   let finalStatus = 'DONE'
 
   try {
     const timeoutMs = strategy === 'CODE' ? 300_000 : 90_000
-    const res = await fetch(OPENCODE_GO_URL, {
+    const res = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENCODE_KEY}`,
       },
       body: JSON.stringify({
-        model: OPENCODE_MODEL,
+        model: modelId,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
