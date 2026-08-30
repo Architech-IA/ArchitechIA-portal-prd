@@ -1203,7 +1203,7 @@ export default function LeadHubPage() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">Actividad reciente</p>
               {(() => {
                 const recent = phases
-                  .filter(p => p.content && extractPhasePreview(p.content))
+                  .filter(p => PHASES.some(ph => ph.key === p.phase) && p.content && extractPhasePreview(p.content))
                   .slice()
                   .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                 if (recent.length === 0) {
