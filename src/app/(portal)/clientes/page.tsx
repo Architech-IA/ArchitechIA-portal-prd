@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import NichesTab from '@/components/NichesTab';
 
@@ -28,6 +29,7 @@ const Skeleton = () => (
 );
 
 export default function ClientesPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const isAdmin = ['ADMIN','SUPERADMIN'].includes((session?.user as { role?: string })?.role ?? '');
 
@@ -233,6 +235,10 @@ export default function ClientesPage() {
                   <p className="text-lg font-bold text-orange-400">${seleccionado.valorTotal.toLocaleString()}</p>
                 </div>
               </div>
+              <button onClick={() => router.push(`/clientes/${seleccionado.id}`)}
+                className="w-full mt-4 py-2.5 bg-orange-600/15 hover:bg-orange-600/25 border border-orange-500/30 text-orange-400 rounded-lg text-sm font-semibold transition-colors">
+                Ver historial completo →
+              </button>
             </div>
           </div>
         </div>

@@ -18,7 +18,7 @@ export async function GET(
   const { id } = await params;
   const lead = await prisma.lead.findUnique({
     where: { id },
-    include: { user: { select: { id: true, name: true, email: true } } },
+    include: { user: { select: { id: true, name: true, email: true } }, cliente: { select: { id: true, nombre: true } } },
   });
   if (!lead) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
   return NextResponse.json(lead);
@@ -43,7 +43,7 @@ export async function PUT(
       where: { id },
       data: { companyName, contactName, email, phone: phone || null, status, source,
         estimatedValue: parseFloat(estimatedValue) || 0, scope: scope || null, repository: repository || null, notes: notes || null, userId, tipo: tipo || null, solucionAsociada: solucionAsociada || null },
-      include: { user: { select: { id: true, name: true, email: true } } },
+      include: { user: { select: { id: true, name: true, email: true } }, cliente: { select: { id: true, nombre: true } } },
     });
 
     // Crear o actualizar solución asociada

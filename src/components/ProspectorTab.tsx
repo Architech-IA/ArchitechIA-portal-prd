@@ -391,7 +391,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      const msg = `${data.created} negocio(s) agregados a Clientes${data.skipped > 0 ? ` · ${data.skipped} ya existían en Clientes` : ''}`
+      const msg = `${data.created} lead(s) creados (con su Cliente vinculado)${data.skipped > 0 ? ` · ${data.skipped} ya tenían un Lead asociado` : ''}`
       showToast('success', msg)
       setSelected(new Set())
       onLeadsCreated?.()

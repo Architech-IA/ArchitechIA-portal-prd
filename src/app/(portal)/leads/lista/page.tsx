@@ -22,6 +22,7 @@ interface Lead {
   notes: string | null;
   createdAt: string;
   user: { id: string; name: string; email: string };
+  cliente: { id: string; nombre: string } | null;
 }
 
 const EMPTY_FORM = {
@@ -349,7 +350,15 @@ export default function LeadsPage() {
                           </div>
                         </td>
                       )}
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.companyName}</td>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.companyName}</p>
+                        {lead.cliente && (
+                          <button onClick={e => { e.stopPropagation(); router.push(`/clientes/${lead.cliente!.id}`); }}
+                            style={{ fontSize: '10px', color: '#f97316', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>
+                            Ver cliente
+                          </button>
+                        )}
+                      </td>
                       <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.scope || '—'}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#94a3b8' }}>{lead.contactName}</td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.email}</td>

@@ -27,7 +27,11 @@ function getMimeFromDataUrl(url: string): string {
 
 async function convertToPdfPreview(dataUrl: string, mime: string): Promise<string | null> {
   const ext = OFFICE_EXT[mime]
-  if (!ext) return null
+  if (!ext) {
+    console.log('[preview] mime no reconocido para conversion:', JSON.stringify(mime))
+    return null
+  }
+  console.log('[preview] convirtiendo', mime, '->', ext)
 
   const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1)
   const workDir = path.join(os.tmpdir(), `docprev_${randomUUID()}`)
@@ -43,8 +47,10 @@ async function convertToPdfPreview(dataUrl: string, mime: string): Promise<strin
     )
     const pdfPath = path.join(workDir, 'input.pdf')
     const pdfBuffer = await readFile(pdfPath)
+    console.log('[preview] conversion OK, tamano pdf:', pdfBuffer.length)
     return `data:application/pdf;base64,${pdfBuffer.toString('base64')}`
-  } catch {
+  } catch (err) {
+    console.log('[preview] ERROR conversion:', err instanceof Error ? err.message : String(err))
     return null
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => {})

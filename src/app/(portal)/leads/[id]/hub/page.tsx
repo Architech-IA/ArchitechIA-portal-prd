@@ -29,6 +29,7 @@ interface Lead {
   notes: string | null
   createdAt: string
   user: { id: string; name: string }
+  cliente: { id: string; nombre: string } | null
 }
 
 interface HubFile {
@@ -280,8 +281,9 @@ const INT_LABELS: Record<string, string> = {
   CALL: 'Llamada', EMAIL: 'Email', MEETING: 'Reunión', WHATSAPP: 'WhatsApp',
 }
 
-function HubInteracciones({ leadId, items, onAdd }: {
+function HubInteracciones({ leadId, companyName, items, onAdd }: {
   leadId: string
+  companyName: string
   items: Interaction[]
   onAdd: (i: Interaction) => void
 }) {
@@ -307,7 +309,7 @@ function HubInteracciones({ leadId, items, onAdd }: {
   const switchMode = (m: 'manual' | 'meeting') => {
     setMode(m)
     setLinkedMeetId(null)
-    if (m === 'meeting') loadMeetings()
+    if (m === 'meeting') { loadMeetings(); setMeetSearch(companyName) }
   }
 
   const add = async () => {
@@ -343,10 +345,12 @@ function HubInteracciones({ leadId, items, onAdd }: {
     COMMERCIAL: 'Comercial', ADVISORY: 'Asesoría', PROVIDER: 'Proveedores',
   }
 
-  const filteredMeetings = meetings.filter(m =>
-    m.title.toLowerCase().includes(meetSearch.toLowerCase()) ||
-    (MEET_TYPE_LABELS[m.type] || m.type).toLowerCase().includes(meetSearch.toLowerCase())
-  )
+  const filteredMeetings = meetings.filter(m => {
+    const q = meetSearch.toLowerCase()
+    return m.title.toLowerCase().includes(q) ||
+      (MEET_TYPE_LABELS[m.type] || m.type).toLowerCase().includes(q) ||
+      (m.attendees || '').toLowerCase().includes(q)
+  })
 
   const boxStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px' }
   const inputStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '7px 10px', fontSize: '12px', color: '#f1f5f9', outline: 'none', width: '100%' }
@@ -1011,6 +1015,12 @@ export default function LeadHubPage() {
               <span style={{ fontSize: '10px', color: '#475569' }}>Valor</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${lead.estimatedValue.toLocaleString()}</span>
             </div>
+            {lead.cliente && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10px', color: '#475569' }}>Cliente</span>
+                <a href={`/clientes/${lead.cliente.id}`} style={{ fontSize: '10px', fontWeight: 600, color: '#f97316', textDecoration: 'underline' }}>{lead.cliente.nombre}</a>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '10px', color: '#475569' }}>Responsable</span>
               <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
@@ -1125,7 +1135,7 @@ export default function LeadHubPage() {
 
           {/* INTERACCIONES */}
           {tab === 'interacciones' && (
-            <HubInteracciones leadId={id} items={interactions} onAdd={i => setInteractions(prev => [i, ...prev])} />
+            <HubInteracciones leadId={id} companyName={lead.companyName} items={interactions} onAdd={i => setInteractions(prev => [i, ...prev])} />
           )}
 
           {/* TAREAS */}
