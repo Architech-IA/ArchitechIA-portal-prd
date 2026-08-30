@@ -5,8 +5,9 @@ import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
 
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_URL    = 'https://opencode.ai/zen/v1/chat/completions'
-const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
 const OPENCODE_FALLBACK_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.7-max'
+
+const HARNESS_API_URL = process.env.HARNESS_API_URL ?? 'http://127.0.0.1:8767'
 
 // Resuelve el modelo OpenCode a usar para un agente segun su llmModel configurado.
 // Si el agente tiene un modelo claude-* o no tiene nada configurado, cae al modelo
@@ -36,12 +37,12 @@ export type DispatchResult = {
   started: boolean
 }
 
-async function loadAgentProfile(agentId: string): Promise<{ llmModel: string | null; systemPrompt: string | null }> {
+async function loadAgentProfile(agentId: string): Promise<{ llmModel: string | null; systemPrompt: string | null; slug: string | null }> {
   const [agent] = await prisma.$queryRawUnsafe(
-    `SELECT "llmModel", "systemPrompt" FROM "Agent" WHERE id = $1`,
+    `SELECT "llmModel", "systemPrompt", slug FROM "Agent" WHERE id = $1`,
     agentId
-  ) as { llmModel: string | null; systemPrompt: string | null }[]
-  return agent ?? { llmModel: null, systemPrompt: null }
+  ) as { llmModel: string | null; systemPrompt: string | null; slug: string | null }[]
+  return agent ?? { llmModel: null, systemPrompt: null, slug: null }
 }
 
 export async function resolveAgent(task: {
@@ -103,24 +104,6 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
 
   const context = await buildTaskContext(taskId)
 
-  runExecutor({ taskId, execId: exec_.id, task, agentName, agentProfile, strategy, context })
-    .catch(err => console.error(`[EXECUTOR] Task ${taskId} failed:`, err))
-
-  return { taskId, taskCode: task.taskCode, agentId, agentName, strategy, started: true }
-}
-
-async function runExecutor(opts: {
-  taskId: string
-  execId: string
-  task: { title: string; description: string | null; sprintId?: string | null }
-  agentName: string
-  agentProfile: { llmModel: string | null; systemPrompt: string | null }
-  strategy: 'CODE' | 'LLM'
-  context: string
-}) {
-  const { taskId, execId, task, agentName, agentProfile, strategy, context } = opts
-  const startMs = Date.now()
-
   const systemPrompt = agentProfile.systemPrompt
     ?? `Eres ${agentName}, agente de ArchiTechIA ejecutando una tarea del Motor Agéntico SDD.`
   const userPrompt = [
@@ -133,71 +116,92 @@ async function runExecutor(opts: {
 
   const { apiUrl, modelId } = resolveOpenCodeModel(agentProfile.llmModel)
 
-  let resultSummary = ''
-  let finalStatus = 'DONE'
-
+  // Empuja la tarea al Harness (cola con concurrencia limitada por N workers,
+  // reintentos y dead-letter queue) en vez de ejecutar directo aqui.
   try {
-    const timeoutMs = strategy === 'CODE' ? 300_000 : 90_000
-    const res = await fetch(apiUrl, {
+    await fetch(`${HARNESS_API_URL}/dispatch`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENCODE_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: modelId,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: strategy === 'CODE' ? 4096 : 2048,
+        type: 'masd_task',
+        agent: agentProfile.slug ?? agentName.toLowerCase(),
+        priority: 'MEDIUM',
+        payload: {
+          taskId,
+          execId: exec_.id,
+          strategy,
+          apiUrl,
+          modelId,
+          systemPrompt,
+          userPrompt,
+          contextPreview: context.substring(0, 4000),
+        },
       }),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(10_000),
     })
-    if (!res.ok) {
-      const errText = await res.text()
-      throw new Error(`OpenCode API error ${res.status}: ${errText.slice(0, 300)}`)
-    }
-    const data = await res.json()
-    resultSummary = (data.choices?.[0]?.message?.content ?? '(sin output)').trim().substring(0, 2000)
-  } catch (err: unknown) {
-    finalStatus = 'FAILED'
-    resultSummary = `Error: ${err instanceof Error ? err.message : String(err)}`.substring(0, 2000)
+  } catch (err) {
+    console.error(`[DISPATCH] No se pudo encolar en el Harness para ${taskId}:`, err)
+    // Revertir estado si ni siquiera se pudo encolar
+    await prisma.$executeRawUnsafe(`UPDATE "BacklogItem" SET status='BACKLOG' WHERE id=$1`, taskId)
+    await prisma.$executeRawUnsafe(
+      `UPDATE "TaskExecution" SET status='FAILED', "resultSummary"=$2, "finishedAt"=NOW() WHERE id=$1`,
+      exec_.id, `Error encolando en Harness: ${err instanceof Error ? err.message : String(err)}`
+    )
+    throw err
   }
 
-  const durationMs = Date.now() - startMs
+  return { taskId, taskCode: task.taskCode, agentId, agentName, strategy, started: true }
+}
 
-  // Update TaskExecution
+/**
+ * Recibe el resultado ya generado (por el worker del Harness) y cierra el
+ * ciclo de vida de la tarea: verificacion, actualizacion de BacklogItem,
+ * y chequeo de cierre de sprint. Llamado desde /api/executor/complete.
+ */
+export async function finalizeExecution(opts: {
+  taskId: string
+  execId: string
+  finalStatus: 'DONE' | 'FAILED'
+  resultSummary: string
+  durationMs: number
+  contextUsed?: string
+}) {
+  const { taskId, execId, finalStatus, resultSummary, durationMs, contextUsed } = opts
+
+  const [task] = await prisma.$queryRawUnsafe(
+    `SELECT id, title, description, "sprintId" FROM "BacklogItem" WHERE id = $1`,
+    taskId
+  ) as { id: string; title: string; description: string | null; sprintId: string | null }[]
+
+  if (!task) throw new Error(`Task ${taskId} not found`)
+
   await prisma.$executeRawUnsafe(
     `UPDATE "TaskExecution"
      SET status=$2, "resultSummary"=$3, "finishedAt"=NOW(), "durationMs"=$4, "contextUsed"=$5
      WHERE id=$1`,
-    execId, finalStatus, resultSummary, durationMs, context.substring(0, 4000)
+    execId, finalStatus, resultSummary, durationMs, (contextUsed ?? '').substring(0, 4000)
   )
 
-  // Run verifier
-  let verifiedStatus = finalStatus
+  let verifiedStatus: string = finalStatus
   if (finalStatus === 'DONE') {
     try {
       const verifierResult = await runVerifier({
         taskTitle: task.title,
         taskDescription: task.description,
-        acceptanceCriteria: [], // populated from councilPlan when available
+        acceptanceCriteria: [], // populada desde councilPlan cuando exista
         resultSummary,
       })
       verifiedStatus = verifierResult.passed ? 'DONE' : 'FAILED'
 
-      // Save checklist in TaskExecution artifacts
       await prisma.$executeRawUnsafe(
         `UPDATE "TaskExecution" SET artifacts=$2::jsonb WHERE id=$1`,
         execId, JSON.stringify(verifierResult.checklist)
       )
     } catch {
-      // Verifier error → keep DONE
+      // Verifier fallo -> se mantiene DONE
     }
   }
 
-  // Update BacklogItem with final verified status
   await prisma.$executeRawUnsafe(
     `UPDATE "BacklogItem"
      SET status=$2, "fechaFin"=NOW(), resultado=$3
@@ -207,7 +211,6 @@ async function runExecutor(opts: {
 
   console.log(`[EXECUTOR] ${task.title} → ${verifiedStatus} (${Math.round(durationMs / 1000)}s)`)
 
-  // Check if sprint is complete → REVIEW_PENDING
   if (task.sprintId) {
     try {
       await checkSprintCompletion(task.sprintId)
@@ -215,4 +218,6 @@ async function runExecutor(opts: {
       console.error('[SPRINT_MONITOR] Error:', err)
     }
   }
+
+  return { verifiedStatus }
 }
