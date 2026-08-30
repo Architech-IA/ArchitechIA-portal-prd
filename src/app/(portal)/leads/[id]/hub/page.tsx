@@ -994,19 +994,19 @@ export default function LeadHubPage() {
       <div className="w-[250px] flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
 
         {/* Widget info general del lead */}
-        <div style={{ margin: '10px', marginBottom: '6px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
-          <p style={{ fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '9px' }}>Info Lead</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+        <div style={{ margin: '10px', marginBottom: '6px', padding: '24px 22px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
+          <p style={{ fontSize: '12px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px' }}>Info Lead</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {lead.cliente && (
               <div
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
-                <span style={{ fontSize: '11px', color: '#475569' }}>Cliente</span>
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '4px 8px', margin: '-4px -8px', borderRadius: '6px', transition: 'background 150ms ease' }}>
+                <span style={{ fontSize: '13px', color: '#475569' }}>Cliente</span>
                 <a href={`/leads/clientes/${lead.cliente.id}`}
                   onMouseEnter={e => { e.stopPropagation(); (e.currentTarget as HTMLElement).style.color = '#f97316' }}
                   onMouseLeave={e => { e.stopPropagation(); (e.currentTarget as HTMLElement).style.color = '#94a3b8' }}
-                  style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textDecoration: 'underline', transition: 'color 150ms ease' }}>
+                  style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8', textDecoration: 'underline', transition: 'color 150ms ease' }}>
                   {lead.cliente.nombre}
                 </a>
               </div>
@@ -1014,50 +1014,50 @@ export default function LeadHubPage() {
             <div
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
-              <span style={{ fontSize: '11px', color: '#475569', flexShrink: 0 }}>Contacto</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', padding: '4px 8px', margin: '-4px -8px', borderRadius: '6px', transition: 'background 150ms ease' }}>
+              <span style={{ fontSize: '13px', color: '#475569', flexShrink: 0 }}>Contacto</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
             </div>
             {lead.scope && (
               <div
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
-                <span style={{ fontSize: '11px', color: '#475569', flexShrink: 0 }}>Alcance</span>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right', maxWidth: '130px' }}>{lead.scope}</span>
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', padding: '4px 8px', margin: '-4px -8px', borderRadius: '6px', transition: 'background 150ms ease' }}>
+                <span style={{ fontSize: '13px', color: '#475569', flexShrink: 0 }}>Alcance</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8', textAlign: 'right', maxWidth: '130px' }}>{lead.scope}</span>
               </div>
             )}
             <div
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>Fuente</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.source || '—'}</span>
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '4px 8px', margin: '-4px -8px', borderRadius: '6px', transition: 'background 150ms ease' }}>
+              <span style={{ fontSize: '13px', color: '#475569' }}>Fuente</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8' }}>{lead.source || '—'}</span>
             </div>
             <div
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>Valor</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>${lead.estimatedValue.toLocaleString()}</span>
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '4px 8px', margin: '-4px -8px', borderRadius: '6px', transition: 'background 150ms ease' }}>
+              <span style={{ fontSize: '13px', color: '#475569' }}>Valor</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8' }}>${lead.estimatedValue.toLocaleString()}</span>
             </div>
             <div
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>Responsable</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '4px 8px', margin: '-4px -8px', borderRadius: '6px', transition: 'background 150ms ease' }}>
+              <span style={{ fontSize: '13px', color: '#475569' }}>Responsable</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
             </div>
             <div
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>Creado</span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '4px 8px', margin: '-4px -8px', borderRadius: '6px', transition: 'background 150ms ease' }}>
+              <span style={{ fontSize: '13px', color: '#475569' }}>Creado</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </div>
             <button onClick={openEditLead}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '8px', padding: '8px', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#94a3b8', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
-              <Pencil size={12} /> Editar información
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', marginTop: '10px', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#94a3b8', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+              <Pencil size={13} /> Editar información
             </button>
           </div>
         </div>
