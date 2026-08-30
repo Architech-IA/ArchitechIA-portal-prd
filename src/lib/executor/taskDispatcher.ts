@@ -5,7 +5,7 @@ import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
 
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
-const OPENCODE_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'deepseek-v4-pro'
+const OPENCODE_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.8-flash'
 
 const CODE_AREAS = new Set([
   '947ca771-fe9e-4c3f-bfea-2ef2e27986c6', // Development
