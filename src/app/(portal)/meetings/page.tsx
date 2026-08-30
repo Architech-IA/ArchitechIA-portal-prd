@@ -261,6 +261,7 @@ export default function MeetingsPage() {
   const { data: session } = useSession();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
+  const [clientes, setClientes] = useState<{ id: string; nombre: string; contacto: string; email: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'calendario' | 'semana' | 'registros'>('calendario');
   const [weekOffset, setWeekOffset] = useState(0);
@@ -285,7 +286,8 @@ export default function MeetingsPage() {
     Promise.all([
       fetch('/api/meetings').then(r => r.json()),
       fetch('/api/users').then(r => r.json()),
-    ]).then(([m, u]) => { setMeetings(m); setUsers(u); setLoading(false); });
+      fetch('/api/clientes').then(r => r.json()),
+    ]).then(([m, u, c]) => { setMeetings(m); setUsers(u); setClientes(Array.isArray(c) ? c : []); setLoading(false); });
   }, []);
 
   const openNew = () => {
@@ -1129,21 +1131,46 @@ export default function MeetingsPage() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-sm text-gray-400">Asistentes</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const teamNames = ['Daniel Martinez', 'Santiago Ortega', 'Freddy Orozco'];
-                      const toAdd = teamNames.filter(n => !externalAttendees.includes(n));
-                      if (toAdd.length === 0) return;
-                      const updated = [...externalAttendees, ...toAdd];
-                      setExternalAttendees(updated);
-                      setForm({...form, attendees: updated.join(', ')});
-                    }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-orange-600/15 border border-orange-500/30 text-orange-400 rounded-lg hover:bg-orange-600/25 transition-colors"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    Equipo ArchitechIA
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {form.type === 'COMMERCIAL' && (
+                      <div className="relative">
+                        <select
+                          value=""
+                          onChange={e => {
+                            const cliente = clientes.find(c => c.id === e.target.value);
+                            if (!cliente) return;
+                            const label = cliente.contacto ? `${cliente.nombre} — ${cliente.contacto}` : cliente.nombre;
+                            if (externalAttendees.includes(label)) return;
+                            const updated = [...externalAttendees, label];
+                            setExternalAttendees(updated);
+                            setForm({...form, attendees: updated.join(', ')});
+                          }}
+                          className="appearance-none flex items-center gap-1.5 pl-2.5 pr-6 py-1 text-xs bg-blue-600/15 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-600/25 transition-colors cursor-pointer"
+                        >
+                          <option value="" disabled>Cliente...</option>
+                          {clientes.map(c => (
+                            <option key={c.id} value={c.id} style={{ background: '#0f172a', color: '#e2e8f0' }}>{c.nombre}</option>
+                          ))}
+                        </select>
+                        <svg className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const teamNames = ['Daniel Martinez', 'Santiago Ortega', 'Freddy Orozco'];
+                        const toAdd = teamNames.filter(n => !externalAttendees.includes(n));
+                        if (toAdd.length === 0) return;
+                        const updated = [...externalAttendees, ...toAdd];
+                        setExternalAttendees(updated);
+                        setForm({...form, attendees: updated.join(', ')});
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-orange-600/15 border border-orange-500/30 text-orange-400 rounded-lg hover:bg-orange-600/25 transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      Equipo ArchitechIA
+                    </button>
+                  </div>
                 </div>
                 <div className="relative">
                   <input
