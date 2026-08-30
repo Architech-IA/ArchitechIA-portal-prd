@@ -1165,49 +1165,72 @@ export default function LeadHubPage() {
           {tab === 'fases' && (active ? (
             <PhasePanel key={active} phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
           ) : (
-            <div className="h-full p-6">
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 h-full">
+            <div className="h-full overflow-y-auto p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
                 {PHASES.map(phase => {
                   const status = getPhaseStatus(phase.key)
                   const data = getPhaseData(phase.key)
                   const c = COLOR_MAP[phase.color]
                   const isDone = status === 'done'
                   const isActSt = status === 'active'
-                  const preview = extractPhasePreview(data?.content)
                   return (
                     <button key={phase.key} onClick={() => { setActive(phase.key); setTab('fases') }}
-                      className={`h-full text-left rounded-xl border p-4 flex flex-col transition-all duration-150 hover:border-white/[0.15] hover:bg-white/[0.04] ${isActSt ? `${c.bg} ${c.border}` : 'border-white/[0.07] bg-white/[0.02]'}`}>
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      className={`text-left rounded-lg border px-3 py-2.5 transition-all duration-150 hover:border-white/[0.15] hover:bg-white/[0.04] ${isActSt ? `${c.bg} ${c.border}` : 'border-white/[0.07] bg-white/[0.02]'}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
                           isDone  ? 'bg-orange-500/20 ring-2 ring-orange-500/40' :
                           isActSt ? `${c.bg} ring-2 ${c.ring}` :
                                     'bg-gray-900 ring-1 ring-gray-700/80'
                         }`}>
                           {isDone
-                            ? <CheckCircle2 size={13} className="text-orange-400" />
+                            ? <CheckCircle2 size={11} className="text-orange-400" />
                             : isActSt
-                            ? <div className={`w-2 h-2 rounded-full ${c.dot}`} />
-                            : <Circle size={11} className="text-gray-700" />
+                            ? <div className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                            : <Circle size={9} className="text-gray-700" />
                           }
                         </div>
-                        <p className={`text-sm font-semibold ${isActSt ? c.text : isDone ? 'text-gray-200' : 'text-gray-500'}`}>{phase.label}</p>
+                        <p className={`text-xs font-semibold truncate ${isActSt ? c.text : isDone ? 'text-gray-200' : 'text-gray-500'}`}>{phase.label}</p>
                       </div>
-                      {isActSt && <span className={`self-start mb-3 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>En curso</span>}
-                      <p className="text-[11px] text-gray-500 leading-relaxed mb-3">{phase.desc}</p>
-                      <div className="flex-1 overflow-hidden">
-                        {preview ? (
-                          <p className="text-xs text-gray-400 line-clamp-6">{preview}</p>
-                        ) : (
-                          <p className="text-xs text-gray-600 italic">Sin contenido</p>
-                        )}
-                      </div>
-                      {data && data.files.length > 0 && (
-                        <p className="text-[10px] text-orange-400/70 mt-3 pt-3 border-t border-white/[0.06]">{data.files.length} archivo{data.files.length !== 1 ? 's' : ''} adjunto{data.files.length !== 1 ? 's' : ''}</p>
-                      )}
+                      <p className="text-[10px] text-gray-600">
+                        {isActSt ? 'En curso' : isDone ? 'Completada' : 'Pendiente'}
+                        {data && data.files.length > 0 && ` · ${data.files.length} archivo${data.files.length !== 1 ? 's' : ''}`}
+                      </p>
                     </button>
                   )
                 })}
               </div>
+
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">Actividad reciente</p>
+              {(() => {
+                const recent = phases
+                  .filter(p => p.content && extractPhasePreview(p.content))
+                  .slice()
+                  .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                if (recent.length === 0) {
+                  return <p className="text-sm text-gray-600 italic">Todavía no hay contenido registrado en ninguna fase.</p>
+                }
+                return (
+                  <div className="flex flex-col gap-2">
+                    {recent.map(p => {
+                      const phaseInfo = PHASES.find(ph => ph.key === p.phase)
+                      const c = phaseInfo ? COLOR_MAP[phaseInfo.color] : null
+                      return (
+                        <button key={p.id} onClick={() => { setActive(p.phase); setTab('fases') }}
+                          className="text-left rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-150">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`text-xs font-semibold ${c?.text ?? 'text-gray-300'}`}>{phaseInfo?.label ?? p.phase}</span>
+                            <span className="text-[10px] text-gray-600">
+                              {p.updatedBy ? `${p.updatedBy} · ` : ''}
+                              {new Date(p.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-400 line-clamp-2">{extractPhasePreview(p.content)}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
             </div>
           ))}
 
