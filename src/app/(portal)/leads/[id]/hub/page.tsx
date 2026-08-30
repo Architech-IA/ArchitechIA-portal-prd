@@ -998,39 +998,60 @@ export default function LeadHubPage() {
           <p style={{ fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '9px' }}>Info Lead</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
             {lead.cliente && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <div
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
                 <span style={{ fontSize: '11px', color: '#475569' }}>Cliente</span>
                 <a href={`/leads/clientes/${lead.cliente.id}`}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f97316' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#94a3b8' }}
+                  onMouseEnter={e => { e.stopPropagation(); (e.currentTarget as HTMLElement).style.color = '#f97316' }}
+                  onMouseLeave={e => { e.stopPropagation(); (e.currentTarget as HTMLElement).style.color = '#94a3b8' }}
                   style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textDecoration: 'underline', transition: 'color 150ms ease' }}>
                   {lead.cliente.nombre}
                 </a>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+            <div
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
               <span style={{ fontSize: '11px', color: '#475569', flexShrink: 0 }}>Contacto</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
             </div>
             {lead.scope && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+              <div
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
                 <span style={{ fontSize: '11px', color: '#475569', flexShrink: 0 }}>Alcance</span>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right', maxWidth: '130px' }}>{lead.scope}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <div
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
               <span style={{ fontSize: '11px', color: '#475569' }}>Fuente</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.source || '—'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <div
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
               <span style={{ fontSize: '11px', color: '#475569' }}>Valor</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>${lead.estimatedValue.toLocaleString()}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <div
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
               <span style={{ fontSize: '11px', color: '#475569' }}>Responsable</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <div
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '3px 6px', margin: '-3px -6px', borderRadius: '6px', transition: 'background 150ms ease' }}>
               <span style={{ fontSize: '11px', color: '#475569' }}>Creado</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </div>
@@ -1042,10 +1063,10 @@ export default function LeadHubPage() {
         </div>
 
         {/* Timeline — panel */}
-        <div className="flex-1 overflow-y-auto px-2.5 pt-1.5 pb-3 flex flex-col min-h-0">
-          <div className="flex-1 flex flex-col rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2 pb-1">Pipeline</p>
-            <div className="relative flex-1 px-2 pb-2">
+        <div className="flex-1 overflow-y-auto px-2.5 pt-1.5 pb-3">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2 pb-1">Pipeline</p>
+            <div className="relative px-2 pb-2">
               {/* Vertical rail — single line behind all dots */}
               <div className="absolute left-[27px] top-5 bottom-5 w-px bg-gray-800" />
 
