@@ -997,6 +997,17 @@ export default function LeadHubPage() {
         <div style={{ margin: '10px', marginBottom: '6px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
           <p style={{ fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '9px' }}>Info Lead</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+            {lead.cliente && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: '#475569' }}>Cliente</span>
+                <a href={`/leads/clientes/${lead.cliente.id}`}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f97316' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#94a3b8' }}
+                  style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textDecoration: 'underline', transition: 'color 150ms ease' }}>
+                  {lead.cliente.nombre}
+                </a>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
               <span style={{ fontSize: '11px', color: '#475569', flexShrink: 0 }}>Contacto</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
@@ -1013,14 +1024,8 @@ export default function LeadHubPage() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '11px', color: '#475569' }}>Valor</span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${lead.estimatedValue.toLocaleString()}</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>${lead.estimatedValue.toLocaleString()}</span>
             </div>
-            {lead.cliente && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '11px', color: '#475569' }}>Cliente</span>
-                <a href={`/leads/clientes/${lead.cliente.id}`} style={{ fontSize: '11px', fontWeight: 600, color: '#f97316', textDecoration: 'underline' }}>{lead.cliente.nombre}</a>
-              </div>
-            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '11px', color: '#475569' }}>Responsable</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
