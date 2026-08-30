@@ -1150,12 +1150,49 @@ export default function LeadHubPage() {
           {tab === 'fases' && (active ? (
             <PhasePanel key={active} phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-4">
-                <Clock size={28} className="text-orange-400" />
+            <div className="h-full overflow-y-auto p-6">
+              <h2 className="text-base font-semibold text-white mb-1">Resumen de fases — {lead.companyName}</h2>
+              <p className="text-xs text-gray-500 mb-5">Click en una fase para ver o editar su contenido y archivos.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {PHASES.map(phase => {
+                  const status = getPhaseStatus(phase.key)
+                  const data = getPhaseData(phase.key)
+                  const c = COLOR_MAP[phase.color]
+                  const isDone = status === 'done'
+                  const isActSt = status === 'active'
+                  const preview = data?.content?.trim()
+                  return (
+                    <button key={phase.key} onClick={() => { setActive(phase.key); setTab('fases') }}
+                      className={`text-left rounded-xl border p-4 transition-all duration-150 hover:border-white/[0.15] hover:bg-white/[0.04] ${isActSt ? `${c.bg} ${c.border}` : 'border-white/[0.07] bg-white/[0.02]'}`}>
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          isDone  ? 'bg-orange-500/20 ring-2 ring-orange-500/40' :
+                          isActSt ? `${c.bg} ring-2 ${c.ring}` :
+                                    'bg-gray-900 ring-1 ring-gray-700/80'
+                        }`}>
+                          {isDone
+                            ? <CheckCircle2 size={13} className="text-orange-400" />
+                            : isActSt
+                            ? <div className={`w-2 h-2 rounded-full ${c.dot}`} />
+                            : <Circle size={11} className="text-gray-700" />
+                          }
+                        </div>
+                        <p className={`text-sm font-semibold ${isActSt ? c.text : isDone ? 'text-gray-200' : 'text-gray-500'}`}>{phase.label}</p>
+                        {isActSt && <span className={`ml-auto text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>En curso</span>}
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-relaxed mb-2">{phase.desc}</p>
+                      {preview ? (
+                        <p className="text-xs text-gray-400 line-clamp-2">{preview}</p>
+                      ) : (
+                        <p className="text-xs text-gray-600 italic">Sin contenido</p>
+                      )}
+                      {data && data.files.length > 0 && (
+                        <p className="text-[10px] text-orange-400/70 mt-2">{data.files.length} archivo{data.files.length !== 1 ? 's' : ''} adjunto{data.files.length !== 1 ? 's' : ''}</p>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
-              <h2 className="text-lg font-semibold text-white mb-2">HUB de {lead.companyName}</h2>
-              <p className="text-sm text-gray-500 max-w-xs">Selecciona una fase del timeline para ver o editar su contenido y archivos.</p>
             </div>
           ))}
 
