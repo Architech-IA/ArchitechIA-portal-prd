@@ -1165,8 +1165,8 @@ export default function LeadHubPage() {
           {tab === 'fases' && (active ? (
             <PhasePanel key={active} phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
           ) : (
-            <div className="h-full overflow-y-auto p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="h-full p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 h-full">
                 {PHASES.map(phase => {
                   const status = getPhaseStatus(phase.key)
                   const data = getPhaseData(phase.key)
@@ -1176,8 +1176,8 @@ export default function LeadHubPage() {
                   const preview = extractPhasePreview(data?.content)
                   return (
                     <button key={phase.key} onClick={() => { setActive(phase.key); setTab('fases') }}
-                      className={`text-left rounded-xl border p-4 transition-all duration-150 hover:border-white/[0.15] hover:bg-white/[0.04] ${isActSt ? `${c.bg} ${c.border}` : 'border-white/[0.07] bg-white/[0.02]'}`}>
-                      <div className="flex items-center gap-2.5 mb-2">
+                      className={`h-full text-left rounded-xl border p-4 flex flex-col transition-all duration-150 hover:border-white/[0.15] hover:bg-white/[0.04] ${isActSt ? `${c.bg} ${c.border}` : 'border-white/[0.07] bg-white/[0.02]'}`}>
+                      <div className="flex items-center gap-2.5 mb-3">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                           isDone  ? 'bg-orange-500/20 ring-2 ring-orange-500/40' :
                           isActSt ? `${c.bg} ring-2 ${c.ring}` :
@@ -1191,16 +1191,18 @@ export default function LeadHubPage() {
                           }
                         </div>
                         <p className={`text-sm font-semibold ${isActSt ? c.text : isDone ? 'text-gray-200' : 'text-gray-500'}`}>{phase.label}</p>
-                        {isActSt && <span className={`ml-auto text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>En curso</span>}
                       </div>
-                      <p className="text-[11px] text-gray-500 leading-relaxed mb-2">{phase.desc}</p>
-                      {preview ? (
-                        <p className="text-xs text-gray-400 line-clamp-2">{preview}</p>
-                      ) : (
-                        <p className="text-xs text-gray-600 italic">Sin contenido</p>
-                      )}
+                      {isActSt && <span className={`self-start mb-3 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>En curso</span>}
+                      <p className="text-[11px] text-gray-500 leading-relaxed mb-3">{phase.desc}</p>
+                      <div className="flex-1 overflow-hidden">
+                        {preview ? (
+                          <p className="text-xs text-gray-400 line-clamp-6">{preview}</p>
+                        ) : (
+                          <p className="text-xs text-gray-600 italic">Sin contenido</p>
+                        )}
+                      </div>
                       {data && data.files.length > 0 && (
-                        <p className="text-[10px] text-orange-400/70 mt-2">{data.files.length} archivo{data.files.length !== 1 ? 's' : ''} adjunto{data.files.length !== 1 ? 's' : ''}</p>
+                        <p className="text-[10px] text-orange-400/70 mt-3 pt-3 border-t border-white/[0.06]">{data.files.length} archivo{data.files.length !== 1 ? 's' : ''} adjunto{data.files.length !== 1 ? 's' : ''}</p>
                       )}
                     </button>
                   )
