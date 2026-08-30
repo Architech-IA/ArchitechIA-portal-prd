@@ -1,6 +1,6 @@
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
-const OPENCODE_MODEL = process.env.OPENCODE_VERIFIER_MODEL ?? 'qwen3.8-flash'
+const OPENCODE_MODEL = process.env.OPENCODE_VERIFIER_MODEL ?? 'qwen3.7-max'
 
 export type VerifierResult = {
   passed: boolean
