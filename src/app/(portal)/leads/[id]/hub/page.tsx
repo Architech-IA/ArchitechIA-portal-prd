@@ -1148,7 +1148,7 @@ export default function LeadHubPage() {
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: '2px', padding: '0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)' }}>
           {([ { key: 'fases' as const, label: 'Fases' }, { key: 'interacciones' as const, label: 'Interacciones' }, { key: 'tareas' as const, label: 'Tareas' }, { key: 'propuesta' as const, label: 'Propuesta' }, { key: 'arquitectura' as const, label: 'Arquitectura' }, { key: 'diagrama' as const, label: 'Diagrama' } ]).map(({ key, label }) => (
-            <button key={key} onClick={() => setTab(key)}
+            <button key={key} onClick={() => { setTab(key); if (key === 'fases') setActive(null) }}
               className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 ${
                 tab === key
                   ? 'border-b-orange-500 bg-orange-500/[0.07] text-orange-400'
