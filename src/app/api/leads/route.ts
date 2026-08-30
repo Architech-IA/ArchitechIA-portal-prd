@@ -7,6 +7,7 @@ export async function GET() {
     include: {
       user: { select: { id: true, name: true, email: true } },
       solucion: { select: { id: true } },
+      cliente: { select: { id: true, nombre: true } },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -17,29 +18,30 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { companyName, contactName, email, phone, status, source, estimatedValue, scope, repository, notes, userId, tipo, solucionAsociada } = body;
 
-  const lead = await prisma.lead.create({
-    data: { companyName, contactName, email, phone, status, source,
-      estimatedValue: parseFloat(estimatedValue) || 0, scope: scope || null, repository: repository || null, notes, userId, tipo: tipo || null, solucionAsociada: solucionAsociada || null },
-    include: { user: { select: { id: true, name: true, email: true } } },
+  // Vincula con un Cliente existente (por nombre) o crea uno nuevo — nunca duplicado sin relación
+  let cliente = await prisma.cliente.findFirst({
+    where: { nombre: { equals: companyName, mode: 'insensitive' } },
   });
-
-  // Crear cliente automáticamente si no existe
-  const existingCliente = await prisma.cliente.findFirst({
-    where: { nombre: { equals: companyName } },
-  });
-  if (!existingCliente) {
-    await prisma.cliente.create({
+  if (!cliente) {
+    cliente = await prisma.cliente.create({
       data: {
         nombre: companyName,
         contacto: contactName || '',
         email: email || '',
-        industria: '',
-        pais: '',
+        industria: 'Sin especificar',
+        pais: 'Sin especificar',
         estado: 'Activo',
         valorTotal: parseFloat(estimatedValue) || 0,
       },
     });
   }
+
+  const lead = await prisma.lead.create({
+    data: { companyName, contactName, email, phone, status, source,
+      estimatedValue: parseFloat(estimatedValue) || 0, scope: scope || null, repository: repository || null, notes, userId, tipo: tipo || null, solucionAsociada: solucionAsociada || null,
+      clienteId: cliente.id },
+    include: { user: { select: { id: true, name: true, email: true } }, cliente: { select: { id: true, nombre: true } } },
+  });
 
   await logActivity({
     type: 'CREATED', description: `creó el lead ${companyName}`,

@@ -49,6 +49,8 @@ model Lead {
   notes            String?
   userId         String
   user           User       @relation(fields: [userId], references: [id])
+  clienteId      String
+  cliente        Cliente    @relation(fields: [clienteId], references: [id])
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
@@ -298,6 +300,7 @@ model Cliente {
   updatedAt  DateTime @updatedAt
 
   appInstances AppInstance[]
+  leads        Lead[]
 }
 
 model Producto {
