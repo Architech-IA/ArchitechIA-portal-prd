@@ -1166,8 +1166,6 @@ export default function LeadHubPage() {
             <PhasePanel key={active} phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
           ) : (
             <div className="h-full overflow-y-auto p-6">
-              <h2 className="text-base font-semibold text-white mb-1">Resumen de fases — {lead.companyName}</h2>
-              <p className="text-xs text-gray-500 mb-5">Click en una fase para ver o editar su contenido y archivos.</p>
               <div className="grid grid-cols-2 gap-3">
                 {PHASES.map(phase => {
                   const status = getPhaseStatus(phase.key)
