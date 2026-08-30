@@ -133,6 +133,21 @@ function formatBytes(b: number) {
   return `${(b / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function extractPhasePreview(content: string | null | undefined): string {
+  if (!content) return ''
+  try {
+    const parsed = JSON.parse(content)
+    if (parsed && Array.isArray(parsed.tabs)) {
+      return parsed.tabs.map((t: { content: string }) => stripHtml(t.content || '')).filter(Boolean).join(' · ')
+    }
+  } catch {}
+  return content.trim()
+}
+
 function PhasePanel({
   phase, data, leadId, onSaved,
 }: {
@@ -1160,7 +1175,7 @@ export default function LeadHubPage() {
                   const c = COLOR_MAP[phase.color]
                   const isDone = status === 'done'
                   const isActSt = status === 'active'
-                  const preview = data?.content?.trim()
+                  const preview = extractPhasePreview(data?.content)
                   return (
                     <button key={phase.key} onClick={() => { setActive(phase.key); setTab('fases') }}
                       className={`text-left rounded-xl border p-4 transition-all duration-150 hover:border-white/[0.15] hover:bg-white/[0.04] ${isActSt ? `${c.bg} ${c.border}` : 'border-white/[0.07] bg-white/[0.02]'}`}>
