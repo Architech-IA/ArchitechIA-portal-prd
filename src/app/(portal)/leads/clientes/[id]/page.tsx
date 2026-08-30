@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Building2, ArrowLeft, ExternalLink } from 'lucide-react'
+import LeadsNav from '@/components/LeadsNav'
 
 interface LeadRow {
   id: string
@@ -60,7 +61,8 @@ export default function ClienteDetailPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <button onClick={() => router.push('/clientes')} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 mb-4 transition-colors">
+      <LeadsNav />
+      <button onClick={() => router.push('/leads/clientes')} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 mb-4 transition-colors">
         <ArrowLeft size={13} /> Volver a Clientes
       </button>
 

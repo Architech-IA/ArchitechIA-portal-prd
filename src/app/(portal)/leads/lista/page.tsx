@@ -351,12 +351,14 @@ export default function LeadsPage() {
                         </td>
                       )}
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.companyName}</p>
-                        {lead.cliente && (
-                          <button onClick={e => { e.stopPropagation(); router.push(`/clientes/${lead.cliente!.id}`); }}
-                            style={{ fontSize: '10px', color: '#f97316', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}>
-                            Ver cliente
+                        {lead.cliente ? (
+                          <button onClick={e => { e.stopPropagation(); router.push(`/leads/clientes/${lead.cliente!.id}`); }}
+                            title="Ver cliente"
+                            style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(241,245,249,0.25)', textAlign: 'left' }}>
+                            {lead.companyName}
                           </button>
+                        ) : (
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.companyName}</p>
                         )}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.scope || '—'}</td>

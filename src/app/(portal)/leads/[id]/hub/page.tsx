@@ -1018,7 +1018,7 @@ export default function LeadHubPage() {
             {lead.cliente && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '10px', color: '#475569' }}>Cliente</span>
-                <a href={`/clientes/${lead.cliente.id}`} style={{ fontSize: '10px', fontWeight: 600, color: '#f97316', textDecoration: 'underline' }}>{lead.cliente.nombre}</a>
+                <a href={`/leads/clientes/${lead.cliente.id}`} style={{ fontSize: '10px', fontWeight: 600, color: '#f97316', textDecoration: 'underline' }}>{lead.cliente.nombre}</a>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>

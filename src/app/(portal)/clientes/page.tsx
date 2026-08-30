@@ -235,7 +235,7 @@ export default function ClientesPage() {
                   <p className="text-lg font-bold text-orange-400">${seleccionado.valorTotal.toLocaleString()}</p>
                 </div>
               </div>
-              <button onClick={() => router.push(`/clientes/${seleccionado.id}`)}
+              <button onClick={() => router.push(`/leads/clientes/${seleccionado.id}`)}
                 className="w-full mt-4 py-2.5 bg-orange-600/15 hover:bg-orange-600/25 border border-orange-500/30 text-orange-400 rounded-lg text-sm font-semibold transition-colors">
                 Ver historial completo →
               </button>
