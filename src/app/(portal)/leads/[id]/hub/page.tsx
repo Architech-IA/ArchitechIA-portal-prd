@@ -144,6 +144,11 @@ function extractPhasePreview(content: string | null | undefined): string {
     if (parsed && Array.isArray(parsed.tabs)) {
       return parsed.tabs.map((t: { content: string }) => stripHtml(t.content || '')).filter(Boolean).join(' · ')
     }
+    if (parsed && Array.isArray(parsed.nodes)) {
+      const parts = [parsed.title, parsed.description].filter(Boolean)
+      if (parts.length > 0) return parts.join(': ')
+      return `${parsed.nodes.length} componente${parsed.nodes.length !== 1 ? 's' : ''}`
+    }
   } catch {}
   return content.trim()
 }
@@ -1203,7 +1208,7 @@ export default function LeadHubPage() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">Actividad reciente</p>
               {(() => {
                 const recent = phases
-                  .filter(p => PHASES.some(ph => ph.key === p.phase) && p.content && extractPhasePreview(p.content))
+                  .filter(p => p.content && extractPhasePreview(p.content))
                   .slice()
                   .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                 if (recent.length === 0) {
@@ -1213,12 +1218,14 @@ export default function LeadHubPage() {
                   <div className="flex flex-col gap-2">
                     {recent.map(p => {
                       const phaseInfo = PHASES.find(ph => ph.key === p.phase)
+                      const isDiagram = p.phase === 'COMPONENT_DIAGRAM'
                       const c = phaseInfo ? COLOR_MAP[phaseInfo.color] : null
+                      const label = phaseInfo?.label ?? (isDiagram ? 'Arquitectura' : p.phase)
                       return (
-                        <button key={p.id} onClick={() => { setActive(p.phase); setTab('fases') }}
+                        <button key={p.id} onClick={() => { if (isDiagram) setTab('diagrama'); else { setActive(p.phase); setTab('fases') } }}
                           className="text-left rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-150">
                           <div className="flex items-center justify-between mb-1">
-                            <span className={`text-xs font-semibold ${c?.text ?? 'text-gray-300'}`}>{phaseInfo?.label ?? p.phase}</span>
+                            <span className={`text-xs font-semibold ${c?.text ?? 'text-gray-300'}`}>{label}</span>
                             <span className="text-[10px] text-gray-600">
                               {p.updatedBy ? `${p.updatedBy} · ` : ''}
                               {new Date(p.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
