@@ -994,44 +994,44 @@ export default function LeadHubPage() {
       <div className="w-[250px] flex-shrink-0 bg-gray-950 border-r border-gray-800 flex flex-col overflow-hidden">
 
         {/* Widget info general del lead */}
-        <div style={{ margin: '10px', marginBottom: '6px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
-          <p style={{ fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Info Lead</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ margin: '10px', marginBottom: '6px', padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
+          <p style={{ fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '9px' }}>Info Lead</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Contacto</span>
-              <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
+              <span style={{ fontSize: '11px', color: '#475569', flexShrink: 0 }}>Contacto</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right' }}>{lead.contactName}</span>
             </div>
             {lead.scope && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>Alcance</span>
-                <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8', textAlign: 'right', maxWidth: '130px' }}>{lead.scope}</span>
+                <span style={{ fontSize: '11px', color: '#475569', flexShrink: 0 }}>Alcance</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textAlign: 'right', maxWidth: '130px' }}>{lead.scope}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Fuente</span>
-              <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>{lead.source || '—'}</span>
+              <span style={{ fontSize: '11px', color: '#475569' }}>Fuente</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.source || '—'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Valor</span>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${lead.estimatedValue.toLocaleString()}</span>
+              <span style={{ fontSize: '11px', color: '#475569' }}>Valor</span>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#f97316', fontFamily: 'monospace' }}>${lead.estimatedValue.toLocaleString()}</span>
             </div>
             {lead.cliente && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '10px', color: '#475569' }}>Cliente</span>
-                <a href={`/leads/clientes/${lead.cliente.id}`} style={{ fontSize: '10px', fontWeight: 600, color: '#f97316', textDecoration: 'underline' }}>{lead.cliente.nombre}</a>
+                <span style={{ fontSize: '11px', color: '#475569' }}>Cliente</span>
+                <a href={`/leads/clientes/${lead.cliente.id}`} style={{ fontSize: '11px', fontWeight: 600, color: '#f97316', textDecoration: 'underline' }}>{lead.cliente.nombre}</a>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Responsable</span>
-              <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
+              <span style={{ fontSize: '11px', color: '#475569' }}>Responsable</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{lead.user.name}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '10px', color: '#475569' }}>Creado</span>
-              <span style={{ fontSize: '10px', fontWeight: 600, color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              <span style={{ fontSize: '11px', color: '#475569' }}>Creado</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
             </div>
             <button onClick={openEditLead}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', marginTop: '4px', padding: '6px', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#94a3b8', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}>
-              <Pencil size={11} /> Editar información
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '8px', padding: '8px', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: '#94a3b8', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+              <Pencil size={12} /> Editar información
             </button>
           </div>
         </div>
