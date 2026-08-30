@@ -2,12 +2,10 @@ import { prisma } from '@/lib/prisma'
 import { buildTaskContext } from '@/lib/context/buildTaskContext'
 import { runVerifier } from '@/lib/executor/taskVerifier'
 import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-import { writeFileSync, unlinkSync } from 'fs'
-import { randomUUID } from 'crypto'
 
-const execAsync = promisify(exec)
+const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
+const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
+const OPENCODE_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.8-max'
 
 const CODE_AREAS = new Set([
   '947ca771-fe9e-4c3f-bfea-2ef2e27986c6', // Development
@@ -99,35 +97,45 @@ async function runExecutor(opts: {
   const { taskId, execId, task, agentName, strategy, context } = opts
   const startMs = Date.now()
 
-  const prompt = [
+  const systemPrompt = `Eres ${agentName}, agente de ArchiTechIA ejecutando una tarea del Motor Agéntico SDD.`
+  const userPrompt = [
     context,
     '---',
-    `Eres ${agentName}. Ejecuta la siguiente tarea:`,
+    `Ejecuta la siguiente tarea:`,
     task.title,
     task.description ?? '',
   ].join('\n\n')
-
-  // Write prompt to temp file — avoids all shell escaping issues
-  const tmpFile = `/tmp/claude_prompt_${randomUUID()}.txt`
-  writeFileSync(tmpFile, prompt, 'utf8')
 
   let resultSummary = ''
   let finalStatus = 'DONE'
 
   try {
-    const timeout = strategy === 'CODE' ? 600_000 : 300_000
-    const maxBuffer = strategy === 'CODE' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
-
-    const { stdout, stderr } = await execAsync(
-      `claude --print < ${tmpFile}`,
-      { timeout, maxBuffer }
-    )
-    resultSummary = (stdout || stderr || '(sin output)').trim().substring(0, 2000)
+    const timeoutMs = strategy === 'CODE' ? 300_000 : 90_000
+    const res = await fetch(OPENCODE_GO_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENCODE_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENCODE_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: strategy === 'CODE' ? 4096 : 2048,
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    if (!res.ok) {
+      const errText = await res.text()
+      throw new Error(`OpenCode API error ${res.status}: ${errText.slice(0, 300)}`)
+    }
+    const data = await res.json()
+    resultSummary = (data.choices?.[0]?.message?.content ?? '(sin output)').trim().substring(0, 2000)
   } catch (err: unknown) {
     finalStatus = 'FAILED'
     resultSummary = `Error: ${err instanceof Error ? err.message : String(err)}`.substring(0, 2000)
-  } finally {
-    try { unlinkSync(tmpFile) } catch { /* ignore */ }
   }
 
   const durationMs = Date.now() - startMs

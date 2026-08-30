@@ -1,7 +1,6 @@
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execAsync = promisify(exec)
+const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
+const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
+const OPENCODE_MODEL = process.env.OPENCODE_VERIFIER_MODEL ?? 'qwen3.8-max'
 
 export type VerifierResult = {
   passed: boolean
@@ -24,7 +23,7 @@ export async function runVerifier(opts: {
     }
   }
 
-  const prompt = `Eres Sigma, agente verificador de calidad. Evalúa si la siguiente tarea fue completada exitosamente.
+  const userPrompt = `Evalúa si la siguiente tarea fue completada exitosamente.
 
 TAREA: ${taskTitle}
 ${taskDescription ? `DESCRIPCIÓN: ${taskDescription}` : ''}
@@ -45,12 +44,27 @@ Responde ÚNICAMENTE con JSON válido en este formato:
 Sin markdown, sin explicación adicional. Solo el JSON.`
 
   try {
-    const { stdout } = await execAsync(
-      `claude --print "${prompt.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`,
-      { timeout: 120_000 }
-    )
+    const res = await fetch(OPENCODE_GO_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENCODE_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENCODE_MODEL,
+        messages: [
+          { role: 'system', content: 'Eres Sigma, agente verificador de calidad de ArchiTechIA.' },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: 1024,
+      }),
+      signal: AbortSignal.timeout(60_000),
+    })
+    if (!res.ok) throw new Error(`OpenCode API error ${res.status}`)
 
-    const jsonMatch = stdout.match(/\{[\s\S]*\}/)
+    const data = await res.json()
+    const content = data.choices?.[0]?.message?.content ?? ''
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON in verifier response')
     return JSON.parse(jsonMatch[0]) as VerifierResult
   } catch {
