@@ -115,7 +115,9 @@ function parseOrionOptions(content: string): { prose: string; options: string[] 
   // respuesta"). La estructura numerada ya es señal suficiente por si sola.
   return { prose, options }
 }
-interface ExtractedProposal { title: string; description: string; epic?: ExtractedEpic; sprints?: ExtractedSprint[]; items?: { type: string; title: string; description: string; areaSlug: string; priority: string }[]; _sourceFile?: string }
+interface SolucionSugerida { solucionId: string | null; solucionPropuesta: { name: string; description: string } | null }
+interface ExtractedProposal { title: string; description: string; epic?: ExtractedEpic; sprints?: ExtractedSprint[]; items?: { type: string; title: string; description: string; areaSlug: string; priority: string }[]; _sourceFile?: string; solucionSugerida?: SolucionSugerida }
+interface SolucionOption { id: string; nombre: string }
 
 const AGENT_COLOR: Record<string, string> = {
   orion: '#6366f1',
@@ -215,6 +217,7 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
   const [extracting, setExtracting] = useState(false)
   const [extracted, setExtracted] = useState<ExtractedProposal | null>(null)
   const [sendingToCouncil, setSendingToCouncil] = useState(false)
+  const [solucionesOptions, setSolucionesOptions] = useState<SolucionOption[]>([])
   const chatInputRef = useRef<HTMLInputElement>(null)
   const chatBottomRef = useRef<HTMLDivElement>(null)
   // Document mode
@@ -281,6 +284,11 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
   }
 
   useEffect(() => { loadTriggerConfig() }, [])
+  useEffect(() => {
+    fetch('/api/soluciones').then(r => r.json()).then((data: any[]) => {
+      setSolucionesOptions((data ?? []).map(s => ({ id: s.id, nombre: s.nombre })))
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -394,6 +402,8 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
           items: flatItems,
           createdByAgentId: 'agent_orion_001',
           createdByAgentName: 'Orión',
+          solucionId: extracted.solucionSugerida?.solucionId ?? null,
+          solucionPropuesta: extracted.solucionSugerida?.solucionId ? null : extracted.solucionSugerida?.solucionPropuesta ?? null,
         }),
       })
       if (res.ok) {
@@ -448,6 +458,8 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
           createdByAgentId: 'agent_orion_001',
           createdByAgentName: 'Orión',
           metadata: { sourceFile: docFile?.name ?? docExtracted._sourceFile ?? '' },
+          solucionId: docExtracted.solucionSugerida?.solucionId ?? null,
+          solucionPropuesta: docExtracted.solucionSugerida?.solucionId ? null : docExtracted.solucionSugerida?.solucionPropuesta ?? null,
         }),
       })
       if (res.ok) {
@@ -716,6 +728,51 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
               className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-300 border border-white/8 outline-none focus:border-indigo-500/40 resize-none"
               style={{ background: 'rgba(255,255,255,0.04)' }}
             />
+          </div>
+          {/* Solución — a que Solucion queda asociada esta propuesta, existente
+              o nueva. Antes esta decision no se veia ni se podia corregir aca:
+              recien se resolvia mucho mas adelante (plan/start), a ciegas. */}
+          <div>
+            <label className="text-[8px] font-bold uppercase tracking-widest text-gray-600 mb-1 block">Solución</label>
+            <select
+              value={data.solucionSugerida?.solucionId ?? '__new__'}
+              onChange={e => {
+                const val = e.target.value
+                if (val === '__new__') {
+                  onChangeData({
+                    ...data,
+                    solucionSugerida: {
+                      solucionId: null,
+                      solucionPropuesta: data.solucionSugerida?.solucionPropuesta ?? { name: data.title, description: data.description },
+                    },
+                  })
+                } else {
+                  onChangeData({ ...data, solucionSugerida: { solucionId: val, solucionPropuesta: null } })
+                }
+              }}
+              className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none focus:border-indigo-500/40"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            >
+              <option value="__new__">+ Crear Solución nueva</option>
+              {solucionesOptions.map(s => (
+                <option key={s.id} value={s.id}>{s.nombre}</option>
+              ))}
+            </select>
+            {!data.solucionSugerida?.solucionId && (
+              <input
+                value={data.solucionSugerida?.solucionPropuesta?.name ?? ''}
+                onChange={e => onChangeData({
+                  ...data,
+                  solucionSugerida: {
+                    solucionId: null,
+                    solucionPropuesta: { name: e.target.value, description: data.solucionSugerida?.solucionPropuesta?.description ?? '' },
+                  },
+                })}
+                placeholder="Nombre de la Solución nueva..."
+                className="w-full mt-1.5 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none focus:border-indigo-500/40"
+                style={{ background: 'rgba(255,255,255,0.04)' }}
+              />
+            )}
           </div>
           {/* Epic */}
           {data.epic && (

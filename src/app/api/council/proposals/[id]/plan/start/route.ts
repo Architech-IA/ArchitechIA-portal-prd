@@ -163,6 +163,9 @@ export async function runPlanningEngine(proposalId: string, humanComment: string
   const existingPlan = proposal.metadata?.councilPlan
     ? `\n\nPLAN PREVIO (refinar con el comentario del usuario):\n${JSON.stringify(proposal.metadata.councilPlan, null, 2)}`
     : ''
+  const fixedSolucion = proposal.solucionId
+    ? `\n\nSOLUCION YA DECIDIDA (fijada por un humano al extraer la propuesta, NO la cambies): solucionId = "${proposal.solucionId}"`
+    : ''
 
   const baseContext = `PROPUESTA APROBADA:
 Titulo: ${proposal.title}
@@ -172,6 +175,7 @@ DEBATE DE VOTACION (por que fue aprobada):
 ${voteSummary || '  (no disponible)'}
 ${humanCtx}
 ${existingPlan}
+${fixedSolucion}
 
 SOLUCIONES EXISTENTES:
 ${solutionsList}
@@ -227,6 +231,16 @@ Enfocate en tu area de expertise. Sé especifico con nombres de areas y tasks.`
         if (match) {
           try {
             finalPlan = JSON.parse(match[0])
+            // Si la propuesta ya trae una Solucion decidida (elegida por el
+            // humano en el panel de "Propuesta Extraida", antes de mandarla
+            // al Consejo), esa decision manda siempre — Orion no la vuelve a
+            // adivinar en esta sintesis final. Sin esto, alguien podia elegir
+            // una Solucion en la extraccion y terminar con la tarea en otra
+            // distinta, decidida por el LLM sin que nadie lo viera venir.
+            if (finalPlan && proposal.solucionId) {
+              finalPlan.solucionId = proposal.solucionId
+              finalPlan.solucionPropuesta = null
+            }
           } catch {}
         }
 

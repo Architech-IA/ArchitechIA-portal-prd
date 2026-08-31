@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
+import crypto from 'crypto'
 
 export async function GET(req: NextRequest) {
   if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -21,8 +22,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   const body = await req.json()
-  const { title, description, inputChannel = 'CONVERSATION', items = [], epicId, sprintId, solucionId, createdByAgentId, createdByAgentName, metadata } = body
+  const { title, description, inputChannel = 'CONVERSATION', items = [], epicId, sprintId, createdByAgentId, createdByAgentName, metadata, solucionPropuesta } = body
+  let { solucionId } = body
   if (!title) return NextResponse.json({ error: 'title requerido' }, { status: 400 })
+
+  // Si el humano eligio "crear Solucion nueva" en el panel de Propuesta
+  // Extraida (en vez de una existente), se crea ahora mismo — la propuesta
+  // queda asociada de entrada, en vez de dejar la decision pendiente para
+  // que el LLM la adivine mucho mas adelante en plan/start.
+  if (!solucionId && solucionPropuesta?.name) {
+    const solRows = await prisma.$queryRawUnsafe<any[]>(
+      `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', NOW(), NOW())
+       RETURNING id`,
+      crypto.randomUUID(), solucionPropuesta.name, solucionPropuesta.description ?? null
+    )
+    solucionId = solRows[0]?.id ?? null
+  }
 
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `INSERT INTO "CouncilProposal" (title, description, "inputChannel", items, "epicId", "sprintId", "solucionId", "createdByAgentId", "createdByAgentName", metadata)
