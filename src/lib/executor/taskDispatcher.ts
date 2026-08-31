@@ -165,8 +165,9 @@ export async function finalizeExecution(opts: {
   resultSummary: string
   durationMs: number
   contextUsed?: string
+  toolLog?: { tool: string; args: Record<string, unknown>; resultPreview: string }[]
 }) {
-  const { taskId, execId, finalStatus, resultSummary, durationMs, contextUsed } = opts
+  const { taskId, execId, finalStatus, resultSummary, durationMs, contextUsed, toolLog } = opts
 
   const [task] = await prisma.$queryRawUnsafe(
     `SELECT id, title, description, "sprintId" FROM "BacklogItem" WHERE id = $1`,
@@ -183,6 +184,7 @@ export async function finalizeExecution(opts: {
   )
 
   let verifiedStatus: string = finalStatus
+  let checklist: unknown[] = []
   if (finalStatus === 'DONE') {
     try {
       const verifierResult = await runVerifier({
@@ -192,15 +194,16 @@ export async function finalizeExecution(opts: {
         resultSummary,
       })
       verifiedStatus = verifierResult.passed ? 'DONE' : 'FAILED'
-
-      await prisma.$executeRawUnsafe(
-        `UPDATE "TaskExecution" SET artifacts=$2::jsonb WHERE id=$1`,
-        execId, JSON.stringify(verifierResult.checklist)
-      )
+      checklist = verifierResult.checklist
     } catch {
       // Verifier fallo -> se mantiene DONE
     }
   }
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "TaskExecution" SET artifacts=$2::jsonb WHERE id=$1`,
+    execId, JSON.stringify({ checklist, toolLog: toolLog ?? [] })
+  )
 
   await prisma.$executeRawUnsafe(
     `UPDATE "BacklogItem"

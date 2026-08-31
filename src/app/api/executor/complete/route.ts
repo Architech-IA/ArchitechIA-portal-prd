@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
 
-  const { taskId, execId, status, resultSummary, durationMs, contextUsed } = body
+  const { taskId, execId, status, resultSummary, durationMs, contextUsed, toolLog } = body
   if (!taskId || !execId || !status) {
     return NextResponse.json({ error: 'taskId, execId y status son requeridos' }, { status: 400 })
   }
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       resultSummary: resultSummary ?? '',
       durationMs: Number(durationMs) || 0,
       contextUsed,
+      toolLog: Array.isArray(toolLog) ? toolLog : [],
     })
     return NextResponse.json({ ok: true, ...result })
   } catch (err) {
