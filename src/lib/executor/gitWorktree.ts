@@ -26,6 +26,17 @@ export function taskWorktreePath(taskCode: string): string {
   return path.join(WORKTREES_DIR, taskCode)
 }
 
+export class MergeConflictError extends Error {
+  conflictedFiles: string[]
+  taskBranch: string
+  constructor(taskBranch: string, conflictedFiles: string[]) {
+    super(`Conflicto real al mergear ${taskBranch}: ${conflictedFiles.join(', ') || '(sin detalle)'}`)
+    this.name = 'MergeConflictError'
+    this.taskBranch = taskBranch
+    this.conflictedFiles = conflictedFiles
+  }
+}
+
 async function branchExists(branch: string): Promise<boolean> {
   try {
     await git(['rev-parse', '--verify', branch], REPO_ROOT)
@@ -87,9 +98,16 @@ export async function createTaskWorktree(taskCode: string, baseRef: string): Pro
 
 /**
  * Al cerrar una tarea CODE en DONE: commitea lo que haya en su worktree (si
- * hubo cambios reales), lo mergea a la rama de integración del sprint, y
- * borra el worktree de la tarea (la rama queda, por si hace falta
- * inspeccionarla — es liviana, no ocupa espacio real aparte).
+ * hubo cambios reales) y lo mergea a la rama de integración del sprint.
+ *
+ * Si el merge tiene un CONFLICTO REAL (dos tareas del mismo sprint tocaron
+ * el mismo archivo de forma incompatible), NO se traga el error: aborta el
+ * merge para dejar el worktree del sprint limpio, y tira MergeConflictError
+ * con los archivos en conflicto — el worktree de la TAREA se deja intacto
+ * (no se borra) para que el codigo no se pierda y quede disponible para
+ * resolucion manual. El llamador (finalizeExecution) es responsable de NO
+ * dejar la tarea como DONE si esto pasa — antes se tragaba el error acá
+ * mismo y la tarea quedaba DONE aunque su codigo nunca llegara al sprint.
  */
 export async function commitAndMergeTask(opts: {
   taskCode: string
@@ -108,10 +126,24 @@ export async function commitAndMergeTask(opts: {
   let merged = false
   const log = await git(['log', `main..${taskBranch}`, '--oneline'], REPO_ROOT)
   if (log.trim().length > 0) {
-    await git([...GIT_IDENTITY, 'merge', '--no-ff', taskBranch, '-m', `Merge ${taskCode} a la rama de integración del sprint`], sprintWorktreePath)
-    merged = true
+    try {
+      await git([...GIT_IDENTITY, 'merge', '--no-ff', taskBranch, '-m', `Merge ${taskCode} a la rama de integración del sprint`], sprintWorktreePath)
+      merged = true
+    } catch {
+      // git merge devuelve exit code != 0 en conflicto real (execFile tira
+      // excepcion). Confirmar que es un conflicto de verdad (no otra falla)
+      // listando los archivos sin resolver, y dejar todo en estado limpio.
+      const conflicted = await git(['diff', '--name-only', '--diff-filter=U'], sprintWorktreePath)
+      const conflictedFiles = conflicted.split('\n').map((f) => f.trim()).filter(Boolean)
+      await git(['merge', '--abort'], sprintWorktreePath).catch(() => {})
+      throw new MergeConflictError(taskBranch, conflictedFiles)
+    }
   }
 
+  // Solo se borra el worktree de la tarea si de verdad se integro (o no
+  // habia nada que integrar). Si hubo conflicto, ya se tiro la excepcion
+  // arriba y esta linea no se alcanza — el worktree/rama de la tarea queda
+  // vivo para revision manual.
   await git(['worktree', 'remove', taskWorktreePath, '--force'], REPO_ROOT).catch(() => {})
   return { merged }
 }

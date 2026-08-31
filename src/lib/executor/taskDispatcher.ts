@@ -9,6 +9,7 @@ import {
   ensureSprintIntegrationBranch, createTaskWorktree, commitAndMergeTask,
   discardTaskWorktree, taskWorktreePath as computeTaskWorktreePath,
   sprintWorktreePath as computeSprintWorktreePath, taskBranchName,
+  MergeConflictError,
 } from '@/lib/executor/gitWorktree'
 
 const REPO_ROOT = path.resolve(process.cwd())
@@ -279,14 +280,30 @@ export async function finalizeExecution(opts: {
     execId, JSON.stringify({ checklist, toolLog: toolLog ?? [] })
   )
 
+  // resultSummary ya viene acotado desde el worker (6000 chars) — no hace
+  // falta volver a truncarlo aca. Antes se guardaba con .substring(0,500),
+  // lo que cortaba a la mitad resultados reales y completos (visto en vivo
+  // con la landing de Atlas: su resumen real terminaba en un guion suelto,
+  // no porque el modelo lo cortara, sino porque esta linea lo hacia).
+  let finalResultado = resultSummary
+
   // Si la tarea corrio en su propio worktree: si quedo DONE, commitea y
   // mergea sus cambios a la rama de integracion del sprint (nunca a main
   // directo). Si quedo FAILED (por el verificador o por un error real de
-  // compilacion), se descarta el worktree sin mergear nada — la rama de la
-  // tarea queda para inspeccion manual si hace falta.
+  // compilacion), se descarta el worktree sin mergear nada.
+  //
+  // IMPORTANTE: si el merge tiene un CONFLICTO REAL (dos tareas del mismo
+  // sprint tocaron el mismo archivo de forma incompatible), la tarea NO
+  // puede quedar como DONE — seria mentir sobre el estado real: el codigo
+  // paso la verificacion pero nunca llego a la rama de integracion. Se
+  // marca BLOCKED (estado valido para "requiere intervencion humana", no
+  // "fallo por mala calidad") con el detalle exacto de que archivos
+  // chocaron y en que rama quedo el trabajo para resolverlo a mano. Antes
+  // esto se tragaba en un catch silencioso y la tarea quedaba DONE aunque
+  // su codigo nunca se integrara.
   if (usedWorktree && task.sprintCode) {
-    try {
-      if (verifiedStatus === 'DONE') {
+    if (verifiedStatus === 'DONE') {
+      try {
         const sprintWtPath = computeSprintWorktreePath(task.sprintCode)
         await commitAndMergeTask({
           taskCode: task.taskCode,
@@ -294,24 +311,38 @@ export async function finalizeExecution(opts: {
           taskBranch: taskBranchName(task.taskCode),
           sprintWorktreePath: sprintWtPath,
         })
-      } else {
-        await discardTaskWorktree(taskWtPath)
+      } catch (err) {
+        if (err instanceof MergeConflictError) {
+          verifiedStatus = 'BLOCKED'
+          finalResultado = [
+            resultSummary,
+            '',
+            '⚠️ CONFLICTO REAL DE MERGE — el código pasó verificación pero NO se integró a la rama del sprint.',
+            `Archivos en conflicto: ${err.conflictedFiles.join(', ') || '(sin detalle)'}`,
+            `El trabajo quedó intacto en la rama ${err.taskBranch} — requiere resolución manual (probablemente otra tarea de este sprint tocó el mismo archivo).`,
+          ].join('\n')
+        } else {
+          console.error(`[GIT] Error inesperado mergeando worktree de ${task.taskCode}:`, err)
+          verifiedStatus = 'BLOCKED'
+          finalResultado = [
+            resultSummary,
+            '',
+            `⚠️ Error inesperado integrando el código a la rama del sprint: ${err instanceof Error ? err.message : String(err)} — requiere revisión manual.`,
+          ].join('\n')
+        }
       }
-    } catch (err) {
-      console.error(`[GIT] Error mergeando/descartando worktree de ${task.taskCode}:`, err)
+    } else {
+      await discardTaskWorktree(taskWtPath).catch((err) =>
+        console.error(`[GIT] Error descartando worktree de ${task.taskCode}:`, err)
+      )
     }
   }
 
-  // resultSummary ya viene acotado desde el worker (6000 chars) — no hace
-  // falta volver a truncarlo aca. Antes se guardaba con .substring(0,500),
-  // lo que cortaba a la mitad resultados reales y completos (visto en vivo
-  // con la landing de Atlas: su resumen real terminaba en un guion suelto,
-  // no porque el modelo lo cortara, sino porque esta linea lo hacia).
   await prisma.$executeRawUnsafe(
     `UPDATE "BacklogItem"
      SET status=$2, "fechaFin"=NOW(), resultado=$3
      WHERE id=$1`,
-    taskId, verifiedStatus, resultSummary
+    taskId, verifiedStatus, finalResultado
   )
 
   console.log(`[EXECUTOR] ${task.title} → ${verifiedStatus} (${Math.round(durationMs / 1000)}s)`)
