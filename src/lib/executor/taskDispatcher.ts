@@ -1,7 +1,11 @@
+import path from 'path'
 import { prisma } from '@/lib/prisma'
 import { buildTaskContext } from '@/lib/context/buildTaskContext'
 import { runVerifier } from '@/lib/executor/taskVerifier'
+import { runRealCodeChecks } from '@/lib/executor/realChecks'
 import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
+
+const REPO_ROOT = path.resolve(process.cwd())
 
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_URL    = 'https://opencode.ai/zen/v1/chat/completions'
@@ -186,17 +190,43 @@ export async function finalizeExecution(opts: {
   let verifiedStatus: string = finalStatus
   let checklist: unknown[] = []
   if (finalStatus === 'DONE') {
-    try {
-      const verifierResult = await runVerifier({
-        taskTitle: task.title,
-        taskDescription: task.description,
-        acceptanceCriteria: [], // populada desde councilPlan cuando exista
-        resultSummary,
-      })
-      verifiedStatus = verifierResult.passed ? 'DONE' : 'FAILED'
-      checklist = verifierResult.checklist
-    } catch {
-      // Verifier fallo -> se mantiene DONE
+    // Paso 1: chequeo REAL de codigo (no opinion de un LLM). Si la tarea
+    // escribio algun .ts/.tsx, se corre tsc --noEmit de verdad sobre el
+    // repo. Antes de esto, "testing" de una tarea CODE era unicamente un
+    // modelo leyendo el resultado y opinando — nunca se compilaba nada.
+    // Si el compilador real dice que hay errores en los archivos que esta
+    // tarea toco, se marca FAILED de una y no se gasta una llamada mas al
+    // verificador semantico: un error de compilacion es un hecho objetivo,
+    // no algo que un LLM tenga que opinar.
+    const codeCheck = await runRealCodeChecks(toolLog, REPO_ROOT)
+    if (codeCheck.ran && !codeCheck.passed) {
+      verifiedStatus = 'FAILED'
+      checklist = [{
+        criterion: 'El código escrito compila (tsc --noEmit)',
+        passed: false,
+        reason: `Errores reales de TypeScript en los archivos que esta tarea escribió:\n${codeCheck.errors.join('\n')}`,
+      }]
+    } else {
+      try {
+        const verifierResult = await runVerifier({
+          taskTitle: task.title,
+          taskDescription: task.description,
+          acceptanceCriteria: [], // populada desde councilPlan cuando exista
+          resultSummary,
+        })
+        verifiedStatus = verifierResult.passed ? 'DONE' : 'FAILED'
+        checklist = verifierResult.checklist
+        if (codeCheck.ran) {
+          checklist = [{ criterion: 'El código escrito compila (tsc --noEmit)', passed: true, reason: 'Verificado con el compilador real' }, ...checklist]
+        }
+      } catch (err) {
+        // El verificador no debería tirar excepción (taskVerifier.ts ya
+        // atrapa sus propios errores), pero si pasa algo inesperado no nos
+        // quedamos en DONE por default — eso es exactamente el bug que
+        // estabamos corrigiendo.
+        verifiedStatus = 'FAILED'
+        checklist = [{ criterion: 'Verificación', passed: false, reason: `Error inesperado del verificador: ${err instanceof Error ? err.message : String(err)} — requiere revisión manual` }]
+      }
     }
   }
 
@@ -205,11 +235,16 @@ export async function finalizeExecution(opts: {
     execId, JSON.stringify({ checklist, toolLog: toolLog ?? [] })
   )
 
+  // resultSummary ya viene acotado desde el worker (6000 chars) — no hace
+  // falta volver a truncarlo aca. Antes se guardaba con .substring(0,500),
+  // lo que cortaba a la mitad resultados reales y completos (visto en vivo
+  // con la landing de Atlas: su resumen real terminaba en un guion suelto,
+  // no porque el modelo lo cortara, sino porque esta linea lo hacia).
   await prisma.$executeRawUnsafe(
     `UPDATE "BacklogItem"
      SET status=$2, "fechaFin"=NOW(), resultado=$3
      WHERE id=$1`,
-    taskId, verifiedStatus, resultSummary.substring(0, 500)
+    taskId, verifiedStatus, resultSummary
   )
 
   console.log(`[EXECUTOR] ${task.title} → ${verifiedStatus} (${Math.round(durationMs / 1000)}s)`)
