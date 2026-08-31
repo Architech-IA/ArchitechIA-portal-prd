@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { readVaultNote } from '@/lib/memory/vaultNotes'
 
 // Techo duro sobre el contexto final. Un sprint con decenas de tareas no
 // puede hacer crecer esto sin limite.
@@ -65,18 +66,20 @@ export async function buildTaskContext(taskId: string): Promise<string> {
     }
   }
 
-  // Previous sprint summary — estable, solo cambia cuando cierra un sprint del epic
-  const prevSprint = await prisma.$queryRawUnsafe(`
-    SELECT metadata FROM "Sprint"
-    WHERE "epicId" = $1 AND status = 'CLOSED' AND id != $2
+  // Previous sprint summary — se lee de la memoria persistente (vault de
+  // notas), no de Postgres. Es la misma nota que un humano puede abrir en
+  // Obsidian para ver que paso en el sprint anterior de este epic.
+  const [prevSprintRow] = await prisma.$queryRawUnsafe(`
+    SELECT "sprintCode" FROM "Sprint"
+    WHERE "epicId" = $1 AND status IN ('CLOSED', 'REVIEW_PENDING') AND id != $2
     ORDER BY "createdAt" DESC LIMIT 1
-  `, task.epicId, task.sprintId) as { metadata: Record<string, unknown> | null }[]
+  `, task.epicId, task.sprintId) as { sprintCode: string }[]
 
-  if (prevSprint.length > 0 && prevSprint[0].metadata) {
-    const summary = (prevSprint[0].metadata as Record<string, unknown>).summary
-    if (summary) {
-      stableParts.push(`\n=== PREVIOUS SPRINT SUMMARY ===`)
-      stableParts.push(String(summary).substring(0, 500))
+  if (prevSprintRow) {
+    const note = await readVaultNote(`shared/decisions/sprints/${prevSprintRow.sprintCode}.md`)
+    if (note) {
+      stableParts.push(`\n=== PREVIOUS SPRINT SUMMARY (memoria: ${prevSprintRow.sprintCode}) ===`)
+      stableParts.push(note.body.trim().substring(0, 600))
     }
   }
 
