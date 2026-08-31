@@ -1,5 +1,16 @@
 import { prisma } from '@/lib/prisma'
 
+// Techo duro sobre el contexto final. Un sprint con decenas de tareas no
+// puede hacer crecer esto sin limite — se trunca desde el final (las
+// secciones menos criticas van al final: primero cae PREV_SPRINT_SUMMARY,
+// despues AREA_HISTORY, etc. — HIERARCHY/TASK/SPRINT_PROGRESS reciente
+// siempre sobreviven).
+const MAX_CONTEXT_CHARS = 8000
+
+// Cuantas tareas del sprint se listan como maximo en SPRINT PROGRESS,
+// sin importar cuantas tenga el sprint en total.
+const MAX_SPRINT_TASKS_LISTED = 8
+
 export async function buildTaskContext(taskId: string): Promise<string> {
   const rows = await prisma.$queryRawUnsafe(`
     SELECT
@@ -41,18 +52,29 @@ export async function buildTaskContext(taskId: string): Promise<string> {
   if (task.taskDescription) parts.push(String(task.taskDescription))
   parts.push(`Area: ${task.areaName || task.areaId}`)
 
-  // Sprint progress: done + pending tasks
+  // Sprint progress: solo las N tareas mas recientes, nunca el sprint entero.
+  // Un sprint con decenas de tareas no puede hacer crecer el contexto sin limite.
+  const [{ count: sprintTaskCount }] = await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*)::int as count FROM "BacklogItem" WHERE "sprintId" = $1 AND id != $2`,
+    task.sprintId, taskId
+  ) as { count: number }[]
+
   const sprintTasks = await prisma.$queryRawUnsafe(`
     SELECT "taskCode", title, status, resultado
     FROM "BacklogItem"
     WHERE "sprintId" = $1 AND id != $2
-    ORDER BY status, "createdAt"
-  `, task.sprintId, taskId) as { taskCode: string; title: string; status: string; resultado: string | null }[]
+    ORDER BY "createdAt" DESC
+    LIMIT $3
+  `, task.sprintId, taskId, MAX_SPRINT_TASKS_LISTED) as { taskCode: string; title: string; status: string; resultado: string | null }[]
 
   if (sprintTasks.length > 0) {
     parts.push(`\n=== SPRINT PROGRESS ===`)
-    for (const t of sprintTasks) {
-      const res = t.resultado ? ` → ${t.resultado.substring(0, 200)}` : ''
+    const omitted = sprintTaskCount - sprintTasks.length
+    if (omitted > 0) {
+      parts.push(`(${omitted} tareas anteriores omitidas por espacio — mostrando las ${MAX_SPRINT_TASKS_LISTED} mas recientes)`)
+    }
+    for (const t of sprintTasks.reverse()) {
+      const res = t.resultado ? ` → ${t.resultado.substring(0, 120)}` : ''
       parts.push(`[${t.status}] ${t.taskCode}: ${t.title}${res}`)
     }
   }
@@ -110,5 +132,15 @@ export async function buildTaskContext(taskId: string): Promise<string> {
     }
   }
 
-  return parts.join('\n')
+  const fullContext = parts.join('\n')
+
+  // Red de seguridad final: sin importar cuanto crezcan las secciones de
+  // arriba, el contexto nunca sale de aca por encima de MAX_CONTEXT_CHARS.
+  // Se trunca desde el final, asi las secciones menos criticas (resumenes
+  // historicos) son las primeras en caer; HIERARCHY/TASK van siempre primero.
+  if (fullContext.length > MAX_CONTEXT_CHARS) {
+    return fullContext.slice(0, MAX_CONTEXT_CHARS) + '\n\n[... contexto truncado por limite de tamaño ...]'
+  }
+
+  return fullContext
 }
