@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
+import crypto from 'crypto'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -18,6 +19,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!plan) return NextResponse.json({ error: 'No hay plan en metadata' }, { status: 400 })
 
   const created: { epics: string[]; sprints: string[]; tasks: number } = { epics: [], sprints: [], tasks: 0 }
+
+  // Mapea el "localId" que Orion le puso a cada task dentro del plan (ej.
+  // "s1-t1") al id REAL del BacklogItem una vez creado — asi dependsOnLocalId
+  // se puede resolver a un dependsOnTaskId de verdad. Solo puede resolver
+  // dependencias hacia tasks YA creadas (el plan las procesa en orden), lo
+  // cual coincide con la instruccion que se le dio a Orion de no depender de
+  // tasks futuras.
+  const localIdToRealId = new Map<string, string>()
 
   try {
     // 1. Resolve or create Solution
@@ -142,11 +151,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           if (agentRows[0]) { agentId = agentRows[0].id; agentName = agentRows[0].name }
         }
 
+        // Resolver dependsOnLocalId a un dependsOnTaskId real. Solo puede
+        // apuntar a una task ya creada en esta misma corrida (el plan se
+        // procesa en el mismo orden en que Orion lo escribio, y se le pidio
+        // explicitamente que no dependiera de tasks futuras). Si el localId
+        // no se encuentra (Orion se equivoco o referencio algo que no
+        // existe), se ignora en vez de romper la creacion del resto del
+        // backlog — mejor una tarea sin dependencia que un plan entero que
+        // falla a mitad de camino.
+        const dependsOnTaskId: string | null = task.dependsOnLocalId
+          ? localIdToRealId.get(task.dependsOnLocalId) ?? null
+          : null
+
+        const newTaskId = crypto.randomUUID()
         await prisma.$executeRawUnsafe(
           `INSERT INTO "BacklogItem"
            (id, title, description, status, priority, type, "areaId", "sprintId", "solucionId",
-            "createdByAgentId", "createdByAgentName", "assigneeId", "assigneeName", "updatedAt", "taskCode")
-           VALUES (gen_random_uuid()::text,$1,$2,'BACKLOG',$3,'TASK',$4,$5,$6,'agent_orion_001','Consejo',$7,$8,NOW(),$9)`,
+            "createdByAgentId", "createdByAgentName", "assigneeId", "assigneeName", "updatedAt", "taskCode",
+            "dependsOnTaskId")
+           VALUES ($1,$2,$3,'BACKLOG',$4,'TASK',$5,$6,$7,'agent_orion_001','Consejo',$8,$9,NOW(),$10,$11)`,
+          newTaskId,
           task.title ?? 'Task',
           task.description ?? task.rationaleArea ?? null,
           task.priority ?? 'MEDIUM',
@@ -155,8 +179,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           solucionId,
           agentId,
           agentName,
-          sprintCodeFinal ? `${sprintCodeFinal}-${String(created.tasks + 1).padStart(3, '0')}` : null
+          sprintCodeFinal ? `${sprintCodeFinal}-${String(created.tasks + 1).padStart(3, '0')}` : null,
+          dependsOnTaskId
         )
+        if (task.localId) localIdToRealId.set(task.localId, newTaskId)
         created.tasks++
       }
     }

@@ -59,6 +59,12 @@ Responde en prosa, 3-4 oraciones.`,
 Con los inputs de Atlas (operativo), Vesta (financiero), Ares (comercial) e Iris (marketing),
 sintetiza el plan de ejecucion definitivo como JSON.
 CRITICO: cada task DEBE tener areaSlug. Si el area no existe, proponla con prefix "new:".
+CRITICO: cada task DEBE tener un "localId" corto y unico dentro del plan (ej. "s1-t1").
+Si una task necesita el trabajo de OTRA task para poder arrancar (ej. "construir el
+formulario" necesita que "crear el modelo en la base de datos" ya este hecho), marcala
+con "dependsOnLocalId" apuntando al localId de esa otra task — SOLO puede apuntar a una
+task que ya aparecio antes en el plan, nunca a una futura. Si no depende de nada, null.
+No inventes dependencias que no sean reales — la mayoria de las tasks no dependen de nada.
 Responde EXCLUSIVAMENTE con JSON valido sin markdown ni texto extra.`,
   },
 ]
@@ -172,7 +178,7 @@ Incluye: solucionId (o solucionPropuesta), epic, sprints con tasks.
 Cada task DEBE tener areaSlug. Puedes proponer areas con "new:nombre-area".
 
 Formato JSON exacto:
-{"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":null,"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"title":"...","description":"...","areaSlug":"...","agentSlug":null,"priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
+{"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":null,"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"localId":"s1-t1","dependsOnLocalId":null,"title":"...","description":"...","areaSlug":"...","agentSlug":null,"priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
     } else {
       userMsg = `${baseContext}${prevContext}
 
