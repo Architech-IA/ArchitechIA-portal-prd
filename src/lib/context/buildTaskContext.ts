@@ -13,7 +13,7 @@ export async function buildTaskContext(taskId: string): Promise<string> {
   const rows = await prisma.$queryRawUnsafe(`
     SELECT
       bi.id as "taskId", bi.title as "taskTitle", bi.description as "taskDescription",
-      bi.priority, bi.status as "taskStatus", bi."taskCode",
+      bi.priority, bi.status as "taskStatus", bi."taskCode", bi."dependsOnTaskId",
       bi."areaId", a.name as "areaName",
       s.id as "sprintId", s.name as "sprintName", s.goal as "sprintGoal", s."sprintCode",
       e.id as "epicId", e.name as "epicName", e.description as "epicDescription",
@@ -133,6 +133,24 @@ export async function buildTaskContext(taskId: string): Promise<string> {
     for (const t of sprintTasks.reverse()) {
       const res = t.resultado ? ` → ${t.resultado.substring(0, 120)}` : ''
       volatileParts.push(`[${t.status}] ${t.taskCode}: ${t.title}${res}`)
+    }
+  }
+
+  // Dependencia real (grafo de tareas via dependsOnTaskId). Si esta tarea
+  // depende de otra, se trae su resultado REAL — sin esto, encadenar tareas
+  // requeria pegar el resultado a mano en la description de la siguiente
+  // (lo que se hizo manualmente en la prueba E2E de MASD-0014). Va antes de
+  // TASK y, como TASK, no se trunca: es un insumo necesario, no relleno.
+  if (task.dependsOnTaskId) {
+    const [dep] = await prisma.$queryRawUnsafe(
+      `SELECT "taskCode", title, resultado, status FROM "BacklogItem" WHERE id = $1`,
+      task.dependsOnTaskId
+    ) as { taskCode: string; title: string; resultado: string | null; status: string }[]
+    if (dep) {
+      volatileParts.push(`\n=== RESULTADO REAL DE LA TAREA DE LA QUE DEPENDE (${dep.taskCode}: ${dep.title}) ===`)
+      volatileParts.push(dep.status === 'DONE' && dep.resultado
+        ? dep.resultado
+        : `[ADVERTENCIA: la tarea de la que depende (${dep.taskCode}) todavia no esta DONE o no tiene resultado — status actual: ${dep.status}]`)
     }
   }
 

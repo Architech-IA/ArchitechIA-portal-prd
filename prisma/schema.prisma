@@ -523,6 +523,8 @@ model BacklogItem {
   description  String?
   resultado       String?
   fechaEjecucion  DateTime?
+  fechaInicio     DateTime?
+  fechaFin        DateTime?
   type         String   @default("TASK")
   priority     String   @default("MEDIUM")
   status       String   @default("BACKLOG")
@@ -537,6 +539,9 @@ model BacklogItem {
   order        Int      @default(0)
   areaId       String?
   area         Area?    @relation(fields: [areaId], references: [id])
+  dependsOnTaskId String?
+  dependsOn       BacklogItem?  @relation("TaskDependency", fields: [dependsOnTaskId], references: [id], onDelete: SetNull)
+  dependents      BacklogItem[] @relation("TaskDependency")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   activities   TaskActivity[]
