@@ -30,12 +30,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   try {
     // 1. Resolve or create Solution
+    // BUG REAL encontrado en produccion: Solucion.id usa @default(cuid())
+    // en el schema de Prisma, pero eso es un default que aplica el CLIENTE
+    // de Prisma (prisma.solucion.create()) — un INSERT con SQL crudo como
+    // este no lo dispara, y el INSERT fallaba con "id" NULL (NOT NULL
+    // violation) cada vez que el plan no traia un solucionId existente.
+    // Se genera el id explicitamente. Tambien se corrige 'PRODUCTO' (no es
+    // uno de los tipos validos: PROJECT, DEMO, PARTNERSHIP, PRODUCT) por
+    // 'PRODUCT'.
     let solucionId: string | null = plan.solucionId ?? null
     if (!solucionId && plan.solucionPropuesta?.name) {
       const rows = await prisma.$queryRawUnsafe<any[]>(
-        `INSERT INTO "Solucion" (nombre, descripcion, estado, tipo)
-         VALUES ($1, $2, 'ACTIVO', 'PRODUCTO')
+        `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', NOW(), NOW())
          RETURNING id`,
+        crypto.randomUUID(),
         plan.solucionPropuesta.name,
         plan.solucionPropuesta.description ?? null
       )
