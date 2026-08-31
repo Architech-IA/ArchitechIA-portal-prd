@@ -1,9 +1,27 @@
-import { StateGraph, Annotation, START, END, MemorySaver } from '@langchain/langgraph'
+import { StateGraph, Annotation, START, END } from '@langchain/langgraph'
+import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres'
 import { prisma } from '@/lib/prisma'
 import { dispatchTask } from '@/lib/executor/taskDispatcher'
 
 const POLL_INTERVAL_MS = 3000
 const MAX_WAIT_MS = 10 * 60 * 1000 // techo duro por nodo: 10 min esperando el cierre real de una tarea
+
+// DIRECT_URL (puerto 5432, sin pgbouncer) en vez de DATABASE_URL: el
+// checkpointer corre su propio setup() con DDL y maneja su propio pool de
+// conexiones — el pooler en modo transaccion (pgbouncer=true de DATABASE_URL)
+// no es un buen fit para eso. Mismo Postgres, sin infraestructura nueva.
+let checkpointerReady: Promise<PostgresSaver> | null = null
+function getCheckpointer(): Promise<PostgresSaver> {
+  if (!checkpointerReady) {
+    checkpointerReady = (async () => {
+      const conn = process.env.DIRECT_URL ?? process.env.DATABASE_URL!
+      const saver = PostgresSaver.fromConnString(conn, { schema: 'langgraph' })
+      await saver.setup()
+      return saver
+    })()
+  }
+  return checkpointerReady
+}
 
 const GraphState = Annotation.Root({
   results: Annotation<Record<string, string>>({
@@ -60,7 +78,8 @@ export async function runTaskChain(taskIds: string[]): Promise<Record<string, st
   }
   builder.addEdge(taskIds[taskIds.length - 1] as never, END)
 
-  const graph = builder.compile({ checkpointer: new MemorySaver() })
+  const checkpointer = await getCheckpointer()
+  const graph = builder.compile({ checkpointer })
   const finalState = await graph.invoke({}, { configurable: { thread_id: `chain-${taskIds[0]}` } })
   return finalState.results
 }
