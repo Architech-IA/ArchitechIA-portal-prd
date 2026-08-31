@@ -1,5 +1,7 @@
+import fs from 'fs'
 import { prisma } from '@/lib/prisma'
 import { writeVaultNote } from '@/lib/memory/vaultNotes'
+import { sprintBranchName, sprintWorktreePath, openSprintPR } from '@/lib/executor/gitWorktree'
 
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
@@ -153,4 +155,35 @@ Sin markdown extra.`
   }
 
   console.log(`[SPRINT_MONITOR] Sprint ${sprint.name} → REVIEW_PENDING (${done} done, ${failed} failed)`)
+
+  // Si alguna tarea CODE del sprint corrio en su propio worktree, existe una
+  // rama de integracion del sprint con commits reales — se abre (o
+  // reutiliza) UN SOLO PR de esa rama hacia main. Nunca se mergea sola: el
+  // merge a main siempre queda para revision humana.
+  const sprintWtPath = sprintWorktreePath(sprint.sprintCode)
+  if (fs.existsSync(sprintWtPath)) {
+    try {
+      const pr = await openSprintPR({
+        sprintBranch: sprintBranchName(sprint.sprintCode),
+        sprintWorktreePath: sprintWtPath,
+        title: `[${sprint.sprintCode}] ${sprint.name}`,
+        body: [
+          `**Sprint:** ${sprint.name} (${sprint.sprintCode})`,
+          `**Épic:** ${sprint.epicName}`,
+          `**Resultado:** ${done}/${tasks.length} tareas completadas, ${failed} fallidas.`,
+          '',
+          '## Resumen',
+          String(metadata.summary ?? ''),
+          '',
+          '## Tareas',
+          tasksSummary,
+          '',
+          '_PR abierto automáticamente por el Motor Agéntico SDD. Revisar y mergear manualmente — nunca se mergea solo._',
+        ].join('\n'),
+      })
+      if (pr) console.log(`[SPRINT_MONITOR] PR del sprint ${sprint.sprintCode}: ${pr.url}`)
+    } catch (err) {
+      console.error(`[SPRINT_MONITOR] No se pudo abrir el PR del sprint ${sprint.sprintCode}:`, err)
+    }
+  }
 }

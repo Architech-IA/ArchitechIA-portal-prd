@@ -4,6 +4,12 @@ import { buildTaskContext } from '@/lib/context/buildTaskContext'
 import { runVerifier } from '@/lib/executor/taskVerifier'
 import { runRealCodeChecks } from '@/lib/executor/realChecks'
 import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
+import fs from 'fs'
+import {
+  ensureSprintIntegrationBranch, createTaskWorktree, commitAndMergeTask,
+  discardTaskWorktree, taskWorktreePath as computeTaskWorktreePath,
+  sprintWorktreePath as computeSprintWorktreePath, taskBranchName,
+} from '@/lib/executor/gitWorktree'
 
 const REPO_ROOT = path.resolve(process.cwd())
 
@@ -80,13 +86,19 @@ export async function resolveAgent(task: {
 
 export async function dispatchTask(taskId: string): Promise<DispatchResult> {
   const [task] = await prisma.$queryRawUnsafe(
-    `SELECT id, title, description, "taskCode", "areaId", "sprintId", "assigneeId", "assigneeName", status
-     FROM "BacklogItem" WHERE id = $1`,
+    `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId",
+            bi."assigneeId", bi."assigneeName", bi.status, bi."dependsOnTaskId",
+            s."sprintCode", dep."taskCode" as "dependsOnTaskCode"
+     FROM "BacklogItem" bi
+     LEFT JOIN "Sprint" s ON bi."sprintId" = s.id
+     LEFT JOIN "BacklogItem" dep ON bi."dependsOnTaskId" = dep.id
+     WHERE bi.id = $1`,
     taskId
   ) as {
     id: string; title: string; description: string | null;
     taskCode: string; areaId: string | null; sprintId: string | null;
-    assigneeId: string | null; assigneeName: string | null; status: string
+    assigneeId: string | null; assigneeName: string | null; status: string;
+    dependsOnTaskId: string | null; sprintCode: string | null; dependsOnTaskCode: string | null;
   }[]
 
   if (!task) throw new Error(`Task ${taskId} not found`)
@@ -120,6 +132,28 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
 
   const { apiUrl, modelId } = resolveOpenCodeModel(agentProfile.llmModel)
 
+  // Para tareas CODE dentro de un sprint: aislar la ejecucion en su propio
+  // git worktree/branch, ramificado de la rama de integracion del sprint (o
+  // de la rama de la tarea de la que depende, si ya existe — asi ve sus
+  // archivos reales, no solo su resultado en texto). El worker escribe ahi,
+  // nunca en el working tree principal donde corre el servidor en vivo.
+  let repoPath: string | undefined
+  if (strategy === 'CODE' && task.sprintCode) {
+    const { branch: sprintBranch } = await ensureSprintIntegrationBranch(task.sprintCode)
+    let baseRef = sprintBranch
+    if (task.dependsOnTaskCode) {
+      const depBranch = taskBranchName(task.dependsOnTaskCode)
+      const depWtStillExists = fs.existsSync(computeTaskWorktreePath(task.dependsOnTaskCode))
+      // Si el worktree de la dependencia ya no existe, es porque cerro y se
+      // mergeo al sprint branch (commitAndMergeTask lo borra al mergear) —
+      // en ese caso alcanza con ramificar del sprint branch, que ya tiene
+      // sus cambios.
+      baseRef = depWtStillExists ? depBranch : sprintBranch
+    }
+    const { worktreePath } = await createTaskWorktree(task.taskCode, baseRef)
+    repoPath = worktreePath
+  }
+
   // Empuja la tarea al Harness (cola con concurrencia limitada por N workers,
   // reintentos y dead-letter queue) en vez de ejecutar directo aqui.
   try {
@@ -139,6 +173,7 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
           systemPrompt,
           userPrompt,
           contextPreview: context.substring(0, 4000),
+          repoPath,
         },
       }),
       signal: AbortSignal.timeout(10_000),
@@ -174,11 +209,20 @@ export async function finalizeExecution(opts: {
   const { taskId, execId, finalStatus, resultSummary, durationMs, contextUsed, toolLog } = opts
 
   const [task] = await prisma.$queryRawUnsafe(
-    `SELECT id, title, description, "sprintId" FROM "BacklogItem" WHERE id = $1`,
+    `SELECT bi.id, bi.title, bi.description, bi."sprintId", bi."taskCode", s."sprintCode"
+     FROM "BacklogItem" bi LEFT JOIN "Sprint" s ON bi."sprintId" = s.id
+     WHERE bi.id = $1`,
     taskId
-  ) as { id: string; title: string; description: string | null; sprintId: string | null }[]
+  ) as { id: string; title: string; description: string | null; sprintId: string | null; taskCode: string; sprintCode: string | null }[]
 
   if (!task) throw new Error(`Task ${taskId} not found`)
+
+  // Si esta tarea corrio en su propio worktree (CODE dentro de un sprint),
+  // los chequeos reales deben correr AHI, no en REPO_ROOT — el archivo que
+  // escribio el agente vive en el worktree, no en el working tree principal.
+  const taskWtPath = computeTaskWorktreePath(task.taskCode)
+  const usedWorktree = fs.existsSync(taskWtPath)
+  const codeCheckRoot = usedWorktree ? taskWtPath : REPO_ROOT
 
   await prisma.$executeRawUnsafe(
     `UPDATE "TaskExecution"
@@ -198,7 +242,7 @@ export async function finalizeExecution(opts: {
     // tarea toco, se marca FAILED de una y no se gasta una llamada mas al
     // verificador semantico: un error de compilacion es un hecho objetivo,
     // no algo que un LLM tenga que opinar.
-    const codeCheck = await runRealCodeChecks(toolLog, REPO_ROOT)
+    const codeCheck = await runRealCodeChecks(toolLog, codeCheckRoot)
     if (codeCheck.ran && !codeCheck.passed) {
       verifiedStatus = 'FAILED'
       checklist = [{
@@ -234,6 +278,29 @@ export async function finalizeExecution(opts: {
     `UPDATE "TaskExecution" SET artifacts=$2::jsonb WHERE id=$1`,
     execId, JSON.stringify({ checklist, toolLog: toolLog ?? [] })
   )
+
+  // Si la tarea corrio en su propio worktree: si quedo DONE, commitea y
+  // mergea sus cambios a la rama de integracion del sprint (nunca a main
+  // directo). Si quedo FAILED (por el verificador o por un error real de
+  // compilacion), se descarta el worktree sin mergear nada — la rama de la
+  // tarea queda para inspeccion manual si hace falta.
+  if (usedWorktree && task.sprintCode) {
+    try {
+      if (verifiedStatus === 'DONE') {
+        const sprintWtPath = computeSprintWorktreePath(task.sprintCode)
+        await commitAndMergeTask({
+          taskCode: task.taskCode,
+          taskWorktreePath: taskWtPath,
+          taskBranch: taskBranchName(task.taskCode),
+          sprintWorktreePath: sprintWtPath,
+        })
+      } else {
+        await discardTaskWorktree(taskWtPath)
+      }
+    } catch (err) {
+      console.error(`[GIT] Error mergeando/descartando worktree de ${task.taskCode}:`, err)
+    }
+  }
 
   // resultSummary ya viene acotado desde el worker (6000 chars) — no hace
   // falta volver a truncarlo aca. Antes se guardaba con .substring(0,500),
