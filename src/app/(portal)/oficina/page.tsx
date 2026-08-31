@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText } from 'lucide-react'
+import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import CouncilView from './CouncilView'
 
@@ -76,6 +76,7 @@ function OficinaPageInner() {
   const [areaMessages, setAreaMessages] = useState<OrionMsg[]>([])
   const chatEndRef = useRef<HTMLDivElement>(null)
   const [membersOpen, setMembersOpen] = useState(false)
+  const [showHistory, setShowHistory] = useState(true)
   const [roomSearch, setRoomSearch] = useState("")
   const [roomsOpen, setRoomsOpen] = useState(true)
   const [configOpen, setConfigOpen] = useState(true)
@@ -771,6 +772,18 @@ function OficinaPageInner() {
                         style={{ color: membersOpen ? '#e5e7eb' : '#6b7280' }} />
                     </button>
 
+                    {/* Mostrar/ocultar Historial — solo tiene sentido dentro de Consejo,
+                        que es el unico room con panel de Historial */}
+                    {isConsejo && (
+                      <button onClick={() => setShowHistory(o => !o)}
+                        className="flex items-center justify-center w-7 h-full hover:bg-white/8 rounded-lg transition-colors group"
+                        title={showHistory ? 'Ocultar historial' : 'Mostrar historial'}
+                        style={showHistory ? { background: 'rgba(255,255,255,0.1)' } : {}}>
+                        <PanelRight size={13} className="group-hover:text-gray-300 transition-colors"
+                          style={{ color: showHistory ? '#e5e7eb' : '#6b7280' }} />
+                      </button>
+                    )}
+
                     {/* Search */}
                     <div className="flex items-center gap-1.5 pl-1.5 pr-2 h-full border-l border-white/6 w-40 focus-within:w-52 transition-all duration-200">
                       <Search size={11} className="text-gray-400 flex-shrink-0" />
@@ -786,7 +799,7 @@ function OficinaPageInner() {
 
                 {/* ── CHAT MODE for backlog-hub / council ── */}
                 {isConsejo ? (
-                  <CouncilView mode={councilMode} setMode={setCouncilMode} />
+                  <CouncilView mode={councilMode} setMode={setCouncilMode} showHistory={showHistory} />
                 ) : isBacklogHub ? (
                   <div className="flex-1 flex flex-col overflow-hidden">
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">

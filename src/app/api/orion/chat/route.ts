@@ -448,3 +448,56 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json({ ok: true, sessions: updatedSessions })
 }
+
+// ── PATCH — reabrir una sesión del historial como la conversación activa ──────
+//
+// Antes, clickear un item del Historial solo desplegaba una vista de solo
+// lectura EN el propio item de la lista (setExpandedSession) — nunca cargaba
+// nada en el panel principal, y aunque el frontend hubiera puesto los
+// mensajes ahi, el proximo mensaje enviado se habria guardado sobre la
+// conversacion "activa" real (messages), que seguia siendo otra cosa
+// (probablemente vacia) — la sesion vieja nunca quedaba realmente retomada
+// del lado del servidor. Este endpoint hace el swap real: si hay una
+// conversacion activa sin cerrar, se archiva primero (no se pierde nada), y
+// la sesion elegida pasa a ser la conversacion activa de verdad.
+export async function PATCH(req: NextRequest) {
+  const { getToken } = await import('next-auth/jwt')
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const userId = (token?.sub ?? token?.id ?? 'anonymous') as string
+
+  const { sessionId } = await req.json().catch(() => ({}))
+  if (!sessionId) return NextResponse.json({ error: 'sessionId requerido' }, { status: 400 })
+
+  const conv = await prisma.agentConversation.findFirst({
+    where: { agentSlug: 'orion', channelType: 'hub', channelId: userId },
+  })
+  if (!conv) return NextResponse.json({ error: 'No hay conversaciones para este usuario' }, { status: 404 })
+
+  const sessions = (conv.sessions as any[]) ?? []
+  const target = sessions.find((s) => s.id === sessionId)
+  if (!target) return NextResponse.json({ error: 'Sesión no encontrada' }, { status: 404 })
+
+  let updatedSessions = sessions.filter((s) => s.id !== sessionId)
+
+  const currentMsgs = (conv.messages as Message[]) ?? []
+  if (currentMsgs.length > 0) {
+    const firstUserMsg = currentMsgs.find((m) => m.role === 'user')?.content ?? ''
+    updatedSessions = [
+      ...updatedSessions,
+      {
+        id: Date.now().toString(),
+        startedAt: conv.createdAt,
+        endedAt: new Date(),
+        preview: firstUserMsg.slice(0, 80),
+        messages: currentMsgs,
+      },
+    ].slice(-20)
+  }
+
+  await prisma.agentConversation.update({
+    where: { agentSlug_channelType_channelId: { agentSlug: 'orion', channelType: 'hub', channelId: userId } },
+    data: { messages: target.messages as any, sessions: updatedSessions as any, updatedAt: new Date() },
+  })
+
+  return NextResponse.json({ ok: true, messages: target.messages, sessions: updatedSessions })
+}

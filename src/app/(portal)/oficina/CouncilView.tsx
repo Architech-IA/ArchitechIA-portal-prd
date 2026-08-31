@@ -188,7 +188,7 @@ function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { mode?: 'proposals' | 'chat' | 'document', setMode?: (m: 'proposals' | 'chat' | 'document') => void } = {}) {
+export default function CouncilView({ mode: modeProp, setMode: setModeProp, showHistory = true }: { mode?: 'proposals' | 'chat' | 'document', setMode?: (m: 'proposals' | 'chat' | 'document') => void, showHistory?: boolean } = {}) {
   const [proposals, setProposals] = useState<Proposal[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -210,7 +210,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
   const [chatLoading, setChatLoading] = useState(false)
   const [leadContextLoaded, setLeadContextLoaded] = useState<string | null>(null)
   const [history, setHistory] = useState<Session[]>([])
-  const [expandedSession, setExpandedSession] = useState<string | null>(null)
   const [otraRespuestaOpen, setOtraRespuestaOpen] = useState(false)
   const [otraRespuestaText, setOtraRespuestaText] = useState('')
   const otraRespuestaRef = useRef<HTMLInputElement>(null)
@@ -374,7 +373,34 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
       setChatMessages([])
       setLeadContextLoaded(null)
       setExtracted(null)
-      setExpandedSession(null)
+    }
+  }
+
+  // Clickear un item del Historial ahora carga esa sesion de verdad — antes
+  // solo desplegaba una vista de solo lectura dentro del propio item, sin
+  // tocar la conversacion activa. Este PATCH archiva la conversacion activa
+  // actual (si habia una sin cerrar, nada se pierde) y pone la sesion
+  // elegida como la activa de verdad, tanto en el server como en pantalla.
+  const [loadingSession, setLoadingSession] = useState<string | null>(null)
+  async function loadHistorySession(session: Session) {
+    if (loadingSession) return
+    setLoadingSession(session.id)
+    try {
+      const res = await fetch('/api/orion/chat', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setChatMessages(data.messages ?? session.messages)
+        setHistory(data.sessions ?? [])
+        setExtracted(null)
+        setLeadContextLoaded(null)
+        setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+      }
+    } finally {
+      setLoadingSession(null)
     }
   }
 
@@ -1163,7 +1189,8 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
               sending={sendingToCouncil}
             />
           )}
-          {/* ── History sidebar ── */}
+          {/* ── History sidebar — se puede ocultar desde el icono junto al buscador (page.tsx) ── */}
+          {showHistory && (
           <div className="w-56 flex-shrink-0 flex flex-col border-l border-white/5 overflow-hidden"
                style={{ background: 'rgba(0,0,0,0.15)' }}>
             <div className="px-3 pt-3 pb-2 border-b border-white/5 flex-shrink-0 flex items-center justify-between">
@@ -1188,41 +1215,30 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp }: { 
                 const date = new Date(session.endedAt)
                 const dateStr = date.toLocaleDateString('es', { day: '2-digit', month: 'short' })
                 const timeStr = date.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
-                const isExpanded = expandedSession === session.id
+                const isLoadingThis = loadingSession === session.id
                 return (
                   <div key={session.id}
                        className="rounded-lg overflow-hidden"
                        style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
                     <button
-                      onClick={() => setExpandedSession(isExpanded ? null : session.id)}
-                      className="w-full text-left px-2 py-2 transition-all hover:bg-white/[0.03]">
+                      onClick={() => loadHistorySession(session)}
+                      disabled={!!loadingSession}
+                      title="Cargar esta conversación"
+                      className="w-full text-left px-2 py-2 transition-all hover:bg-white/[0.03] disabled:opacity-60">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[8px] text-gray-500">{dateStr} · {timeStr}</span>
-                        <span className="text-[8px] text-gray-600">{session.messages.length} msgs</span>
+                        {isLoadingThis
+                          ? <Loader2 size={9} className="animate-spin text-indigo-400" />
+                          : <span className="text-[8px] text-gray-600">{session.messages.length} msgs</span>}
                       </div>
                       <p className="text-[10px] text-gray-300 line-clamp-2 leading-snug">{session.preview}</p>
                     </button>
-                    {isExpanded && (
-                      <div className="px-2 pb-2 space-y-1.5 border-t border-white/5 pt-2 max-h-64 overflow-y-auto">
-                        {session.messages.map((msg, mi) => (
-                          <div key={mi} className="rounded px-1.5 py-1"
-                               style={msg.role === 'assistant'
-                                 ? { background: 'rgba(99,102,241,0.07)' }
-                                 : { background: 'rgba(255,255,255,0.03)' }}>
-                            <span className="text-[8px] font-bold"
-                                  style={{ color: msg.role === 'assistant' ? '#818cf8' : '#9ca3af' }}>
-                              {msg.role === 'assistant' ? 'Orión' : 'Tú'}
-                            </span>
-                            <p className="text-[9px] text-gray-400 leading-snug mt-0.5 line-clamp-4">{msg.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )
               })}
             </div>
           </div>
+          )}
         </div>
       ) : (
       <div className="flex flex-1 overflow-hidden">
