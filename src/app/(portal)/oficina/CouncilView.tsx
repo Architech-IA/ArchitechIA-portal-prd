@@ -106,10 +106,13 @@ function parseOrionOptions(content: string): { prose: string; options: string[] 
   // The prose is everything before this block
   const prose = lines.slice(0, last.start).join('\n').replace(/^-{3,}\s*$/m, '').trim()
 
-  // Only render as buttons if there's a question somewhere before the options
-  const hasQuestion = /[?¿]|elegí|seleccioná|cuál|cuáles|qué preferís|qué querés|cómo querés|qué te gustaría|confirmás|confirmas/i.test(prose)
-  if (!hasQuestion) return null
-
+  // Antes se exigia ademas un "?"/"¿" o una frase fija ("elegí", "cuál", etc.)
+  // en el texto previo para recien ahi renderizar los botones — pero Orión
+  // frecuentemente plantea la eleccion como una afirmacion ("necesito
+  // entender cómo se va a presentar...") sin signo de pregunta literal, y
+  // esos mensajes quedaban como texto plano pese a ser exactamente el mismo
+  // patron de opciones (lista numerada de 2-6 items, terminando en "Otra
+  // respuesta"). La estructura numerada ya es señal suficiente por si sola.
   return { prose, options }
 }
 interface ExtractedProposal { title: string; description: string; epic?: ExtractedEpic; sprints?: ExtractedSprint[]; items?: { type: string; title: string; description: string; areaSlug: string; priority: string }[]; _sourceFile?: string }
