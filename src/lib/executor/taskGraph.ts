@@ -30,13 +30,21 @@ const GraphState = Annotation.Root({
   }),
 })
 
+// DONE/FAILED/BLOCKED son los 3 estados terminales reales de una tarea (ver
+// finalizeExecution en taskDispatcher.ts) — BLOCKED es el que usa el fix de
+// conflictos de merge de esta misma sesion para "requiere intervencion
+// humana". Sin tratarlo como terminal aca, una tarea BLOCKED hacia que esta
+// funcion quedara poleando en vano hasta el timeout de 10 minutos en vez de
+// cortar la cadena de inmediato con un error claro.
+const TERMINAL_STATUSES = new Set(['DONE', 'FAILED', 'BLOCKED'])
+
 async function waitForTaskCompletion(taskId: string): Promise<{ status: string; resultado: string | null }> {
   const start = Date.now()
   while (Date.now() - start < MAX_WAIT_MS) {
     const [row] = await prisma.$queryRawUnsafe(
       `SELECT status, resultado FROM "BacklogItem" WHERE id = $1`, taskId
     ) as { status: string; resultado: string | null }[]
-    if (row.status === 'DONE' || row.status === 'FAILED') return row
+    if (TERMINAL_STATUSES.has(row.status)) return row
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
   throw new Error(`Timeout esperando el cierre de la tarea ${taskId} (>${MAX_WAIT_MS}ms)`)
@@ -54,29 +62,59 @@ function makeTaskNode(taskId: string) {
 }
 
 /**
- * Corre un grafo lineal de tareas: taskIds[0] -> taskIds[1] -> ... -> taskIds[n].
+ * Corre el grafo REAL de dependencias de un conjunto de tareas — no asume
+ * una cadena lineal por el orden del array, lo arma leyendo el
+ * dependsOnTaskId real de cada una en la base:
+ *   - una tarea sin dependsOnTaskId (o cuyo dependsOnTaskId apunta a algo
+ *     fuera de este conjunto, ej. una tarea de un sprint anterior ya
+ *     cerrado) arranca desde START — puede haber varias en paralelo (ramas
+ *     independientes del plan, ej. la rama de dev y la de marketing).
+ *   - una tarea cuyo dependsOnTaskId SI esta en el conjunto espera a que esa
+ *     tarea padre termine.
+ *   - una tarea de la que ninguna otra del conjunto depende es una hoja y
+ *     cierra hacia END.
  * Cada nodo dispara la tarea real via dispatchTask() (el mismo camino que usa
  * el endpoint de produccion /api/executor/dispatch), espera su cierre real en
  * la base, y deja su resultado en el estado compartido del grafo.
  *
  * El feed-forward del CONTENIDO real entre tareas lo hace buildTaskContext
- * automaticamente via BacklogItem.dependsOnTaskId — cada taskId de la cadena
- * (salvo el primero) debe tener su dependsOnTaskId seteado al anterior antes
- * de llamar a esto. El grafo solo decide el ORDEN y espera cada cierre real;
- * no vuelve a pasar el contenido a mano como se hizo en la prueba manual.
+ * automaticamente via BacklogItem.dependsOnTaskId — este grafo solo decide
+ * el ORDEN/paralelismo y espera cada cierre real; no vuelve a pasar el
+ * contenido a mano.
  */
 export async function runTaskChain(taskIds: string[]): Promise<Record<string, string>> {
   if (taskIds.length === 0) return {}
+
+  const idSet = new Set(taskIds)
+  const rows = await prisma.$queryRawUnsafe(
+    `SELECT id, "dependsOnTaskId" FROM "BacklogItem" WHERE id = ANY($1::text[])`,
+    taskIds
+  ) as { id: string; dependsOnTaskId: string | null }[]
+  const dependsOn = new Map(rows.map((r) => [r.id, r.dependsOnTaskId]))
+
+  const childrenOf = new Map<string, string[]>()
+  const roots: string[] = []
+  for (const id of taskIds) {
+    const parent = dependsOn.get(id) ?? null
+    if (parent && idSet.has(parent)) {
+      if (!childrenOf.has(parent)) childrenOf.set(parent, [])
+      childrenOf.get(parent)!.push(id)
+    } else {
+      roots.push(id)
+    }
+  }
+  const hasChildren = new Set(childrenOf.keys())
+  const leaves = taskIds.filter((id) => !hasChildren.has(id))
 
   const builder = new StateGraph(GraphState)
   for (const id of taskIds) {
     builder.addNode(id, makeTaskNode(id))
   }
-  builder.addEdge(START, taskIds[0] as never)
-  for (let i = 0; i < taskIds.length - 1; i++) {
-    builder.addEdge(taskIds[i] as never, taskIds[i + 1] as never)
+  for (const id of roots) builder.addEdge(START, id as never)
+  for (const [parent, children] of childrenOf) {
+    for (const child of children) builder.addEdge(parent as never, child as never)
   }
-  builder.addEdge(taskIds[taskIds.length - 1] as never, END)
+  for (const id of leaves) builder.addEdge(id as never, END)
 
   const checkpointer = await getCheckpointer()
   const graph = builder.compile({ checkpointer })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
+import { runTaskChain } from '@/lib/executor/taskGraph'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!plan) return NextResponse.json({ error: 'No hay plan en metadata' }, { status: 400 })
 
   const created: { epics: string[]; sprints: string[]; tasks: number } = { epics: [], sprints: [], tasks: 0 }
+  const allTaskIds: string[] = []
 
   // Mapea el "localId" que Orion le puso a cada task dentro del plan (ej.
   // "s1-t1") al id REAL del BacklogItem una vez creado — asi dependsOnLocalId
@@ -192,6 +194,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           dependsOnTaskId
         )
         if (task.localId) localIdToRealId.set(task.localId, newTaskId)
+        allTaskIds.push(newTaskId)
         created.tasks++
       }
     }
@@ -206,7 +209,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       JSON.stringify({ executionResult: created, solucionId, epicId })
     )
 
-    return NextResponse.json({ ok: true, created, epicId, solucionId })
+    // Auto-dispatch: en vez de dejar las tasks recien creadas esperando que
+    // alguien las tome a mano desde el Backlog, se disparan solas respetando
+    // su grafo real de dependencias (dependsOnTaskId) via el motor MASD ya
+    // existente (runTaskChain). Fire-and-forget porque un plan completo
+    // puede tardar minutos/horas en ejecutarse — la respuesta HTTP de esta
+    // ruta no puede esperar eso, igual que runPlanningEngine en plan/start.
+    // Esto NO mergea nada a main solo: las tareas CODE se integran a la
+    // rama del sprint, y recien cuando el sprint entero cierra se abre un PR
+    // (openSprintPR en sprintMonitor.ts) que siempre espera revision humana.
+    if (allTaskIds.length > 0) {
+      runTaskChain(allTaskIds).catch((err) =>
+        console.error(`[Plan/approve] Error en auto-dispatch de la propuesta ${id}:`, err)
+      )
+    }
+
+    return NextResponse.json({ ok: true, created, epicId, solucionId, autoDispatched: allTaskIds.length })
 
   } catch (err: any) {
     console.error('[Plan/approve] Error:', err)

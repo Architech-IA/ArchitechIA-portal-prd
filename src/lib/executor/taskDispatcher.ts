@@ -221,9 +221,17 @@ export async function finalizeExecution(opts: {
   // Si esta tarea corrio en su propio worktree (CODE dentro de un sprint),
   // los chequeos reales deben correr AHI, no en REPO_ROOT — el archivo que
   // escribio el agente vive en el worktree, no en el working tree principal.
-  const taskWtPath = computeTaskWorktreePath(task.taskCode)
-  const usedWorktree = fs.existsSync(taskWtPath)
-  const codeCheckRoot = usedWorktree ? taskWtPath : REPO_ROOT
+  // BUG REAL encontrado probando el auto-dispatch con tareas sin taskCode
+  // (cualquier BacklogItem creado fuera del flujo de aprobacion del Consejo,
+  // ej. a mano desde el Backlog o via API directa): computeTaskWorktreePath
+  // llamaba a path.join con null y tiraba "The 'path' argument must be of
+  // type string" — esto rompia finalizeExecution ENTERO para cualquier
+  // tarea sin taskCode, no solo el chequeo de codigo, dejando la tarea
+  // varada en RUNNING/IN_PROGRESS para siempre (el callback del worker
+  // fallaba con 500 antes de llegar a actualizar el estado).
+  const taskWtPath = task.taskCode ? computeTaskWorktreePath(task.taskCode) : null
+  const usedWorktree = taskWtPath ? fs.existsSync(taskWtPath) : false
+  const codeCheckRoot = usedWorktree && taskWtPath ? taskWtPath : REPO_ROOT
 
   await prisma.$executeRawUnsafe(
     `UPDATE "TaskExecution"
@@ -301,7 +309,7 @@ export async function finalizeExecution(opts: {
   // chocaron y en que rama quedo el trabajo para resolverlo a mano. Antes
   // esto se tragaba en un catch silencioso y la tarea quedaba DONE aunque
   // su codigo nunca se integrara.
-  if (usedWorktree && task.sprintCode) {
+  if (usedWorktree && task.sprintCode && taskWtPath) {
     if (verifiedStatus === 'DONE') {
       try {
         const sprintWtPath = computeSprintWorktreePath(task.sprintCode)
