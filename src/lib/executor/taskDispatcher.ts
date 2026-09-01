@@ -353,6 +353,37 @@ export async function finalizeExecution(opts: {
     taskId, verifiedStatus, finalResultado
   )
 
+  // Alerta real en el portal para una tarea que se intento ejecutar de
+  // verdad y no llego a DONE. Bug de UX real reportado por el usuario:
+  // hasta ahora esto solo se veia cavando en los logs de PM2 — el motivo
+  // real (ej. el agente de codigo choco con el limite de pasos de
+  // herramientas) quedaba invisible en el portal, indistinguible de
+  // cualquier otro tipo de fallo salvo que alguien abriera la task y
+  // leyera el campo resultado. No se notifica el "saltar en cascada" por
+  // dependencia fallida (eso ya queda visible como BLOCKED con motivo en
+  // el tablero, y notificar cada task salteada inundaria de ruido por un
+  // solo fallo real de raiz) — solo la tarea que de verdad se ejecuto y
+  // no llego a DONE.
+  if (verifiedStatus === 'FAILED' || verifiedStatus === 'BLOCKED') {
+    const isStepLimit = resultSummary.includes('se alcanzo el limite de pasos de herramientas')
+      || resultSummary.includes('se alcanzó el límite de pasos de herramientas')
+    try {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "Notification" (id, "userId", type, title, message, link, "createdAt")
+         VALUES (gen_random_uuid()::text, 'system', $1, $2, $3, '/backlog', NOW())`,
+        isStepLimit ? 'warning' : 'error',
+        isStepLimit
+          ? `Agente sin terminar: ${task.title}`
+          : `Tarea ${verifiedStatus === 'BLOCKED' ? 'bloqueada' : 'fallida'}: ${task.title}`,
+        isStepLimit
+          ? `El agente de código llegó al límite de pasos de herramientas sin terminar (${task.taskCode ?? taskId}). Puede necesitar más pasos o una tarea más chica.`
+          : finalResultado.slice(0, 300),
+      )
+    } catch (err) {
+      console.error('[EXECUTOR] No se pudo crear la notificación de fallo:', err)
+    }
+  }
+
   console.log(`[EXECUTOR] ${task.title} → ${verifiedStatus} (${Math.round(durationMs / 1000)}s)`)
 
   if (task.sprintId) {
