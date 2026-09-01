@@ -726,18 +726,22 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   // usa el backend: 1,2... son rondas de debate; 10-19 planificacion; 20+
   // ajustes — asi que alcanza con ordenar por esos rangos, no hace falta
   // inventar un orden nuevo.
-  const chatPhases: { key: string; label: string; msgs: DebateMsg[]; kind?: 'summary' }[] = [
+  const chatPhases: { key: string; label: string; msgs: DebateMsg[]; kind?: 'adjust-summary' | 'plan-summary' }[] = [
     ...Object.keys(byRound).map(Number).sort((a, b) => a - b).map((r) => ({
       key: `round-${r}`, label: `Ronda ${r}`, msgs: byRound[r],
     })),
     ...(planningMsgs.length > 0 ? [{ key: 'planning', label: '🧠 Planificación', msgs: planningMsgs }] : []),
     ...(adjustingMsgs.length > 0 ? [{ key: 'adjusting', label: '🔄 Ajustes', msgs: adjustingMsgs }] : []),
-    // El resumen de "Ajustes propuestos por el Consejo" (ADJUST_READY) se
-    // mostraba siempre fijo arriba del chat, ocupando espacio y mezclado
-    // visualmente con las pestañas de fase — a pedido, ahora es una pestaña
-    // mas, consistente con Ronda 1/Ajustes.
-    ...(selectedProposal?.status === 'ADJUST_READY' && selectedProposal.metadata?.adjustmentProposal
-      ? [{ key: 'adjust-summary', label: '📋 Resumen de ajustes', msgs: [], kind: 'summary' as const }]
+    // El resumen de "Ajustes propuestos por el Consejo" (ADJUST_READY) y el
+    // de "Plan listo para revision" (PLAN_READY) se mostraban siempre fijos
+    // arriba del chat, ocupando espacio y mezclados visualmente con las
+    // pestañas de fase — a pedido, ahora son pestañas mas, consistentes con
+    // Ronda 1/Ajustes.
+    ...(selectedProposal?.status === 'ADJUST_READY'
+      ? [{ key: 'adjust-summary', label: '📋 Resumen de ajustes', msgs: [], kind: 'adjust-summary' as const }]
+      : []),
+    ...(selectedProposal?.status === 'PLAN_READY'
+      ? [{ key: 'plan-summary', label: '📐 Plan listo', msgs: [], kind: 'plan-summary' as const }]
       : []),
   ]
   const chatPhaseKeys = chatPhases.map((p) => p.key).join(',')
@@ -1656,103 +1660,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
               </div>
             )}
 
-            {/* PLAN_READY banner */}
-            {selectedProposal.status === "PLAN_READY" && (() => {
-              const plan = selectedProposal.metadata?.councilPlan
-              const PC: Record<string, string> = { CRITICAL: "#ef4444", HIGH: "#f97316", MEDIUM: "#eab308", LOW: "#6b7280" }
-              return (
-                <div className="mx-4 mt-3 rounded-xl px-3 py-3 space-y-3" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.3)" }}>
-                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#10b981" }}>Plan listo para revision</span>
-                  {plan ? (
-                    <>
-                      {plan.planRationale && <p className="text-[10px] text-gray-400 leading-snug italic">{plan.planRationale}</p>}
-                      {(plan.solucionPropuesta || plan.solucionId) && (
-                        <div className="rounded-lg p-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                          <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: "#10b981" }}>Solucion</p>
-                          <p className="text-[10px] font-semibold text-gray-200 mt-0.5">{plan.solucionPropuesta?.name ?? ("Existente: " + plan.solucionId)}</p>
-                          {plan.solucionPropuesta?.description && <p className="text-[9px] text-gray-500 mt-0.5">{plan.solucionPropuesta.description}</p>}
-                        </div>
-                      )}
-                      {plan.epic && (
-                        <div className="rounded-lg p-2" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
-                          <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: "#10b981" }}>Epica</p>
-                          <p className="text-[10px] font-semibold text-gray-200 mt-0.5">{plan.epic.name}</p>
-                          {plan.epic.description && <p className="text-[9px] text-gray-500 mt-0.5">{plan.epic.description}</p>}
-                          {plan.epic.estimatedWeeks && <p className="text-[8px] text-gray-600 mt-0.5">{plan.epic.estimatedWeeks} semanas estimadas</p>}
-                        </div>
-                      )}
-                      {plan.sprints && (plan.sprints as any[]).length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-[8px] font-bold uppercase tracking-widest text-gray-500">Sprints · {(plan.sprints as any[]).length}</p>
-                          {(plan.sprints as any[]).map((sp, si) => (
-                            <div key={si} className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.2)" }}>
-                              <div className="px-2.5 py-2" style={{ background: "rgba(99,102,241,0.1)" }}>
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>Sprint {si+1}</span>
-                                  <span className="text-[8px] text-indigo-400/60 ml-auto">{sp.areaSlug}</span>
-                                  {sp.estimatedWeeks && <span className="text-[8px] text-gray-600">{sp.estimatedWeeks}w</span>}
-                                </div>
-                                <p className="text-[10px] font-semibold text-gray-200">{sp.name}</p>
-                                {sp.goal && <p className="text-[9px] text-gray-500 mt-0.5">{sp.goal}</p>}
-                              </div>
-                              <div className="px-2 pb-2 pt-1.5 space-y-1" style={{ background: "rgba(0,0,0,0.15)" }}>
-                                {((sp.tasks ?? []) as any[]).map((t, ti) => (
-                                  <div key={ti} className="rounded px-2 py-1.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                                    <div className="flex items-center gap-1 mb-0.5 flex-wrap">
-                                      <span className="text-[7px] font-bold uppercase" style={{ color: PC[t.priority] ?? "#6b7280" }}>{t.priority}</span>
-                                      <span className="text-[7px] text-indigo-400/70 ml-1">{t.areaSlug}</span>
-                                      {t.agentSlug && <span className="text-[7px] text-gray-600">· {t.agentSlug}</span>}
-                                      {t.estimatedHours && <span className="text-[7px] text-gray-700 ml-auto">{t.estimatedHours}h</span>}
-                                    </div>
-                                    <p className="text-[9px] text-gray-300 font-medium leading-snug">{t.title}</p>
-                                    {t.rationaleArea && <p className="text-[8px] text-gray-600 mt-0.5 italic">{t.rationaleArea}</p>}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
-                            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "plan") }}
-                            placeholder="Ajuste al plan antes de aprobar..."
-                            className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
-                            style={{ background: "rgba(255,255,255,0.04)" }} />
-                          <button onClick={() => submitHumanComment(selectedProposal.id, "plan")} disabled={submittingComment || !humanComment.trim()}
-                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
-                            style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.35)" }}>
-                            <Send size={11} />
-                          </button>
-                        </div>
-                        {planApproved ? (
-                          <div className="flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold"
-                               style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
-                            Plan aprobado — Backlog creado exitosamente
-                          </div>
-                        ) : (
-                          <button onClick={() => approvePlan(selectedProposal.id)} disabled={approvingPlan}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
-                            style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.4)" }}>
-                            {approvingPlan ? <><Loader2 size={11} className="animate-spin" /> Creando backlog...</> : <> Aprobar plan — crear Epica, Sprints y Tasks en Backlog</>}
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-[10px] text-gray-500">Sin plan generado. El consejo puede generarlo ahora.</p>
-                      <button onClick={() => startPlanning(selectedProposal.id)} disabled={starting}
-                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold disabled:opacity-50"
-                        style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)" }}>
-                        {starting ? <><Loader2 size={11} className="animate-spin" /> Iniciando...</> : <>Generar plan</>}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
 
             {/* EXECUTING banner */}
             {selectedProposal.status === "EXECUTING" && (
@@ -1800,7 +1707,7 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
                   <span className="text-3xl opacity-20">🔇</span>
                   <p className="text-[11px] text-gray-700">El debate no ha comenzado.</p>
                 </div>
-              ) : (chatPhases.find((p) => p.key === activeChatTab) ?? chatPhases[chatPhases.length - 1])?.kind === 'summary' ? (() => {
+              ) : (chatPhases.find((p) => p.key === activeChatTab) ?? chatPhases[chatPhases.length - 1])?.kind === 'adjust-summary' ? (() => {
                 const adj = selectedProposal.metadata?.adjustmentProposal
                 return (
                   <div className="rounded-xl px-3 py-3 space-y-3" style={{ background: "rgba(251,146,60,0.07)", border: "1px solid rgba(251,146,60,0.3)" }}>
@@ -1847,6 +1754,101 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
                       </>
                     ) : (
                       <p className="text-[10px] text-gray-600">Sin ajustes generados.</p>
+                    )}
+                  </div>
+                )
+              })() : (chatPhases.find((p) => p.key === activeChatTab) ?? chatPhases[chatPhases.length - 1])?.kind === 'plan-summary' ? (() => {
+                const plan = selectedProposal.metadata?.councilPlan
+                const PC: Record<string, string> = { CRITICAL: "#ef4444", HIGH: "#f97316", MEDIUM: "#eab308", LOW: "#6b7280" }
+                return (
+                  <div className="rounded-xl px-3 py-3 space-y-3" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.3)" }}>
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#10b981" }}>Plan listo para revision</span>
+                    {plan ? (
+                      <>
+                        {plan.planRationale && <p className="text-[10px] text-gray-400 leading-snug italic">{plan.planRationale}</p>}
+                        {(plan.solucionPropuesta || plan.solucionId) && (
+                          <div className="rounded-lg p-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                            <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: "#10b981" }}>Solucion</p>
+                            <p className="text-[10px] font-semibold text-gray-200 mt-0.5">{plan.solucionPropuesta?.name ?? ("Existente: " + plan.solucionId)}</p>
+                            {plan.solucionPropuesta?.description && <p className="text-[9px] text-gray-500 mt-0.5">{plan.solucionPropuesta.description}</p>}
+                          </div>
+                        )}
+                        {plan.epic && (
+                          <div className="rounded-lg p-2" style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.15)" }}>
+                            <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: "#10b981" }}>Epica</p>
+                            <p className="text-[10px] font-semibold text-gray-200 mt-0.5">{plan.epic.name}</p>
+                            {plan.epic.description && <p className="text-[9px] text-gray-500 mt-0.5">{plan.epic.description}</p>}
+                            {plan.epic.estimatedWeeks && <p className="text-[8px] text-gray-600 mt-0.5">{plan.epic.estimatedWeeks} semanas estimadas</p>}
+                          </div>
+                        )}
+                        {plan.sprints && (plan.sprints as any[]).length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-[8px] font-bold uppercase tracking-widest text-gray-500">Sprints · {(plan.sprints as any[]).length}</p>
+                            {(plan.sprints as any[]).map((sp, si) => (
+                              <div key={si} className="rounded-lg overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.2)" }}>
+                                <div className="px-2.5 py-2" style={{ background: "rgba(99,102,241,0.1)" }}>
+                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                    <span className="text-[8px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>Sprint {si+1}</span>
+                                    <span className="text-[8px] text-indigo-400/60 ml-auto">{sp.areaSlug}</span>
+                                    {sp.estimatedWeeks && <span className="text-[8px] text-gray-600">{sp.estimatedWeeks}w</span>}
+                                  </div>
+                                  <p className="text-[10px] font-semibold text-gray-200">{sp.name}</p>
+                                  {sp.goal && <p className="text-[9px] text-gray-500 mt-0.5">{sp.goal}</p>}
+                                </div>
+                                <div className="px-2 pb-2 pt-1.5 space-y-1" style={{ background: "rgba(0,0,0,0.15)" }}>
+                                  {((sp.tasks ?? []) as any[]).map((t, ti) => (
+                                    <div key={ti} className="rounded px-2 py-1.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                      <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                                        <span className="text-[7px] font-bold uppercase" style={{ color: PC[t.priority] ?? "#6b7280" }}>{t.priority}</span>
+                                        <span className="text-[7px] text-indigo-400/70 ml-1">{t.areaSlug}</span>
+                                        {t.agentSlug && <span className="text-[7px] text-gray-600">· {t.agentSlug}</span>}
+                                        {t.estimatedHours && <span className="text-[7px] text-gray-700 ml-auto">{t.estimatedHours}h</span>}
+                                      </div>
+                                      <p className="text-[9px] text-gray-300 font-medium leading-snug">{t.title}</p>
+                                      {t.rationaleArea && <p className="text-[8px] text-gray-600 mt-0.5 italic">{t.rationaleArea}</p>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "plan") }}
+                              placeholder="Ajuste al plan antes de aprobar..."
+                              className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                              style={{ background: "rgba(255,255,255,0.04)" }} />
+                            <button onClick={() => submitHumanComment(selectedProposal.id, "plan")} disabled={submittingComment || !humanComment.trim()}
+                              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
+                              style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.35)" }}>
+                              <Send size={11} />
+                            </button>
+                          </div>
+                          {planApproved ? (
+                            <div className="flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold"
+                                 style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
+                              Plan aprobado — Backlog creado exitosamente
+                            </div>
+                          ) : (
+                            <button onClick={() => approvePlan(selectedProposal.id)} disabled={approvingPlan}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
+                              style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.4)" }}>
+                              {approvingPlan ? <><Loader2 size={11} className="animate-spin" /> Creando backlog...</> : <> Aprobar plan — crear Epica, Sprints y Tasks en Backlog</>}
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-gray-500">Sin plan generado. El consejo puede generarlo ahora.</p>
+                        <button onClick={() => startPlanning(selectedProposal.id)} disabled={starting}
+                          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold disabled:opacity-50"
+                          style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)" }}>
+                          {starting ? <><Loader2 size={11} className="animate-spin" /> Iniciando...</> : <>Generar plan</>}
+                        </button>
+                      </div>
                     )}
                   </div>
                 )
