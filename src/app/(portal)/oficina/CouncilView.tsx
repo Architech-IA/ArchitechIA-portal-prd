@@ -726,12 +726,19 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   // usa el backend: 1,2... son rondas de debate; 10-19 planificacion; 20+
   // ajustes — asi que alcanza con ordenar por esos rangos, no hace falta
   // inventar un orden nuevo.
-  const chatPhases: { key: string; label: string; msgs: DebateMsg[] }[] = [
+  const chatPhases: { key: string; label: string; msgs: DebateMsg[]; kind?: 'summary' }[] = [
     ...Object.keys(byRound).map(Number).sort((a, b) => a - b).map((r) => ({
       key: `round-${r}`, label: `Ronda ${r}`, msgs: byRound[r],
     })),
     ...(planningMsgs.length > 0 ? [{ key: 'planning', label: '🧠 Planificación', msgs: planningMsgs }] : []),
     ...(adjustingMsgs.length > 0 ? [{ key: 'adjusting', label: '🔄 Ajustes', msgs: adjustingMsgs }] : []),
+    // El resumen de "Ajustes propuestos por el Consejo" (ADJUST_READY) se
+    // mostraba siempre fijo arriba del chat, ocupando espacio y mezclado
+    // visualmente con las pestañas de fase — a pedido, ahora es una pestaña
+    // mas, consistente con Ronda 1/Ajustes.
+    ...(selectedProposal?.status === 'ADJUST_READY' && selectedProposal.metadata?.adjustmentProposal
+      ? [{ key: 'adjust-summary', label: '📋 Resumen de ajustes', msgs: [], kind: 'summary' as const }]
+      : []),
   ]
   const chatPhaseKeys = chatPhases.map((p) => p.key).join(',')
 
@@ -1617,58 +1624,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
               </div>
             )}
 
-            {/* ADJUST_READY banner */}
-            {selectedProposal.status === "ADJUST_READY" && (() => {
-              const adj = selectedProposal.metadata?.adjustmentProposal
-              return (
-                <div className="mx-4 mt-3 rounded-xl px-3 py-3 space-y-3" style={{ background: "rgba(251,146,60,0.07)", border: "1px solid rgba(251,146,60,0.3)" }}>
-                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#fb923c" }}>Ajustes propuestos por el Consejo</span>
-                  {adj ? (
-                    <>
-                      {(adj.adjustmentRationale || adj.agentConsensus) && (
-                        <p className="text-[10px] text-gray-400 leading-snug">{adj.adjustmentRationale ?? adj.agentConsensus}</p>
-                      )}
-                      {adj.keyChanges && (adj.keyChanges as any[]).length > 0 && (
-                        <div className="space-y-2">
-                          {(adj.keyChanges as any[]).map((change, ci) => (
-                            <div key={ci} className="rounded-lg p-2.5" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c" }}>{change.aspect}</span>
-                                {change.agentSupporting && <span className="text-[8px] text-gray-600 ml-auto">{change.agentSupporting}</span>}
-                              </div>
-                              {change.from && <p className="text-[9px] text-gray-500 mb-0.5">Antes: {change.from}</p>}
-                              <p className="text-[9px] font-semibold text-gray-200">Propuesto: {change.to}</p>
-                              {change.rationale && <p className="text-[9px] text-gray-600 mt-0.5">{change.rationale}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
-                            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "adjust") }}
-                            placeholder="Comentario antes de aprobar los ajustes..."
-                            className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
-                            style={{ background: "rgba(255,255,255,0.04)" }} />
-                          <button onClick={() => submitHumanComment(selectedProposal.id, "adjust")} disabled={submittingComment || !humanComment.trim()}
-                            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
-                            style={{ background: "rgba(251,146,60,0.2)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.35)" }}>
-                            <Send size={11} />
-                          </button>
-                        </div>
-                        <button onClick={() => approveAdjustments(selectedProposal.id)} disabled={starting}
-                          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
-                          style={{ background: "rgba(16,185,129,0.15)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)" }}>
-                          {starting ? <><Loader2 size={11} className="animate-spin" /> Procesando...</> : <> Aprobar ajustes y pasar a planificacion</>}
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-[10px] text-gray-600">Sin ajustes generados.</p>
-                  )}
-                </div>
-              )
-            })()}
 
             {/* PLANNING banner */}
             {["PLANNING", "PLAN_QUESTIONS"].includes(selectedProposal.status) && (
@@ -1845,7 +1800,57 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
                   <span className="text-3xl opacity-20">🔇</span>
                   <p className="text-[11px] text-gray-700">El debate no ha comenzado.</p>
                 </div>
-              ) : (
+              ) : (chatPhases.find((p) => p.key === activeChatTab) ?? chatPhases[chatPhases.length - 1])?.kind === 'summary' ? (() => {
+                const adj = selectedProposal.metadata?.adjustmentProposal
+                return (
+                  <div className="rounded-xl px-3 py-3 space-y-3" style={{ background: "rgba(251,146,60,0.07)", border: "1px solid rgba(251,146,60,0.3)" }}>
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#fb923c" }}>Ajustes propuestos por el Consejo</span>
+                    {adj ? (
+                      <>
+                        {(adj.adjustmentRationale || adj.agentConsensus) && (
+                          <p className="text-[10px] text-gray-400 leading-snug">{adj.adjustmentRationale ?? adj.agentConsensus}</p>
+                        )}
+                        {adj.keyChanges && (adj.keyChanges as any[]).length > 0 && (
+                          <div className="space-y-2">
+                            {(adj.keyChanges as any[]).map((change, ci) => (
+                              <div key={ci} className="rounded-lg p-2.5" style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c" }}>{change.aspect}</span>
+                                  {change.agentSupporting && <span className="text-[8px] text-gray-600 ml-auto">{change.agentSupporting}</span>}
+                                </div>
+                                {change.from && <p className="text-[9px] text-gray-500 mb-0.5">Antes: {change.from}</p>}
+                                <p className="text-[9px] font-semibold text-gray-200">Propuesto: {change.to}</p>
+                                {change.rationale && <p className="text-[9px] text-gray-600 mt-0.5">{change.rationale}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "adjust") }}
+                              placeholder="Comentario antes de aprobar los ajustes..."
+                              className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                              style={{ background: "rgba(255,255,255,0.04)" }} />
+                            <button onClick={() => submitHumanComment(selectedProposal.id, "adjust")} disabled={submittingComment || !humanComment.trim()}
+                              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
+                              style={{ background: "rgba(251,146,60,0.2)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.35)" }}>
+                              <Send size={11} />
+                            </button>
+                          </div>
+                          <button onClick={() => approveAdjustments(selectedProposal.id)} disabled={starting}
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
+                            style={{ background: "rgba(16,185,129,0.15)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)" }}>
+                            {starting ? <><Loader2 size={11} className="animate-spin" /> Procesando...</> : <> Aprobar ajustes y pasar a planificacion</>}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-gray-600">Sin ajustes generados.</p>
+                    )}
+                  </div>
+                )
+              })() : (
                 (() => {
                   const active = chatPhases.find((p) => p.key === activeChatTab) ?? chatPhases[chatPhases.length - 1]
                   if (!active) return null
