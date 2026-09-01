@@ -28,6 +28,19 @@ const GraphState = Annotation.Root({
     reducer: (a, b) => ({ ...a, ...b }),
     default: () => ({}),
   }),
+  // BUG REAL encontrado corriendo esto por primera vez con un plan real de
+  // 17 tasks: antes, un nodo que no llegaba a DONE TIRABA una excepcion, y
+  // eso rechazaba TODA la invocacion del grafo — incluso ramas totalmente
+  // independientes (ej. la rama de marketing fallando frenaba en seco la
+  // rama de desarrollo, que seguia corriendo de fondo en el worker pero
+  // quedaba huerfana, sin que nadie disparara despues lo que dependia de
+  // ella). Ahora un nodo que no llega a DONE marca su id aca en vez de
+  // tirar, y sus HIJOS lo consultan para saltearse en cascada — pero las
+  // ramas que no comparten ancestro con la que fallo siguen su curso normal.
+  failed: Annotation<Record<string, boolean>>({
+    reducer: (a, b) => ({ ...a, ...b }),
+    default: () => ({}),
+  }),
 })
 
 // DONE/FAILED/BLOCKED son los 3 estados terminales reales de una tarea (ver
@@ -50,12 +63,55 @@ async function waitForTaskCompletion(taskId: string): Promise<{ status: string; 
   throw new Error(`Timeout esperando el cierre de la tarea ${taskId} (>${MAX_WAIT_MS}ms)`)
 }
 
-function makeTaskNode(taskId: string) {
-  return async () => {
-    await dispatchTask(taskId)
+// parentId es el UNICO padre de esta tarea DENTRO del conjunto que se esta
+// corriendo (dependsOnTaskId es siempre un solo id) — null si es una raiz.
+function makeTaskNode(taskId: string, parentId: string | null) {
+  return async (state: { failed: Record<string, boolean> }) => {
+    if (parentId && state.failed[parentId]) {
+      // El padre de esta tarea no llego a DONE — no tiene sentido
+      // dispatchearla. Se propaga el fallo (sus propios hijos, si tiene,
+      // tambien se van a saltear en cascada), pero SIN tirar una excepcion
+      // que frene otras ramas del grafo que no comparten este ancestro.
+      //
+      // BUG REAL encontrado probando esto con el plan completo: este
+      // "saltear en cascada" solo vivia en el estado en memoria del grafo —
+      // la BacklogItem de la tarea saltada se quedaba en BACKLOG para
+      // siempre, indistinguible en el tablero de "nunca se intento". Se deja
+      // en BLOCKED con el motivo explicito, visible para quien mire el
+      // Backlog.
+      await prisma.$executeRawUnsafe(
+        `UPDATE "BacklogItem" SET status = 'BLOCKED', resultado = $2 WHERE id = $1 AND status = 'BACKLOG'`,
+        taskId,
+        `No se ejecutó: depende de la tarea ${parentId}, que no llegó a DONE (falló, quedó bloqueada, o dependía a su vez de otra que falló).`
+      )
+      return { failed: { [taskId]: true } }
+    }
+
+    // Resumible: si esta funcion se re-corre sobre una tarea que ya quedo en
+    // un estado terminal (ej. re-disparar el mismo conjunto de ids despues
+    // de que otra rama fallara y cortara una corrida anterior), no hay que
+    // repetir el trabajo. Y si quedo IN_PROGRESS de una corrida anterior que
+    // alcanzo a dispatchearla pero el grafo se corto antes de esperar su
+    // cierre, hay que esperarla — nunca volver a llamar a dispatchTask()
+    // sobre algo que ya tiene un worktree/branch o una llamada al LLM en
+    // curso, eso duplicaria el trabajo.
+    const [current] = await prisma.$queryRawUnsafe(
+      `SELECT status, resultado FROM "BacklogItem" WHERE id = $1`, taskId
+    ) as { status: string; resultado: string | null }[]
+
+    if (current.status === 'DONE') {
+      return { results: { [taskId]: current.resultado ?? '' } }
+    }
+    if (current.status === 'FAILED' || current.status === 'BLOCKED') {
+      return { failed: { [taskId]: true } }
+    }
+    if (current.status === 'BACKLOG') {
+      await dispatchTask(taskId)
+    }
+
     const { status, resultado } = await waitForTaskCompletion(taskId)
     if (status !== 'DONE') {
-      throw new Error(`Tarea ${taskId} terminó en ${status}, no se puede continuar la cadena`)
+      return { failed: { [taskId]: true } }
     }
     return { results: { [taskId]: resultado ?? '' } }
   }
@@ -108,7 +164,8 @@ export async function runTaskChain(taskIds: string[]): Promise<Record<string, st
 
   const builder = new StateGraph(GraphState)
   for (const id of taskIds) {
-    builder.addNode(id, makeTaskNode(id))
+    const parent = dependsOn.get(id) ?? null
+    builder.addNode(id, makeTaskNode(id, parent && idSet.has(parent) ? parent : null))
   }
   for (const id of roots) builder.addEdge(START, id as never)
   for (const [parent, children] of childrenOf) {
