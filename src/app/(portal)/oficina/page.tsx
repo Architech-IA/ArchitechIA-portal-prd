@@ -720,7 +720,7 @@ function OficinaPageInner() {
                         <button onClick={() => setCouncilMode('chat')}
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"
                           style={councilMode === 'chat' ? { background: 'rgba(99,102,241,0.2)', color: '#818cf8' } : { color: '#6b7280' }}>
-                          Conversar con Orión
+                          Kickoff
                         </button>
                         <button onClick={() => setCouncilMode('proposals')}
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"

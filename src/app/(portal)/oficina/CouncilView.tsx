@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle, Upload, FileText, Settings, ToggleLeft, ToggleRight, Info } from 'lucide-react'
+import { Loader2, ChevronDown, MessageSquare, Vote, ListChecks, Plus, RefreshCw, Send, Edit3, Trash2, CheckCircle, Upload, FileText, Settings, ToggleLeft, ToggleRight, Info, Paperclip } from 'lucide-react'
 
 interface Proposal {
   id: string
@@ -210,6 +210,9 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [attachingFile, setAttachingFile] = useState(false)
+  const [attachError, setAttachError] = useState('')
+  const chatFileInputRef = useRef<HTMLInputElement>(null)
   const [leadContextLoaded, setLeadContextLoaded] = useState<string | null>(null)
   const [history, setHistory] = useState<Session[]>([])
   const [otraRespuestaOpen, setOtraRespuestaOpen] = useState(false)
@@ -344,10 +347,16 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
       .catch(() => {})
   }, [])
 
-  async function sendChatMessage(override?: string) {
+  // displayContent: lo que se muestra en la burbuja del chat. Si no se pasa,
+  // se muestra lo mismo que se envia. Se usa para adjuntar archivos: el
+  // texto completo extraido (hasta 20k caracteres) se manda a Orion como
+  // contenido del mensaje, pero la burbuja visible muestra solo un resumen
+  // corto ("📎 archivo.pdf adjuntado") en vez de inundar el chat con el
+  // texto crudo del documento.
+  async function sendChatMessage(override?: string, displayContent?: string) {
     const content = (override ?? chatInput).trim()
     if (!content || chatLoading) return
-    const newMsg: ChatMsg = { role: 'user', content }
+    const newMsg: ChatMsg = { role: 'user', content: displayContent ?? content }
     setChatMessages(prev => [...prev, newMsg])
     if (!override) setChatInput('')
     setOtraRespuestaOpen(false)
@@ -372,6 +381,28 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
 
   function selectOption(text: string) {
     sendChatMessage(text)
+  }
+
+  async function handleChatFileAttach(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // permite re-adjuntar el mismo archivo dos veces seguidas
+    if (!file || chatLoading || attachingFile) return
+    setAttachError('')
+    setAttachingFile(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/council/chat/attach', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) { setAttachError(data.error ?? 'Error adjuntando el archivo'); return }
+      const label = `📎 Documento adjunto: ${data.fileName}${data.truncated ? ' (truncado a ~50 páginas)' : ''}`
+      const fullContent = `${label}\n\n${data.text}`
+      await sendChatMessage(fullContent, label)
+    } catch (err) {
+      setAttachError(err instanceof Error ? err.message : 'Error adjuntando el archivo')
+    } finally {
+      setAttachingFile(false)
+    }
   }
 
   async function extractProposal() {
@@ -1204,7 +1235,25 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
             )}
             {/* Input */}
             <div className="px-4 pb-4 flex-shrink-0 border-t border-white/5 pt-3">
+              {attachError && (
+                <p className="text-[10px] mb-1.5" style={{ color: '#f87171' }}>{attachError}</p>
+              )}
               <div className="flex gap-2">
+                <input
+                  ref={chatFileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  className="hidden"
+                  onChange={handleChatFileAttach}
+                />
+                <button
+                  onClick={() => chatFileInputRef.current?.click()}
+                  disabled={chatLoading || attachingFile}
+                  title="Adjuntar documento (PDF, DOCX o TXT)"
+                  className="px-2.5 py-2 rounded-xl transition-all flex-shrink-0 disabled:opacity-40"
+                  style={{ background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {attachingFile ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
+                </button>
                 <input
                   ref={chatInputRef}
                   value={chatInput}
