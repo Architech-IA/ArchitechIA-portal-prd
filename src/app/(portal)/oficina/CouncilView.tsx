@@ -737,10 +737,16 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
     // arriba del chat, ocupando espacio y mezclados visualmente con las
     // pestañas de fase — a pedido, ahora son pestañas mas, consistentes con
     // Ronda 1/Ajustes.
-    ...(selectedProposal?.status === 'ADJUST_READY'
+    // Bug real reportado: al aprobar el plan y pasar a Backlog, el status
+    // avanza de PLAN_READY a EXECUTING y la pestaña (con toda la info del
+    // plan ya generado) desaparecia de golpe. Fix: la pestaña se muestra
+    // mientras exista el dato (adjustmentProposal/councilPlan) en vez de
+    // solo mientras el status siga siendo exactamente ese — asi persiste
+    // como referencia despues de aprobar, en vez de perderse.
+    ...(selectedProposal?.status === 'ADJUST_READY' || selectedProposal?.metadata?.adjustmentProposal
       ? [{ key: 'adjust-summary', label: '📋 Resumen de ajustes', msgs: [], kind: 'adjust-summary' as const }]
       : []),
-    ...(selectedProposal?.status === 'PLAN_READY'
+    ...(selectedProposal?.status === 'PLAN_READY' || selectedProposal?.metadata?.councilPlan
       ? [{ key: 'plan-summary', label: '📐 Plan listo', msgs: [], kind: 'plan-summary' as const }]
       : []),
   ]
@@ -1732,25 +1738,36 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
                             ))}
                           </div>
                         )}
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
-                              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "adjust") }}
-                              placeholder="Comentario antes de aprobar los ajustes..."
-                              className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
-                              style={{ background: "rgba(255,255,255,0.04)" }} />
-                            <button onClick={() => submitHumanComment(selectedProposal.id, "adjust")} disabled={submittingComment || !humanComment.trim()}
-                              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
-                              style={{ background: "rgba(251,146,60,0.2)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.35)" }}>
-                              <Send size={11} />
+                        {/* Igual que en el plan: si el status ya avanzo mas alla de
+                            ADJUST_READY (aprobado y ya en Planificacion), mostrar el
+                            estado final en vez de ofrecer aprobar de nuevo — la pestaña
+                            se mantiene visible como referencia, pero ya no es accionable. */}
+                        {selectedProposal.status === 'ADJUST_READY' ? (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "adjust") }}
+                                placeholder="Comentario antes de aprobar los ajustes..."
+                                className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                                style={{ background: "rgba(255,255,255,0.04)" }} />
+                              <button onClick={() => submitHumanComment(selectedProposal.id, "adjust")} disabled={submittingComment || !humanComment.trim()}
+                                className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
+                                style={{ background: "rgba(251,146,60,0.2)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.35)" }}>
+                                <Send size={11} />
+                              </button>
+                            </div>
+                            <button onClick={() => approveAdjustments(selectedProposal.id)} disabled={starting}
+                              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
+                              style={{ background: "rgba(16,185,129,0.15)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)" }}>
+                              {starting ? <><Loader2 size={11} className="animate-spin" /> Procesando...</> : <> Aprobar ajustes y pasar a planificacion</>}
                             </button>
                           </div>
-                          <button onClick={() => approveAdjustments(selectedProposal.id)} disabled={starting}
-                            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
-                            style={{ background: "rgba(16,185,129,0.15)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)" }}>
-                            {starting ? <><Loader2 size={11} className="animate-spin" /> Procesando...</> : <> Aprobar ajustes y pasar a planificacion</>}
-                          </button>
-                        </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold"
+                               style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
+                            Ajustes aprobados — continuo a planificacion
+                          </div>
+                        )}
                       </>
                     ) : (
                       <p className="text-[10px] text-gray-600">Sin ajustes generados.</p>
@@ -1813,32 +1830,37 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
                             ))}
                           </div>
                         )}
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
-                              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "plan") }}
-                              placeholder="Ajuste al plan antes de aprobar..."
-                              className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
-                              style={{ background: "rgba(255,255,255,0.04)" }} />
-                            <button onClick={() => submitHumanComment(selectedProposal.id, "plan")} disabled={submittingComment || !humanComment.trim()}
-                              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
-                              style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.35)" }}>
-                              <Send size={11} />
-                            </button>
+                        {/* Una vez aprobado (o el status ya avanzo mas alla de PLAN_READY,
+                            ej. EXECUTING tras crear el backlog) se muestra el estado final
+                            en vez del formulario de aprobacion — la pestaña ya no
+                            desaparece, pero tampoco debe ofrecer aprobar de nuevo algo
+                            que ya se aprobo. */}
+                        {(planApproved || selectedProposal.status !== 'PLAN_READY') ? (
+                          <div className="flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold"
+                               style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
+                            Plan aprobado — Backlog creado exitosamente
                           </div>
-                          {planApproved ? (
-                            <div className="flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold"
-                                 style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}>
-                              Plan aprobado — Backlog creado exitosamente
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <input value={humanComment} onChange={e => setHumanComment(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) submitHumanComment(selectedProposal.id, "plan") }}
+                                placeholder="Ajuste al plan antes de aprobar..."
+                                className="flex-1 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 border border-white/8 outline-none"
+                                style={{ background: "rgba(255,255,255,0.04)" }} />
+                              <button onClick={() => submitHumanComment(selectedProposal.id, "plan")} disabled={submittingComment || !humanComment.trim()}
+                                className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-40"
+                                style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.35)" }}>
+                                <Send size={11} />
+                              </button>
                             </div>
-                          ) : (
                             <button onClick={() => approvePlan(selectedProposal.id)} disabled={approvingPlan}
                               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-black transition-all disabled:opacity-50"
                               style={{ background: "rgba(16,185,129,0.2)", color: "#10b981", border: "1px solid rgba(16,185,129,0.4)" }}>
                               {approvingPlan ? <><Loader2 size={11} className="animate-spin" /> Creando backlog...</> : <> Aprobar plan — crear Epica, Sprints y Tasks en Backlog</>}
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="space-y-2">
