@@ -138,8 +138,18 @@ export async function runPlanningEngine(proposalId: string, humanComment: string
   const areas = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, name, slug FROM "Area" ORDER BY name LIMIT 30`
   )
+  // BUG REAL encontrado: esta lista solo traia slug/nombre del agente, sin
+  // su area. Orion solo conoce por contexto de que area son los 5 agentes
+  // que debaten (Ares=sales, Iris=marketing, Vesta=finance, Atlas=dev), pero
+  // no tiene forma de saber que Vulcan cubre "infra", Sigma cubre "qa",
+  // Hermes "delivery", etc. — esos agentes nunca hablan en el debate. Sin el
+  // area en la lista, Orion dejaba agentSlug:null en cualquier task de un
+  // area sin agente debatiente (dev/infra/qa), aunque SI existe un agente
+  // real registrado para esa area. Se agrega el area de cada agente.
   const agents = await prisma.$queryRawUnsafe<any[]>(
-    `SELECT id, name, slug FROM "Agent" WHERE status = 'ACTIVE' LIMIT 20`
+    `SELECT ag.id, ag.name, ag.slug, ar.slug as "areaSlug"
+     FROM "Agent" ag LEFT JOIN "Area" ar ON ar.id = ag."areaId"
+     WHERE ag.status = 'ACTIVE' LIMIT 20`
   )
 
   const solutionsList = (solutions as any[]).length
@@ -149,7 +159,7 @@ export async function runPlanningEngine(proposalId: string, humanComment: string
     ? (areas as any[]).map((a: any) => `  - slug:"${a.slug}" Nombre:"${a.name}"`).join('\n')
     : '  (ninguna - proponer con "new:nombre")'
   const agentsList = (agents as any[]).length
-    ? (agents as any[]).map((a: any) => `  - slug:"${a.slug}" Nombre:"${a.name}"`).join('\n')
+    ? (agents as any[]).map((a: any) => `  - slug:"${a.slug}" Nombre:"${a.name}" area:"${a.areaSlug ?? 'sin area'}"`).join('\n')
     : '  (ninguno)'
 
   const debateVotes = await prisma.$queryRawUnsafe<any[]>(
@@ -212,8 +222,14 @@ Con todo lo anterior, genera el JSON del plan de ejecucion definitivo.
 Incluye: solucionId (o solucionPropuesta), epic, sprints con tasks.
 Cada task DEBE tener areaSlug. Puedes proponer areas con "new:nombre-area".
 
+Cada task DEBE tener tambien agentSlug asignado: buscá en AGENTES
+DISPONIBLES el agente cuyo area coincida con el areaSlug de esa task (por
+ejemplo, un task con areaSlug "infra" va con el agente cuya area sea
+"infra", no importa si ese agente no participo del debate). Dejá
+agentSlug en null UNICAMENTE si ningun agente de la lista tiene esa area.
+
 Formato JSON exacto:
-{"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":null,"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"localId":"s1-t1","dependsOnLocalId":null,"title":"...","description":"...","areaSlug":"...","agentSlug":null,"priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
+{"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":null,"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"localId":"s1-t1","dependsOnLocalId":null,"title":"...","description":"...","areaSlug":"...","agentSlug":"slug-del-agente-de-esa-area","priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
     } else {
       userMsg = `${baseContext}${prevContext}
 
