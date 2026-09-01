@@ -1,19 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
-import { spawn } from 'child_process'
 
-function callClaude(system: string, user: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['--system-prompt', system, '-p', user], { timeout: 90_000 })
-    let out = ''
-    child.stdout.on('data', (d: Buffer) => { out += d.toString() })
-    child.on('close', (code: number | null) => {
-      if (code !== 0 && !out.trim()) reject(new Error(`claude exited ${code}`))
-      else resolve(out.trim())
-    })
-    child.on('error', reject)
+const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
+const OPENCODE_KEY    = process.env.OPENCODE_API_KEY ?? ''
+const OPENCODE_MODEL  = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.7-max'
+
+function stripReasoningTags(text: string): string {
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '')
+  const dangling = cleaned.toLowerCase().indexOf('<think>')
+  return (dangling !== -1 ? cleaned.slice(0, dangling) : cleaned).trim()
+}
+
+// Migrado de spawn('claude', ...) a HTTP directo — mismo bug real
+// encontrado en debate/start.ts (el CLI se quedaba colgado sin producir
+// nada y el proceso quedaba trabado para siempre).
+async function callClaude(system: string, user: string): Promise<string> {
+  const res = await fetch(OPENCODE_GO_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENCODE_KEY}` },
+    body: JSON.stringify({
+      model: OPENCODE_MODEL,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      max_tokens: 4096,
+    }),
+    signal: AbortSignal.timeout(90_000),
   })
+  if (!res.ok) {
+    throw new Error(`OpenCode API error ${res.status}: ${(await res.text()).slice(0, 300)}`)
+  }
+  const data = await res.json()
+  return stripReasoningTags(data.choices?.[0]?.message?.content ?? '')
 }
 
 const TODAY = () => new Date().toISOString().split('T')[0]

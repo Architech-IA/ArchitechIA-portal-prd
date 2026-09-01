@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import { runPlanningEngine } from '../../plan/start/route'
 import { runAdjustmentEngine } from '../../adjust/start/route'
 
-const execAsync = promisify(exec)
+const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
+const OPENCODE_URL    = 'https://opencode.ai/zen/v1/chat/completions'
+const OPENCODE_KEY    = process.env.OPENCODE_API_KEY ?? ''
+const OPENCODE_FALLBACK_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.7-max'
+
+function stripReasoningTags(text: string): string {
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '')
+  const dangling = cleaned.toLowerCase().indexOf('<think>')
+  return (dangling !== -1 ? cleaned.slice(0, dangling) : cleaned).trim()
+}
 
 const COUNCIL_AGENTS = [
   {
@@ -67,32 +74,52 @@ const AGENT_WEIGHTS: Record<string, number> = {
 
 const VOTE_INSTRUCTION = '\n\nResponde EXCLUSIVAMENTE con JSON sin markdown: {"argument": "análisis en 2-3 oraciones", "vote": true o false}'
 
+/**
+ * Llama al modelo real del agente por HTTP directo a OpenCode GO — nunca por
+ * CLI/exec(). Esta era la causa raiz real de que un debate se quedara
+ * trabado para siempre: exec('opencode run ...', {timeout: 90000}) mataba
+ * el proceso con SIGTERM a los 90s sin producir NADA (stdout/stderr vacios)
+ * porque el CLI de opencode es mucho mas lento/pesado que pegarle
+ * directo a la API — y con 5 agentes corriendo en secuencia, cada uno
+ * timeouteando, un debate podia tardar 7+ minutos solo para terminar sin
+ * un solo voto real. Mismo patron ya migrado en taskDispatcher/taskVerifier/
+ * sprintMonitor/plan-start/chat-extract — este era el quinto lugar.
+ */
 async function callAgentLLM(
   systemPrompt: string,
   userMessage: string,
   model?: string | null,
 ): Promise<{ argument: string; vote: boolean }> {
-  let stdout: string
-
-  if (model && (model.startsWith('openai/') || model.startsWith('openrouter/') || model.startsWith('opencode/') || model.startsWith('opencode-go/'))) {
-    // OpenCode GO path: use opencode run with combined prompt
-    const combined = `${systemPrompt}\n\n---\n\n${userMessage}`
-    const safePrompt = combined.replace(/'/g, "'\\''")
-    const cmd = `OPENAI_API_KEY=${process.env.OPENAI_API_KEY} OPENROUTER_API_KEY=${process.env.OPENROUTER_API_KEY} OPENCODE_API_KEY=${process.env.OPENCODE_API_KEY} opencode run '${safePrompt}' --model ${model}`
-    const res = await execAsync(cmd, { timeout: 90000 })
-    stdout = res.stdout.trim()
-  } else {
-    // Claude CLI path
-    const safeSystem = systemPrompt.replace(/'/g, "'\\''")
-    const safeUser = userMessage.replace(/'/g, "'\\''")
-    const modelFlag = model ? `--model ${model} ` : ''
-    const cmd = `claude ${modelFlag}--system-prompt '${safeSystem}' -p '${safeUser}'`
-    const res = await execAsync(cmd, { timeout: 60000 })
-    stdout = res.stdout.trim()
+  let apiUrl = OPENCODE_GO_URL
+  let modelId = OPENCODE_FALLBACK_MODEL
+  if (model?.startsWith('opencode-go/')) {
+    modelId = model.slice('opencode-go/'.length)
+  } else if (model?.startsWith('opencode/')) {
+    apiUrl = OPENCODE_URL
+    modelId = model.slice('opencode/'.length)
   }
 
-  const match = stdout.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error(`No JSON in response: ${stdout.slice(0, 200)}`)
+  const res = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENCODE_KEY}` },
+    body: JSON.stringify({
+      model: modelId,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      max_tokens: 2048,
+    }),
+    signal: AbortSignal.timeout(90_000),
+  })
+  if (!res.ok) {
+    throw new Error(`OpenCode API error ${res.status}: ${(await res.text()).slice(0, 300)}`)
+  }
+  const data = await res.json()
+  const content = stripReasoningTags(data.choices?.[0]?.message?.content ?? '')
+
+  const match = content.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error(`No JSON in response: ${content.slice(0, 200)}`)
   return JSON.parse(match[0])
 }
 

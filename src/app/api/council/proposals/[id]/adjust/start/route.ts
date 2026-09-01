@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 
-const execAsync = promisify(exec)
+const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
+const OPENCODE_URL    = 'https://opencode.ai/zen/v1/chat/completions'
+const OPENCODE_KEY    = process.env.OPENCODE_API_KEY ?? ''
+const OPENCODE_FALLBACK_MODEL = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.7-max'
+
+function stripReasoningTags(text: string): string {
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '')
+  const dangling = cleaned.toLowerCase().indexOf('<think>')
+  return (dangling !== -1 ? cleaned.slice(0, dangling) : cleaned).trim()
+}
 
 const ADJUST_AGENTS = [
   {
@@ -52,23 +59,37 @@ Responde EXCLUSIVAMENTE con JSON valido sin markdown.`,
   },
 ]
 
+// Migrado de exec('opencode run ...')/exec('claude ...') a HTTP directo — el
+// mismo bug real encontrado en debate/start.ts: el CLI se quedaba colgado y
+// execAsync lo mataba con SIGTERM a los 90-120s sin producir nada.
 async function callLLM(systemPrompt: string, userMessage: string, model?: string | null): Promise<string> {
-  let stdout: string
-  if (model && (model.startsWith('openai/') || model.startsWith('openrouter/') || model.startsWith('opencode/'))) {
-    const combined = `${systemPrompt}\n\n---\n\n${userMessage}`
-    const safe = combined.replace(/'/g, "'\\''")
-    const cmd = `OPENAI_API_KEY=${process.env.OPENAI_API_KEY} OPENROUTER_API_KEY=${process.env.OPENROUTER_API_KEY} opencode run '${safe}' --model ${model}`
-    const res = await execAsync(cmd, { timeout: 120000 })
-    stdout = res.stdout.trim()
-  } else {
-    const safeS = systemPrompt.replace(/'/g, "'\\''")
-    const safeU = userMessage.replace(/'/g, "'\\''")
-    const mf = model ? `--model ${model} ` : ''
-    const cmd = `claude ${mf}--system-prompt '${safeS}' -p '${safeU}'`
-    const res = await execAsync(cmd, { timeout: 90000 })
-    stdout = res.stdout.trim()
+  let apiUrl = OPENCODE_GO_URL
+  let modelId = OPENCODE_FALLBACK_MODEL
+  if (model?.startsWith('opencode-go/')) {
+    modelId = model.slice('opencode-go/'.length)
+  } else if (model?.startsWith('opencode/')) {
+    apiUrl = OPENCODE_URL
+    modelId = model.slice('opencode/'.length)
   }
-  return stdout.trim()
+
+  const res = await fetch(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENCODE_KEY}` },
+    body: JSON.stringify({
+      model: modelId,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      max_tokens: 4096,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  })
+  if (!res.ok) {
+    throw new Error(`OpenCode API error ${res.status}: ${(await res.text()).slice(0, 300)}`)
+  }
+  const data = await res.json()
+  return stripReasoningTags(data.choices?.[0]?.message?.content ?? '')
 }
 
 export async function runAdjustmentEngine(proposalId: string, humanComment: string | null) {

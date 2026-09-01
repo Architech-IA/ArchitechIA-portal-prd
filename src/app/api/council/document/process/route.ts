@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 
 export const dynamic = 'force-dynamic'
 
-const execAsync = promisify(exec)
+const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
+const OPENCODE_KEY    = process.env.OPENCODE_API_KEY ?? ''
+const OPENCODE_MODEL  = process.env.OPENCODE_EXECUTOR_MODEL ?? 'qwen3.7-max'
+
+function stripReasoningTags(text: string): string {
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '')
+  const dangling = cleaned.toLowerCase().indexOf('<think>')
+  return (dangling !== -1 ? cleaned.slice(0, dangling) : cleaned).trim()
+}
 
 const EXTRACT_SYSTEM = `Eres Orión, extractor estructurado de propuestas para el consejo de ArchiTechIA.
 
@@ -83,12 +89,26 @@ export async function POST(req: NextRequest) {
   const truncated = text.slice(0, 20000)
 
   const userPrompt = `El siguiente es el contenido de un documento llamado "${file.name}":\n\n${truncated}\n\nExtrae la propuesta formal en JSON.`
-  const safeSystem = EXTRACT_SYSTEM.replace(/'/g, "'\\''")
-  const safeUser = userPrompt.replace(/'/g, "'\\''")
 
   try {
-    const { stdout } = await execAsync(`claude --system-prompt '${safeSystem}' -p '${safeUser}'`, { timeout: 90000 })
-    const raw = stdout.trim()
+    const res = await fetch(OPENCODE_GO_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENCODE_KEY}` },
+      body: JSON.stringify({
+        model: OPENCODE_MODEL,
+        messages: [
+          { role: 'system', content: EXTRACT_SYSTEM },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: 4096,
+      }),
+      signal: AbortSignal.timeout(90_000),
+    })
+    if (!res.ok) {
+      return NextResponse.json({ error: `OpenCode API error ${res.status}`, detail: (await res.text()).slice(0, 300) }, { status: 500 })
+    }
+    const data = await res.json()
+    const raw = stripReasoningTags(data.choices?.[0]?.message?.content ?? '')
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return NextResponse.json({ error: 'Orión no pudo extraer propuesta', raw }, { status: 422 })
 
