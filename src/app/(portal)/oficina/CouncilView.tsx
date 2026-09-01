@@ -295,24 +295,27 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
     loadProposals()
   }, [filterStatus])
 
+  // Poll incondicional mientras haya una propuesta seleccionada. Bug real
+  // encontrado corriendo el ciclo completo en vivo con un trigger EXTERNO
+  // (curl, sin ningun click en el navegador): el polling anterior solo se
+  // armaba si el cliente YA sabia (via loadDetail) que el status estaba en
+  // un set "activo" (DEBATING/PLANNING/ADJUSTING). Si el cambio de estado
+  // ocurre afuera del navegador (el motor encadena PENDING -> DEBATING ->
+  // ADJUSTING -> ADJUST_READY solo, disparado por otra ruta), el cliente
+  // nunca se entera de que el status dejo de ser PENDING, asi que el poll
+  // nunca arranca y la vista queda congelada para siempre hasta un F5
+  // manual. Confirmado real: el servidor completo el ciclo entero en ~2m20s
+  // (5 votos + 5 mensajes de debate + 5 ajustes) mientras el navegador
+  // seguia mostrando PENDING / "Iniciar debate". Fix: dejar de decidir si
+  // pollear en base al status que el cliente ya conoce, y en su lugar
+  // pollear siempre que haya una propuesta seleccionada.
   useEffect(() => {
     if (!selectedId) return
     loadDetail(selectedId)
+    const interval = setInterval(() => loadDetail(selectedId), 5000)
+    pollRef.current = interval
+    return () => { clearInterval(interval); pollRef.current = null }
   }, [selectedId])
-
-  // El polling se reevalua cada vez que cambia el status REAL de la propuesta
-  // seleccionada (no solo cuando el usuario clickea un boton que lo dispara a
-  // mano). Bug real: antes esto solo se decidia UNA VEZ al seleccionar la
-  // propuesta — si el estado avanzaba solo (ej. el motor de debate encadena
-  // Ronda 1 -> Ajustes internamente, sin que el usuario haga otro click), la
-  // vista se quedaba mostrando lo viejo hasta recargar la pagina a mano.
-  useEffect(() => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
-    if (selectedId && ['DEBATING', 'PLANNING', 'ADJUSTING'].includes(selectedProposal?.status ?? '')) {
-      pollRef.current = setInterval(() => loadDetail(selectedId), 5000)
-    }
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [selectedId, selectedProposal?.status])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
