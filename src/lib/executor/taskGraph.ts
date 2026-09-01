@@ -173,8 +173,25 @@ export async function runTaskChain(taskIds: string[]): Promise<Record<string, st
   }
   for (const id of leaves) builder.addEdge(id as never, END)
 
+  // BUG REAL encontrado en produccion reintentando un plan real de 3 tasks
+  // encadenadas: el thread_id era estable (derivado solo de taskIds[0]), asi
+  // que CADA re-invocacion de runTaskChain sobre el mismo conjunto de ids
+  // reusaba el checkpoint guardado en Postgres de la corrida ANTERIOR — el
+  // grafo "recordaba" que un nodo ya habia resuelto en failed (ej. porque su
+  // padre habia fallado la primera vez) y nunca volvia a evaluarlo, aunque
+  // la resumibilidad que agregamos en makeTaskNode (chequear el status REAL
+  // en la base antes de decidir que hacer) sea correcta — nunca llegaba a
+  // ejecutarse porque LangGraph ni siquiera volvia a correr ese nodo. Visto
+  // en vivo: tras arreglar y re-dispatchear la tarea padre a DONE, la tarea
+  // hija seguia quedando BLOCKED de la corrida vieja en vez de re-intentar.
+  // Fix: thread_id unico por invocacion (no por conjunto de tasks), asi cada
+  // llamada arranca el grafo de cero y la UNICA fuente de verdad sobre el
+  // estado de cada tarea es la base de datos real (que es exactamente lo que
+  // makeTaskNode ya chequea) — el checkpointer solo sirve para sobrevivir un
+  // crash DENTRO de una misma invocacion, no para "recordar" entre llamadas.
   const checkpointer = await getCheckpointer()
   const graph = builder.compile({ checkpointer })
-  const finalState = await graph.invoke({}, { configurable: { thread_id: `chain-${taskIds[0]}` } })
+  const threadId = `chain-${taskIds[0]}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const finalState = await graph.invoke({}, { configurable: { thread_id: threadId } })
   return finalState.results
 }

@@ -228,6 +228,18 @@ ejemplo, un task con areaSlug "infra" va con el agente cuya area sea
 "infra", no importa si ese agente no participo del debate). Dejá
 agentSlug en null UNICAMENTE si ningun agente de la lista tiene esa area.
 
+GRANULARIDAD DE TASKS DE CODIGO (areaSlug dev/infra/qa/security/data — las
+que va a ejecutar un agente escribiendo codigo real): el agente que ejecuta
+estas tasks tiene un presupuesto acotado de pasos por tarea. Una task de
+codigo NUNCA debe pedir tocar mas de 2-3 archivos o una sola pieza cohesiva
+de funcionalidad. Si lo que describis requiere crear/modificar mas de eso
+(ej. "integracion OAuth2 completa" = cliente+endpoints+UI son 3 piezas
+distintas), DIVIDILA en varias tasks secuenciales mas chicas encadenadas
+con dependsOnLocalId, cada una con su propio alcance acotado (ej. "Crear
+cliente X", luego "Crear endpoints de X" dependiendo de la anterior, luego
+"Integrar X en la UI" dependiendo de esa). Preferí 3 tasks chicas y
+verificables a 1 sola task ancha que probablemente no termine.
+
 Formato JSON exacto:
 {"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":null,"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"localId":"s1-t1","dependsOnLocalId":null,"title":"...","description":"...","areaSlug":"...","agentSlug":"slug-del-agente-de-esa-area","priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
     } else {

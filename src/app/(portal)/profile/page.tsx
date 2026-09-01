@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 
 interface ProfileData {
-  user: { id: string; name: string; email: string; role: string; avatar: string | null; createdAt: string; googleConnected: boolean };
+  user: { id: string; name: string; email: string; role: string; avatar: string | null; createdAt: string; googleConnected: boolean; microsoftConnected: boolean };
   stats: { leads: number; proposals: number; projects: number; pipelineValue: number; leadsGanados: number };
   recentActivity: { id: string; type: string; description: string; entityType: string; createdAt: string }[];
 }
@@ -520,6 +520,50 @@ export default function ProfilePage() {
               </svg>
               Conectar Google Calendar
             </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Microsoft 365 ── */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile.user.microsoftConnected ? 'bg-blue-900/30' : 'bg-gray-800'}`}>
+              <svg className={`w-5 h-5 ${profile.user.microsoftConnected ? 'text-blue-400' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Microsoft 365</h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {profile.user.microsoftConnected
+                  ? 'Conectado — correo y calendario de Microsoft disponibles'
+                  : 'Conecta tu cuenta de Microsoft 365 para correo y calendario'}
+              </p>
+            </div>
+          </div>
+          {profile.user.microsoftConnected ? (
+            <button
+              onClick={async () => {
+                await fetch('/api/profile', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'disconnectMicrosoft' }),
+                });
+                fetchProfile();
+                updateSession();
+              }}
+              className="px-4 py-2 bg-red-900/30 border border-red-800/50 text-red-400 text-sm rounded-lg hover:bg-red-800/40 transition-colors"
+            >
+              Desconectar
+            </button>
+          ) : (
+            <a
+              href="/api/auth/microsoft"
+              className="px-4 py-2 bg-white text-gray-900 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
+            >
+              Conectar Microsoft 365
+            </a>
           )}
         </div>
       </div>

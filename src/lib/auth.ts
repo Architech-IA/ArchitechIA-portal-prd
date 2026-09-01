@@ -65,6 +65,7 @@ export const authOptions: NextAuthOptions = {
           role:   user.role,
           avatar: user.avatar,
           googleConnected: !!(user.googleAccessToken),
+          microsoftConnected: !!(user.microsoftAccessToken),
         };
       },
     }),
@@ -112,6 +113,7 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as unknown as { role: string }).role;
         token.avatar = (user as unknown as { avatar: string | null }).avatar;
         token.googleConnected = (user as unknown as { googleConnected: boolean }).googleConnected;
+        token.microsoftConnected = (user as unknown as { microsoftConnected: boolean }).microsoftConnected;
       }
       if (account?.provider === 'google') {
         token.googleAccessToken = account.access_token;
@@ -139,10 +141,11 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean }).id   = token.id as string;
-        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean }).role = token.role as string;
-        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean }).avatar = token.avatar as string | null;
-        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean }).googleConnected = !!(token.googleConnected as boolean);
+        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean; microsoftConnected: boolean }).id   = token.id as string;
+        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean; microsoftConnected: boolean }).role = token.role as string;
+        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean; microsoftConnected: boolean }).avatar = token.avatar as string | null;
+        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean; microsoftConnected: boolean }).googleConnected = !!(token.googleConnected as boolean);
+        (session.user as { id: string; role: string; avatar: string | null; googleConnected: boolean; microsoftConnected: boolean }).microsoftConnected = !!(token.microsoftConnected as boolean);
       }
       return session;
     },

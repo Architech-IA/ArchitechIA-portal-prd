@@ -261,11 +261,26 @@ export async function finalizeExecution(opts: {
       }]
     } else {
       try {
+        // BUG REAL encontrado en produccion: sin esto, el verificador solo
+        // veia el resumen en prosa del agente, sin saber que el codigo REAL
+        // ya se escribio a disco y ya paso tsc — rechazaba resumenes
+        // honestos y correctos (ej. "OAuth2 M365 — Endpoints de API") con
+        // motivos como "no incluye el codigo fuente", cuando el codigo ya
+        // estaba escrito y compilado en el repo real. Se le pasa la lista
+        // real de archivos escritos (del toolLog, no de lo que el agente
+        // DICE que escribio) y si el compilador ya confirmo que compilan.
+        const filesWritten = (toolLog ?? [])
+          .filter((t) => t.tool === 'write_file')
+          .map((t) => (t.args as { rel_path?: string })?.rel_path)
+          .filter((p): p is string => Boolean(p))
+
         const verifierResult = await runVerifier({
           taskTitle: task.title,
           taskDescription: task.description,
           acceptanceCriteria: [], // populada desde councilPlan cuando exista
           resultSummary,
+          codeCompiled: codeCheck.ran,
+          filesWritten,
         })
         verifiedStatus = verifierResult.passed ? 'DONE' : 'FAILED'
         checklist = verifierResult.checklist

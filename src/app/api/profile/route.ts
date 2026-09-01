@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const [user, leadsCount, proposalsCount, projectsCount, recentActivity] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, role: true, avatar: true, createdAt: true, googleAccessToken: true },
+      select: { id: true, name: true, email: true, role: true, avatar: true, createdAt: true, googleAccessToken: true, microsoftAccessToken: true },
     }),
     prisma.lead.count({ where: { userId } }),
     prisma.proposal.count({ where: { userId } }),
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const leadsGanados = await prisma.lead.count({ where: { userId, status: 'WON' } });
 
   return NextResponse.json({
-    user: { ...user, googleConnected: !!(user?.googleAccessToken) },
+    user: { ...user, googleConnected: !!(user?.googleAccessToken), microsoftConnected: !!(user?.microsoftAccessToken) },
     stats: {
       leads:         leadsCount,
       proposals:     proposalsCount,
@@ -108,6 +108,20 @@ export async function PUT(request: NextRequest) {
     await prisma.user.update({
       where: { id: userId },
       data: { googleAccessToken: null, googleRefreshToken: null, googleTokenExpiry: null, googleCalendarId: null },
+    });
+    return NextResponse.json({ success: true });
+  }
+
+  // ── Disconnect Microsoft 365 ──
+  if (action === 'disconnectMicrosoft') {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        microsoftAccessToken: null,
+        microsoftRefreshToken: null,
+        microsoftTokenExpiry: null,
+        microsoftAccountEmail: null,
+      },
     });
     return NextResponse.json({ success: true });
   }

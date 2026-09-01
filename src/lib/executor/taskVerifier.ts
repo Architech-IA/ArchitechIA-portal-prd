@@ -27,18 +27,35 @@ export async function runVerifier(opts: {
   taskDescription: string | null
   acceptanceCriteria: string[]
   resultSummary: string
+  // BUG REAL encontrado en produccion: el verificador solo veia el resumen
+  // en prosa que escribe el agente al final ("cree estos 3 endpoints con
+  // tal comportamiento"), sin ninguna señal de que el codigo REAL ya fue
+  // escrito a disco y ya paso el compilador real (tsc --noEmit, corrido
+  // ANTES de este verificador en finalizeExecution). Sin ese contexto, un
+  // resumen honesto y correcto en texto plano (que es literalmente lo que
+  // el propio system prompt del agente le pide: "respondé con un resumen
+  // breve en texto plano") se rechazaba con motivos como "no incluye el
+  // codigo fuente" — un falso negativo real, visto en vivo con task
+  // "OAuth2 M365 — Endpoints de API": tsc paso, pero Sigma lo reprobo
+  // igual por esperar ver codigo pegado en el texto.
+  codeCompiled?: boolean
+  filesWritten?: string[]
 }): Promise<VerifierResult> {
-  const { taskTitle, taskDescription, resultSummary } = opts
+  const { taskTitle, taskDescription, resultSummary, codeCompiled, filesWritten } = opts
 
   const criteria = opts.acceptanceCriteria?.length
     ? opts.acceptanceCriteria
     : [`El resultado responde realmente a lo que pide la tarea "${taskTitle}"${taskDescription ? `: ${taskDescription}` : ''}. No alcanza con que el resultado no este vacio — tiene que responder lo pedido.`]
 
+  const codeContext = (filesWritten && filesWritten.length > 0)
+    ? `\nCONTEXTO REAL DE EJECUCIÓN (verificado por el sistema, no por el agente): el agente escribió realmente estos archivos en el repo: ${filesWritten.join(', ')}.${codeCompiled ? ' El compilador real (tsc --noEmit) confirmó que el código compila sin errores.' : ''} NO le exijas que pegue el código fuente dentro del resumen — el código ya existe y compiló en el repo real; tu trabajo es juzgar si el ALCANCE descrito en el resumen responde razonablemente a la tarea, no el formato del texto.\n`
+    : ''
+
   const userPrompt = `Evalúa si la siguiente tarea fue completada exitosamente. No juzgues por la longitud de la respuesta — una respuesta corta puede ser perfectamente correcta, y una respuesta larga puede no responder nada de lo pedido.
 
 TAREA: ${taskTitle}
 ${taskDescription ? `DESCRIPCIÓN: ${taskDescription}` : ''}
-
+${codeContext}
 CRITERIOS DE ACEPTACIÓN:
 ${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
 
