@@ -198,6 +198,7 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   const [filterStatus, setFilterStatus] = useState<string>('')
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const lastMessageCountRef = useRef(0)
   const [activeChatTab, setActiveChatTab] = useState<string | null>(null)
   const [starting, setStarting] = useState(false)
   const [showDesc, setShowDesc] = useState(false)
@@ -311,14 +312,26 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   // pollear siempre que haya una propuesta seleccionada.
   useEffect(() => {
     if (!selectedId) return
+    lastMessageCountRef.current = 0
     loadDetail(selectedId)
     const interval = setInterval(() => loadDetail(selectedId), 5000)
     pollRef.current = interval
     return () => { clearInterval(interval); pollRef.current = null }
   }, [selectedId])
 
+  // El poll de arriba corre cada 5s indefinidamente mientras haya una
+  // propuesta seleccionada (incluso ya cerrada, ADJUST_READY/APPROVED/etc),
+  // y cada tick reemplaza "messages" con un array nuevo aunque el contenido
+  // no haya cambiado. Bug real reportado por el usuario: eso hacia que la
+  // vista scrolleara sola al final cada pocos segundos, incluso si el
+  // usuario habia scrolleado arriba a proposito para releer mensajes viejos.
+  // Fix: solo hacer scroll cuando realmente llego un mensaje nuevo (creceo
+  // la cantidad), no en cada refresco del poll.
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > lastMessageCountRef.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+    lastMessageCountRef.current = messages.length
   }, [messages])
 
   useEffect(() => {
