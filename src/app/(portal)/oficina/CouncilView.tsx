@@ -198,6 +198,7 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   const [filterStatus, setFilterStatus] = useState<string>('')
   const chatEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const [activeChatTab, setActiveChatTab] = useState<string | null>(null)
   const [starting, setStarting] = useState(false)
   const [showDesc, setShowDesc] = useState(false)
   // Tab mode
@@ -297,13 +298,21 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   useEffect(() => {
     if (!selectedId) return
     loadDetail(selectedId)
-    if (pollRef.current) clearInterval(pollRef.current)
-    const p = proposals.find(pr => pr.id === selectedId)
-    if (['DEBATING','PLANNING','ADJUSTING'].includes(p?.status ?? '')) {
+  }, [selectedId])
+
+  // El polling se reevalua cada vez que cambia el status REAL de la propuesta
+  // seleccionada (no solo cuando el usuario clickea un boton que lo dispara a
+  // mano). Bug real: antes esto solo se decidia UNA VEZ al seleccionar la
+  // propuesta — si el estado avanzaba solo (ej. el motor de debate encadena
+  // Ronda 1 -> Ajustes internamente, sin que el usuario haga otro click), la
+  // vista se quedaba mostrando lo viejo hasta recargar la pagina a mano.
+  useEffect(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+    if (selectedId && ['DEBATING', 'PLANNING', 'ADJUSTING'].includes(selectedProposal?.status ?? '')) {
       pollRef.current = setInterval(() => loadDetail(selectedId), 5000)
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [selectedId])
+  }, [selectedId, selectedProposal?.status])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -513,8 +522,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
       })
       if (res.ok) {
         setProposals(prev => prev.map(p => p.id === selectedId ? { ...p, status: 'DEBATING' } : p))
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(() => loadDetail(selectedId), 5000)
         loadDetail(selectedId)
       }
     } finally {
@@ -534,8 +541,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
         setSelectedId(proposalId)
         setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'DEBATING' } : p))
         await loadDetail(proposalId)
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
       }
     } finally {
       setStarting(false)
@@ -593,8 +598,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
       if (res.ok) {
         // 202 = negotiation started in background; update UI optimistically + start polling
         setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'DEBATING' } : p))
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
         loadDetail(proposalId)
       }
     } finally { setNegotiating(false) }
@@ -617,8 +620,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
         setHumanComment('')
         setProposals(prev => prev.map(p => p.id === proposalId
           ? { ...p, status: phase === 'plan' ? 'PLANNING' : 'ADJUSTING' } : p))
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
       }
     } finally { setSubmittingComment(false) }
   }
@@ -633,8 +634,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
       })
       if (res.ok) {
         setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'PLANNING' } : p))
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
       }
     } finally { setStarting(false) }
   }
@@ -662,8 +661,6 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
       })
       if (res.ok) {
         setProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'PLANNING' } : p))
-        if (pollRef.current) clearInterval(pollRef.current)
-        pollRef.current = setInterval(() => loadDetail(proposalId), 5000)
       }
     } finally { setStarting(false) }
   }
@@ -706,6 +703,31 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
   }, {})
   const planningMsgs = messages.filter(m => m.round >= 10 && m.round < 20)
   const adjustingMsgs = messages.filter(m => m.round >= 20)
+
+  // Antes todo esto se pintaba en un solo lienzo continuo (Ronda 1, luego
+  // Ajustes, etc. uno debajo del otro) — a pedido, ahora cada fase es una
+  // pestaña separada. El orden respeta la convencion real de "round" que ya
+  // usa el backend: 1,2... son rondas de debate; 10-19 planificacion; 20+
+  // ajustes — asi que alcanza con ordenar por esos rangos, no hace falta
+  // inventar un orden nuevo.
+  const chatPhases: { key: string; label: string; msgs: DebateMsg[] }[] = [
+    ...Object.keys(byRound).map(Number).sort((a, b) => a - b).map((r) => ({
+      key: `round-${r}`, label: `Ronda ${r}`, msgs: byRound[r],
+    })),
+    ...(planningMsgs.length > 0 ? [{ key: 'planning', label: '🧠 Planificación', msgs: planningMsgs }] : []),
+    ...(adjustingMsgs.length > 0 ? [{ key: 'adjusting', label: '🔄 Ajustes', msgs: adjustingMsgs }] : []),
+  ]
+  const chatPhaseKeys = chatPhases.map((p) => p.key).join(',')
+
+  // Salta automaticamente a la fase mas nueva cuando aparece una (ej. cuando
+  // el polling trae por primera vez los mensajes de "Ajustes" tras terminar
+  // la Ronda 1) — asi el usuario ve que avanzo sin tener que buscar la
+  // pestaña el mismo. Se dispara solo cuando el CONJUNTO de fases cambia
+  // (nueva fase agregada, o cambio de propuesta seleccionada), no en cada
+  // poll que no trae nada nuevo.
+  useEffect(() => {
+    if (chatPhases.length > 0) setActiveChatTab(chatPhases[chatPhases.length - 1].key)
+  }, [chatPhaseKeys])
 
   // ── Shared extracted proposal preview panel ──
   function ExtractedPreview({
@@ -1779,7 +1801,24 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
               </div>
             )}
 
-            {/* Debate messages */}
+            {/* Tabs por fase — Ronda 1, Ronda 2, Planificación, Ajustes, cada
+                una por separado en vez de todo en un solo lienzo continuo */}
+            {chatPhases.length > 1 && (
+              <div className="flex items-center gap-1 px-4 pt-3 border-b border-white/5 flex-shrink-0 overflow-x-auto">
+                {chatPhases.map((phase) => (
+                  <button key={phase.key}
+                    onClick={() => setActiveChatTab(phase.key)}
+                    className="px-3 py-1.5 text-[10px] font-bold rounded-t-lg transition-colors whitespace-nowrap"
+                    style={activeChatTab === phase.key
+                      ? { background: 'rgba(99,102,241,0.15)', color: '#818cf8', borderBottom: '2px solid #818cf8' }
+                      : { color: '#6b7280', borderBottom: '2px solid transparent' }}>
+                    {phase.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Debate messages — solo la fase activa */}
             <div className="px-4 py-4 space-y-4">
               {detailLoading && messages.length === 0 ? (
                 <div className="flex items-center gap-2 justify-center py-8 text-gray-600 text-xs">
@@ -1791,118 +1830,43 @@ export default function CouncilView({ mode: modeProp, setMode: setModeProp, show
                   <p className="text-[11px] text-gray-700">El debate no ha comenzado.</p>
                 </div>
               ) : (
-                <>
-                  {/* PLANNING phase messages */}
-                  {planningMsgs.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="h-px flex-1" style={{ background: 'rgba(99,102,241,0.25)' }} />
-                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
-                              style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
-                          🧠 Debate · Planificación
-                        </span>
-                        <div className="h-px flex-1" style={{ background: 'rgba(99,102,241,0.25)' }} />
-                      </div>
-                      <div className="space-y-3">
-                        {planningMsgs.map(msg => {
-                          const color = agentColor(msg.agentSlug, msg.agentName)
-                          return (
-                            <div key={msg.id} className="flex gap-2.5">
-                              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
-                                   style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
-                                {agentInitials(msg.agentName)}
+                (() => {
+                  const active = chatPhases.find((p) => p.key === activeChatTab) ?? chatPhases[chatPhases.length - 1]
+                  if (!active) return null
+                  const isRoundTab = active.key.startsWith('round-')
+                  return (
+                    <div className="space-y-3">
+                      {active.msgs.map((msg) => {
+                        const color = agentColor(msg.agentSlug, msg.agentName)
+                        // Los mensajes de sintesis de Orion en rondas de debate
+                        // pueden traer el JSON crudo pegado al final — se corta
+                        // en el cliente. Planificacion/Ajustes ya vienen
+                        // limpios desde el servidor (se recorta ahi mismo).
+                        const content = isRoundTab && msg.agentSlug === 'orion' && msg.content.includes('{')
+                          ? msg.content.split('{')[0].trim()
+                          : msg.content
+                        return (
+                          <div key={msg.id} className="flex gap-2.5">
+                            <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
+                                 style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
+                              {agentInitials(msg.agentName)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 mb-1">
+                                <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
+                                <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2 mb-1">
-                                  <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
-                                  <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
-                                </div>
-                                <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
-                                     style={{ background: color + '0a', border: `1px solid ${color}18` }}>
-                                  {msg.content}
-                                </div>
+                              <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
+                                   style={{ background: color + '0a', border: `1px solid ${color}18` }}>
+                                {content}
                               </div>
                             </div>
-                          )
-                        })}
-                      </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  )}
-
-                  {/* ADJUSTING phase messages */}
-                  {adjustingMsgs.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.25)' }} />
-                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
-                              style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24' }}>
-                          🔄 Debate · Ajustes
-                        </span>
-                        <div className="h-px flex-1" style={{ background: 'rgba(245,158,11,0.25)' }} />
-                      </div>
-                      <div className="space-y-3">
-                        {adjustingMsgs.map(msg => {
-                          const color = agentColor(msg.agentSlug, msg.agentName)
-                          return (
-                            <div key={msg.id} className="flex gap-2.5">
-                              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
-                                   style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
-                                {agentInitials(msg.agentName)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2 mb-1">
-                                  <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
-                                  <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
-                                </div>
-                                <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
-                                     style={{ background: color + '0a', border: `1px solid ${color}18` }}>
-                                  {msg.content}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* VOTE DEBATE messages by round */}
-                  {Object.entries(byRound).map(([round, msgs]) => (
-                    <div key={round}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="h-px flex-1" style={{ background: 'rgba(139,92,246,0.2)' }} />
-                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
-                              style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>
-                          Ronda {round}
-                        </span>
-                        <div className="h-px flex-1" style={{ background: 'rgba(139,92,246,0.2)' }} />
-                      </div>
-                      <div className="space-y-3">
-                        {msgs.map(msg => {
-                          const color = agentColor(msg.agentSlug, msg.agentName)
-                          return (
-                            <div key={msg.id} className="flex gap-2.5">
-                              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
-                                   style={{ background: color + '25', color, border: `1.5px solid ${color}40` }}>
-                                {agentInitials(msg.agentName)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2 mb-1">
-                                  <span className="text-[11px] font-bold" style={{ color }}>{msg.agentName}</span>
-                                  <span className="text-[9px] text-gray-700">{formatTs(msg.createdAt)}</span>
-                                </div>
-                                <div className="rounded-xl px-3 py-2 text-[11px] text-gray-300 leading-relaxed"
-                                     style={{ background: color + '0a', border: `1px solid ${color}18` }}>
-                                  {msg.agentSlug === 'orion' && msg.content.includes('{') ? msg.content.split('{')[0].trim() : msg.content}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </>
+                  )
+                })()
               )}
               <div ref={chatEndRef} />
             </div>
