@@ -335,62 +335,33 @@ function iconGlyph(kind: string): string {
 function Styles() {
   return (
     <style>{`
+      /* Mismos tokens reales del portal que la vista de un solo sprint —
+         ver esa Styles() para la explicacion completa del liquid glass. */
       .sala-control {
-        --bg: #f5f6fa; --surface: #ffffff; --surface-2: #eef0f7; --border: #dde1ec;
-        --text: #161a26; --text-muted: #5c6478; --text-faint: #8990a4;
-        --accent: #4552d6; --accent-soft: #e7e9fb;
-        --stage-bg: #eef0f7; --stage-grid: #dde1ec;
-        --s-pending: #9aa1b5; --s-pending-soft: #eceef3;
-        --s-running: #2f6fed; --s-running-soft: #e5edfe;
-        --s-done: #1f9d55; --s-done-soft: #e3f6ea;
-        --s-failed: #e0393e; --s-failed-soft: #fbe6e6;
-        --s-blocked: #c97514; --s-blocked-soft: #fbeed9;
-        --shadow: 0 1px 2px rgba(20,24,38,.04), 0 8px 24px -12px rgba(20,24,38,.12);
-        background: var(--bg); color: var(--text); min-height: 100vh;
-        font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
-      }
-      @media (prefers-color-scheme: dark) {
-        .sala-control:not([data-theme="light"]) {
-          --bg: #0a0d16; --surface: #10141f; --surface-2: #161b29; --border: #232a3d;
-          --text: #e8eaf4; --text-muted: #99a1b8; --text-faint: #666f89;
-          --accent: #7784ff; --accent-soft: rgba(119,132,255,.16);
-          --stage-bg: #0d1120; --stage-grid: #1b2133;
-          --s-pending: #737d99; --s-pending-soft: #1a2033;
-          --s-running: #5b8dff; --s-running-soft: rgba(91,141,255,.14);
-          --s-done: #3ddc84; --s-done-soft: rgba(61,220,132,.13);
-          --s-failed: #ff5c61; --s-failed-soft: rgba(255,92,97,.14);
-          --s-blocked: #ffb03d; --s-blocked-soft: rgba(255,176,61,.14);
-          --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
-        }
-      }
-      .sala-control[data-theme="dark"] {
-        --bg: #0a0d16; --surface: #10141f; --surface-2: #161b29; --border: #232a3d;
-        --text: #e8eaf4; --text-muted: #99a1b8; --text-faint: #666f89;
-        --accent: #7784ff; --accent-soft: rgba(119,132,255,.16);
-        --stage-bg: #0d1120; --stage-grid: #1b2133;
-        --s-pending: #737d99; --s-pending-soft: #1a2033;
-        --s-running: #5b8dff; --s-running-soft: rgba(91,141,255,.14);
-        --s-done: #3ddc84; --s-done-soft: rgba(61,220,132,.13);
-        --s-failed: #ff5c61; --s-failed-soft: rgba(255,92,97,.14);
-        --s-blocked: #ffb03d; --s-blocked-soft: rgba(255,176,61,.14);
-        --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+        --s-pending: var(--text-muted); --s-pending-soft: rgba(100,116,139,0.14);
+        --s-running: var(--cyan); --s-running-soft: var(--cyan-dim);
+        --s-done: var(--success); --s-done-soft: var(--success-dim);
+        --s-failed: var(--error); --s-failed-soft: rgba(239,68,68,0.14);
+        --s-blocked: var(--warning); --s-blocked-soft: rgba(245,158,11,0.14);
+        background: transparent; color: var(--text-primary); min-height: 100%;
+        position: relative; z-index: 1;
       }
       .sala-control * { box-sizing: border-box; }
-      .sala-control .mono { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace; }
-      .sala-control .app { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 280px; }
-      .sala-control .topbar { display: flex; align-items: center; gap: 20px; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
+      .sala-control .mono { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; }
+      .sala-control .app { display: flex; flex-direction: column; min-height: 100%; padding-bottom: 280px; }
+      .sala-control .topbar { display: flex; align-items: center; gap: 20px; padding: 16px 24px; border-bottom: 1px solid var(--border-base); background: var(--bg-elevated); backdrop-filter: blur(20px); flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
       .sala-control .brand { display: flex; align-items: baseline; gap: 10px; margin-right: 4px; }
-      .sala-control .brand-mark { width: 9px; height: 9px; border-radius: 2px; background: var(--accent); display: inline-block; transform: rotate(45deg); flex: none; }
+      .sala-control .brand-mark { width: 9px; height: 9px; border-radius: 2px; background: var(--primary); display: inline-block; transform: rotate(45deg); flex: none; }
       .sala-control .brand h1 { font-size: 16px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
-      .sala-control .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 13px; flex-wrap: wrap; }
-      .sala-control .back-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+      .sala-control .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; flex-wrap: wrap; }
+      .sala-control .back-link { color: var(--primary-light); text-decoration: none; font-weight: 600; }
       .sala-control .back-link:hover { text-decoration: underline; }
-      .sala-control .sep { color: var(--text-faint); }
+      .sala-control .sep { color: var(--text-muted); }
       .sala-control .topbar-spacer { flex: 1; }
       .sala-control .status-summary { display: flex; gap: 6px; flex-wrap: wrap; }
-      .sala-control .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px 5px 8px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
+      .sala-control .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px 5px 8px; border-radius: 100px; border: 1px solid var(--border-base); background: var(--glass-bg); color: var(--text-secondary); }
       .sala-control .chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-      .sala-control .chip strong { color: var(--text); font-variant-numeric: tabular-nums; }
+      .sala-control .chip strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
       .sala-control .chip.c-done .dot { background: var(--s-done); }
       .sala-control .chip.c-running .dot { background: var(--s-running); }
       .sala-control .chip.c-blocked .dot { background: var(--s-blocked); }
@@ -400,21 +371,21 @@ function Styles() {
       .sala-control .stage-wrap { padding: 18px 24px 6px; }
       .sala-control .stage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
       .sala-control .stage-title-block { display: flex; align-items: baseline; gap: 8px; }
-      .sala-control .stage-title { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent); }
-      .sala-control .stage-name { font-size: 13.5px; font-weight: 700; }
-      .sala-control .stage { position: relative; background: var(--stage-bg); border: 1px solid var(--border); border-radius: 14px; overflow: auto; background-image: linear-gradient(var(--stage-grid) 1px, transparent 1px), linear-gradient(90deg, var(--stage-grid) 1px, transparent 1px); background-size: 28px 28px; max-height: 46vh; }
+      .sala-control .stage-title { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; font-size: 12px; font-weight: 700; color: var(--primary-light); }
+      .sala-control .stage-name { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+      .sala-control .stage { position: relative; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: auto; background-image: linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px); background-size: 28px 28px; max-height: 46vh; }
       .sala-control .stage-inner { position: relative; }
       .sala-control .empty-graph { padding: 40px; color: var(--text-muted); font-size: 13px; }
       .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
-      .sala-control svg.connectors path { fill: none; stroke: var(--text-faint); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
-      .sala-control svg.connectors path.live { stroke: var(--s-running); opacity: .85; stroke-dasharray: 5 4; animation: dash 1.1s linear infinite; }
+      .sala-control svg.connectors path { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+      .sala-control svg.connectors path.live { stroke: var(--s-running); opacity: .9; stroke-dasharray: 5 4; animation: dash 1.1s linear infinite; }
       @media (prefers-reduced-motion: reduce) { .sala-control svg.connectors path.live { animation: none; } }
       @keyframes dash { to { stroke-dashoffset: -18; } }
-      .sala-control .node { position: absolute; border-radius: 11px; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); padding: 10px 12px 11px; cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
+      .sala-control .node { position: absolute; border-radius: var(--radius); border: 1px solid var(--border-base); background: var(--bg-card); backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.02); padding: 10px 12px 11px; cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
       .sala-control .node:hover { transform: translateY(-1px); }
-      .sala-control .node.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow); }
+      .sala-control .node.selected { border-color: rgba(255,90,0,0.4); box-shadow: 0 0 0 2px var(--primary-dim), 0 4px 24px rgba(0,0,0,0.45); }
       .sala-control .node-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 6px; }
-      .sala-control .node-code { font-size: 10.5px; color: var(--text-faint); letter-spacing: .02em; }
+      .sala-control .node-code { font-size: 10.5px; color: var(--text-muted); letter-spacing: .02em; }
       .sala-control .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 100px; white-space: nowrap; }
       .sala-control .pill .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
       .sala-control .pill.done { background: var(--s-done-soft); color: var(--s-done); }
@@ -427,32 +398,32 @@ function Styles() {
       .sala-control .pill.blocked .dot { background: var(--s-blocked); }
       .sala-control .pill.failed { background: var(--s-failed-soft); color: var(--s-failed); }
       .sala-control .pill.failed .dot { background: var(--s-failed); }
-      .sala-control .pill.pending { background: var(--s-pending-soft); color: var(--text-muted); }
+      .sala-control .pill.pending { background: var(--s-pending-soft); color: var(--text-secondary); }
       .sala-control .pill.pending .dot { background: var(--s-pending); }
-      .sala-control .node-title { font-size: 12.5px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+      .sala-control .node-title { font-size: 12.5px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; color: var(--text-primary); }
       .sala-control .node-foot { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-muted); gap: 6px; }
       .sala-control .node-foot .agent { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .sala-control .avatar { width: 15px; height: 15px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 8.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+      .sala-control .avatar { width: 15px; height: 15px; border-radius: 50%; background: var(--primary-dim); color: var(--primary-light); font-size: 8.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
       .sala-control .trace-wrap { padding: 14px 24px 24px; }
-      .sala-control .trace-wrap.sticky-trace { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--border); z-index: 30; max-height: 260px; }
-      .sala-control .trace-panel { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; max-height: 230px; }
-      .sala-control .trace-head { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); flex-wrap: wrap; }
+      .sala-control .trace-wrap.sticky-trace { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg-elevated); backdrop-filter: blur(20px); border-top: 1px solid var(--border-base); z-index: 30; max-height: 260px; }
+      .sala-control .trace-panel { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: hidden; max-height: 230px; }
+      .sala-control .trace-head { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border-base); background: var(--glass-bg); flex-wrap: wrap; }
       .sala-control .trace-head .t-code { font-size: 12px; color: var(--text-muted); }
-      .sala-control .trace-head .t-title { font-size: 13px; font-weight: 700; }
+      .sala-control .trace-head .t-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
       .sala-control .trace-head-spacer { flex: 1; }
-      .sala-control .trace-head .t-dur { font-size: 11.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+      .sala-control .trace-head .t-dur { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
       .sala-control .trace-body { flex: 1; overflow: auto; padding: 12px 18px 14px; }
       .sala-control .trace-line { display: grid; grid-template-columns: 70px 16px 1fr; gap: 10px; align-items: start; padding: 3px 0; font-size: 12.5px; line-height: 1.55; }
-      .sala-control .trace-line .t-time { color: var(--text-faint); font-variant-numeric: tabular-nums; font-size: 11.5px; padding-top: 1px; }
+      .sala-control .trace-line .t-time { color: var(--text-muted); font-variant-numeric: tabular-nums; font-size: 11.5px; padding-top: 1px; }
       .sala-control .trace-line .t-icon { width: 16px; height: 16px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; margin-top: 1px; }
-      .sala-control .i-info { background: var(--surface-2); color: var(--text-faint); border: 1px solid var(--border); }
-      .sala-control .i-write { background: var(--accent-soft); color: var(--accent); }
+      .sala-control .i-info { background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--border-base); }
+      .sala-control .i-write { background: var(--primary-dim); color: var(--primary-light); }
       .sala-control .i-check { background: var(--s-done-soft); color: var(--s-done); }
       .sala-control .i-run { background: var(--s-running-soft); color: var(--s-running); }
       .sala-control .i-fail { background: var(--s-failed-soft); color: var(--s-failed); }
-      .sala-control .trace-line .t-msg { color: var(--text); word-break: break-word; }
+      .sala-control .trace-line .t-msg { color: var(--text-primary); word-break: break-word; }
       .sala-control .trace-line .t-msg .muted { color: var(--text-muted); }
-      .sala-control .trace-empty-note { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; background: var(--surface-2); border: 1px dashed var(--border); color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+      .sala-control .trace-empty-note { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; background: var(--glass-bg); border: 1px dashed var(--border-base); color: var(--text-secondary); font-size: 12.5px; line-height: 1.5; }
       .sala-control .trace-cursor { display: inline-block; width: 6px; height: 12px; background: var(--s-running); margin-left: 2px; vertical-align: -2px; animation: blink 1s step-end infinite; }
       @media (prefers-reduced-motion: reduce) { .sala-control .trace-cursor { animation: none; } }
       @keyframes blink { 50% { opacity: 0; } }
