@@ -337,9 +337,9 @@ function ControlMultiPageInner() {
             <h1>Sala de Control</h1>
           </div>
           <nav className="breadcrumb">
-            <Link href="/backlog/control" className="back-link">← Elegir sprints</Link>
+            <Link href="/backlog/control" className="back-link">← Sprints</Link>
             <span className="sep">·</span>
-            <span>{ids.length} sprint{ids.length !== 1 ? 's' : ''} en pantalla</span>
+            <span>({ids.length})</span>
           </nav>
           <div className="topbar-spacer" />
           <div className="status-summary">
