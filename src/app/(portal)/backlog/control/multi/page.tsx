@@ -1,0 +1,461 @@
+'use client'
+
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+
+interface Task {
+  id: string
+  taskCode: string | null
+  title: string
+  status: string
+  assigneeName: string | null
+  dependsOnTaskId: string | null
+  execId: string | null
+  startedAt: string | null
+  finishedAt: string | null
+}
+interface Sprint {
+  id: string; name: string; goal: string | null; sprintCode: string | null; status: string
+  epicName: string | null; solucionNombre: string | null
+}
+interface GraphData { sprint: Sprint; tasks: Task[] }
+interface TraceEvent { id: string; kind: string; message: string; createdAt: string }
+
+const STATUS_MAP: Record<string, { label: string; pill: string }> = {
+  BACKLOG: { label: 'En cola', pill: 'pending' },
+  IN_PROGRESS: { label: 'En curso', pill: 'running' },
+  DONE: { label: 'Hecha', pill: 'done' },
+  FAILED: { label: 'Fallida', pill: 'failed' },
+  BLOCKED: { label: 'Bloqueada', pill: 'blocked' },
+  CANCELLED: { label: 'Cancelada', pill: 'pending' },
+}
+
+const COL_WIDTH = 230
+const NODE_WIDTH = 200
+const ROW_HEIGHT = 100
+const STAGE_PAD = 24
+
+function formatDuration(startedAt: string | null, finishedAt: string | null): string {
+  if (!startedAt) return '—'
+  const start = new Date(startedAt).getTime()
+  const end = finishedAt ? new Date(finishedAt).getTime() : Date.now()
+  const secs = Math.max(0, Math.round((end - start) / 1000))
+  if (secs < 60) return `${secs}s`
+  return `${Math.floor(secs / 60)}m ${secs % 60}s`
+}
+
+function computeLayout(tasks: Task[]) {
+  const byId = new Map(tasks.map((t) => [t.id, t]))
+  const childrenOf = new Map<string | null, Task[]>()
+  for (const t of tasks) {
+    const parent = t.dependsOnTaskId && byId.has(t.dependsOnTaskId) ? t.dependsOnTaskId : null
+    if (!childrenOf.has(parent)) childrenOf.set(parent, [])
+    childrenOf.get(parent)!.push(t)
+  }
+  const level = new Map<string, number>()
+  const row = new Map<string, number>()
+  const rowsUsedPerLevel: number[] = []
+  function place(t: Task, depth: number) {
+    level.set(t.id, depth)
+    const r = rowsUsedPerLevel[depth] ?? 0
+    row.set(t.id, r)
+    rowsUsedPerLevel[depth] = r + 1
+    for (const child of childrenOf.get(t.id) ?? []) place(child, depth + 1)
+  }
+  for (const root of childrenOf.get(null) ?? []) place(root, 0)
+  const maxLevel = Math.max(0, ...Array.from(level.values()))
+  const maxRow = Math.max(0, ...Array.from(row.values()))
+  const pos = new Map<string, { x: number; y: number }>()
+  for (const t of tasks) {
+    const l = level.get(t.id) ?? 0
+    const r = row.get(t.id) ?? 0
+    pos.set(t.id, { x: STAGE_PAD + l * COL_WIDTH, y: STAGE_PAD + r * ROW_HEIGHT })
+  }
+  return {
+    pos,
+    width: STAGE_PAD * 2 + (maxLevel + 1) * COL_WIDTH,
+    height: STAGE_PAD * 2 + (maxRow + 1) * ROW_HEIGHT,
+  }
+}
+
+function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selectedId: string | null; onSelect: (t: Task) => void }) {
+  const layout = useMemo(() => computeLayout(data.tasks), [data.tasks])
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [connectors, setConnectors] = useState<{ d: string; live: boolean }[]>([])
+
+  useEffect(() => {
+    if (!stageRef.current) return
+    const stageRect = stageRef.current.getBoundingClientRect()
+    const next: { d: string; live: boolean }[] = []
+    for (const t of data.tasks) {
+      if (!t.dependsOnTaskId) continue
+      const parentEl = stageRef.current.querySelector<HTMLElement>(`[data-node="${t.dependsOnTaskId}"]`)
+      const childEl = stageRef.current.querySelector<HTMLElement>(`[data-node="${t.id}"]`)
+      if (!parentEl || !childEl) continue
+      const pr = parentEl.getBoundingClientRect()
+      const cr = childEl.getBoundingClientRect()
+      const x1 = pr.right - stageRect.left
+      const y1 = pr.top + pr.height / 2 - stageRect.top
+      const x2 = cr.left - stageRect.left
+      const y2 = cr.top + cr.height / 2 - stageRect.top
+      const midX = x1 + (x2 - x1) / 2
+      const d = y1 === y2 ? `M ${x1} ${y1} L ${x2} ${y2}` : `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`
+      const parentTask = data.tasks.find((p) => p.id === t.dependsOnTaskId)
+      next.push({ d, live: t.status === 'IN_PROGRESS' || parentTask?.status === 'IN_PROGRESS' })
+    }
+    setConnectors(next)
+  }, [data])
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { done: 0, running: 0, blocked: 0, failed: 0, pending: 0 }
+    for (const t of data.tasks) c[STATUS_MAP[t.status]?.pill ?? 'pending'] += 1
+    return c
+  }, [data])
+
+  return (
+    <section className="stage-wrap">
+      <div className="stage-header">
+        <div className="stage-title-block">
+          <span className="stage-title">{data.sprint.sprintCode ?? data.sprint.id.slice(0, 8)}</span>
+          <span className="stage-name">{data.sprint.name}</span>
+        </div>
+        <div className="status-summary">
+          <span className="chip c-done"><i className="dot" />{counts.done}</span>
+          <span className="chip c-running"><i className="dot" />{counts.running}</span>
+          <span className="chip c-blocked"><i className="dot" />{counts.blocked}</span>
+          <span className="chip c-failed"><i className="dot" />{counts.failed}</span>
+          <span className="chip c-pending"><i className="dot" />{counts.pending}</span>
+        </div>
+      </div>
+      <div className="stage">
+        <div className="stage-inner" ref={stageRef} style={{ width: layout.width, height: layout.height }}>
+          <svg className="connectors" width={layout.width} height={layout.height}>
+            {connectors.map((c, i) => <path key={i} d={c.d} className={c.live ? 'live' : ''} />)}
+          </svg>
+          {data.tasks.map((t) => {
+            const p = layout.pos.get(t.id)
+            const st = STATUS_MAP[t.status] ?? STATUS_MAP.BACKLOG
+            const initial = (t.assigneeName ?? '?').charAt(0).toUpperCase()
+            return (
+              <div
+                key={t.id}
+                data-node={t.id}
+                className={`node ${selectedId === t.id ? 'selected' : ''}`}
+                style={{ left: p?.x ?? 0, top: p?.y ?? 0, width: NODE_WIDTH }}
+                onClick={() => onSelect(t)}
+              >
+                <div className="node-top">
+                  <span className="node-code mono">{t.taskCode ?? t.id.slice(0, 8)}</span>
+                  <span className={`pill ${st.pill}`}><span className="dot" />{st.label}</span>
+                </div>
+                <div className="node-title">{t.title}</div>
+                <div className="node-foot">
+                  <span className="agent"><span className="avatar">{initial}</span>{t.assigneeName ?? 'Sin asignar'}</span>
+                  <span className="mono">{formatDuration(t.startedAt, t.finishedAt)}</span>
+                </div>
+              </div>
+            )
+          })}
+          {data.tasks.length === 0 && <div className="empty-graph">Este sprint todavía no tiene tasks.</div>}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default function ControlMultiPage() {
+  return (
+    <Suspense fallback={null}>
+      <ControlMultiPageInner />
+    </Suspense>
+  )
+}
+
+function ControlMultiPageInner() {
+  const searchParams = useSearchParams()
+  const ids = useMemo(
+    () => (searchParams.get('ids') ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+    [searchParams]
+  )
+
+  const [graphs, setGraphs] = useState<Record<string, GraphData>>({})
+  const [selected, setSelected] = useState<Task | null>(null)
+  const [events, setEvents] = useState<TraceEvent[]>([])
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadAll() {
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const res = await fetch(`/api/backlog/sprint/${id}/graph`)
+            if (!res.ok) return null
+            const json: GraphData = await res.json()
+            return [id, json] as const
+          } catch {
+            return null
+          }
+        })
+      )
+      if (cancelled) return
+      const next: Record<string, GraphData> = {}
+      for (const r of results) if (r) next[r[0]] = r[1]
+      setGraphs(next)
+      setSelected((prev) => {
+        if (prev) {
+          for (const g of Object.values(next)) {
+            const stillThere = g.tasks.find((t) => t.id === prev.id)
+            if (stillThere) return stillThere
+          }
+        }
+        for (const g of Object.values(next)) {
+          const running = g.tasks.find((t) => t.status === 'IN_PROGRESS')
+          if (running) return running
+        }
+        return prev
+      })
+    }
+    loadAll()
+    const poll = setInterval(loadAll, 5000)
+    return () => { cancelled = true; clearInterval(poll) }
+  }, [ids.join(',')])
+
+  useEffect(() => {
+    if (!selected) { setEvents([]); return }
+    let cancelled = false
+    async function loadEvents() {
+      try {
+        const res = await fetch(`/api/executor/event?taskId=${selected!.id}`)
+        if (!res.ok) return
+        const json: TraceEvent[] = await res.json()
+        if (!cancelled) setEvents(json)
+      } catch { /* silencioso */ }
+    }
+    loadEvents()
+    if (pollRef.current) clearInterval(pollRef.current)
+    if (selected.status === 'IN_PROGRESS') pollRef.current = setInterval(loadEvents, 2500)
+    return () => { cancelled = true; if (pollRef.current) clearInterval(pollRef.current) }
+  }, [selected])
+
+  const graphList = ids.map((id) => graphs[id]).filter((g): g is GraphData => Boolean(g))
+
+  const totals = useMemo(() => {
+    const c: Record<string, number> = { done: 0, running: 0, blocked: 0, failed: 0, pending: 0 }
+    for (const g of graphList) for (const t of g.tasks) c[STATUS_MAP[t.status]?.pill ?? 'pending'] += 1
+    return c
+  }, [graphList])
+
+  return (
+    <div className="sala-control">
+      <Styles />
+      <div className="app">
+        <header className="topbar">
+          <div className="brand">
+            <span className="brand-mark" />
+            <h1>Sala de Control</h1>
+          </div>
+          <nav className="breadcrumb">
+            <Link href="/backlog/control" className="back-link">← Elegir sprints</Link>
+            <span className="sep">·</span>
+            <span>{ids.length} sprint{ids.length !== 1 ? 's' : ''} en pantalla</span>
+          </nav>
+          <div className="topbar-spacer" />
+          <div className="status-summary">
+            <span className="chip c-done"><i className="dot" />Hechas <strong>{totals.done}</strong></span>
+            <span className="chip c-running"><i className="dot" />En curso <strong>{totals.running}</strong></span>
+            <span className="chip c-blocked"><i className="dot" />Bloqueadas <strong>{totals.blocked}</strong></span>
+            <span className="chip c-failed"><i className="dot" />Fallidas <strong>{totals.failed}</strong></span>
+            <span className="chip c-pending"><i className="dot" />En cola <strong>{totals.pending}</strong></span>
+          </div>
+        </header>
+
+        {ids.length === 0 && (
+          <div className="error-banner">No hay sprints seleccionados. <Link href="/backlog/control" className="back-link">Elegí alguno acá</Link>.</div>
+        )}
+
+        {graphList.map((g) => (
+          <SprintStage key={g.sprint.id} data={g} selectedId={selected?.id ?? null} onSelect={setSelected} />
+        ))}
+
+        <section className="trace-wrap sticky-trace">
+          <div className="trace-panel">
+            <div className="trace-head">
+              <span className="t-code mono">{selected?.taskCode ?? selected?.id.slice(0, 8) ?? '—'}</span>
+              <span className="t-title">{selected?.title ?? 'Elegí una tarea de cualquier grafo de arriba'}</span>
+              <div className="trace-head-spacer" />
+              <span className="t-dur mono">
+                {selected ? `${selected.startedAt ? new Date(selected.startedAt).toLocaleTimeString('es-AR') : '—'} → ${selected.status === 'IN_PROGRESS' ? 'en curso' : (selected.finishedAt ? new Date(selected.finishedAt).toLocaleTimeString('es-AR') : '—')}` : ''}
+              </span>
+            </div>
+            <div className="trace-body">
+              {selected && events.length === 0 && (
+                <div className="trace-empty-note">
+                  <span>⏸</span>
+                  <span>
+                    {selected.status === 'BACKLOG' ? 'En cola, sin actividad todavía.'
+                      : selected.status === 'BLOCKED' ? 'Bloqueada — depende de otra tarea que aún no cerró en DONE.'
+                        : 'Sin eventos de traza registrados todavía.'}
+                  </span>
+                </div>
+              )}
+              {events.map((e) => (
+                <div className="trace-line" key={e.id}>
+                  <span className="t-time mono">{new Date(e.createdAt).toLocaleTimeString('es-AR')}</span>
+                  <span className={`t-icon i-${e.kind}`}>{iconGlyph(e.kind)}</span>
+                  <span className="t-msg" dangerouslySetInnerHTML={{ __html: e.message }} />
+                </div>
+              ))}
+              {selected?.status === 'IN_PROGRESS' && (
+                <div className="trace-line">
+                  <span className="t-time mono" />
+                  <span />
+                  <span className="t-msg muted">en curso<span className="trace-cursor" /></span>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
+}
+
+function iconGlyph(kind: string): string {
+  switch (kind) {
+    case 'write': return 'W'
+    case 'check': return '✓'
+    case 'run': return '▶'
+    case 'fail': return '✕'
+    default: return '·'
+  }
+}
+
+function Styles() {
+  return (
+    <style>{`
+      .sala-control {
+        --bg: #f5f6fa; --surface: #ffffff; --surface-2: #eef0f7; --border: #dde1ec;
+        --text: #161a26; --text-muted: #5c6478; --text-faint: #8990a4;
+        --accent: #4552d6; --accent-soft: #e7e9fb;
+        --stage-bg: #eef0f7; --stage-grid: #dde1ec;
+        --s-pending: #9aa1b5; --s-pending-soft: #eceef3;
+        --s-running: #2f6fed; --s-running-soft: #e5edfe;
+        --s-done: #1f9d55; --s-done-soft: #e3f6ea;
+        --s-failed: #e0393e; --s-failed-soft: #fbe6e6;
+        --s-blocked: #c97514; --s-blocked-soft: #fbeed9;
+        --shadow: 0 1px 2px rgba(20,24,38,.04), 0 8px 24px -12px rgba(20,24,38,.12);
+        background: var(--bg); color: var(--text); min-height: 100vh;
+        font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        .sala-control:not([data-theme="light"]) {
+          --bg: #0a0d16; --surface: #10141f; --surface-2: #161b29; --border: #232a3d;
+          --text: #e8eaf4; --text-muted: #99a1b8; --text-faint: #666f89;
+          --accent: #7784ff; --accent-soft: rgba(119,132,255,.16);
+          --stage-bg: #0d1120; --stage-grid: #1b2133;
+          --s-pending: #737d99; --s-pending-soft: #1a2033;
+          --s-running: #5b8dff; --s-running-soft: rgba(91,141,255,.14);
+          --s-done: #3ddc84; --s-done-soft: rgba(61,220,132,.13);
+          --s-failed: #ff5c61; --s-failed-soft: rgba(255,92,97,.14);
+          --s-blocked: #ffb03d; --s-blocked-soft: rgba(255,176,61,.14);
+          --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+        }
+      }
+      .sala-control[data-theme="dark"] {
+        --bg: #0a0d16; --surface: #10141f; --surface-2: #161b29; --border: #232a3d;
+        --text: #e8eaf4; --text-muted: #99a1b8; --text-faint: #666f89;
+        --accent: #7784ff; --accent-soft: rgba(119,132,255,.16);
+        --stage-bg: #0d1120; --stage-grid: #1b2133;
+        --s-pending: #737d99; --s-pending-soft: #1a2033;
+        --s-running: #5b8dff; --s-running-soft: rgba(91,141,255,.14);
+        --s-done: #3ddc84; --s-done-soft: rgba(61,220,132,.13);
+        --s-failed: #ff5c61; --s-failed-soft: rgba(255,92,97,.14);
+        --s-blocked: #ffb03d; --s-blocked-soft: rgba(255,176,61,.14);
+        --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+      }
+      .sala-control * { box-sizing: border-box; }
+      .sala-control .mono { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace; }
+      .sala-control .app { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 280px; }
+      .sala-control .topbar { display: flex; align-items: center; gap: 20px; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
+      .sala-control .brand { display: flex; align-items: baseline; gap: 10px; margin-right: 4px; }
+      .sala-control .brand-mark { width: 9px; height: 9px; border-radius: 2px; background: var(--accent); display: inline-block; transform: rotate(45deg); flex: none; }
+      .sala-control .brand h1 { font-size: 16px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+      .sala-control .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 13px; flex-wrap: wrap; }
+      .sala-control .back-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+      .sala-control .back-link:hover { text-decoration: underline; }
+      .sala-control .sep { color: var(--text-faint); }
+      .sala-control .topbar-spacer { flex: 1; }
+      .sala-control .status-summary { display: flex; gap: 6px; flex-wrap: wrap; }
+      .sala-control .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px 5px 8px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
+      .sala-control .chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+      .sala-control .chip strong { color: var(--text); font-variant-numeric: tabular-nums; }
+      .sala-control .chip.c-done .dot { background: var(--s-done); }
+      .sala-control .chip.c-running .dot { background: var(--s-running); }
+      .sala-control .chip.c-blocked .dot { background: var(--s-blocked); }
+      .sala-control .chip.c-failed .dot { background: var(--s-failed); }
+      .sala-control .chip.c-pending .dot { background: var(--s-pending); }
+      .sala-control .error-banner { margin: 14px 24px 0; padding: 10px 14px; border-radius: 10px; background: var(--s-failed-soft); color: var(--s-failed); font-size: 13px; }
+      .sala-control .stage-wrap { padding: 18px 24px 6px; }
+      .sala-control .stage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+      .sala-control .stage-title-block { display: flex; align-items: baseline; gap: 8px; }
+      .sala-control .stage-title { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700; color: var(--accent); }
+      .sala-control .stage-name { font-size: 13.5px; font-weight: 700; }
+      .sala-control .stage { position: relative; background: var(--stage-bg); border: 1px solid var(--border); border-radius: 14px; overflow: auto; background-image: linear-gradient(var(--stage-grid) 1px, transparent 1px), linear-gradient(90deg, var(--stage-grid) 1px, transparent 1px); background-size: 28px 28px; max-height: 46vh; }
+      .sala-control .stage-inner { position: relative; }
+      .sala-control .empty-graph { padding: 40px; color: var(--text-muted); font-size: 13px; }
+      .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+      .sala-control svg.connectors path { fill: none; stroke: var(--text-faint); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+      .sala-control svg.connectors path.live { stroke: var(--s-running); opacity: .85; stroke-dasharray: 5 4; animation: dash 1.1s linear infinite; }
+      @media (prefers-reduced-motion: reduce) { .sala-control svg.connectors path.live { animation: none; } }
+      @keyframes dash { to { stroke-dashoffset: -18; } }
+      .sala-control .node { position: absolute; border-radius: 11px; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); padding: 10px 12px 11px; cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
+      .sala-control .node:hover { transform: translateY(-1px); }
+      .sala-control .node.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow); }
+      .sala-control .node-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 6px; }
+      .sala-control .node-code { font-size: 10.5px; color: var(--text-faint); letter-spacing: .02em; }
+      .sala-control .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 100px; white-space: nowrap; }
+      .sala-control .pill .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+      .sala-control .pill.done { background: var(--s-done-soft); color: var(--s-done); }
+      .sala-control .pill.done .dot { background: var(--s-done); }
+      .sala-control .pill.running { background: var(--s-running-soft); color: var(--s-running); }
+      .sala-control .pill.running .dot { background: var(--s-running); animation: pulse 1.4s ease-in-out infinite; }
+      @media (prefers-reduced-motion: reduce) { .sala-control .pill.running .dot { animation: none; } }
+      @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.6); } }
+      .sala-control .pill.blocked { background: var(--s-blocked-soft); color: var(--s-blocked); }
+      .sala-control .pill.blocked .dot { background: var(--s-blocked); }
+      .sala-control .pill.failed { background: var(--s-failed-soft); color: var(--s-failed); }
+      .sala-control .pill.failed .dot { background: var(--s-failed); }
+      .sala-control .pill.pending { background: var(--s-pending-soft); color: var(--text-muted); }
+      .sala-control .pill.pending .dot { background: var(--s-pending); }
+      .sala-control .node-title { font-size: 12.5px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+      .sala-control .node-foot { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-muted); gap: 6px; }
+      .sala-control .node-foot .agent { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sala-control .avatar { width: 15px; height: 15px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 8.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+      .sala-control .trace-wrap { padding: 14px 24px 24px; }
+      .sala-control .trace-wrap.sticky-trace { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--border); z-index: 30; max-height: 260px; }
+      .sala-control .trace-panel { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; max-height: 230px; }
+      .sala-control .trace-head { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); flex-wrap: wrap; }
+      .sala-control .trace-head .t-code { font-size: 12px; color: var(--text-muted); }
+      .sala-control .trace-head .t-title { font-size: 13px; font-weight: 700; }
+      .sala-control .trace-head-spacer { flex: 1; }
+      .sala-control .trace-head .t-dur { font-size: 11.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+      .sala-control .trace-body { flex: 1; overflow: auto; padding: 12px 18px 14px; }
+      .sala-control .trace-line { display: grid; grid-template-columns: 70px 16px 1fr; gap: 10px; align-items: start; padding: 3px 0; font-size: 12.5px; line-height: 1.55; }
+      .sala-control .trace-line .t-time { color: var(--text-faint); font-variant-numeric: tabular-nums; font-size: 11.5px; padding-top: 1px; }
+      .sala-control .trace-line .t-icon { width: 16px; height: 16px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; margin-top: 1px; }
+      .sala-control .i-info { background: var(--surface-2); color: var(--text-faint); border: 1px solid var(--border); }
+      .sala-control .i-write { background: var(--accent-soft); color: var(--accent); }
+      .sala-control .i-check { background: var(--s-done-soft); color: var(--s-done); }
+      .sala-control .i-run { background: var(--s-running-soft); color: var(--s-running); }
+      .sala-control .i-fail { background: var(--s-failed-soft); color: var(--s-failed); }
+      .sala-control .trace-line .t-msg { color: var(--text); word-break: break-word; }
+      .sala-control .trace-line .t-msg .muted { color: var(--text-muted); }
+      .sala-control .trace-empty-note { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; border-radius: 10px; background: var(--surface-2); border: 1px dashed var(--border); color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+      .sala-control .trace-cursor { display: inline-block; width: 6px; height: 12px; background: var(--s-running); margin-left: 2px; vertical-align: -2px; animation: blink 1s step-end infinite; }
+      @media (prefers-reduced-motion: reduce) { .sala-control .trace-cursor { animation: none; } }
+      @keyframes blink { 50% { opacity: 0; } }
+    `}</style>
+  )
+}
