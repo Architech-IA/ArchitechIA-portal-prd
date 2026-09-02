@@ -1,9 +1,9 @@
-import path from 'path'
 import { prisma } from '@/lib/prisma'
 import { buildTaskContext } from '@/lib/context/buildTaskContext'
 import { runVerifier } from '@/lib/executor/taskVerifier'
 import { runRealCodeChecks } from '@/lib/executor/realChecks'
 import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
+import { resolveRepoConfig } from '@/lib/executor/repoConfig'
 import fs from 'fs'
 import {
   ensureSprintIntegrationBranch, createTaskWorktree, commitAndMergeTask,
@@ -11,8 +11,6 @@ import {
   sprintWorktreePath as computeSprintWorktreePath, taskBranchName,
   MergeConflictError,
 } from '@/lib/executor/gitWorktree'
-
-const REPO_ROOT = path.resolve(process.cwd())
 
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_URL    = 'https://opencode.ai/zen/v1/chat/completions'
@@ -88,7 +86,7 @@ export async function resolveAgent(task: {
 export async function dispatchTask(taskId: string): Promise<DispatchResult> {
   const [task] = await prisma.$queryRawUnsafe(
     `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId",
-            bi."assigneeId", bi."assigneeName", bi.status, bi."dependsOnTaskId",
+            bi."assigneeId", bi."assigneeName", bi.status, bi."dependsOnTaskId", bi."solucionId",
             s."sprintCode", dep."taskCode" as "dependsOnTaskCode"
      FROM "BacklogItem" bi
      LEFT JOIN "Sprint" s ON bi."sprintId" = s.id
@@ -99,7 +97,8 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
     id: string; title: string; description: string | null;
     taskCode: string; areaId: string | null; sprintId: string | null;
     assigneeId: string | null; assigneeName: string | null; status: string;
-    dependsOnTaskId: string | null; sprintCode: string | null; dependsOnTaskCode: string | null;
+    dependsOnTaskId: string | null; solucionId: string | null;
+    sprintCode: string | null; dependsOnTaskCode: string | null;
   }[]
 
   if (!task) throw new Error(`Task ${taskId} not found`)
@@ -138,9 +137,17 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
   // de la rama de la tarea de la que depende, si ya existe — asi ve sus
   // archivos reales, no solo su resultado en texto). El worker escribe ahi,
   // nunca en el working tree principal donde corre el servidor en vivo.
+  //
+  // El repo LOCAL contra el que se opera ya no es siempre el del portal:
+  // se resuelve segun la Solucion de la tarea (resolveRepoConfig) — si esa
+  // Solucion se definio como producto/demo independiente en el Kickoff
+  // (Orion pregunta este dimensionamiento, ver chat/route.ts), el repo
+  // real puede ser uno recien creado/clonado aparte, y ahi es donde se crea
+  // la rama de integracion del sprint y el worktree de esta tarea.
   let repoPath: string | undefined
   if (strategy === 'CODE' && task.sprintCode) {
-    const { branch: sprintBranch } = await ensureSprintIntegrationBranch(task.sprintCode)
+    const { repoPath: targetRepoRoot } = await resolveRepoConfig(task.solucionId)
+    const { branch: sprintBranch } = await ensureSprintIntegrationBranch(task.sprintCode, targetRepoRoot)
     let baseRef = sprintBranch
     if (task.dependsOnTaskCode) {
       const depBranch = taskBranchName(task.dependsOnTaskCode)
@@ -151,7 +158,7 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
       // sus cambios.
       baseRef = depWtStillExists ? depBranch : sprintBranch
     }
-    const { worktreePath } = await createTaskWorktree(task.taskCode, baseRef)
+    const { worktreePath } = await createTaskWorktree(task.taskCode, baseRef, targetRepoRoot)
     repoPath = worktreePath
   }
 
@@ -210,28 +217,35 @@ export async function finalizeExecution(opts: {
   const { taskId, execId, finalStatus, resultSummary, durationMs, contextUsed, toolLog } = opts
 
   const [task] = await prisma.$queryRawUnsafe(
-    `SELECT bi.id, bi.title, bi.description, bi."sprintId", bi."taskCode", s."sprintCode"
+    `SELECT bi.id, bi.title, bi.description, bi."sprintId", bi."taskCode", bi."solucionId", s."sprintCode"
      FROM "BacklogItem" bi LEFT JOIN "Sprint" s ON bi."sprintId" = s.id
      WHERE bi.id = $1`,
     taskId
-  ) as { id: string; title: string; description: string | null; sprintId: string | null; taskCode: string; sprintCode: string | null }[]
+  ) as { id: string; title: string; description: string | null; sprintId: string | null; taskCode: string; solucionId: string | null; sprintCode: string | null }[]
 
   if (!task) throw new Error(`Task ${taskId} not found`)
 
+  // El repo LOCAL de esta tarea (portal, o uno independiente si su Solucion
+  // se definio asi en el Kickoff — ver repoConfig.ts). Se resuelve una sola
+  // vez acá y se reusa como fallback de codeCheckRoot y como repoRoot para
+  // commitAndMergeTask/discardTaskWorktree mas abajo.
+  const { repoPath: taskRepoRoot } = await resolveRepoConfig(task.solucionId)
+
   // Si esta tarea corrio en su propio worktree (CODE dentro de un sprint),
-  // los chequeos reales deben correr AHI, no en REPO_ROOT — el archivo que
-  // escribio el agente vive en el worktree, no en el working tree principal.
-  // BUG REAL encontrado probando el auto-dispatch con tareas sin taskCode
-  // (cualquier BacklogItem creado fuera del flujo de aprobacion del Consejo,
-  // ej. a mano desde el Backlog o via API directa): computeTaskWorktreePath
-  // llamaba a path.join con null y tiraba "The 'path' argument must be of
-  // type string" — esto rompia finalizeExecution ENTERO para cualquier
-  // tarea sin taskCode, no solo el chequeo de codigo, dejando la tarea
-  // varada en RUNNING/IN_PROGRESS para siempre (el callback del worker
-  // fallaba con 500 antes de llegar a actualizar el estado).
+  // los chequeos reales deben correr AHI, no en el repo principal — el
+  // archivo que escribio el agente vive en el worktree, no en el working
+  // tree principal. BUG REAL encontrado probando el auto-dispatch con
+  // tareas sin taskCode (cualquier BacklogItem creado fuera del flujo de
+  // aprobacion del Consejo, ej. a mano desde el Backlog o via API directa):
+  // computeTaskWorktreePath llamaba a path.join con null y tiraba "The
+  // 'path' argument must be of type string" — esto rompia finalizeExecution
+  // ENTERO para cualquier tarea sin taskCode, no solo el chequeo de codigo,
+  // dejando la tarea varada en RUNNING/IN_PROGRESS para siempre (el
+  // callback del worker fallaba con 500 antes de llegar a actualizar el
+  // estado).
   const taskWtPath = task.taskCode ? computeTaskWorktreePath(task.taskCode) : null
   const usedWorktree = taskWtPath ? fs.existsSync(taskWtPath) : false
-  const codeCheckRoot = usedWorktree && taskWtPath ? taskWtPath : REPO_ROOT
+  const codeCheckRoot = usedWorktree && taskWtPath ? taskWtPath : taskRepoRoot
 
   await prisma.$executeRawUnsafe(
     `UPDATE "TaskExecution"
@@ -333,6 +347,7 @@ export async function finalizeExecution(opts: {
           taskWorktreePath: taskWtPath,
           taskBranch: taskBranchName(task.taskCode),
           sprintWorktreePath: sprintWtPath,
+          repoRoot: taskRepoRoot,
         })
       } catch (err) {
         if (err instanceof MergeConflictError) {
@@ -355,7 +370,7 @@ export async function finalizeExecution(opts: {
         }
       }
     } else {
-      await discardTaskWorktree(taskWtPath).catch((err) =>
+      await discardTaskWorktree(taskWtPath, taskRepoRoot).catch((err) =>
         console.error(`[GIT] Error descartando worktree de ${task.taskCode}:`, err)
       )
     }

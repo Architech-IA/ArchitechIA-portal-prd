@@ -2,6 +2,7 @@ import fs from 'fs'
 import { prisma } from '@/lib/prisma'
 import { writeVaultNote } from '@/lib/memory/vaultNotes'
 import { sprintBranchName, sprintWorktreePath, openSprintPR } from '@/lib/executor/gitWorktree'
+import { resolveRepoConfig } from '@/lib/executor/repoConfig'
 
 const OPENCODE_GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
@@ -28,13 +29,14 @@ export async function checkSprintCompletion(sprintId: string): Promise<void> {
 
 async function generateSprintSummary(sprintId: string): Promise<void> {
   const [sprint] = await prisma.$queryRawUnsafe(
-    `SELECT s.id, s.name, s.goal, s."sprintCode", s."epicId", e.name as "epicName", sol."solucionCode"
+    `SELECT s.id, s.name, s.goal, s."sprintCode", s."epicId", e.name as "epicName",
+            sol.id as "solucionId", sol."solucionCode"
      FROM "Sprint" s
      JOIN "Epic" e ON s."epicId" = e.id
      JOIN "Solucion" sol ON e."solucionId" = sol.id
      WHERE s.id = $1`,
     sprintId
-  ) as { id: string; name: string; goal: string | null; sprintCode: string; epicId: string; epicName: string; solucionCode: string }[]
+  ) as { id: string; name: string; goal: string | null; sprintCode: string; epicId: string; epicName: string; solucionId: string; solucionCode: string }[]
 
   const tasks = await prisma.$queryRawUnsafe(`
     SELECT bi.title, bi.status, bi.resultado,
@@ -167,12 +169,19 @@ Sin markdown extra.`
   // rama de integracion del sprint con commits reales — se abre (o
   // reutiliza) UN SOLO PR de esa rama hacia main. Nunca se mergea sola: el
   // merge a main siempre queda para revision humana.
+  //
+  // El PR se abre contra el repo real de la Solucion (portal, o uno
+  // independiente si se definio asi en el Kickoff) — repoRoot se resuelve
+  // igual que en taskDispatcher.ts, via la misma Solucion que ya se cargo
+  // arriba para el sprint.
   const sprintWtPath = sprintWorktreePath(sprint.sprintCode)
   if (fs.existsSync(sprintWtPath)) {
     try {
+      const { repoPath: sprintRepoRoot } = await resolveRepoConfig(sprint.solucionId)
       const pr = await openSprintPR({
         sprintBranch: sprintBranchName(sprint.sprintCode),
         sprintWorktreePath: sprintWtPath,
+        repoRoot: sprintRepoRoot,
         title: `[${sprint.sprintCode}] ${sprint.name}`,
         body: [
           `**Sprint:** ${sprint.name} (${sprint.sprintCode})`,
