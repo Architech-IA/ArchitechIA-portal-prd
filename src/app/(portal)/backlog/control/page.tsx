@@ -20,9 +20,12 @@ const STATUS_LABEL: Record<string, string> = {
   CLOSED: 'Cerrado',
 }
 
+const EPICS_PER_PAGE = 5
+
 export default function ControlIndexPage() {
   const [sprints, setSprints] = useState<SprintRow[] | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     fetch('/api/backlog/sprints')
@@ -42,6 +45,10 @@ export default function ControlIndexPage() {
     }
     return Array.from(byEpic.values())
   }, [sprints])
+
+  const totalPages = Math.max(1, Math.ceil(groups.length / EPICS_PER_PAGE))
+  const safePage = Math.min(page, totalPages)
+  const pageGroups = groups.slice((safePage - 1) * EPICS_PER_PAGE, safePage * EPICS_PER_PAGE)
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -94,6 +101,11 @@ export default function ControlIndexPage() {
         .sala-control-index .meta { font-size: 12px; color: var(--text-muted); }
         .sala-control-index .status { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 9px; border-radius: 100px; background: var(--primary-dim); color: var(--primary-light); white-space: nowrap; }
         .sala-control-index .empty { padding: 40px 24px; color: var(--text-muted); font-size: 13px; }
+        .sala-control-index .pager { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 10px 0 4px; }
+        .sala-control-index .pager-btn { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-base); color: var(--text-secondary); border-radius: 100px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color .12s ease, color .12s ease; }
+        .sala-control-index .pager-btn:hover:not(:disabled) { border-color: rgba(255,90,0,0.35); color: var(--primary-light); }
+        .sala-control-index .pager-btn:disabled { opacity: .35; cursor: not-allowed; }
+        .sala-control-index .pager-info { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
         .sala-control-index .float-bar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 16px; pointer-events: none; z-index: 2; }
         .sala-control-index .float-inner { pointer-events: auto; display: flex; align-items: center; gap: 14px; background: var(--bg-elevated); backdrop-filter: blur(20px); border: 1px solid var(--glass-border-md); box-shadow: 0 8px 40px rgba(0,0,0,0.55); border-radius: 100px; padding: 8px 8px 8px 18px; }
         .sala-control-index .float-count { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; }
@@ -108,7 +120,7 @@ export default function ControlIndexPage() {
       <div className="content">
         {sprints === null && <div className="empty">Cargando…</div>}
         {sprints?.length === 0 && <div className="empty">No hay sprints todavía.</div>}
-        {groups.map((g) => {
+        {pageGroups.map((g) => {
           const allChecked = g.sprints.every((s) => selected.has(s.id))
           return (
             <div className="epic-group" key={g.key}>
@@ -133,6 +145,21 @@ export default function ControlIndexPage() {
             </div>
           )
         })}
+        {totalPages > 1 && (
+          <div className="pager">
+            <button
+              className="pager-btn"
+              disabled={safePage <= 1}
+              onClick={() => setPage(safePage - 1)}
+            >← Anterior</button>
+            <span className="pager-info">Página {safePage} de {totalPages} · {groups.length} épicas</span>
+            <button
+              className="pager-btn"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage(safePage + 1)}
+            >Siguiente →</button>
+          </div>
+        )}
       </div>
       <div className="float-bar">
         <div className="float-inner">
