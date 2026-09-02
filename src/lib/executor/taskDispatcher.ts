@@ -4,6 +4,7 @@ import { runVerifier } from '@/lib/executor/taskVerifier'
 import { runRealCodeChecks } from '@/lib/executor/realChecks'
 import { checkSprintCompletion } from '@/lib/executor/sprintMonitor'
 import { resolveRepoConfig } from '@/lib/executor/repoConfig'
+import { emitTraceEvent } from '@/lib/executor/traceEvents'
 import fs from 'fs'
 import {
   ensureSprintIntegrationBranch, createTaskWorktree, commitAndMergeTask,
@@ -118,7 +119,10 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
     taskId, agentId, agentName
   ) as { id: string }[]
 
+  await emitTraceEvent(taskId, exec_.id, 'info', `tarea despachada — agente ${agentName}, estrategia ${strategy}`)
+
   const context = await buildTaskContext(taskId)
+  await emitTraceEvent(taskId, exec_.id, 'info', `contexto armado (buildTaskContext) — ${context.length.toLocaleString('es-AR')} caracteres`)
 
   const systemPrompt = agentProfile.systemPrompt
     ?? `Eres ${agentName}, agente de ArchiTechIA ejecutando una tarea del Motor Agéntico SDD.`
@@ -160,6 +164,7 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
     }
     const { worktreePath } = await createTaskWorktree(task.taskCode, baseRef, targetRepoRoot)
     repoPath = worktreePath
+    await emitTraceEvent(taskId, exec_.id, 'info', `worktree creado — rama ${taskBranchName(task.taskCode)} desde ${baseRef}`)
   }
 
   // Empuja la tarea al Harness (cola con concurrencia limitada por N workers,
@@ -186,8 +191,10 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
       }),
       signal: AbortSignal.timeout(10_000),
     })
+    await emitTraceEvent(taskId, exec_.id, 'run', `encolada en el Harness (agente ${agentProfile.slug ?? agentName.toLowerCase()}) — esperando ejecución real`)
   } catch (err) {
     console.error(`[DISPATCH] No se pudo encolar en el Harness para ${taskId}:`, err)
+    await emitTraceEvent(taskId, exec_.id, 'fail', `no se pudo encolar en el Harness: ${err instanceof Error ? err.message : String(err)}`)
     // Revertir estado si ni siquiera se pudo encolar
     await prisma.$executeRawUnsafe(`UPDATE "BacklogItem" SET status='BACKLOG' WHERE id=$1`, taskId)
     await prisma.$executeRawUnsafe(
@@ -266,6 +273,12 @@ export async function finalizeExecution(opts: {
     // verificador semantico: un error de compilacion es un hecho objetivo,
     // no algo que un LLM tenga que opinar.
     const codeCheck = await runRealCodeChecks(toolLog, codeCheckRoot)
+    if (codeCheck.ran) {
+      await emitTraceEvent(taskId, execId, codeCheck.passed ? 'check' : 'fail',
+        codeCheck.passed
+          ? 'tsc --noEmit — 0 errores en los archivos tocados'
+          : `tsc --noEmit — ${codeCheck.errors.length} error(es) real(es)`)
+    }
     if (codeCheck.ran && !codeCheck.passed) {
       verifiedStatus = 'FAILED'
       checklist = [{
@@ -301,6 +314,8 @@ export async function finalizeExecution(opts: {
         if (codeCheck.ran) {
           checklist = [{ criterion: 'El código escrito compila (tsc --noEmit)', passed: true, reason: 'Verificado con el compilador real' }, ...checklist]
         }
+        await emitTraceEvent(taskId, execId, verifierResult.passed ? 'check' : 'fail',
+          `verificador semántico — ${verifierResult.passed ? 'PASSED' : 'FAILED'} (${checklist.filter((c) => (c as { passed?: boolean }).passed).length}/${checklist.length} criterios)`)
       } catch (err) {
         // El verificador no debería tirar excepción (taskVerifier.ts ya
         // atrapa sus propios errores), pero si pasa algo inesperado no nos
@@ -349,9 +364,11 @@ export async function finalizeExecution(opts: {
           sprintWorktreePath: sprintWtPath,
           repoRoot: taskRepoRoot,
         })
+        await emitTraceEvent(taskId, execId, 'info', `merge a la rama de integración del sprint — sin conflictos`)
       } catch (err) {
         if (err instanceof MergeConflictError) {
           verifiedStatus = 'BLOCKED'
+          await emitTraceEvent(taskId, execId, 'fail', `conflicto real de merge — archivos: ${err.conflictedFiles.join(', ') || '(sin detalle)'}`)
           finalResultado = [
             resultSummary,
             '',
@@ -373,8 +390,11 @@ export async function finalizeExecution(opts: {
       await discardTaskWorktree(taskWtPath, taskRepoRoot).catch((err) =>
         console.error(`[GIT] Error descartando worktree de ${task.taskCode}:`, err)
       )
+      await emitTraceEvent(taskId, execId, 'info', 'worktree descartado — no se mergeó nada')
     }
   }
+
+  await emitTraceEvent(taskId, execId, verifiedStatus === 'DONE' ? 'check' : 'fail', `estado final: ${verifiedStatus}`)
 
   await prisma.$executeRawUnsafe(
     `UPDATE "BacklogItem"
