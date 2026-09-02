@@ -174,28 +174,29 @@ function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selected
 
   return (
     <section className="stage-wrap">
-      <div className="stage-header">
-        <div className="stage-title-block">
-          <span className="stage-title">{data.sprint.sprintCode ?? data.sprint.id.slice(0, 8)}</span>
-          <span className="stage-name">{data.sprint.name}</span>
-        </div>
-        <div className="status-summary">
-          <span className="chip c-done"><i className="dot" />{counts.done}</span>
-          <span className="chip c-running"><i className="dot" />{counts.running}</span>
-          <span className="chip c-blocked"><i className="dot" />{counts.blocked}</span>
-          <span className="chip c-failed"><i className="dot" />{counts.failed}</span>
-          <span className="chip c-pending"><i className="dot" />{counts.pending}</span>
-        </div>
-        <button
-          className="dispatch-btn"
-          disabled={backlogTaskIds.length === 0 || dispatching}
-          onClick={handleDispatch}
-          title={backlogTaskIds.length === 0 ? 'No hay tasks en cola para disparar' : `Disparar ${backlogTaskIds.length} task${backlogTaskIds.length !== 1 ? 's' : ''} en BACKLOG`}
-        >
-          {dispatching ? 'Disparando…' : `▶ Disparar (${backlogTaskIds.length})`}
-        </button>
-      </div>
       <div className="stage">
+        <div className="stage-toolbar">
+          <div className="stage-title-block">
+            <span className="stage-title">{data.sprint.sprintCode ?? data.sprint.id.slice(0, 8)}</span>
+            <span className="stage-name">{data.sprint.name}</span>
+          </div>
+          <div className="status-summary">
+            <span className="chip c-done"><i className="dot" />{counts.done}</span>
+            <span className="chip c-running"><i className="dot" />{counts.running}</span>
+            <span className="chip c-blocked"><i className="dot" />{counts.blocked}</span>
+            <span className="chip c-failed"><i className="dot" />{counts.failed}</span>
+            <span className="chip c-pending"><i className="dot" />{counts.pending}</span>
+          </div>
+          <button
+            className="dispatch-btn"
+            disabled={backlogTaskIds.length === 0 || dispatching}
+            onClick={handleDispatch}
+            title={backlogTaskIds.length === 0 ? 'No hay tasks en cola para disparar' : `Disparar ${backlogTaskIds.length} task${backlogTaskIds.length !== 1 ? 's' : ''} en BACKLOG`}
+          >
+            {dispatching ? '…' : `▶ ${backlogTaskIds.length}`}
+          </button>
+        </div>
+        <div className="stage-scroll">
         <div className="stage-inner" ref={stageRef} style={{ width: layout.width, height: layout.height }}>
           <svg className="connectors" width={layout.width} height={layout.height}>
             {connectors.map((c, i) => (
@@ -236,6 +237,7 @@ function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selected
             )
           })}
           {data.tasks.length === 0 && <div className="empty-graph">Este sprint todavía no tiene tasks.</div>}
+        </div>
         </div>
       </div>
     </section>
@@ -460,16 +462,16 @@ function Styles() {
       .sala-control .app { display: flex; flex-direction: column; min-height: 100%; padding-bottom: 280px; }
       .sala-control .topbar { height: 30px; display: flex; align-items: center; gap: 20px; padding: 0 20px; border-bottom: 1px solid var(--border-base); background: var(--bg-elevated); backdrop-filter: blur(20px); flex-wrap: nowrap; overflow: hidden; position: sticky; top: 0; z-index: 20; }
       .sala-control .brand { display: flex; align-items: baseline; gap: 10px; margin-right: 4px; }
-      .sala-control .brand-mark { width: 9px; height: 9px; border-radius: 2px; background: var(--primary); display: inline-block; transform: rotate(45deg); flex: none; }
-      .sala-control .brand h1 { font-size: 16px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
-      .sala-control .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; flex-wrap: nowrap; overflow: hidden; }
+      .sala-control .brand-mark { width: 7px; height: 7px; border-radius: 2px; background: var(--primary); display: inline-block; transform: rotate(45deg); flex: none; }
+      .sala-control .brand h1 { font-size: 12px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+      .sala-control .breadcrumb { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 11px; flex-wrap: nowrap; overflow: hidden; }
       .sala-control .back-link { color: var(--primary-light); text-decoration: none; font-weight: 600; }
       .sala-control .back-link:hover { text-decoration: underline; }
       .sala-control .sep { color: var(--text-muted); }
       .sala-control .topbar-spacer { flex: 1; }
-      .sala-control .status-summary { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; }
-      .sala-control .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px 5px 8px; border-radius: 100px; border: 1px solid var(--border-base); background: var(--glass-bg); color: var(--text-secondary); }
-      .sala-control .chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+      .sala-control .status-summary { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; }
+      .sala-control .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 3px 7px 3px 6px; border-radius: 100px; border: 1px solid var(--border-base); background: var(--glass-bg); color: var(--text-secondary); line-height: 1; }
+      .sala-control .chip .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
       .sala-control .chip strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
       .sala-control .chip.c-done .dot { background: var(--s-done); }
       .sala-control .chip.c-running .dot { background: var(--s-running); }
@@ -477,19 +479,19 @@ function Styles() {
       .sala-control .chip.c-failed .dot { background: var(--s-failed); }
       .sala-control .chip.c-pending .dot { background: var(--s-pending); }
       .sala-control .error-banner { margin: 14px 24px 0; padding: 10px 14px; border-radius: 10px; background: var(--s-failed-soft); color: var(--s-failed); font-size: 13px; }
-      .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .12s ease, opacity .12s ease; }
+      .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; cursor: pointer; white-space: nowrap; flex: none; transition: filter .12s ease, opacity .12s ease; }
       .sala-control .dispatch-btn:hover:not(:disabled) { filter: brightness(1.1); }
       .sala-control .dispatch-btn:disabled { opacity: .35; cursor: not-allowed; }
-      .sala-control .stage-wrap { padding: 22px 24px 18px; }
+      .sala-control .stage-wrap { padding: 14px 24px 12px; }
       .sala-control .stage-wrap + .stage-wrap { border-top: 1px solid var(--border-base); margin-top: 4px; }
-      .sala-control .stage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-      .sala-control .stage-title-block { display: flex; align-items: baseline; gap: 8px; }
-      .sala-control .stage-title { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; font-size: 12px; font-weight: 700; color: var(--primary-light); }
-      .sala-control .stage-name { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
-      .sala-control .stage { position: relative; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: auto; background-image: linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px); background-size: 28px 28px; max-height: 46vh; }
+      .sala-control .stage { position: relative; display: flex; flex-direction: column; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: hidden; max-height: 42vh; user-select: none; }
+      .sala-control .stage-toolbar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-elevated); flex-wrap: nowrap; overflow: hidden; }
+      .sala-control .stage-title-block { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; }
+      .sala-control .stage-title { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; font-size: 10px; font-weight: 700; color: var(--primary-light); flex: none; }
+      .sala-control .stage-name { font-size: 11.5px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sala-control .stage-scroll { flex: 1; overflow: auto; position: relative; background-image: linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px); background-size: 28px 28px; }
       .sala-control .stage-inner { position: relative; }
       .sala-control .empty-graph { padding: 40px; color: var(--text-muted); font-size: 13px; }
-      .sala-control .stage { user-select: none; }
       .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; user-select: none; }
       .sala-control svg.connectors path { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
       .sala-control svg.connectors path.connector-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; opacity: 1; }

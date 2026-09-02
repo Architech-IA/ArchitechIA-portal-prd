@@ -290,7 +290,7 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
             onClick={handleDispatch}
             title={backlogTaskIds.length === 0 ? 'No hay tasks en cola para disparar' : `Disparar ${backlogTaskIds.length} task${backlogTaskIds.length !== 1 ? 's' : ''} en BACKLOG`}
           >
-            {dispatching ? 'Disparando…' : `▶ Disparar (${backlogTaskIds.length})`}
+            {dispatching ? '…' : `▶ ${backlogTaskIds.length}`}
           </button>
         </header>
 
@@ -473,17 +473,17 @@ function Styles() {
       .sala-control .app { display: flex; flex-direction: column; min-height: 100%; }
       .sala-control .topbar { height: 30px; display: flex; align-items: center; gap: 20px; padding: 0 20px; border-bottom: 1px solid var(--border-base); background: var(--bg-elevated); backdrop-filter: blur(20px); flex-wrap: nowrap; overflow: hidden; }
       .sala-control .brand { display: flex; align-items: baseline; gap: 10px; margin-right: 4px; }
-      .sala-control .brand-mark { width: 9px; height: 9px; border-radius: 2px; background: var(--primary); display: inline-block; transform: rotate(45deg); flex: none; }
-      .sala-control .brand h1 { font-size: 16px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
-      .sala-control .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; flex-wrap: nowrap; overflow: hidden; }
+      .sala-control .brand-mark { width: 7px; height: 7px; border-radius: 2px; background: var(--primary); display: inline-block; transform: rotate(45deg); flex: none; }
+      .sala-control .brand h1 { font-size: 12px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+      .sala-control .breadcrumb { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 11px; flex-wrap: nowrap; overflow: hidden; }
       .sala-control .back-link { color: var(--primary-light); text-decoration: none; font-weight: 600; }
       .sala-control .back-link:hover { text-decoration: underline; }
-      .sala-control .breadcrumb .code { font-size: 12px; padding: 2px 7px; border-radius: 5px; background: var(--glass-bg); color: var(--text-primary); border: 1px solid var(--border-base); }
+      .sala-control .breadcrumb .code { font-size: 10px; padding: 2px 6px; border-radius: 5px; background: var(--glass-bg); color: var(--text-primary); border: 1px solid var(--border-base); }
       .sala-control .breadcrumb .sep { color: var(--text-muted); }
       .sala-control .topbar-spacer { flex: 1; }
-      .sala-control .status-summary { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; }
-      .sala-control .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px 5px 8px; border-radius: 100px; border: 1px solid var(--border-base); background: var(--glass-bg); color: var(--text-secondary); }
-      .sala-control .chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+      .sala-control .status-summary { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; }
+      .sala-control .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 3px 7px 3px 6px; border-radius: 100px; border: 1px solid var(--border-base); background: var(--glass-bg); color: var(--text-secondary); line-height: 1; }
+      .sala-control .chip .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
       .sala-control .chip strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
       .sala-control .chip.c-done .dot { background: var(--s-done); }
       .sala-control .chip.c-running .dot { background: var(--s-running); }
@@ -491,7 +491,7 @@ function Styles() {
       .sala-control .chip.c-failed .dot { background: var(--s-failed); }
       .sala-control .chip.c-pending .dot { background: var(--s-pending); }
       .sala-control .error-banner { margin: 14px 24px 0; padding: 10px 14px; border-radius: 10px; background: var(--s-failed-soft); color: var(--s-failed); font-size: 13px; }
-      .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .12s ease, opacity .12s ease; }
+      .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; cursor: pointer; white-space: nowrap; flex: none; transition: filter .12s ease, opacity .12s ease; }
       .sala-control .dispatch-btn:hover:not(:disabled) { filter: brightness(1.1); }
       .sala-control .dispatch-btn:disabled { opacity: .35; cursor: not-allowed; }
       .sala-control .stage-wrap { padding: 22px 24px 10px; }
