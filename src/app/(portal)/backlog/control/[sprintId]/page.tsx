@@ -450,7 +450,8 @@ function Styles() {
       .sala-control .stage { position: relative; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: auto; background-image: linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px); background-size: 28px 28px; max-height: 60vh; }
       .sala-control .stage-inner { position: relative; }
       .sala-control .empty-graph { padding: 40px; color: var(--text-muted); font-size: 13px; }
-      .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+      .sala-control .stage { user-select: none; }
+      .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; user-select: none; }
       .sala-control svg.connectors path { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
       .sala-control svg.connectors path.live { stroke: var(--s-running); opacity: .9; stroke-dasharray: 5 4; animation: dash 1.1s linear infinite; }
       @media (prefers-reduced-motion: reduce) { .sala-control svg.connectors path.live { animation: none; } }

@@ -431,7 +431,8 @@ function Styles() {
       .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .12s ease, opacity .12s ease; }
       .sala-control .dispatch-btn:hover:not(:disabled) { filter: brightness(1.1); }
       .sala-control .dispatch-btn:disabled { opacity: .35; cursor: not-allowed; }
-      .sala-control .stage-wrap { padding: 18px 24px 6px; }
+      .sala-control .stage-wrap { padding: 22px 24px 18px; }
+      .sala-control .stage-wrap + .stage-wrap { border-top: 1px solid var(--border-base); margin-top: 4px; }
       .sala-control .stage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
       .sala-control .stage-title-block { display: flex; align-items: baseline; gap: 8px; }
       .sala-control .stage-title { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; font-size: 12px; font-weight: 700; color: var(--primary-light); }
@@ -439,7 +440,8 @@ function Styles() {
       .sala-control .stage { position: relative; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: auto; background-image: linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px); background-size: 28px 28px; max-height: 46vh; }
       .sala-control .stage-inner { position: relative; }
       .sala-control .empty-graph { padding: 40px; color: var(--text-muted); font-size: 13px; }
-      .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+      .sala-control .stage { user-select: none; }
+      .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; user-select: none; }
       .sala-control svg.connectors path { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
       .sala-control svg.connectors path.live { stroke: var(--s-running); opacity: .9; stroke-dasharray: 5 4; animation: dash 1.1s linear infinite; }
       @media (prefers-reduced-motion: reduce) { .sala-control svg.connectors path.live { animation: none; } }
