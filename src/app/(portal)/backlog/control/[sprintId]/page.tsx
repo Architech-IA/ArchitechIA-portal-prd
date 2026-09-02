@@ -192,7 +192,7 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
             <h1>Sala de Control</h1>
           </div>
           <nav className="breadcrumb">
-            <Link href="/control" className="back-link">← Sprints</Link>
+            <Link href="/backlog/control" className="back-link">← Sprints</Link>
             <span className="sep">·</span>
             <span className="code mono">{data?.sprint.sprintCode ?? '…'}</span>
             <span className="sep">·</span>

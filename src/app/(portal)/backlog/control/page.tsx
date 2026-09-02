@@ -76,7 +76,7 @@ export default function ControlIndexPage() {
         {sprints === null && <div className="empty">Cargando…</div>}
         {sprints?.length === 0 && <div className="empty">No hay sprints todavía.</div>}
         {sprints?.map((s) => (
-          <Link key={s.id} href={`/control/${s.id}`} className="row">
+          <Link key={s.id} href={`/backlog/control/${s.id}`} className="row">
             <span className="code">{s.sprintCode ?? s.id.slice(0, 8)}</span>
             <span className="name">{s.name}</span>
             <span className="meta">{s.solucion?.nombre ?? '—'} · {s._count.items} tasks</span>
