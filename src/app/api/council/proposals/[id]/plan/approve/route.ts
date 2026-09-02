@@ -40,15 +40,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Se genera el id explicitamente. Tambien se corrige 'PRODUCTO' (no es
     // uno de los tipos validos: PROJECT, DEMO, PARTNERSHIP, PRODUCT) por
     // 'PRODUCT'.
+    //
+    // "repositorio" viene del dimensionamiento que Orion pregunta en el
+    // Kickoff (chat/route.ts) y que extract/route.ts estructura: si la
+    // solucion es un modulo del portal, queda 'portal-architechia'; si es
+    // un producto/demo independiente, el nombre de repo sugerido. El motor
+    // de dispatch (taskGraph/gitWorktree) todavia solo sabe operar contra
+    // portal-architechia — este campo por ahora solo deja el dato
+    // registrado para que a futuro se pueda usar para crear/desplegar en
+    // un repo separado.
     let solucionId: string | null = plan.solucionId ?? null
     if (!solucionId && plan.solucionPropuesta?.name) {
       const rows = await prisma.$queryRawUnsafe<any[]>(
-        `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', NOW(), NOW())
+        `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, repositorio, "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', $4, NOW(), NOW())
          RETURNING id`,
         crypto.randomUUID(),
         plan.solucionPropuesta.name,
-        plan.solucionPropuesta.description ?? null
+        plan.solucionPropuesta.description ?? null,
+        plan.solucionPropuesta.repositorio ?? 'portal-architechia'
       )
       solucionId = rows[0]?.id ?? null
     }

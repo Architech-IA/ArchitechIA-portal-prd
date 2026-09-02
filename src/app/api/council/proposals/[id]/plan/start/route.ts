@@ -222,6 +222,16 @@ Con todo lo anterior, genera el JSON del plan de ejecucion definitivo.
 Incluye: solucionId (o solucionPropuesta), epic, sprints con tasks.
 Cada task DEBE tener areaSlug. Puedes proponer areas con "new:nombre-area".
 
+DIMENSIONAMIENTO (solo si estas proponiendo una Solucion nueva, es decir
+solucionPropuesta != null): solucionPropuesta DEBE incluir tambien un
+campo "repositorio". Usa el literal "portal-architechia" si esto es un
+modulo/feature que va a vivir DENTRO del portal ArchiTechIA (la mayoria de
+los casos). Si de la conversacion o el contexto surge que esto es un
+producto, demo o MVP independiente que deberia tener su propio repo y
+desplegarse por separado, proponé un nombre de repo nuevo en kebab-case
+(ej: "oficina-virtual-inbox") en vez de "portal-architechia". Si no está
+claro, usá "portal-architechia" por default — no lo dejes vacío ni null.
+
 Cada task DEBE tener tambien agentSlug asignado: buscá en AGENTES
 DISPONIBLES el agente cuyo area coincida con el areaSlug de esa task (por
 ejemplo, un task con areaSlug "infra" va con el agente cuya area sea
@@ -241,7 +251,7 @@ cliente X", luego "Crear endpoints de X" dependiendo de la anterior, luego
 verificables a 1 sola task ancha que probablemente no termine.
 
 Formato JSON exacto:
-{"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":null,"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"localId":"s1-t1","dependsOnLocalId":null,"title":"...","description":"...","areaSlug":"...","agentSlug":"slug-del-agente-de-esa-area","priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
+{"needsMoreInfo":false,"questions":[],"planRationale":"resumen del plan","solucionId":null,"solucionPropuesta":{"name":"...","description":"...","repositorio":"portal-architechia"},"epic":{"name":"...","description":"...","estimatedWeeks":4},"sprints":[{"name":"Sprint 1 - ...","goal":"...","areaSlug":"...","estimatedWeeks":2,"tasks":[{"localId":"s1-t1","dependsOnLocalId":null,"title":"...","description":"...","areaSlug":"...","agentSlug":"slug-del-agente-de-esa-area","priority":"HIGH","estimatedHours":8,"rationaleArea":"por que esta area"}]}]}`
     } else {
       userMsg = `${baseContext}${prevContext}
 

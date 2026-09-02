@@ -32,10 +32,11 @@ export async function POST(req: NextRequest) {
   // que el LLM la adivine mucho mas adelante en plan/start.
   if (!solucionId && solucionPropuesta?.name) {
     const solRows = await prisma.$queryRawUnsafe<any[]>(
-      `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', NOW(), NOW())
+      `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, repositorio, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', $4, NOW(), NOW())
        RETURNING id`,
-      crypto.randomUUID(), solucionPropuesta.name, solucionPropuesta.description ?? null
+      crypto.randomUUID(), solucionPropuesta.name, solucionPropuesta.description ?? null,
+      solucionPropuesta.repositorio ?? 'portal-architechia'
     )
     solucionId = solRows[0]?.id ?? null
   }

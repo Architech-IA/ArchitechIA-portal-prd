@@ -26,7 +26,7 @@ Responde SOLO con este JSON exacto (sin markdown, sin explicaciones):
   "description": "descripción ejecutiva de 2-3 oraciones: contexto, problema y objetivo",
   "solucionSugerida": {
     "solucionId": "ID exacto de una solución existente de la lista, o null si ninguna aplica",
-    "solucionPropuesta": { "name": "nombre corto de la solución nueva", "description": "qué es" } o null si usaste solucionId
+    "solucionPropuesta": { "name": "nombre corto de la solución nueva", "description": "qué es", "repositorio": "portal-architechia | nombre-sugerido-para-repo-nuevo" } o null si usaste solucionId
   },
   "epic": {
     "name": "nombre de la épica (objetivo de negocio principal)",
@@ -57,6 +57,12 @@ Reglas:
 - Entre 2 y 5 tasks por sprint (concretas y accionables, no ideas vagas)
 - Si algo no está claro, inferí razonablemente desde el contexto
 - No inventes un solucionId que no esté en la lista
+- Si estás creando una Solución nueva (solucionPropuesta), definí siempre "repositorio":
+  usá el literal "portal-architechia" si de la conversación se desprende que esto es un
+  módulo/feature que vive DENTRO del portal; si el socio indicó (o la conversación deja
+  claro) que es un producto, demo o MVP independiente, proponé un nombre de repo nuevo en
+  kebab-case (ej: "oficina-virtual-inbox"). Si la conversación no lo aclaró, usá
+  "portal-architechia" como default, no lo dejes vacío.
 - Responde SOLO con el JSON`
 }
 
