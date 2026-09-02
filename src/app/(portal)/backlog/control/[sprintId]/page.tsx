@@ -278,11 +278,11 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
           </nav>
           <div className="topbar-spacer" />
           <div className="status-summary">
-            <span className="chip c-done"><i className="dot" />Hechas <strong>{counts.done}</strong></span>
-            <span className="chip c-running"><i className="dot" />En curso <strong>{counts.running}</strong></span>
-            <span className="chip c-blocked"><i className="dot" />Bloqueadas <strong>{counts.blocked}</strong></span>
-            <span className="chip c-failed"><i className="dot" />Fallidas <strong>{counts.failed}</strong></span>
-            <span className="chip c-pending"><i className="dot" />En cola <strong>{counts.pending}</strong></span>
+            <span className="chip c-done"><i className="dot" /><strong>{counts.done}</strong></span>
+            <span className="chip c-running"><i className="dot" /><strong>{counts.running}</strong></span>
+            <span className="chip c-blocked"><i className="dot" /><strong>{counts.blocked}</strong></span>
+            <span className="chip c-failed"><i className="dot" /><strong>{counts.failed}</strong></span>
+            <span className="chip c-pending"><i className="dot" /><strong>{counts.pending}</strong></span>
           </div>
           <button
             className="dispatch-btn"
@@ -471,17 +471,17 @@ function Styles() {
       .sala-control * { box-sizing: border-box; }
       .sala-control .mono { font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; }
       .sala-control .app { display: flex; flex-direction: column; min-height: 100%; }
-      .sala-control .topbar { display: flex; align-items: center; gap: 20px; padding: 16px 24px; border-bottom: 1px solid var(--border-base); background: var(--bg-elevated); backdrop-filter: blur(20px); flex-wrap: wrap; }
+      .sala-control .topbar { height: 30px; display: flex; align-items: center; gap: 20px; padding: 0 20px; border-bottom: 1px solid var(--border-base); background: var(--bg-elevated); backdrop-filter: blur(20px); flex-wrap: nowrap; overflow: hidden; }
       .sala-control .brand { display: flex; align-items: baseline; gap: 10px; margin-right: 4px; }
       .sala-control .brand-mark { width: 9px; height: 9px; border-radius: 2px; background: var(--primary); display: inline-block; transform: rotate(45deg); flex: none; }
       .sala-control .brand h1 { font-size: 16px; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
-      .sala-control .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; flex-wrap: wrap; }
+      .sala-control .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; flex-wrap: nowrap; overflow: hidden; }
       .sala-control .back-link { color: var(--primary-light); text-decoration: none; font-weight: 600; }
       .sala-control .back-link:hover { text-decoration: underline; }
       .sala-control .breadcrumb .code { font-size: 12px; padding: 2px 7px; border-radius: 5px; background: var(--glass-bg); color: var(--text-primary); border: 1px solid var(--border-base); }
       .sala-control .breadcrumb .sep { color: var(--text-muted); }
       .sala-control .topbar-spacer { flex: 1; }
-      .sala-control .status-summary { display: flex; gap: 6px; flex-wrap: wrap; }
+      .sala-control .status-summary { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; }
       .sala-control .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px 5px 8px; border-radius: 100px; border: 1px solid var(--border-base); background: var(--glass-bg); color: var(--text-secondary); }
       .sala-control .chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
       .sala-control .chip strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
@@ -542,7 +542,7 @@ function Styles() {
       .sala-control .avatar { width: 15px; height: 15px; border-radius: 50%; background: var(--primary-dim); color: var(--primary-light); font-size: 8.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
       .sala-control .trace-wrap { padding: 14px 24px 24px; flex: 1; display: flex; flex-direction: column; min-height: 260px; }
       .sala-control .trace-panel { flex: 1; display: flex; flex-direction: column; background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.02); }
-      .sala-control .trace-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-base); background: var(--glass-bg); flex-wrap: wrap; }
+      .sala-control .trace-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-base); background: var(--glass-bg); flex-wrap: nowrap; overflow: hidden; }
       .sala-control .trace-head .t-code { font-size: 12px; color: var(--text-muted); }
       .sala-control .trace-head .t-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
       .sala-control .trace-head-spacer { flex: 1; }
