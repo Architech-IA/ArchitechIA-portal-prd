@@ -36,7 +36,7 @@ const STATUS_MAP: Record<string, { label: string; pill: string }> = {
 
 const COL_WIDTH = 280
 const NODE_WIDTH = 200
-const ROW_HEIGHT = 100
+const ROW_HEIGHT = 132
 const STAGE_PAD = 24
 
 function formatDuration(startedAt: string | null, finishedAt: string | null): string {
@@ -519,7 +519,7 @@ function Styles() {
       .sala-control .pill.failed .dot { background: var(--s-failed); }
       .sala-control .pill.pending { background: var(--s-pending-soft); color: var(--text-secondary); }
       .sala-control .pill.pending .dot { background: var(--s-pending); }
-      .sala-control .node-title { font-size: 12.5px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; color: var(--text-primary); }
+      .sala-control .node-title { font-size: 12.5px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .sala-control .node-foot { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text-muted); gap: 6px; }
       .sala-control .node-foot .agent { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .sala-control .avatar { width: 15px; height: 15px; border-radius: 50%; background: var(--primary-dim); color: var(--primary-light); font-size: 8.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
