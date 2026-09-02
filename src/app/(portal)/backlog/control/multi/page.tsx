@@ -28,7 +28,7 @@ interface TraceEvent { id: string; kind: string; message: string; createdAt: str
 const STATUS_MAP: Record<string, { label: string; pill: string }> = {
   BACKLOG: { label: 'En cola', pill: 'pending' },
   IN_PROGRESS: { label: 'En curso', pill: 'running' },
-  DONE: { label: 'Hecha', pill: 'done' },
+  DONE: { label: 'DONE', pill: 'done' },
   FAILED: { label: 'Fallida', pill: 'failed' },
   BLOCKED: { label: 'Bloqueada', pill: 'blocked' },
   CANCELLED: { label: 'Cancelada', pill: 'pending' },
@@ -505,7 +505,7 @@ function Styles() {
       .sala-control .node.selected { border-color: rgba(255,90,0,0.4); box-shadow: 0 0 0 2px var(--primary-dim), 0 4px 24px rgba(0,0,0,0.45); }
       .sala-control .node-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 6px; }
       .sala-control .node-code { font-size: 10.5px; color: var(--text-muted); letter-spacing: .02em; }
-      .sala-control .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 100px; white-space: nowrap; }
+      .sala-control .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 100px; white-space: nowrap; }
       .sala-control .pill .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
       .sala-control .pill.done { background: var(--s-done-soft); color: var(--s-done); }
       .sala-control .pill.done .dot { background: var(--s-done); }
