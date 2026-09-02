@@ -113,6 +113,24 @@ function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selected
     return c
   }, [data])
 
+  const backlogTaskIds = useMemo(() => data.tasks.filter((t) => t.status === 'BACKLOG').map((t) => t.id), [data])
+  const [dispatching, setDispatching] = useState(false)
+
+  // Mismo mecanismo que la vista de un solo sprint: dispara las tasks en
+  // BACKLOG de ESTE sprint via /api/executor/dispatch-chain (respeta
+  // dependencias reales), sin esperar a que la cadena entera termine — el
+  // polling de 5s que ya corre en la pagina refleja el avance solo.
+  function handleDispatch() {
+    if (backlogTaskIds.length === 0 || dispatching) return
+    setDispatching(true)
+    fetch('/api/executor/dispatch-chain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskIds: backlogTaskIds }),
+    }).catch(() => {})
+    setTimeout(() => setDispatching(false), 2000)
+  }
+
   return (
     <section className="stage-wrap">
       <div className="stage-header">
@@ -127,6 +145,14 @@ function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selected
           <span className="chip c-failed"><i className="dot" />{counts.failed}</span>
           <span className="chip c-pending"><i className="dot" />{counts.pending}</span>
         </div>
+        <button
+          className="dispatch-btn"
+          disabled={backlogTaskIds.length === 0 || dispatching}
+          onClick={handleDispatch}
+          title={backlogTaskIds.length === 0 ? 'No hay tasks en cola para disparar' : `Disparar ${backlogTaskIds.length} task${backlogTaskIds.length !== 1 ? 's' : ''} en BACKLOG`}
+        >
+          {dispatching ? 'Disparando…' : `▶ Disparar (${backlogTaskIds.length})`}
+        </button>
       </div>
       <div className="stage">
         <div className="stage-inner" ref={stageRef} style={{ width: layout.width, height: layout.height }}>
@@ -368,6 +394,9 @@ function Styles() {
       .sala-control .chip.c-failed .dot { background: var(--s-failed); }
       .sala-control .chip.c-pending .dot { background: var(--s-pending); }
       .sala-control .error-banner { margin: 14px 24px 0; padding: 10px 14px; border-radius: 10px; background: var(--s-failed-soft); color: var(--s-failed); font-size: 13px; }
+      .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .12s ease, opacity .12s ease; }
+      .sala-control .dispatch-btn:hover:not(:disabled) { filter: brightness(1.1); }
+      .sala-control .dispatch-btn:disabled { opacity: .35; cursor: not-allowed; }
       .sala-control .stage-wrap { padding: 18px 24px 6px; }
       .sala-control .stage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
       .sala-control .stage-title-block { display: flex; align-items: baseline; gap: 8px; }

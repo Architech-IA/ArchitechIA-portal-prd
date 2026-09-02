@@ -95,6 +95,7 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
   const [selected, setSelected] = useState<Task | null>(null)
   const [events, setEvents] = useState<TraceEvent[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [dispatching, setDispatching] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -182,6 +183,31 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
     return c
   }, [data])
 
+  const backlogTaskIds = useMemo(
+    () => (data?.tasks ?? []).filter((t) => t.status === 'BACKLOG').map((t) => t.id),
+    [data]
+  )
+
+  // Dispara las tasks en BACKLOG de este sprint respetando dependencias
+  // reales (dependsOnTaskId) — mismo motor que ya usa el resto del sistema
+  // (plan/approve, dispatch-chain manual), no uno nuevo. El endpoint
+  // arranca runTaskChain server-side y solo responde cuando TERMINA toda
+  // la cadena (puede tardar minutos) — no se espera esa respuesta acá; el
+  // fetch se lanza sin await (el server sigue procesando aunque el browser
+  // no espere) y el boton se reactiva a los 2s, tiempo de sobra para que
+  // el primer POST /dispatch al Harness ya haya ocurrido. El avance real
+  // se ve solo, vía el polling de 5s del grafo que ya esta corriendo.
+  function handleDispatch() {
+    if (backlogTaskIds.length === 0 || dispatching) return
+    setDispatching(true)
+    fetch('/api/executor/dispatch-chain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskIds: backlogTaskIds }),
+    }).catch((err) => setError(err instanceof Error ? err.message : String(err)))
+    setTimeout(() => setDispatching(false), 2000)
+  }
+
   return (
     <div className="sala-control">
       <Styles />
@@ -206,6 +232,14 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
             <span className="chip c-failed"><i className="dot" />Fallidas <strong>{counts.failed}</strong></span>
             <span className="chip c-pending"><i className="dot" />En cola <strong>{counts.pending}</strong></span>
           </div>
+          <button
+            className="dispatch-btn"
+            disabled={backlogTaskIds.length === 0 || dispatching}
+            onClick={handleDispatch}
+            title={backlogTaskIds.length === 0 ? 'No hay tasks en cola para disparar' : `Disparar ${backlogTaskIds.length} task${backlogTaskIds.length !== 1 ? 's' : ''} en BACKLOG`}
+          >
+            {dispatching ? 'Disparando…' : `▶ Disparar (${backlogTaskIds.length})`}
+          </button>
         </header>
 
         {error && <div className="error-banner">{error}</div>}
@@ -361,6 +395,9 @@ function Styles() {
       .sala-control .chip.c-failed .dot { background: var(--s-failed); }
       .sala-control .chip.c-pending .dot { background: var(--s-pending); }
       .sala-control .error-banner { margin: 14px 24px 0; padding: 10px 14px; border-radius: 10px; background: var(--s-failed-soft); color: var(--s-failed); font-size: 13px; }
+      .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .12s ease, opacity .12s ease; }
+      .sala-control .dispatch-btn:hover:not(:disabled) { filter: brightness(1.1); }
+      .sala-control .dispatch-btn:disabled { opacity: .35; cursor: not-allowed; }
       .sala-control .stage-wrap { padding: 22px 24px 10px; }
       .sala-control .stage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
       .sala-control .stage-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
