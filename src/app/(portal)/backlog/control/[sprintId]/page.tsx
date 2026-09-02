@@ -33,7 +33,7 @@ const STATUS_MAP: Record<string, { label: string; pill: string }> = {
   CANCELLED: { label: 'Cancelada', pill: 'pending' },
 }
 
-const COL_WIDTH = 230
+const COL_WIDTH = 280
 const NODE_WIDTH = 200
 const ROW_HEIGHT = 100
 const NODE_HEIGHT = 74
@@ -101,6 +101,13 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
   const [dispatching, setDispatching] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Posiciones movidas a mano (drag) — pisan la posicion calculada por el
+  // layout automatico solo para esa card. No se persiste: es puramente para
+  // acomodar la vista mientras la mirás, se pierde al recargar.
+  const [manualPos, setManualPos] = useState<Record<string, { x: number; y: number }>>({})
+  const [selectedConnector, setSelectedConnector] = useState<number | null>(null)
+  const dragState = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number; dragged: boolean } | null>(null)
+
   useEffect(() => {
     let cancelled = false
     async function loadGraph() {
@@ -149,12 +156,12 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
   const layout = useMemo(() => (data ? computeLayout(data.tasks) : null), [data])
 
   const stageRef = useRef<HTMLDivElement>(null)
-  const [connectors, setConnectors] = useState<{ d: string; live: boolean }[]>([])
+  const [connectors, setConnectors] = useState<{ id: string; d: string; live: boolean }[]>([])
 
   useEffect(() => {
     if (!data || !layout || !stageRef.current) return
     const stageRect = stageRef.current.getBoundingClientRect()
-    const next: { d: string; live: boolean }[] = []
+    const next: { id: string; d: string; live: boolean }[] = []
     for (const t of data.tasks) {
       if (!t.dependsOnTaskId) continue
       const parentEl = stageRef.current.querySelector<HTMLElement>(`[data-node="${t.dependsOnTaskId}"]`)
@@ -166,16 +173,58 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
       const y1 = pr.top + pr.height / 2 - stageRect.top
       const x2 = cr.left - stageRect.left
       const y2 = cr.top + cr.height / 2 - stageRect.top
-      const midX = x1 + (x2 - x1) / 2
+      // El tronco vertical va cerca del padre (offset fijo, no el punto
+      // medio geometrico) para dejar espacio de sobra antes de llegar a la
+      // columna de los hijos — con el punto medio exacto, cuando dos
+      // hermanos comparten padre, la linea vertical quedaba pegada al borde
+      // de las cards y daba la falsa impresion de que estaban unidas entre
+      // si (en vez de ambas colgando del mismo padre).
+      const midX = x1 + Math.min(24, (x2 - x1) / 2)
+      const r = Math.min(8, Math.abs(y2 - y1) / 2, midX - x1, x2 - midX)
       const d = y1 === y2
         ? `M ${x1} ${y1} L ${x2} ${y2}`
-        : `M ${x1} ${y1} L ${midX} ${y1} L ${midX} ${y2} L ${x2} ${y2}`
+        : y2 > y1
+          ? `M ${x1} ${y1} L ${midX - r} ${y1} Q ${midX} ${y1} ${midX} ${y1 + r} L ${midX} ${y2 - r} Q ${midX} ${y2} ${midX + r} ${y2} L ${x2} ${y2}`
+          : `M ${x1} ${y1} L ${midX - r} ${y1} Q ${midX} ${y1} ${midX} ${y1 - r} L ${midX} ${y2 + r} Q ${midX} ${y2} ${midX + r} ${y2} L ${x2} ${y2}`
       const parentTask = data.tasks.find((p) => p.id === t.dependsOnTaskId)
       const live = t.status === 'IN_PROGRESS' || parentTask?.status === 'IN_PROGRESS'
-      next.push({ d, live })
+      next.push({ id: t.id, d, live })
     }
     setConnectors(next)
-  }, [data, layout])
+  }, [data, layout, manualPos])
+
+  // --- Drag de cards: reposiciona solo visualmente (manualPos), nunca
+  // dispara la seleccion de la task ni toca el panel de traza. Distingue
+  // "hubo drag real" de "fue un click" por umbral de movimiento — si el
+  // mouse se movio mas de 4px, el click que sigue al soltar se ignora.
+  function startDrag(e: React.MouseEvent, task: Task, current: { x: number; y: number }) {
+    if (e.button !== 0) return
+    dragState.current = { id: task.id, startX: e.clientX, startY: e.clientY, origX: current.x, origY: current.y, dragged: false }
+    const onMove = (ev: MouseEvent) => {
+      const ds = dragState.current
+      if (!ds) return
+      const dx = ev.clientX - ds.startX
+      const dy = ev.clientY - ds.startY
+      if (!ds.dragged && Math.hypot(dx, dy) > 4) ds.dragged = true
+      if (ds.dragged) {
+        setManualPos((prev) => ({ ...prev, [ds.id]: { x: ds.origX + dx, y: ds.origY + dy } }))
+      }
+    }
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      // El dragState se limpia en el proximo tick, despues de que el click
+      // sintetico del mouseup ya paso por handleNodeClick.
+      setTimeout(() => { dragState.current = null }, 0)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
+  function handleNodeClick(task: Task) {
+    if (dragState.current?.dragged) return
+    setSelected(task)
+  }
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { done: 0, running: 0, blocked: 0, failed: 0, pending: 0 }
@@ -267,12 +316,20 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
             >
               <svg className="connectors" width={layout?.width ?? 600} height={layout?.height ?? 300}>
                 {connectors.map((c, i) => (
-                  <path key={i} d={c.d} className={c.live ? 'live' : ''} />
+                  <g key={c.id}>
+                    <path
+                      d={c.d}
+                      className="connector-hit"
+                      onClick={(e) => { e.stopPropagation(); setSelectedConnector((prev) => (prev === i ? null : i)) }}
+                    />
+                    <path d={c.d} className={[c.live ? 'live' : '', selectedConnector === i ? 'selected' : ''].filter(Boolean).join(' ')} />
+                  </g>
                 ))}
               </svg>
 
               {data?.tasks.map((t) => {
-                const p = layout?.pos.get(t.id)
+                const manual = manualPos[t.id]
+                const p = manual ?? layout?.pos.get(t.id)
                 const st = STATUS_MAP[t.status] ?? STATUS_MAP.BACKLOG
                 const initial = (t.assigneeName ?? '?').charAt(0).toUpperCase()
                 return (
@@ -281,7 +338,8 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
                     data-node={t.id}
                     className={`node ${selected?.id === t.id ? 'selected' : ''}`}
                     style={{ left: p?.x ?? 0, top: p?.y ?? 0, width: NODE_WIDTH }}
-                    onClick={() => setSelected(t)}
+                    onMouseDown={(e) => startDrag(e, t, p ?? { x: 0, y: 0 })}
+                    onClick={() => handleNodeClick(t)}
                   >
                     <div className="node-top">
                       <span className="node-code mono">{t.taskCode ?? t.id.slice(0, 8)}</span>
@@ -453,11 +511,14 @@ function Styles() {
       .sala-control .stage { user-select: none; }
       .sala-control svg.connectors { position: absolute; inset: 0; overflow: visible; pointer-events: none; user-select: none; }
       .sala-control svg.connectors path { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+      .sala-control svg.connectors path.connector-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; opacity: 1; }
       .sala-control svg.connectors path.live { stroke: var(--s-running); opacity: .9; stroke-dasharray: 5 4; animation: dash 1.1s linear infinite; }
+      .sala-control svg.connectors path.selected { stroke: var(--primary-light); opacity: 1; stroke-width: 2.6; }
       @media (prefers-reduced-motion: reduce) { .sala-control svg.connectors path.live { animation: none; } }
       @keyframes dash { to { stroke-dashoffset: -18; } }
-      .sala-control .node { position: absolute; border-radius: var(--radius); border: 1px solid var(--border-base); background: var(--bg-card); backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.02); padding: 10px 12px 11px; cursor: pointer; transition: transform .12s ease, border-color .12s ease; }
-      .sala-control .node:hover { transform: translateY(-1px); }
+      .sala-control .node { position: absolute; border-radius: var(--radius); border: 1px solid var(--border-base); background: var(--bg-card); backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.02); padding: 10px 12px 11px; cursor: grab; transition: border-color .12s ease; }
+      .sala-control .node:active { cursor: grabbing; }
+      .sala-control .node:hover { border-color: var(--glass-border-md); }
       .sala-control .node.selected { border-color: rgba(255,90,0,0.4); box-shadow: 0 0 0 2px var(--primary-dim), 0 4px 24px rgba(0,0,0,0.45); }
       .sala-control .node-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 6px; }
       .sala-control .node-code { font-size: 10.5px; color: var(--text-muted); letter-spacing: .02em; }
