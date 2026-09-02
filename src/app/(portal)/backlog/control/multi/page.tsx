@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
+interface ChecklistItem { criterion: string; passed: boolean; reason: string }
 interface Task {
   id: string
   taskCode: string | null
@@ -14,6 +15,8 @@ interface Task {
   execId: string | null
   startedAt: string | null
   finishedAt: string | null
+  resultado: string | null
+  checklist: ChecklistItem[] | null
 }
 interface Sprint {
   id: string; name: string; goal: string | null; sprintCode: string | null; status: string
@@ -316,6 +319,9 @@ function ControlMultiPageInner() {
               </span>
             </div>
             <div className="trace-body">
+              {selected && (selected.status === 'FAILED' || selected.status === 'BLOCKED') && (
+                <DiagnosisBlock task={selected} />
+              )}
               {selected && events.length === 0 && (
                 <div className="trace-empty-note">
                   <span>⏸</span>
@@ -356,6 +362,34 @@ function iconGlyph(kind: string): string {
     case 'fail': return '✕'
     default: return '·'
   }
+}
+
+// Mismo informe de diagnostico que la vista de un solo sprint — ver ese
+// archivo para la explicacion completa.
+function DiagnosisBlock({ task }: { task: Task }) {
+  if (!task.resultado && !task.checklist) return null
+  const kind = task.status === 'FAILED' ? 'failed' : 'blocked'
+  return (
+    <div className={`diagnosis diagnosis-${kind}`}>
+      <div className="diagnosis-title">
+        {task.status === 'FAILED' ? '✕ Diagnóstico de la falla' : '⚠ Diagnóstico del bloqueo'}
+      </div>
+      {task.checklist && task.checklist.length > 0 && (
+        <ul className="diagnosis-checklist">
+          {task.checklist.map((c, i) => (
+            <li key={i} className={c.passed ? 'ok' : 'bad'}>
+              <span className="ck-icon">{c.passed ? '✓' : '✕'}</span>
+              <span>
+                <span className="ck-criterion">{c.criterion}</span>
+                {!c.passed && c.reason && <div className="ck-reason">{c.reason}</div>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {task.resultado && <pre className="diagnosis-text">{task.resultado}</pre>}
+    </div>
+  )
 }
 
 function Styles() {
@@ -442,6 +476,20 @@ function Styles() {
       .sala-control .trace-head-spacer { flex: 1; }
       .sala-control .trace-head .t-dur { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
       .sala-control .trace-body { flex: 1; overflow: auto; padding: 12px 18px 14px; }
+      .sala-control .diagnosis { border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; border: 1px solid; }
+      .sala-control .diagnosis-failed { background: var(--s-failed-soft); border-color: rgba(239,68,68,0.35); }
+      .sala-control .diagnosis-blocked { background: var(--s-blocked-soft); border-color: rgba(245,158,11,0.35); }
+      .sala-control .diagnosis-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+      .sala-control .diagnosis-failed .diagnosis-title { color: var(--s-failed); }
+      .sala-control .diagnosis-blocked .diagnosis-title { color: var(--s-blocked); }
+      .sala-control .diagnosis-checklist { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+      .sala-control .diagnosis-checklist li { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; }
+      .sala-control .diagnosis-checklist .ck-icon { flex: none; font-weight: 800; margin-top: 1px; }
+      .sala-control .diagnosis-checklist li.ok .ck-icon { color: var(--s-done); }
+      .sala-control .diagnosis-checklist li.bad .ck-icon { color: var(--s-failed); }
+      .sala-control .diagnosis-checklist .ck-criterion { color: var(--text-primary); font-weight: 600; }
+      .sala-control .diagnosis-checklist .ck-reason { color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
+      .sala-control .diagnosis-text { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; font-size: 11.5px; line-height: 1.6; color: var(--text-primary); background: rgba(0,0,0,0.15); border-radius: 8px; padding: 10px 12px; margin: 0; max-height: 220px; overflow: auto; }
       .sala-control .trace-line { display: grid; grid-template-columns: 70px 16px 1fr; gap: 10px; align-items: start; padding: 3px 0; font-size: 12.5px; line-height: 1.55; }
       .sala-control .trace-line .t-time { color: var(--text-muted); font-variant-numeric: tabular-nums; font-size: 11.5px; padding-top: 1px; }
       .sala-control .trace-line .t-icon { width: 16px; height: 16px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; margin-top: 1px; }

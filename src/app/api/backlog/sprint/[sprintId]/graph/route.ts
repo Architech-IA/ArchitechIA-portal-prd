@@ -25,14 +25,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ spri
 
   const tasks = await prisma.$queryRawUnsafe<{
     id: string; taskCode: string | null; title: string; status: string;
-    assigneeName: string | null; dependsOnTaskId: string | null;
+    assigneeName: string | null; dependsOnTaskId: string | null; resultado: string | null;
     execId: string | null; startedAt: Date | null; finishedAt: Date | null;
+    artifacts: { checklist?: { criterion: string; passed: boolean; reason: string }[] } | null;
   }[]>(
-    `SELECT bi.id, bi."taskCode", bi.title, bi.status, bi."assigneeName", bi."dependsOnTaskId",
-            te.id as "execId", te."startedAt", te."finishedAt"
+    `SELECT bi.id, bi."taskCode", bi.title, bi.status, bi."assigneeName", bi."dependsOnTaskId", bi.resultado,
+            te.id as "execId", te."startedAt", te."finishedAt", te.artifacts
      FROM "BacklogItem" bi
      LEFT JOIN LATERAL (
-       SELECT id, "startedAt", "finishedAt" FROM "TaskExecution"
+       SELECT id, "startedAt", "finishedAt", artifacts FROM "TaskExecution"
        WHERE "backlogItemId" = bi.id ORDER BY "startedAt" DESC LIMIT 1
      ) te ON true
      WHERE bi."sprintId" = $1
@@ -60,6 +61,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ spri
       execId: t.execId,
       startedAt: t.startedAt,
       finishedAt: t.finishedAt,
+      // Diagnostico completo — solo tiene sentido mostrarlo cuando la task
+      // no quedo DONE, pero se manda siempre que exista (el frontend decide
+      // cuando renderizarlo segun el status).
+      resultado: t.resultado,
+      checklist: t.artifacts?.checklist ?? null,
     })),
   })
 }
