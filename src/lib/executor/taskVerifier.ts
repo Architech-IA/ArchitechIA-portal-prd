@@ -60,7 +60,8 @@ CRITERIOS DE ACEPTACIÓN:
 ${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
 
 RESULTADO REPORTADO:
-${resultSummary.substring(0, 3000) || '(el resultado llegó vacío)'}
+${resultSummary.substring(0, 8000) || '(el resultado llegó vacío)'}
+${resultSummary.length > 8000 ? '\n[... resumen truncado aca solo para el verificador, el resultado real completo es mas largo ...]' : ''}
 
 Responde ÚNICAMENTE con JSON válido en este formato:
 {

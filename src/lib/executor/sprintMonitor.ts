@@ -14,7 +14,12 @@ export async function checkSprintCompletion(sprintId: string): Promise<void> {
   ) as { status: string }[]
 
   if (tasks.length === 0) return
-  const allTerminal = tasks.every(t => t.status === 'DONE' || t.status === 'FAILED' || t.status === 'CANCELLED')
+  // BUG REAL encontrado en produccion: BLOCKED (una task salteada en cascada
+  // porque su dependencia fallo, fix de esta misma sesion) no contaba como
+  // terminal aca — un sprint entero con varias tasks BLOCKED se quedaba en
+  // PLANNED para siempre, nunca generaba su resumen ni abria su PR, aunque
+  // ya no fuera a pasar nada mas con el sin intervencion humana.
+  const allTerminal = tasks.every(t => t.status === 'DONE' || t.status === 'FAILED' || t.status === 'CANCELLED' || t.status === 'BLOCKED')
   if (!allTerminal) return
 
   // Sprint is complete — generate summary and set REVIEW_PENDING
@@ -45,6 +50,7 @@ async function generateSprintSummary(sprintId: string): Promise<void> {
 
   const done = tasks.filter(t => t.status === 'DONE').length
   const failed = tasks.filter(t => t.status === 'FAILED').length
+  const blocked = tasks.filter(t => t.status === 'BLOCKED').length
 
   const tasksSummary = tasks.map(t =>
     `[${t.status}] ${t.title}${t.agentName ? ` (${t.agentName})` : ''}` +
@@ -53,7 +59,7 @@ async function generateSprintSummary(sprintId: string): Promise<void> {
 
   const userPrompt = `SPRINT: ${sprint.name}
 OBJETIVO: ${sprint.goal ?? '—'}
-COMPLETADAS: ${done}/${tasks.length} | FALLIDAS: ${failed}/${tasks.length}
+COMPLETADAS: ${done}/${tasks.length} | FALLIDAS: ${failed}/${tasks.length} | BLOQUEADAS (saltadas por una dependencia fallida): ${blocked}/${tasks.length}
 
 TAREAS:
 ${tasksSummary}
@@ -70,6 +76,7 @@ Sin markdown extra.`
   let metadata: Record<string, unknown> = {
     tasksCompleted: done,
     tasksFailed: failed,
+    tasksBlocked: blocked,
     closedAt: new Date().toISOString(),
     summary: `Sprint ${sprint.name}: ${done}/${tasks.length} tareas completadas.`,
     achievements: [] as string[],
@@ -97,7 +104,7 @@ Sin markdown extra.`
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
-        metadata = { ...metadata, ...parsed, tasksCompleted: done, tasksFailed: failed, closedAt: new Date().toISOString() }
+        metadata = { ...metadata, ...parsed, tasksCompleted: done, tasksFailed: failed, tasksBlocked: blocked, closedAt: new Date().toISOString() }
       }
     }
   } catch {
