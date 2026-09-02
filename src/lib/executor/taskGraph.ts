@@ -4,7 +4,14 @@ import { prisma } from '@/lib/prisma'
 import { dispatchTask } from '@/lib/executor/taskDispatcher'
 
 const POLL_INTERVAL_MS = 3000
-const MAX_WAIT_MS = 10 * 60 * 1000 // techo duro por nodo: 10 min esperando el cierre real de una tarea
+// Antes 10 min — quedo corto despues de subir MAX_TOOL_ITERATIONS de 8 a 20
+// en masd_worker.py: una task CODE real y compleja (ej. "QA & Functional
+// Testing Inbox") puede necesitar bastante mas de 10 min de punta a punta
+// con 20 rondas reales de herramientas. Ya no es fatal que este timeout se
+// cumpla (la excepcion se atrapa y se propaga como failed en cascada, sin
+// tirar abajo ramas independientes), pero igual conviene no cortar de mas
+// una tarea que esta progresando de verdad.
+const MAX_WAIT_MS = 20 * 60 * 1000 // techo duro por nodo: 20 min esperando el cierre real de una tarea
 
 // DIRECT_URL (puerto 5432, sin pgbouncer) en vez de DATABASE_URL: el
 // checkpointer corre su propio setup() con DDL y maneja su propio pool de
@@ -105,15 +112,31 @@ function makeTaskNode(taskId: string, parentId: string | null) {
     if (current.status === 'FAILED' || current.status === 'BLOCKED') {
       return { failed: { [taskId]: true } }
     }
-    if (current.status === 'BACKLOG') {
-      await dispatchTask(taskId)
-    }
-
-    const { status, resultado } = await waitForTaskCompletion(taskId)
-    if (status !== 'DONE') {
+    // BUG REAL encontrado en produccion corriendo la epica completa: si
+    // dispatchTask o waitForTaskCompletion TIRAN una excepcion (ej.
+    // waitForTaskCompletion agotando su timeout duro de 10 min esperando
+    // una tarea real que tardo demasiado), eso rechazaba TODA la promesa
+    // de graph.invoke() — el mismo problema que ya se habia arreglado para
+    // status no-DONE, pero sin cubrir el caso de una excepcion real en el
+    // medio. Visto en vivo: una tarea (QA) tardo mas de 10 minutos, tiro
+    // timeout, y eso dejo huerfanas a tasks de ramas totalmente
+    // independientes que ni siquiera habian arrancado todavia (nunca
+    // llegaron a ser evaluadas por su propio nodo). Fix: cualquier
+    // excepcion real durante el dispatch o la espera se trata igual que un
+    // status FAILED — se marca y se propaga en cascada, sin tirar.
+    try {
+      if (current.status === 'BACKLOG') {
+        await dispatchTask(taskId)
+      }
+      const { status, resultado } = await waitForTaskCompletion(taskId)
+      if (status !== 'DONE') {
+        return { failed: { [taskId]: true } }
+      }
+      return { results: { [taskId]: resultado ?? '' } }
+    } catch (err) {
+      console.error(`[TASK_GRAPH] Error real despachando/esperando ${taskId}:`, err)
       return { failed: { [taskId]: true } }
     }
-    return { results: { [taskId]: resultado ?? '' } }
   }
 }
 
