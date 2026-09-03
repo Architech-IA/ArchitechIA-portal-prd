@@ -2,6 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState, use as usePromise } from 'react'
 import Link from 'next/link'
+import { usePageActions } from '@/lib/pageActionsContext'
+import { Rocket, Layers, Map as MapIcon, Play } from 'lucide-react'
 
 interface ChecklistItem { criterion: string; passed: boolean; reason: string }
 interface Task {
@@ -100,6 +102,43 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
   const [error, setError] = useState<string | null>(null)
   const [dispatching, setDispatching] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { setActions } = usePageActions()
+
+  // Barra de pestañas Backlog/Sprint/Épicas/Solution/Sala de Control —
+  // ver comentario equivalente en /backlog/control/page.tsx.
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          Backlog
+        </Link>
+        <Link href="/backlog/sprint" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          <Rocket size={10}/> Sprint
+        </Link>
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
+        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,147,117,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1D9375' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          <Layers size={10}/> Épicas
+        </Link>
+        <Link href="/backlog/solution" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(127,119,221,0.08)'; (e.currentTarget as HTMLElement).style.color = '#7F77DD' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          <MapIcon size={10}/> Solution
+        </Link>
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
+        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
+          style={{ background: 'rgba(59,130,246,0.2)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }}>
+          <Play size={10}/> Sala de Control
+        </Link>
+      </div>
+    )
+    return () => setActions(null)
+  }, [])
 
   // Posiciones movidas a mano (drag) — pisan la posicion calculada por el
   // layout automatico solo para esa card. No se persiste: es puramente para

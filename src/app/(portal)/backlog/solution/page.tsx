@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePageActions } from '@/lib/pageActionsContext'
-import { Layers, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown, Calendar, Check, X as XIcon } from 'lucide-react'
+import { Layers, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown, Calendar, Check, X as XIcon, Play } from 'lucide-react'
 import Link from 'next/link'
 
 interface Sprint {
@@ -133,6 +133,12 @@ export default function SolutionPage() {
         <Link href="/backlog/solution" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
           style={{ background: 'rgba(127,119,221,0.2)', color: '#7F77DD', border: '1px solid rgba(127,119,221,0.3)' }}>
           <MapIcon size={10}/> Solution
+        </Link>
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
+        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#3b82f6' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          <Play size={10}/> Sala de Control
         </Link>
       </div>
     )

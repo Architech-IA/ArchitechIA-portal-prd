@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import { useSession } from 'next-auth/react'
-import { Plus, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Rocket, Calendar, Layers, Map as MapIcon, Upload, CheckSquare, Square } from 'lucide-react'
+import { Plus, X, Loader2, Zap, Bug, Wrench, TrendingUp, CreditCard, ChevronDown, Rocket, Calendar, Layers, Map as MapIcon, Upload, CheckSquare, Square, Play } from 'lucide-react'
 import BacklogItemDetail from '@/components/BacklogItemDetail'
 
 interface Solucion { id: string; nombre: string; tipo: string }
@@ -193,6 +193,12 @@ export default function SprintPage() {
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(127,119,221,0.08)'; (e.currentTarget as HTMLElement).style.color = '#7F77DD' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <MapIcon size={10}/> Solution
+        </Link>
+        <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
+        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#3b82f6' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
+          <Play size={10}/> Sala de Control
         </Link>
       </div>
     )
