@@ -86,10 +86,23 @@ function makeTaskNode(taskId: string, parentId: string | null) {
       // siempre, indistinguible en el tablero de "nunca se intento". Se deja
       // en BLOCKED con el motivo explicito, visible para quien mire el
       // Backlog.
+      //
+      // BUG REAL encontrado en la Sala de Control: el mensaje mostraba el
+      // UUID crudo del padre (ej. "4d669588-f473-...") — inutil para
+      // ubicarlo a simple vista. Se resuelve el taskCode real (que ya trae
+      // el codigo del sprint como prefijo, ej. "EAIH-0003-0010-019") para
+      // que el diagnostico sea legible sin tener que ir a buscar el id en
+      // la base.
+      const [parentTask] = await prisma.$queryRawUnsafe(
+        `SELECT "taskCode", title FROM "BacklogItem" WHERE id = $1`, parentId
+      ) as { taskCode: string | null; title: string }[]
+      const parentLabel = parentTask?.taskCode
+        ? `${parentTask.taskCode} (${parentTask.title})`
+        : parentId
       await prisma.$executeRawUnsafe(
         `UPDATE "BacklogItem" SET status = 'BLOCKED', resultado = $2 WHERE id = $1 AND status = 'BACKLOG'`,
         taskId,
-        `No se ejecutó: depende de la tarea ${parentId}, que no llegó a DONE (falló, quedó bloqueada, o dependía a su vez de otra que falló).`
+        `No se ejecutó: depende de la tarea ${parentLabel}, que no llegó a DONE (falló, quedó bloqueada, o dependía a su vez de otra que falló).`
       )
       return { failed: { [taskId]: true } }
     }
