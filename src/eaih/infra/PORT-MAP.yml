@@ -1,0 +1,59 @@
+# =============================================================================
+# EAIH — Port Allocation Map
+# =============================================================================
+# Cada servicio tiene un puerto fijo para evitar conflictos con el portal
+# ArchiTechIA existente (puerto 3003) y otros servicios del VPS
+# =============================================================================
+
+PORTS:
+  # --- EAIH Services ---
+  3010: "EAIH App (Development)"
+  3011: "EAIH App (Staging)"
+  
+  # --- Database ---
+  5433: "PostgreSQL (Development)"
+  5434: "PostgreSQL (Staging)"
+  
+  # --- Cache ---
+  6380: "Redis (Development)"
+  6381: "Redis (Staging)"
+  
+  # --- Admin UIs ---
+  5050: "pgAdmin (Development)"
+  5555: "Prisma Studio (Development)"
+  
+  # --- Monitoring ---
+  9090: "Prometheus (Staging)"
+  
+  # --- Reverse Proxy ---
+  80:   "HTTP (Nginx — redirected to HTTPS)"
+  443:  "HTTPS (Nginx — Staging)"
+  
+  # --- Reserved (Existing ArchitechIA) ---
+  3003: "Portal ArchiTechIA (production)"
+  9001: "Deploy webhook"
+  9100: "VPS Metrics agent"
+
+# =============================================================================
+# Network Topology
+# =============================================================================
+# 
+#  INTERNET
+#     │
+#     ▼
+#  [Nginx :80/:443]
+#     │
+#     ├── eaih-external-staging ──→ [EAIH App Staging :3011]
+#     │                                    │
+#     │                             eaih-internal-staging
+#     │                                    │
+#     │                          ┌─────────┼─────────┐
+#     │                          │         │         │
+#     │                     [Postgres]  [Redis]  [Prometheus]
+#     │                     :5434       :6381    :9090
+#     │
+#     └── (portal.architechia.co :3003 — existente)
+# 
+#  DEV (acceso solo local):
+#     [EAIH App Dev :3010] ──eaih-internal-dev──→ [Postgres :5433] + [Redis :6380]
+#                                              └── [pgAdmin :5050]
