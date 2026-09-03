@@ -3,6 +3,7 @@ import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
 import { runTaskChain } from '@/lib/executor/taskGraph'
 import crypto from 'crypto'
+import { generateSolucionCode, uniqueSolucionCode } from '@/lib/solucionCode'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -51,14 +52,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // un repo separado.
     let solucionId: string | null = plan.solucionId ?? null
     if (!solucionId && plan.solucionPropuesta?.name) {
+      // Toda Solucion debe tener solucionCode — ver comentario equivalente
+      // en council/proposals/route.ts.
+      const code = await uniqueSolucionCode(generateSolucionCode(plan.solucionPropuesta.name))
       const rows = await prisma.$queryRawUnsafe<any[]>(
-        `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, repositorio, "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', $4, NOW(), NOW())
+        `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, repositorio, "solucionCode", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', $4, $5, NOW(), NOW())
          RETURNING id`,
         crypto.randomUUID(),
         plan.solucionPropuesta.name,
         plan.solucionPropuesta.description ?? null,
-        plan.solucionPropuesta.repositorio ?? 'portal-architechia'
+        plan.solucionPropuesta.repositorio ?? 'portal-architechia',
+        code
       )
       solucionId = rows[0]?.id ?? null
     }

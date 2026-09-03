@@ -3,6 +3,7 @@ import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
 import { logActivity } from '@/lib/activity';
 import { triggerSolutionProposal } from '@/lib/council-trigger';
+import { generateSolucionCode, uniqueSolucionCode } from '@/lib/solucionCode';
 
 const INTERN_SOLUTION_NAME = 'Portal Interno ArchitechIA';
 
@@ -17,6 +18,7 @@ async function ensureInternSolution(): Promise<void> {
       nombre: INTERN_SOLUTION_NAME,
       descripcion: 'Solución interna que agrupa el portal, herramientas y plataformas de ArchiTechIA.',
       tipo: 'INTERN', estado: 'ACTIVO', valorEstimado: 0,
+      solucionCode: await uniqueSolucionCode(generateSolucionCode(INTERN_SOLUTION_NAME)),
     },
   });
 }
@@ -31,21 +33,6 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: 'desc' },
   });
   return NextResponse.json(soluciones);
-}
-
-function generateSolucionCode(nombre: string): string {
-  const stopWords = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'e', 'a', 'en', 'por', 'para', 'con', 'the', 'of', 'and', '&'])
-  const words = nombre.split(/\s+/).filter(w => w.length > 0 && !stopWords.has(w.toLowerCase()))
-  return words.map(w => w[0].toUpperCase()).join('').slice(0, 6)
-}
-
-async function uniqueSolucionCode(base: string): Promise<string> {
-  let candidate = base, suffix = 2
-  while (true) {
-    const existing = await prisma.solucion.findFirst({ where: { solucionCode: candidate }, select: { id: true } })
-    if (!existing) return candidate
-    candidate = base.slice(0, 5) + suffix; suffix++
-  }
 }
 
 export async function POST(request: NextRequest) {

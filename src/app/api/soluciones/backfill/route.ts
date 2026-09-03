@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { prisma } from '@/lib/prisma';
+import { generateSolucionCode, uniqueSolucionCode } from '@/lib/solucionCode';
 
 async function isAdmin(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -31,13 +32,19 @@ export async function POST(request: NextRequest) {
   let created = 0;
   for (const lead of leads) {
     if (!lead.solucionAsociada) continue;
+    const nombre = `${lead.companyName} — ${lead.solucionAsociada}`;
+    // Toda Solucion debe tener solucionCode — este endpoint era, junto con
+    // council/proposals y plan/approve, uno de los 3 lugares que la creaban
+    // sin codigo (ver src/lib/solucionCode.ts).
+    const solucionCode = await uniqueSolucionCode(generateSolucionCode(nombre));
     await prisma.solucion.create({
       data: {
-        nombre: `${lead.companyName} — ${lead.solucionAsociada}`,
+        nombre,
         descripcion: lead.scope || null,
         tipo: tipoMap[lead.solucionAsociada] || 'PROJECT',
         valorEstimado: lead.estimatedValue || 0,
         leadId: lead.id,
+        solucionCode,
       },
     });
     created++;

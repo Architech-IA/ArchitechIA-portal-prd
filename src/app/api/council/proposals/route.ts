@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isAuthed } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+import { generateSolucionCode, uniqueSolucionCode } from '@/lib/solucionCode'
 
 export async function GET(req: NextRequest) {
   if (!await isAuthed(req)) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -31,12 +32,17 @@ export async function POST(req: NextRequest) {
   // queda asociada de entrada, en vez de dejar la decision pendiente para
   // que el LLM la adivine mucho mas adelante en plan/start.
   if (!solucionId && solucionPropuesta?.name) {
+    // Toda Solucion debe tener solucionCode (sin el, sus Sprints/Tasks caen
+    // al prefijo generico "SP", indistinguible de cualquier otra Solucion
+    // sin codigo — bug real encontrado en produccion con "Executive AI
+    // Inbox & Hub").
+    const code = await uniqueSolucionCode(generateSolucionCode(solucionPropuesta.name))
     const solRows = await prisma.$queryRawUnsafe<any[]>(
-      `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, repositorio, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', $4, NOW(), NOW())
+      `INSERT INTO "Solucion" (id, nombre, descripcion, estado, tipo, repositorio, "solucionCode", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, 'ACTIVO', 'PRODUCT', $4, $5, NOW(), NOW())
        RETURNING id`,
       crypto.randomUUID(), solucionPropuesta.name, solucionPropuesta.description ?? null,
-      solucionPropuesta.repositorio ?? 'portal-architechia'
+      solucionPropuesta.repositorio ?? 'portal-architechia', code
     )
     solucionId = solRows[0]?.id ?? null
   }
