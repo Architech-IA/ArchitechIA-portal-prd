@@ -84,7 +84,7 @@ function computeLayout(tasks: Task[]) {
   }
 }
 
-function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selectedId: string | null; onSelect: (t: Task) => void }) {
+function SprintStage({ data, selectedId, onSelect, onReactivated }: { data: GraphData; selectedId: string | null; onSelect: (t: Task) => void; onReactivated: () => void }) {
   const layout = useMemo(() => computeLayout(data.tasks), [data.tasks])
   const stageRef = useRef<HTMLDivElement>(null)
   const [connectors, setConnectors] = useState<{ id: string; d: string; live: boolean }[]>([])
@@ -174,6 +174,18 @@ function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selected
     setTimeout(() => setDispatching(false), 2000)
   }
 
+  // "Reactivar bloqueadas" — ver la explicación completa en
+  // control/[sprintId]/page.tsx y en reactivate-blocked/route.ts.
+  const [reactivating, setReactivating] = useState(false)
+  function handleReactivateBlocked() {
+    if (counts.blocked === 0 || reactivating) return
+    setReactivating(true)
+    fetch(`/api/backlog/sprint/${data.sprint.id}/reactivate-blocked`, { method: 'POST' })
+      .then(() => onReactivated())
+      .catch(() => {})
+      .finally(() => setTimeout(() => setReactivating(false), 2000))
+  }
+
   return (
     <section className="stage-wrap">
       <div className="stage">
@@ -189,6 +201,14 @@ function SprintStage({ data, selectedId, onSelect }: { data: GraphData; selected
             <span className="chip c-failed"><i className="dot" />{counts.failed}</span>
             <span className="chip c-pending"><i className="dot" />{counts.pending}</span>
           </div>
+          <button
+            className="dispatch-btn reactivate-btn"
+            disabled={counts.blocked === 0 || reactivating}
+            onClick={handleReactivateBlocked}
+            title={counts.blocked === 0 ? 'No hay tasks bloqueadas' : `Revisar las ${counts.blocked} bloqueada${counts.blocked !== 1 ? 's' : ''} — reactiva las que ya puedan reintentarse`}
+          >
+            {reactivating ? '…' : `🔓 ${counts.blocked}`}
+          </button>
           <button
             className="dispatch-btn"
             disabled={backlogTaskIds.length === 0 || dispatching}
@@ -402,7 +422,7 @@ function ControlMultiPageInner() {
         )}
 
         {graphList.map((g) => (
-          <SprintStage key={g.sprint.id} data={g} selectedId={selected?.id ?? null} onSelect={setSelected} />
+          <SprintStage key={g.sprint.id} data={g} selectedId={selected?.id ?? null} onSelect={setSelected} onReactivated={forceRefresh} />
         ))}
 
         <section className="trace-wrap sticky-trace">
@@ -732,6 +752,7 @@ function Styles() {
       .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; cursor: pointer; white-space: nowrap; flex: none; transition: filter .12s ease, opacity .12s ease; }
       .sala-control .dispatch-btn:hover:not(:disabled) { filter: brightness(1.1); }
       .sala-control .dispatch-btn:disabled { opacity: .35; cursor: not-allowed; }
+      .sala-control .reactivate-btn { background: var(--s-blocked); }
       .sala-control .stage-wrap { padding: 14px 24px 12px; }
       .sala-control .stage-wrap + .stage-wrap { border-top: 1px solid var(--border-base); margin-top: 4px; }
       .sala-control .stage { position: relative; display: flex; flex-direction: column; background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--border-base); border-radius: var(--radius); overflow: hidden; max-height: 42vh; user-select: none; }

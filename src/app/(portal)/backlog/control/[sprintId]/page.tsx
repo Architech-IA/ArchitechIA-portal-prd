@@ -308,6 +308,23 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
     setTimeout(() => setDispatching(false), 2000)
   }
 
+  // "Reactivar bloqueadas": nada detecta solo que una BLOCKED puede
+  // reintentarse porque su dependencia finalmente llegó a DONE (ver
+  // reactivate-blocked/route.ts para la explicación completa de por qué
+  // hacía falta esto). Resetea a BACKLOG las que ya se pueden reintentar y
+  // dispara el sprint de nuevo — mismo patrón fire-and-forget que
+  // handleDispatch, más un forceRefresh() para que la UI muestre el cambio
+  // de estado (BLOCKED → BACKLOG) de inmediato en vez de esperar el poll.
+  const [reactivating, setReactivating] = useState(false)
+  function handleReactivateBlocked() {
+    if (counts.blocked === 0 || reactivating) return
+    setReactivating(true)
+    fetch(`/api/backlog/sprint/${sprintId}/reactivate-blocked`, { method: 'POST' })
+      .then(() => forceRefresh())
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setTimeout(() => setReactivating(false), 2000))
+  }
+
   return (
     <div className="sala-control">
       <Styles />
@@ -332,6 +349,14 @@ export default function ControlSprintPage({ params }: { params: Promise<{ sprint
             <span className="chip c-failed"><i className="dot" /><strong>{counts.failed}</strong></span>
             <span className="chip c-pending"><i className="dot" /><strong>{counts.pending}</strong></span>
           </div>
+          <button
+            className="dispatch-btn reactivate-btn"
+            disabled={counts.blocked === 0 || reactivating}
+            onClick={handleReactivateBlocked}
+            title={counts.blocked === 0 ? 'No hay tasks bloqueadas' : `Revisar las ${counts.blocked} bloqueada${counts.blocked !== 1 ? 's' : ''} — reactiva las que ya puedan reintentarse`}
+          >
+            {reactivating ? '…' : `🔓 ${counts.blocked}`}
+          </button>
           <button
             className="dispatch-btn"
             disabled={backlogTaskIds.length === 0 || dispatching}
@@ -766,6 +791,7 @@ function Styles() {
       .sala-control .dispatch-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; cursor: pointer; white-space: nowrap; flex: none; transition: filter .12s ease, opacity .12s ease; }
       .sala-control .dispatch-btn:hover:not(:disabled) { filter: brightness(1.1); }
       .sala-control .dispatch-btn:disabled { opacity: .35; cursor: not-allowed; }
+      .sala-control .reactivate-btn { background: var(--s-blocked); }
       .sala-control .stage-wrap { padding: 22px 24px 10px; }
       .sala-control .stage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
       .sala-control .stage-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
