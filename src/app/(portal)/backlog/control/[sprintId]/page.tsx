@@ -528,6 +528,142 @@ function ExplainButton({ taskId }: { taskId: string }) {
   )
 }
 
+interface PlanStep { titulo: string; descripcion: string; archivos?: string[]; riesgo?: string }
+interface PlanJson { resumen?: string; pasos: PlanStep[] }
+
+// "Proponer plan" (mismo mini-agente investigador que Explicar, pero le pide
+// un JSON de pasos en vez de un parrafo) → una vez el usuario lo revisa,
+// "Ejecutar plan" dispara una ejecucion REAL (dispatchTask real: worktree
+// aislado, agente CODE, verificador, merge — el mismo mecanismo del boton
+// "Disparar" manual) pasandole el plan aprobado como guia. Esto SI puede
+// modificar codigo — a diferencia de Explicar/Proponer plan, que son de
+// solo lectura.
+function PlanButton({ taskId }: { taskId: string }) {
+  const [state, setState] = useState<'idle' | 'running' | 'done' | 'error'>('idle')
+  const [plan, setPlan] = useState<PlanJson | null>(null)
+  const [texto, setTexto] = useState<string | null>(null)
+  const [execId, setExecId] = useState<string | null>(null)
+  const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied' | 'error'>('idle')
+  const [applyMsg, setApplyMsg] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
+
+  async function poll(id: string) {
+    try {
+      const res = await fetch(`/api/backlog/task/${taskId}/plan?execId=${id}`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.status === 'DONE') {
+        setPlan(data.planJson ?? null)
+        setTexto(data.resultado ?? '(sin contenido)')
+        setState('done')
+        if (pollRef.current) clearInterval(pollRef.current)
+      } else if (data.status === 'FAILED') {
+        setTexto(data.resultado ?? 'El agente de planificación falló.')
+        setState('error')
+        if (pollRef.current) clearInterval(pollRef.current)
+      }
+    } catch { /* reintenta en el proximo tick */ }
+  }
+
+  async function start() {
+    setState('running')
+    setPlan(null)
+    setTexto(null)
+    setApplyState('idle')
+    setApplyMsg(null)
+    try {
+      const res = await fetch(`/api/backlog/task/${taskId}/plan`, { method: 'POST' })
+      if (!res.ok) { setState('error'); setTexto('No se pudo iniciar la propuesta de plan.'); return }
+      const { execId: id } = await res.json()
+      setExecId(id)
+      pollRef.current = setInterval(() => poll(id), 2000)
+    } catch {
+      setState('error')
+      setTexto('No se pudo iniciar la propuesta de plan.')
+    }
+  }
+
+  async function applyPlan() {
+    if (!execId) return
+    setApplyState('applying')
+    setApplyMsg(null)
+    try {
+      const res = await fetch(`/api/backlog/task/${taskId}/apply-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ execId }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setApplyState('error'); setApplyMsg(data.error ?? 'No se pudo ejecutar el plan.'); return }
+      setApplyState('applied')
+      setApplyMsg('Ejecución real disparada — seguí el progreso en la traza de la tarea.')
+    } catch {
+      setApplyState('error')
+      setApplyMsg('No se pudo ejecutar el plan.')
+    }
+  }
+
+  if (state === 'idle') {
+    return <button className="explain-btn" onClick={start}>📋 Proponer plan</button>
+  }
+  if (state === 'running') {
+    return (
+      <div className="explain-box explain-running">
+        <span className="explain-spinner" /> Armando el plan de remediación…
+      </div>
+    )
+  }
+  if (state === 'error') {
+    return (
+      <div className="explain-box explain-error">
+        <div className="explain-box-title">✕ No se pudo proponer un plan</div>
+        <pre className="diagnosis-text">{texto}</pre>
+        <button className="explain-btn explain-retry" onClick={start}>Reintentar</button>
+      </div>
+    )
+  }
+  return (
+    <div className="explain-box explain-ok">
+      <div className="explain-box-title">📋 Plan propuesto</div>
+      {plan?.resumen && <p className="plan-resumen">{plan.resumen}</p>}
+      {plan && plan.pasos.length > 0 ? (
+        <ol className="plan-steps">
+          {plan.pasos.map((p, i) => (
+            <li key={i} className={`plan-step risk-${p.riesgo ?? 'bajo'}`}>
+              <div className="plan-step-head">
+                <span className="plan-step-num">{i + 1}</span>
+                <span className="plan-step-title">{p.titulo}</span>
+                {p.riesgo && <span className={`plan-risk-pill r-${p.riesgo}`}>{p.riesgo}</span>}
+              </div>
+              <div className="plan-step-desc">{p.descripcion}</div>
+              {p.archivos && p.archivos.length > 0 && (
+                <div className="plan-step-files mono">{p.archivos.join(' · ')}</div>
+              )}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <pre className="diagnosis-text">{texto}</pre>
+      )}
+      <div className="plan-actions">
+        <button className="explain-btn explain-retry" onClick={start}>Volver a proponer</button>
+        <button
+          className="apply-plan-btn"
+          onClick={applyPlan}
+          disabled={applyState === 'applying' || applyState === 'applied'}
+        >
+          {applyState === 'applying' ? 'Ejecutando…' : applyState === 'applied' ? '✓ Ejecución disparada' : '▶ Ejecutar este plan'}
+        </button>
+      </div>
+      {applyMsg && (
+        <div className={`apply-msg ${applyState === 'error' ? 'apply-msg-error' : 'apply-msg-ok'}`}>{applyMsg}</div>
+      )}
+    </div>
+  )
+}
+
 function DiagnosisBlock({ task }: { task: Task }) {
   if (!task.resultado && !task.checklist) return null
   const kind = task.status === 'FAILED' ? 'failed' : 'blocked'
@@ -550,7 +686,10 @@ function DiagnosisBlock({ task }: { task: Task }) {
         </ul>
       )}
       {task.resultado && <pre className="diagnosis-text">{task.resultado}</pre>}
-      <ExplainButton taskId={task.id} />
+      <div className="diagnosis-actions">
+        <ExplainButton taskId={task.id} />
+        <PlanButton taskId={task.id} />
+      </div>
     </div>
   )
 }
@@ -689,6 +828,26 @@ function Styles() {
       .sala-control .explain-error { background: var(--s-failed-soft); border: 1px solid rgba(239,68,68,0.35); }
       .sala-control .explain-box-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; color: var(--text-primary); }
       .sala-control .explain-error .explain-box-title { color: var(--s-failed); }
+      .sala-control .diagnosis-actions { display: flex; gap: 8px; margin-top: 4px; }
+      .sala-control .plan-resumen { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 10px; line-height: 1.5; }
+      .sala-control .plan-steps { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
+      .sala-control .plan-step { border: 1px solid var(--border-base); border-radius: 8px; padding: 8px 10px; background: rgba(0,0,0,0.12); }
+      .sala-control .plan-step-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+      .sala-control .plan-step-num { width: 18px; height: 18px; border-radius: 50%; background: var(--glass-bg); border: 1px solid var(--border-base); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
+      .sala-control .plan-step-title { font-size: 12.5px; font-weight: 700; color: var(--text-primary); flex: 1; }
+      .sala-control .plan-risk-pill { font-size: 9.5px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 100px; letter-spacing: .03em; }
+      .sala-control .plan-risk-pill.r-bajo { background: var(--s-done-soft); color: var(--s-done); }
+      .sala-control .plan-risk-pill.r-medio { background: var(--s-blocked-soft); color: var(--s-blocked); }
+      .sala-control .plan-risk-pill.r-alto { background: var(--s-failed-soft); color: var(--s-failed); }
+      .sala-control .plan-step-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.55; }
+      .sala-control .plan-step-files { font-size: 10.5px; color: var(--text-muted); margin-top: 5px; }
+      .sala-control .plan-actions { display: flex; gap: 8px; align-items: center; }
+      .sala-control .apply-plan-btn { background: var(--primary); color: #fff; border: none; border-radius: 100px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: filter .12s ease, opacity .12s ease; }
+      .sala-control .apply-plan-btn:hover:not(:disabled) { filter: brightness(1.1); }
+      .sala-control .apply-plan-btn:disabled { opacity: .6; cursor: not-allowed; }
+      .sala-control .apply-msg { margin-top: 8px; font-size: 11.5px; padding: 6px 10px; border-radius: 8px; }
+      .sala-control .apply-msg-ok { background: var(--s-done-soft); color: var(--s-done); }
+      .sala-control .apply-msg-error { background: var(--s-failed-soft); color: var(--s-failed); }
       .sala-control .trace-cursor { display: inline-block; width: 6px; height: 12px; background: var(--s-running); margin-left: 2px; vertical-align: -2px; animation: blink 1s step-end infinite; }
       @media (prefers-reduced-motion: reduce) { .sala-control .trace-cursor { animation: none; } }
       @keyframes blink { 50% { opacity: 0; } }

@@ -84,7 +84,7 @@ export async function resolveAgent(task: {
   return { agentId: 'cmsii11qf0003l0w1jikaxygb', agentName: 'Orión', strategy: 'LLM' }
 }
 
-export async function dispatchTask(taskId: string): Promise<DispatchResult> {
+export async function dispatchTask(taskId: string, extraGuidance?: string): Promise<DispatchResult> {
   const [task] = await prisma.$queryRawUnsafe(
     `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId",
             bi."assigneeId", bi."assigneeName", bi.status, bi."dependsOnTaskId", bi."solucionId",
@@ -132,6 +132,13 @@ export async function dispatchTask(taskId: string): Promise<DispatchResult> {
     `Ejecuta la siguiente tarea:`,
     task.title,
     task.description ?? '',
+    // Guia adicional real: si esta re-ejecucion viene de "Ejecutar plan" (ver
+    // /api/backlog/task/[id]/apply-plan), el plan propuesto por el mini-agente
+    // de diagnostico (investigo el repo real antes de proponerlo) se inyecta
+    // aca para que el agente CODE que realmente escribe el codigo lo siga en
+    // vez de re-investigar todo desde cero y potencialmente llegar a otra
+    // conclusion distinta a la que el usuario ya revisó y aprobó.
+    extraGuidance ? `---\nPlan de remediación aprobado a seguir:\n${extraGuidance}` : '',
   ].join('\n\n')
 
   const { apiUrl, modelId } = resolveOpenCodeModel(agentProfile.llmModel)
