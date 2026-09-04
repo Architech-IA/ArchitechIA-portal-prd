@@ -20,6 +20,8 @@ debés usarlo: tu única salida es el plan, en JSON.
 Respondé ÚNICAMENTE con un objeto JSON válido (sin markdown, sin \`\`\`, sin texto antes o después), con esta forma exacta:
 {
   "resumen": "1-2 frases de la causa raíz real, ya investigada en el repo",
+  "automatizable": true | false,
+  "motivoNoAutomatizable": "si automatizable=false, por qué un agente de código no puede resolver esto solo (ej. requiere una acción humana externa, una decisión de negocio, acceso a un sistema que el agente no tiene). Si automatizable=true, dejalo en null.",
   "pasos": [
     {
       "titulo": "Título corto del paso (una línea)",
@@ -33,9 +35,13 @@ Respondé ÚNICAMENTE con un objeto JSON válido (sin markdown, sin \`\`\`, sin 
 Reglas:
 - Cada paso debe ser accionable y verificable por separado — no un paso vago tipo "arreglar el bug".
 - Ordená los pasos en el orden real en que deberían aplicarse.
-- Si el problema no es de código (ej. depende de una acción humana, o de otra tarea del backlog), decilo
-  explícitamente en "resumen" y armá los "pasos" en función de eso (ej. "marcar la tarea X como DONE
-  manualmente" es un paso válido).
+- "automatizable" es CRÍTICO — un botón del portal usa este campo para decidir si se le permite a un agente
+  de código ejecutar este plan automáticamente. Poné false si CUALQUIER paso requiere: una acción humana
+  real (reunión, llamada, aprobación de negocio, enviar un email/contrato), completar otra tarea del
+  backlog que depende de una persona, o acceso a un sistema externo que el agente no tiene. Poné true SOLO
+  si TODOS los pasos son cambios de código/configuración que un agente puede hacer solo en este repo.
+- Si automatizable=false, los "pasos" igual deben describir qué hay que hacer (aunque sea manualmente) —
+  simplemente no se van a poder ejecutar con el botón de auto-ejecución.
 - No inventes nada que no hayas verificado leyendo el repo real.`
 
 function buildUserPrompt(task: {

@@ -25,6 +25,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tas
   if (!plan) return NextResponse.json({ error: 'Plan no encontrado' }, { status: 404 })
   if (plan.status !== 'DONE') return NextResponse.json({ error: 'El plan todavía no está listo' }, { status: 400 })
 
+  // Defensa en profundidad: la UI ya oculta el botón "Ejecutar plan" cuando
+  // automatizable=false, pero este endpoint no puede confiar solo en eso —
+  // un llamado directo (curl, otro cliente) tiene que chocar con el mismo
+  // bloqueo. Si el agente investigador determinó que el plan requiere una
+  // acción humana (reunión, aprobación de negocio, etc.), no tiene sentido
+  // gastar una ejecución real completa que va a terminar en el mismo lugar.
+  const planObj = plan.planJson as { automatizable?: boolean; motivoNoAutomatizable?: string } | null
+  if (planObj && planObj.automatizable === false) {
+    return NextResponse.json({
+      error: `Este plan no es automatizable: ${planObj.motivoNoAutomatizable ?? 'requiere una acción humana antes de poder ejecutarse.'}`,
+    }, { status: 409 })
+  }
+
   const planText = plan.planJson ? JSON.stringify(plan.planJson, null, 2) : (plan.resultado ?? '')
 
   try {

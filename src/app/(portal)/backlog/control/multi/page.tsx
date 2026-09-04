@@ -303,6 +303,13 @@ function ControlMultiPageInner() {
     return () => setActions(null)
   }, [])
 
+  // Permite forzar un refresh inmediato (en vez de esperar hasta 5s del poll
+  // normal) cuando "Ejecutar plan" dispara una ejecucion real — ver el
+  // mismo mecanismo en control/[sprintId]/page.tsx para la explicacion
+  // completa.
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const forceRefresh = () => setRefreshNonce((n) => n + 1)
+
   useEffect(() => {
     let cancelled = false
     async function loadAll() {
@@ -339,7 +346,7 @@ function ControlMultiPageInner() {
     loadAll()
     const poll = setInterval(loadAll, 5000)
     return () => { cancelled = true; clearInterval(poll) }
-  }, [ids.join(',')])
+  }, [ids.join(','), refreshNonce])
 
   useEffect(() => {
     if (!selected) { setEvents([]); return }
@@ -410,7 +417,7 @@ function ControlMultiPageInner() {
             </div>
             <div className="trace-body">
               {selected && (selected.status === 'FAILED' || selected.status === 'BLOCKED') && (
-                <DiagnosisBlock task={selected} />
+                <DiagnosisBlock task={selected} onApplied={forceRefresh} />
               )}
               {selected && events.length === 0 && (
                 <div className="trace-empty-note">
@@ -515,11 +522,11 @@ function ExplainButton({ taskId }: { taskId: string }) {
 }
 
 interface PlanStep { titulo: string; descripcion: string; archivos?: string[]; riesgo?: string }
-interface PlanJson { resumen?: string; pasos: PlanStep[] }
+interface PlanJson { resumen?: string; pasos: PlanStep[]; automatizable?: boolean; motivoNoAutomatizable?: string | null }
 
 // Mismo mini-agente "Proponer plan"/"Ejecutar plan" que la vista de un solo
 // sprint — ver ese archivo para la explicacion completa.
-function PlanButton({ taskId }: { taskId: string }) {
+function PlanButton({ taskId, onApplied }: { taskId: string; onApplied: () => void }) {
   const [state, setState] = useState<'idle' | 'running' | 'done' | 'error'>('idle')
   const [plan, setPlan] = useState<PlanJson | null>(null)
   const [texto, setTexto] = useState<string | null>(null)
@@ -579,7 +586,8 @@ function PlanButton({ taskId }: { taskId: string }) {
       const data = await res.json()
       if (!res.ok) { setApplyState('error'); setApplyMsg(data.error ?? 'No se pudo ejecutar el plan.'); return }
       setApplyState('applied')
-      setApplyMsg('Ejecución real disparada — seguí el progreso en la traza de la tarea.')
+      setApplyMsg('Ejecución real disparada — mirá la traza de la tarea, se está actualizando.')
+      onApplied()
     } catch {
       setApplyState('error')
       setApplyMsg('No se pudo ejecutar el plan.')
@@ -605,10 +613,16 @@ function PlanButton({ taskId }: { taskId: string }) {
       </div>
     )
   }
+  const noAutomatizable = plan?.automatizable === false
   return (
     <div className="explain-box explain-ok">
       <div className="explain-box-title">📋 Plan propuesto</div>
       {plan?.resumen && <p className="plan-resumen">{plan.resumen}</p>}
+      {noAutomatizable && (
+        <div className="plan-manual-notice">
+          🖐 Requiere una acción humana — no se puede auto-ejecutar. {plan?.motivoNoAutomatizable}
+        </div>
+      )}
       {plan && plan.pasos.length > 0 ? (
         <ol className="plan-steps">
           {plan.pasos.map((p, i) => (
@@ -630,13 +644,15 @@ function PlanButton({ taskId }: { taskId: string }) {
       )}
       <div className="plan-actions">
         <button className="explain-btn explain-retry" onClick={start}>Volver a proponer</button>
-        <button
-          className="apply-plan-btn"
-          onClick={applyPlan}
-          disabled={applyState === 'applying' || applyState === 'applied'}
-        >
-          {applyState === 'applying' ? 'Ejecutando…' : applyState === 'applied' ? '✓ Ejecución disparada' : '▶ Ejecutar este plan'}
-        </button>
+        {!noAutomatizable && (
+          <button
+            className="apply-plan-btn"
+            onClick={applyPlan}
+            disabled={applyState === 'applying' || applyState === 'applied'}
+          >
+            {applyState === 'applying' ? 'Ejecutando…' : applyState === 'applied' ? '✓ Ejecución disparada' : '▶ Ejecutar este plan'}
+          </button>
+        )}
       </div>
       {applyMsg && (
         <div className={`apply-msg ${applyState === 'error' ? 'apply-msg-error' : 'apply-msg-ok'}`}>{applyMsg}</div>
@@ -647,7 +663,7 @@ function PlanButton({ taskId }: { taskId: string }) {
 
 // Mismo informe de diagnostico que la vista de un solo sprint — ver ese
 // archivo para la explicacion completa.
-function DiagnosisBlock({ task }: { task: Task }) {
+function DiagnosisBlock({ task, onApplied }: { task: Task; onApplied: () => void }) {
   if (!task.resultado && !task.checklist) return null
   const kind = task.status === 'FAILED' ? 'failed' : 'blocked'
   return (
@@ -671,7 +687,7 @@ function DiagnosisBlock({ task }: { task: Task }) {
       {task.resultado && <pre className="diagnosis-text">{task.resultado}</pre>}
       <div className="diagnosis-actions">
         <ExplainButton taskId={task.id} />
-        <PlanButton taskId={task.id} />
+        <PlanButton taskId={task.id} onApplied={onApplied} />
       </div>
     </div>
   )
@@ -794,6 +810,7 @@ function Styles() {
       .sala-control .explain-error .explain-box-title { color: var(--s-failed); }
       .sala-control .diagnosis-actions { display: flex; gap: 8px; margin-top: 4px; }
       .sala-control .plan-resumen { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 10px; line-height: 1.5; }
+      .sala-control .plan-manual-notice { font-size: 12px; color: var(--s-blocked); background: var(--s-blocked-soft); border: 1px solid rgba(245,158,11,0.35); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; line-height: 1.5; }
       .sala-control .plan-steps { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
       .sala-control .plan-step { border: 1px solid var(--border-base); border-radius: 8px; padding: 8px 10px; background: rgba(0,0,0,0.12); }
       .sala-control .plan-step-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }

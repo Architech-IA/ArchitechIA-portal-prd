@@ -88,7 +88,7 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
   const [task] = await prisma.$queryRawUnsafe(
     `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId",
             bi."assigneeId", bi."assigneeName", bi.status, bi."dependsOnTaskId", bi."solucionId",
-            s."sprintCode", dep."taskCode" as "dependsOnTaskCode"
+            s."sprintCode", dep."taskCode" as "dependsOnTaskCode", dep.status as "dependsOnStatus"
      FROM "BacklogItem" bi
      LEFT JOIN "Sprint" s ON bi."sprintId" = s.id
      LEFT JOIN "BacklogItem" dep ON bi."dependsOnTaskId" = dep.id
@@ -99,11 +99,27 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
     taskCode: string; areaId: string | null; sprintId: string | null;
     assigneeId: string | null; assigneeName: string | null; status: string;
     dependsOnTaskId: string | null; solucionId: string | null;
-    sprintCode: string | null; dependsOnTaskCode: string | null;
+    sprintCode: string | null; dependsOnTaskCode: string | null; dependsOnStatus: string | null;
   }[]
 
   if (!task) throw new Error(`Task ${taskId} not found`)
   if (task.status === 'DONE') throw new Error(`Task ${taskId} ya está DONE`)
+  // BUG REAL identificado (retry manual desde la Sala de Control): ni el
+  // boton "Disparar" manual ni "Ejecutar plan" chequeaban si la tarea de la
+  // que depende ya llego a DONE — solo el grafo automatico (taskGraph.ts)
+  // lo validaba antes de dispatchear. Una tarea BLOCKED justamente por eso
+  // se podia re-disparar igual, gastando una corrida real completa (varios
+  // minutos, cientos de miles de tokens) para terminar en el mismo bloqueo.
+  // El grafo automatico nunca llama a dispatchTask() sobre una tarea cuyo
+  // padre no llego a DONE (lo corta antes, en makeTaskNode), asi que este
+  // chequeo nunca se dispara en ese camino — solo protege los dos entry
+  // points manuales.
+  if (task.dependsOnTaskId && task.dependsOnStatus !== 'DONE') {
+    throw new Error(
+      `No se puede ejecutar: depende de la tarea ${task.dependsOnTaskCode ?? task.dependsOnTaskId} ` +
+      `(estado actual: ${task.dependsOnStatus ?? 'desconocido'}). Resolvé esa tarea primero.`
+    )
+  }
 
   const { agentId, agentName, strategy } = await resolveAgent(task)
   const agentProfile = await loadAgentProfile(agentId)
