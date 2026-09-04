@@ -464,6 +464,70 @@ function iconGlyph(kind: string): string {
 // y TaskExecution.artifacts.checklist, pero antes no se mostraba en ningun
 // lado de la Sala de Control: solo se veian lineas cortas de traza. Este
 // bloque muestra el detalle completo, no un resumen recortado.
+// "Explicar" dispara un mini-agente investigador (masd_worker.py, task
+// type=explain_task) con acceso REAL y completo al repositorio (las mismas
+// 7 herramientas que un agente CODE: read_file/write_file/grep_files/
+// list_files/find_symbol/get_file_summary/get_dependents) para que el
+// usuario no tenga que interpretar el error crudo el mismo — el agente lee
+// el codigo real y explica causa raiz + remediacion. Polling simple cada
+// 2s hasta DONE/FAILED, igual que el resto de la Sala de Control.
+function ExplainButton({ taskId }: { taskId: string }) {
+  const [state, setState] = useState<'idle' | 'running' | 'done' | 'error'>('idle')
+  const [texto, setTexto] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
+
+  async function poll(execId: string) {
+    try {
+      const res = await fetch(`/api/backlog/task/${taskId}/explain?execId=${execId}`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.status === 'DONE') {
+        setTexto(data.resultado ?? '(sin contenido)')
+        setState('done')
+        if (pollRef.current) clearInterval(pollRef.current)
+      } else if (data.status === 'FAILED') {
+        setTexto(data.resultado ?? 'El agente de explicación falló.')
+        setState('error')
+        if (pollRef.current) clearInterval(pollRef.current)
+      }
+    } catch { /* reintenta en el proximo tick */ }
+  }
+
+  async function start() {
+    setState('running')
+    setTexto(null)
+    try {
+      const res = await fetch(`/api/backlog/task/${taskId}/explain`, { method: 'POST' })
+      if (!res.ok) { setState('error'); setTexto('No se pudo iniciar la explicación.'); return }
+      const { execId } = await res.json()
+      pollRef.current = setInterval(() => poll(execId), 2000)
+    } catch {
+      setState('error')
+      setTexto('No se pudo iniciar la explicación.')
+    }
+  }
+
+  if (state === 'idle') {
+    return <button className="explain-btn" onClick={start}>✨ Explicar</button>
+  }
+  if (state === 'running') {
+    return (
+      <div className="explain-box explain-running">
+        <span className="explain-spinner" /> Investigando el repositorio real…
+      </div>
+    )
+  }
+  return (
+    <div className={`explain-box ${state === 'error' ? 'explain-error' : 'explain-ok'}`}>
+      <div className="explain-box-title">{state === 'error' ? '✕ No se pudo explicar' : '✨ Explicación'}</div>
+      <pre className="diagnosis-text">{texto}</pre>
+      <button className="explain-btn explain-retry" onClick={start}>Volver a explicar</button>
+    </div>
+  )
+}
+
 function DiagnosisBlock({ task }: { task: Task }) {
   if (!task.resultado && !task.checklist) return null
   const kind = task.status === 'FAILED' ? 'failed' : 'blocked'
@@ -486,6 +550,7 @@ function DiagnosisBlock({ task }: { task: Task }) {
         </ul>
       )}
       {task.resultado && <pre className="diagnosis-text">{task.resultado}</pre>}
+      <ExplainButton taskId={task.id} />
     </div>
   )
 }
@@ -612,6 +677,18 @@ function Styles() {
       .sala-control .diagnosis-checklist .ck-criterion { color: var(--text-primary); font-weight: 600; }
       .sala-control .diagnosis-checklist .ck-reason { color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
       .sala-control .diagnosis-text { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace; font-size: 11.5px; line-height: 1.6; color: var(--text-primary); background: rgba(0,0,0,0.15); border-radius: 8px; padding: 10px 12px; margin: 0; max-height: 260px; overflow: auto; }
+      .sala-control .explain-btn { margin-top: 4px; background: var(--glass-bg); border: 1px solid var(--glass-border-md); color: var(--text-primary); border-radius: 100px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: filter .12s ease; }
+      .sala-control .explain-btn:hover { filter: brightness(1.15); border-color: var(--primary-light); }
+      .sala-control .explain-retry { margin-top: 10px; }
+      .sala-control .explain-box { margin-top: 4px; border-radius: 10px; padding: 12px 14px; }
+      .sala-control .explain-running { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary); padding: 8px 2px; }
+      .sala-control .explain-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-base); border-top-color: var(--cyan); animation: explain-spin .7s linear infinite; flex: none; }
+      @media (prefers-reduced-motion: reduce) { .sala-control .explain-spinner { animation: none; } }
+      @keyframes explain-spin { to { transform: rotate(360deg); } }
+      .sala-control .explain-ok { background: rgba(2,201,154,0.08); border: 1px solid rgba(2,201,154,0.3); }
+      .sala-control .explain-error { background: var(--s-failed-soft); border: 1px solid rgba(239,68,68,0.35); }
+      .sala-control .explain-box-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; color: var(--text-primary); }
+      .sala-control .explain-error .explain-box-title { color: var(--s-failed); }
       .sala-control .trace-cursor { display: inline-block; width: 6px; height: 12px; background: var(--s-running); margin-left: 2px; vertical-align: -2px; animation: blink 1s step-end infinite; }
       @media (prefers-reduced-motion: reduce) { .sala-control .trace-cursor { animation: none; } }
       @keyframes blink { 50% { opacity: 0; } }
