@@ -40,8 +40,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tas
 
   const planText = plan.planJson ? JSON.stringify(plan.planJson, null, 2) : (plan.resultado ?? '')
 
+  // BUG REAL identificado por el usuario: buildTaskContext() (lo que arma
+  // dispatchTask para cualquier tarea) nunca trae el resultado ORIGINAL de
+  // la propia tarea — solo trae el resultado de tareas hermanas y de la
+  // dependencia. El agente que ejecuta el plan solo veía el resumen que el
+  // investigador parafraseó, nunca el error/motivo de bloqueo crudo tal
+  // cual quedó guardado. Si el plan es ambiguo en algún paso, no había forma
+  // de volver al texto original para desambiguar. Se trae ese resultado
+  // crudo acá y se antepone al plan en el extraGuidance.
+  const [taskRow] = await prisma.$queryRawUnsafe<{ resultado: string | null; status: string }[]>(
+    `SELECT resultado, status FROM "BacklogItem" WHERE id = $1`, taskId
+  )
+  const extraGuidance = [
+    taskRow?.resultado
+      ? `ERROR / MOTIVO DE BLOQUEO ORIGINAL de esta tarea (texto crudo tal cual lo guardó el motor, antes de que se propusiera el plan):\n${taskRow.resultado}`
+      : null,
+    planText,
+  ].filter(Boolean).join('\n\n---\n\n')
+
   try {
-    const result = await dispatchTask(taskId, planText)
+    const result = await dispatchTask(taskId, extraGuidance)
     await prisma.$executeRawUnsafe(
       `UPDATE "TaskRemediationPlan" SET "appliedAt" = NOW(), "updatedAt" = NOW() WHERE "execId" = $1`,
       execId
