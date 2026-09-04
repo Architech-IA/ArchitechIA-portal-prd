@@ -55,11 +55,22 @@ async function loadAgentProfile(agentId: string): Promise<{ llmModel: string | n
   return agent ?? { llmModel: null, systemPrompt: null, slug: null }
 }
 
+// Development (Atlas) — fallback por defecto para tareas sin assigneeId/areaId:
+// se comprobo con datos reales que el 76% del backlog abierto (80 de 105
+// tareas) no tenia ninguno de los dos, y de esas, salvo un puñado muy
+// puntual (pricing/comercial, 4 tareas), TODAS eran trabajo tecnico real
+// (implementar herramientas, features, bugs, docs tecnicas). Ver tambien
+// Quality & Testing mas abajo para el unico otro caso con señal clara
+// (type=TEST_QA).
+const DEV_AREA_FALLBACK = { areaId: '947ca771-fe9e-4c3f-bfea-2ef2e27986c6', agentId: 'cmsii112p0001l0w1kysamv72', agentName: 'Atlas', strategy: 'CODE' as const }
+const QA_AREA_FALLBACK = { areaId: '3695ed86-da91-4327-bdde-b14cfa8a10b5', agentId: '25f3daa0-5849-49d7-a64e-370cc1315286', agentName: 'Sigma', strategy: 'CODE' as const }
+
 export async function resolveAgent(task: {
   id: string
   areaId: string | null
   assigneeId: string | null
   assigneeName: string | null
+  type?: string | null
 }): Promise<{ agentId: string; agentName: string; strategy: 'CODE' | 'LLM' }> {
   if (task.assigneeId && task.assigneeName) {
     const strategy = task.areaId && CODE_AREAS.has(task.areaId) ? 'CODE' : 'LLM'
@@ -81,12 +92,25 @@ export async function resolveAgent(task: {
     }
   }
 
-  return { agentId: 'cmsii11qf0003l0w1jikaxygb', agentName: 'Orión', strategy: 'LLM' }
+  // BUG REAL identificado por el usuario (revisando quien ejecutaba las
+  // correcciones de la Sala de Control): sin assigneeId NI areaId, esto
+  // caia SIEMPRE en un fallback hardcodeado a Orión — un agente
+  // conversacional/orquestador, no un especialista — sin importar de que
+  // se tratara la tarea realmente. Se confirmo con una consulta real que
+  // esto afectaba al 76% del backlog abierto. El fix de raiz (que la
+  // creacion de tareas siempre asigne area/agente) es un cambio mas grande
+  // que toca varios puntos de creacion — mientras tanto, este fallback usa
+  // la unica señal que SI esta siempre disponible (el tipo de tarea) en vez
+  // de adivinar a ciegas.
+  if (task.type === 'TEST_QA') {
+    return { agentId: QA_AREA_FALLBACK.agentId, agentName: QA_AREA_FALLBACK.agentName, strategy: QA_AREA_FALLBACK.strategy }
+  }
+  return { agentId: DEV_AREA_FALLBACK.agentId, agentName: DEV_AREA_FALLBACK.agentName, strategy: DEV_AREA_FALLBACK.strategy }
 }
 
 export async function dispatchTask(taskId: string, extraGuidance?: string): Promise<DispatchResult> {
   const [task] = await prisma.$queryRawUnsafe(
-    `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId",
+    `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId", bi.type,
             bi."assigneeId", bi."assigneeName", bi.status, bi."dependsOnTaskId", bi."solucionId",
             s."sprintCode", dep."taskCode" as "dependsOnTaskCode", dep.status as "dependsOnStatus"
      FROM "BacklogItem" bi
@@ -96,7 +120,7 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
     taskId
   ) as {
     id: string; title: string; description: string | null;
-    taskCode: string; areaId: string | null; sprintId: string | null;
+    taskCode: string; areaId: string | null; sprintId: string | null; type: string | null;
     assigneeId: string | null; assigneeName: string | null; status: string;
     dependsOnTaskId: string | null; solucionId: string | null;
     sprintCode: string | null; dependsOnTaskCode: string | null; dependsOnStatus: string | null;
@@ -148,13 +172,22 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
     `Ejecuta la siguiente tarea:`,
     task.title,
     task.description ?? '',
-    // Guia adicional real: si esta re-ejecucion viene de "Ejecutar plan" (ver
-    // /api/backlog/task/[id]/apply-plan), el plan propuesto por el mini-agente
-    // de diagnostico (investigo el repo real antes de proponerlo) se inyecta
-    // aca para que el agente CODE que realmente escribe el codigo lo siga en
-    // vez de re-investigar todo desde cero y potencialmente llegar a otra
-    // conclusion distinta a la que el usuario ya revisó y aprobó.
-    extraGuidance ? `---\nPlan de remediación aprobado a seguir:\n${extraGuidance}` : '',
+    // Instruccion directiva, no una sugerencia de contexto mas: un texto
+    // debil ("tene en cuenta esto") se pierde facil entre el resto del
+    // contexto largo (buildTaskContext puede ser miles de caracteres). Se le
+    // pide explicitamente seguir los pasos EN ORDEN y reportar contra cada
+    // uno — asi una desviacion real queda visible en el resultSummary (lo
+    // que ve el verificador y lo que se muestra si vuelve a fallar), en vez
+    // de perderse en silencio.
+    extraGuidance ? [
+      '---',
+      'PLAN DE REMEDIACIÓN YA REVISADO Y APROBADO POR UN HUMANO — seguilo, no re-investigues desde cero:',
+      extraGuidance,
+      '',
+      'Ejecutá los pasos de este plan EN ORDEN. Si te desviás de algún paso (porque encontraste algo que lo',
+      'invalida, o porque no aplica), decilo explícitamente en tu resumen final y por qué. Tu resumen final',
+      'debe indicar, paso por paso, cuáles completaste y cuáles no.',
+    ].join('\n') : '',
   ].join('\n\n')
 
   const { apiUrl, modelId } = resolveOpenCodeModel(agentProfile.llmModel)
