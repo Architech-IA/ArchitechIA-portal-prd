@@ -33,7 +33,18 @@ const msalConfig: Configuration = {
   },
 };
 
-export const msalClient = new ConfidentialClientApplication(msalConfig);
+// Instanciado de forma diferida: crearlo a nivel de módulo rompía el build
+// (next build importa cada route.ts para "collect page data", y MSAL lanza
+// invalid_client_credential de inmediato si MICROSOFT_CLIENT_ID/SECRET no
+// están seteados) — no relacionado con esta integración en sí, solo evita
+// que su ausencia tumbe compilaciones que no la necesitan.
+let _msalClient: ConfidentialClientApplication | null = null;
+function getMsalClient(): ConfidentialClientApplication {
+  if (!_msalClient) {
+    _msalClient = new ConfidentialClientApplication(msalConfig);
+  }
+  return _msalClient;
+}
 
 function getEncryptionKey(): Buffer {
   const raw = process.env.MICROSOFT_TOKEN_ENCRYPTION_KEY;
@@ -102,7 +113,7 @@ function extractEmailFromIdToken(idToken?: string): string | null {
  * Se recomienda enviar un `state` criptográfico para prevenir CSRF.
  */
 export async function getMicrosoftAuthUrl(state?: string): Promise<string> {
-  return msalClient.getAuthCodeUrl({
+  return getMsalClient().getAuthCodeUrl({
     scopes: MICROSOFT_SCOPES,
     redirectUri: process.env.MICROSOFT_REDIRECT_URI!,
     state,

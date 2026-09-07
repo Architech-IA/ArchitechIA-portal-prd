@@ -2110,7 +2110,19 @@ function RepoCard({ r }: { r: GhRepo }) {
 }
 
 // ── Command Center types ──────────────────────────────────────────────────────
-type CCTab = 'overview' | 'agents' | 'services' | 'github';
+type CCTab = 'overview' | 'agents' | 'services' | 'github' | 'apps';
+type AppEvento = {
+  id: string;
+  appSlug: string;
+  tipo: string;
+  actorNombre: string;
+  actorUsuario: string;
+  entidad: string | null;
+  accion: string | null;
+  detalle: string | null;
+  creadoEn: string;
+};
+type AppResumen = { appSlug: string; count: number; last: string };
 type TimelineEvent = { ts: Date; msg: string; level: 'info' | 'warn' | 'crit' };
 
 // ── Server mini-card (Overview) ───────────────────────────────────────────────
@@ -2227,6 +2239,97 @@ function AgentModal({ agent, onClose }: { agent: AgentWithServer; onClose: () =>
           <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '20px', background: '#34d39918', color: '#34d399', border: '1px solid #34d39930' }}>&#x25cf; Activo</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function OverviewAppsGrid({ apps, onOpen }: { apps: AppResumen[]; onOpen: () => void }) {
+  if (apps.length === 0) return null;
+  return (
+    <div style={{ marginTop: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '14px' }}>
+        <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          Aplicaciones <span style={{ color: '#334155', fontWeight: 500 }}>&middot; {apps.length} monitoreadas</span>
+        </p>
+        <button onClick={onOpen} style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 600, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer' }}>Ver todo →</button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
+        {apps.map(a => (
+          <div
+            key={a.appSlug}
+            onClick={onOpen}
+            role="button"
+            tabIndex={0}
+            style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.15s, border-color 0.15s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.1)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.05)'; }}
+          >
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 5px #34d39980', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.appSlug}</p>
+              <p style={{ margin: 0, fontSize: '9px', color: '#475569' }}>{a.count} eventos &middot; última {timeAgo(a.last)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Aplicaciones (pestaña) ─────────────────────────────────────────────────────
+function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: AppResumen[]; loading: boolean }) {
+  const [selectedApp, setSelectedApp] = useState<string | null>(null);
+  const filtrados = selectedApp ? eventos.filter(e => e.appSlug === selectedApp) : eventos;
+
+  if (loading) {
+    return <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Cargando...</p>;
+  }
+  if (apps.length === 0) {
+    return <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Ninguna app ha reportado eventos todavía</p>;
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setSelectedApp(null)}
+          style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (selectedApp === null ? '#60a5fa50' : 'rgba(255,255,255,0.08)'), background: selectedApp === null ? '#60a5fa18' : 'rgba(255,255,255,0.02)', color: selectedApp === null ? '#60a5fa' : '#94a3b8' }}
+        >
+          Todas ({eventos.length})
+        </button>
+        {apps.map(a => (
+          <button
+            key={a.appSlug}
+            onClick={() => setSelectedApp(a.appSlug)}
+            style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (selectedApp === a.appSlug ? '#60a5fa50' : 'rgba(255,255,255,0.08)'), background: selectedApp === a.appSlug ? '#60a5fa18' : 'rgba(255,255,255,0.02)', color: selectedApp === a.appSlug ? '#60a5fa' : '#94a3b8' }}
+          >
+            {a.appSlug} ({a.count})
+          </button>
+        ))}
+      </div>
+
+      {filtrados.length === 0 ? (
+        <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Sin eventos</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {filtrados.map(ev => {
+            const esLogin = ev.tipo === 'LOGIN';
+            const col = esLogin ? '#34d399' : '#60a5fa';
+            return (
+              <div key={ev.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '9px 4px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: col + '18', color: col, border: '1px solid ' + col + '30', width: '52px', textAlign: 'center' }}>{ev.tipo}</span>
+                <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, color: '#e2e8f0', width: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.appSlug}</span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: '11px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <strong style={{ color: '#cbd5e1' }}>{ev.actorNombre}</strong>
+                  {ev.accion ? ` — ${ev.accion}` : ''}
+                  {ev.detalle ? ` · ${ev.detalle}` : ''}
+                </span>
+                <span style={{ flexShrink: 0, fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{timeAgo(ev.creadoEn)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -2397,6 +2500,10 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
   const [reposLoading, setReposLoading] = useState(true);
   const [reposError, setReposError] = useState<string | null>(null);
 
+  const [appEventos, setAppEventos] = useState<AppEvento[]>([]);
+  const [appsResumen, setAppsResumen] = useState<AppResumen[]>([]);
+  const [appEventosLoading, setAppEventosLoading] = useState(true);
+
   const [events, setEvents] = useState<TimelineEvent[]>([]);
 
   const addEvent = useCallback((msg: string, level: 'info' | 'warn' | 'crit') => {
@@ -2472,10 +2579,34 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
     return () => clearInterval(id);
   }, [fetchMetrics]);
 
+  const fetchAppEventos = useCallback(() => {
+    fetch('/api/eventos-app')
+      .then(r => r.json())
+      .then(d => {
+        setAppEventos(d.eventos ?? []);
+        setAppsResumen(
+          (d.apps ?? []).map((a: { appSlug: string; _count: { _all: number }; _max: { creadoEn: string } }) => ({
+            appSlug: a.appSlug,
+            count: a._count._all,
+            last: a._max.creadoEn,
+          }))
+        );
+      })
+      .catch(() => {})
+      .finally(() => setAppEventosLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchAppEventos();
+    const id = setInterval(fetchAppEventos, 30_000);
+    return () => clearInterval(id);
+  }, [fetchAppEventos]);
+
   const TABS: { key: CCTab; label: string }[] = [
     { key: 'overview',  label: 'Overview'  },
     { key: 'agents',    label: 'Agentes'   },
     { key: 'services',  label: 'Servicios' },
+    { key: 'apps',      label: 'Aplicaciones' },
     { key: 'github',    label: 'GitHub'    },
   ];
 
@@ -2528,6 +2659,8 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
               </div>
 
               <OverviewAgentsGrid agents1={agents1} agents2={agents2} />
+
+              <OverviewAppsGrid apps={appsResumen} onOpen={() => setActiveTab('apps')} />
             </div>
           )}
 
@@ -2568,6 +2701,11 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
               <ServerServicePanel vpsLabel="KVM 2 · 177.7.46.87" containers={docker1} skills={skills1} agentSkills={agentSkills1} agents={agents1} loading={dockerLoading1} error={dockerError1} />
               <ServerServicePanel vpsLabel="KVM 1 · 2.25.201.131" containers={docker2} skills={skills2} agentSkills={agentSkills2} agents={agents2} loading={dockerLoading2} error={dockerError2} />
             </div>
+          )}
+
+          {/* ── APLICACIONES ── */}
+          {activeTab === 'apps' && (
+            <AppsPanel eventos={appEventos} apps={appsResumen} loading={appEventosLoading} />
           )}
 
           {/* ── GITHUB ── */}

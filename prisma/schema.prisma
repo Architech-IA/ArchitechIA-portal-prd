@@ -940,3 +940,18 @@ model LeadArchitecture {
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 }
+
+model AppEvento {
+  id           String   @id @default(cuid())
+  appSlug      String
+  tipo         String
+  actorNombre  String
+  actorUsuario String
+  entidad      String?
+  accion       String?
+  detalle      String?
+  metadata     Json?
+  creadoEn     DateTime @default(now())
+
+  @@index([appSlug, creadoEn])
+}
