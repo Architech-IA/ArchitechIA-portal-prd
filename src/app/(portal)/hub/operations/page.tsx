@@ -2080,6 +2080,13 @@ function timeAgo(iso: string): string {
   return Math.floor(h / 24) + 'd';
 }
 
+function fechaExacta(iso: string): string {
+  return new Date(iso).toLocaleString('es-CO', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
 function RepoCard({ r }: { r: GhRepo }) {
   const [hov, setHov] = useState(false);
   const wf = r.last_workflow;
@@ -2120,6 +2127,9 @@ type AppEvento = {
   entidad: string | null;
   accion: string | null;
   detalle: string | null;
+  ip: string | null;
+  ubicacion: string | null;
+  userAgent: string | null;
   creadoEn: string;
 };
 type AppResumen = { appSlug: string; count: number; last: string };
@@ -2324,7 +2334,16 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
                   {ev.accion ? ` — ${ev.accion}` : ''}
                   {ev.detalle ? ` · ${ev.detalle}` : ''}
                 </span>
-                <span style={{ flexShrink: 0, fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{timeAgo(ev.creadoEn)}</span>
+                <span
+                  title={ev.ip ? `IP: ${ev.ip}` : undefined}
+                  style={{ flexShrink: 0, fontSize: '9px', color: ev.ubicacion ? '#94a3b8' : '#334155', width: '130px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                >
+                  &#x1F4CD; {ev.ubicacion ?? 'Ubicación desconocida'}
+                </span>
+                <span style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
+                  <span style={{ fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{timeAgo(ev.creadoEn)}</span>
+                  <span style={{ fontSize: '9px', color: '#475569', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{fechaExacta(ev.creadoEn)}</span>
+                </span>
               </div>
             );
           })}

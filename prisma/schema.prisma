@@ -951,6 +951,9 @@ model AppEvento {
   accion       String?
   detalle      String?
   metadata     Json?
+  ip           String?
+  ubicacion    String?
+  userAgent    String?
   creadoEn     DateTime @default(now())
 
   @@index([appSlug, creadoEn])

@@ -4,6 +4,34 @@ import { prisma } from "@/lib/prisma";
 
 const TIPOS_VALIDOS = new Set(["LOGIN", "ACCION"]);
 
+function esIpPrivada(ip: string): boolean {
+  return (
+    ip === "127.0.0.1" ||
+    ip === "::1" ||
+    ip.startsWith("10.") ||
+    ip.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)
+  );
+}
+
+// Geolocalización best-effort a partir de la IP (ip-api.com, gratuito, sin
+// API key, ~45 req/min). Si falla o la IP es privada/local, no bloquea el
+// registro del evento — solo queda sin "ubicacion".
+async function resolverUbicacion(ip: string | null): Promise<string | null> {
+  if (!ip || esIpPrivada(ip)) return null;
+  try {
+    const res = await fetch(
+      `http://ip-api.com/json/${ip}?fields=status,city,regionName,country`,
+      { signal: AbortSignal.timeout(2500) }
+    );
+    const data = await res.json();
+    if (data.status !== "success") return null;
+    return [data.city, data.regionName, data.country].filter(Boolean).join(", ");
+  } catch {
+    return null;
+  }
+}
+
 // Ingesta de trazabilidad desde apps cliente externas (ej. portal-seg / La
 // Promotora Seguros). Autenticación server-to-server via header x-api-key ===
 // INTERNAL_API_KEY, ya resuelta globalmente por src/proxy.ts para cualquier
@@ -21,7 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { appSlug, tipo, actorNombre, actorUsuario, entidad, accion, detalle, metadata } = body;
+  const { appSlug, tipo, actorNombre, actorUsuario, entidad, accion, detalle, metadata, ip, userAgent } = body;
   if (!appSlug || !tipo || !actorNombre || !actorUsuario) {
     return NextResponse.json(
       { error: "appSlug, tipo, actorNombre y actorUsuario son requeridos" },
@@ -31,6 +59,8 @@ export async function POST(req: NextRequest) {
   if (!TIPOS_VALIDOS.has(tipo)) {
     return NextResponse.json({ error: `tipo inválido: ${tipo}` }, { status: 400 });
   }
+
+  const ubicacion = await resolverUbicacion(ip ?? null);
 
   const evento = await prisma.appEvento.create({
     data: {
@@ -42,6 +72,9 @@ export async function POST(req: NextRequest) {
       accion: accion ?? null,
       detalle: detalle ?? null,
       metadata: metadata ?? undefined,
+      ip: ip ?? null,
+      ubicacion,
+      userAgent: userAgent ?? null,
     },
   });
 
