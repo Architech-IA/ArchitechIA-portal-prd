@@ -1438,11 +1438,14 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           // promedio de ~12 lecturas reales de 5 min, ahora es el promedio
           // de solo ~2, mucho más fiel a la curva real).
           const h = histRange === '7d' ? 168 : 24;
-          const n = histRange === '7d' ? 42  : 144;
+          // 7D: 168 buckets de 1 hora (uno por cada hora de los 7 días,
+          // antes eran 42 de 4h) — mismo criterio que 1D: más fiel a la
+          // curva real en vez de sobre-promediar.
+          const n = histRange === '7d' ? 168 : 144;
           const subtitle = isLive
             ? `últimas ${MAX_HISTORY} lecturas · cada 30s`
             : histRange === '1d' ? 'últimas 24 horas · promedio cada 10 min'
-            : 'últimos 7 días · promedio cada 4h';
+            : 'últimos 7 días · promedio por hora';
           const bCpu  = bucketedWithTs('cpu',  h, n);
           const bRam  = bucketedWithTs('ram',  h, n);
           const bSwap = bucketedWithTs('swap', h, n);
