@@ -2371,12 +2371,29 @@ const COLOR_TIPO: Record<string, string> = {
 };
 const TIPOS_FILTRO = ['LOGIN', 'LOGOUT', 'ACCION', 'VISTA', 'API'];
 
+// Detecta tráfico generado por herramientas de agente/automatización (el
+// navegador de pruebas de Claude Code, curl, scripts) a partir del
+// user-agent — no borra ni distingue estos eventos de los reales en la
+// base, solo los cataloga visualmente para no confundirlos con actividad
+// humana genuina.
+const AGENTE_UA_REGEX = /claude|curl\/|python-requests|postman|bot|headlesschrome/i;
+function esDeAgente(userAgent: string | null): boolean {
+  return !!userAgent && AGENTE_UA_REGEX.test(userAgent);
+}
+
 function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: AppResumen[]; loading: boolean }) {
   const [selectedApp, setSelectedApp] = useState<string | null>(null);
   const [selectedTipo, setSelectedTipo] = useState<string | null>(null);
-  const filtrados = eventos.filter(e =>
-    (!selectedApp || e.appSlug === selectedApp) && (!selectedTipo || e.tipo === selectedTipo)
-  );
+  const [selectedOrigen, setSelectedOrigen] = useState<'todos' | 'agente' | 'humano'>('todos');
+  const totalAgente = eventos.filter(e => esDeAgente(e.userAgent)).length;
+  const filtrados = eventos.filter(e => {
+    const deAgente = esDeAgente(e.userAgent);
+    return (
+      (!selectedApp || e.appSlug === selectedApp) &&
+      (!selectedTipo || e.tipo === selectedTipo) &&
+      (selectedOrigen === 'todos' || (selectedOrigen === 'agente') === deAgente)
+    );
+  });
 
   if (loading) {
     return <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Cargando...</p>;
@@ -2427,17 +2444,44 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
         })}
       </div>
 
+      {totalAgente > 0 && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
+          {[
+            { k: 'todos' as const,   label: `Todos los orígenes (${eventos.length})` },
+            { k: 'humano' as const,  label: `👤 Solo humanos (${eventos.length - totalAgente})` },
+            { k: 'agente' as const,  label: `🤖 Solo agente IA (${totalAgente})` },
+          ].map(o => {
+            const activo = selectedOrigen === o.k;
+            return (
+              <button
+                key={o.k}
+                onClick={() => setSelectedOrigen(o.k)}
+                style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (activo ? '#fbbf2450' : 'rgba(255,255,255,0.06)'), background: activo ? '#fbbf2418' : 'transparent', color: activo ? '#fbbf24' : '#64748b' }}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {filtrados.length === 0 ? (
         <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Sin eventos</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {filtrados.map(ev => {
             const col = COLOR_TIPO[ev.tipo] ?? '#94a3b8';
+            const deAgente = esDeAgente(ev.userAgent);
             return (
-              <div key={ev.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '9px 4px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div key={ev.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '9px 4px', borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: deAgente ? 0.7 : 1 }}>
                 <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: col + '18', color: col, border: '1px solid ' + col + '30', width: '58px', textAlign: 'center' }}>{ev.tipo}</span>
                 <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, color: '#e2e8f0', width: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.appSlug}</span>
                 <span style={{ flex: 1, minWidth: 0, fontSize: '11px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {deAgente && (
+                    <span title="Detectado por user-agent: tráfico de herramienta de agente/automatización, no de una persona" style={{ marginRight: '5px', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '5px', background: '#fbbf2418', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
+                    🤖 AGENTE IA
+                  </span>
+                  )}
                   <strong style={{ color: '#cbd5e1' }}>{ev.actorNombre}</strong>
                   {ev.accion ? ` — ${ev.accion}` : ''}
                   {ev.detalle ? ` · ${ev.detalle}` : ''}
