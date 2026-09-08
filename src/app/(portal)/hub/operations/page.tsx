@@ -691,6 +691,52 @@ function DiskModal({ disk, color, onClose }: { disk: VpsMetrics['disk']; color: 
 }
 
 // ── Net Modal ─────────────────────────────────────────────────────────────────
+// ── Detalle de una serie del panel Historial (Live/1D/7D) ──────────────────────
+// A diferencia de CpuModal/RamModal/DiskModal/NetModal (que siempre muestran el
+// estado "actual"), este popup muestra exactamente el mismo arreglo que ya
+// está pintado en el mini-sparkline del tile clickeado — así el rango que
+// tenías seleccionado (Live/1D/7D) es el mismo que ves en grande adentro.
+function HistDetailModal({ label, history, color, val, unit, subtitle, onClose }: {
+  label: string; history: number[]; color: string; val: string; unit: string; subtitle: string; onClose: () => void;
+}) {
+  const stats = history.length > 0
+    ? { min: Math.min(...history), max: maxVal(history), avg: avg(history) }
+    : null;
+  return (
+    <ModalShell onClose={onClose} title={label} sub={subtitle}
+      icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+      color={color}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
+        <span style={{ fontSize: '11px', color: '#475569' }}>Actual</span>
+        <span style={{ fontSize: '20px', fontWeight: 900, color }}>{val}</span>
+      </div>
+      <div style={{ marginBottom: '18px' }}>
+        {history.length === 0 ? (
+          <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', padding: '30px 0' }}>
+            Todavía no hay suficientes datos para este rango.
+          </p>
+        ) : (
+          <Sparkline history={history} color={color} height={120} />
+        )}
+      </div>
+      {stats && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+          {[
+            { label: 'Mínimo',   v: stats.min },
+            { label: 'Promedio', v: stats.avg },
+            { label: 'Máximo',   v: stats.max },
+          ].map(r => (
+            <div key={r.label} style={{ textAlign: 'center', padding: '10px 8px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color }}>{r.v.toFixed(unit === '%' ? 1 : 3)}{unit}</p>
+              <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#334155' }}>{r.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </ModalShell>
+  );
+}
+
 function NetModal({ rxHist, txHist, data, onClose }: {
   rxHist: number[]; txHist: number[]; data: VpsMetrics; onClose: () => void;
 }) {
@@ -1120,8 +1166,12 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
   swapHist: number[]; diskReadHist: number[]; diskWriteHist: number[]; connHist: number[];
   histSnapshots: HistSnapshot[];
 }) {
-  const [netModal,       setNetModal]       = useState(false);
-  const [histMetricModal, setHistMetricModal] = useState<'cpu' | 'ram' | 'swap' | 'disk' | null>(null);
+  // Guarda la serie completa (no solo un id) para que el popup muestre
+  // exactamente el mismo rango que estaba activo al hacer click (Live/1D/7D)
+  // — antes reabría modales de "estado actual" que ignoraban el tab elegido.
+  const [histDetail, setHistDetail] = useState<{
+    label: string; history: number[]; color: string; val: string; unit: string; subtitle: string;
+  } | null>(null);
   const [ramProcsModal,  setRamProcsModal]  = useState(false);
   const [loadAvgModal,   setLoadAvgModal]   = useState(false);
   const [histRange,      setHistRange]      = useState<'live' | '1d' | '7d'>('live');
@@ -1197,12 +1247,12 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             : histRange === '1d' ? 'últimas 24 horas · promedio por hora'
             : 'últimos 7 días · promedio cada 4h';
           const series = [
-            { label: 'CPU %',   history: isLive ? cpuHist      : bucketed('cpu',  h, n), color: cpuColor,  val: `${data.cpu.percent}%`,                 net: false, modal: 'cpu'  as const },
-            { label: 'RAM %',   history: isLive ? ramHist      : bucketed('ram',  h, n), color: ramColor,  val: `${data.ram.percent}%`,                 net: false, modal: 'ram'  as const },
-            { label: 'Swap %',  history: isLive ? swapHist     : bucketed('swap', h, n), color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`,          net: false, modal: 'swap' as const },
-            { label: 'Red ↓',   history: isLive ? rxHist       : bucketed('rx',   h, n), color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`,             net: true,  modal: null },
-            { label: 'Red ↑',   history: isLive ? txHist       : bucketed('tx',   h, n), color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`,             net: true,  modal: null },
-            { label: 'Disco',   history: isLive ? diskReadHist : bucketed('disk', h, n), color: '#fb923c', val: `${data.disk.percent}%`,                net: false, modal: 'disk' as const },
+            { label: 'CPU %',   history: isLive ? cpuHist      : bucketed('cpu',  h, n), color: cpuColor,  val: `${data.cpu.percent}%`,     unit: '%'    },
+            { label: 'RAM %',   history: isLive ? ramHist      : bucketed('ram',  h, n), color: ramColor,  val: `${data.ram.percent}%`,     unit: '%'    },
+            { label: 'Swap %',  history: isLive ? swapHist     : bucketed('swap', h, n), color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`, unit: '%'  },
+            { label: 'Red ↓',   history: isLive ? rxHist       : bucketed('rx',   h, n), color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`, unit: ' MB/s' },
+            { label: 'Red ↑',   history: isLive ? txHist       : bucketed('tx',   h, n), color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`, unit: ' MB/s' },
+            { label: 'Disco',   history: isLive ? diskReadHist : bucketed('disk', h, n), color: '#fb923c', val: `${data.disk.percent}%`,     unit: '%'    },
           ];
           const RANGES: { k: typeof histRange; label: string }[] = [
             { k: 'live', label: 'Live' },
@@ -1229,17 +1279,16 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
                 {series.map(s => {
-                  const clickable = s.net || s.modal !== null;
                   return (
                     <div key={s.label}
-                      onClick={s.net ? () => setNetModal(true) : s.modal ? () => setHistMetricModal(s.modal) : undefined}
-                      style={{ cursor: clickable ? 'pointer' : 'default', borderRadius: '7px', padding: '4px', background: clickable ? 'rgba(255,255,255,0.02)' : 'transparent', transition: 'background 0.15s' }}
-                      onMouseEnter={e => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'; }}
-                      onMouseLeave={e => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; }}
+                      onClick={() => setHistDetail({ label: s.label, history: s.history, color: s.color, val: s.val, unit: s.unit, subtitle })}
+                      style={{ cursor: 'pointer', borderRadius: '7px', padding: '4px', background: 'rgba(255,255,255,0.02)', transition: 'background 0.15s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                         <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
-                          {s.label}{clickable && <span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>}
+                          {s.label}<span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>
                         </span>
                         <span style={{ fontSize: '11px', fontWeight: 800, color: s.color }}>{s.val}</span>
                       </div>
@@ -1526,10 +1575,17 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         Datos de la VPS al {new Date(data.ts).toLocaleString('es-ES')}
       </p>
 
-      {netModal && <NetModal rxHist={rxHist} txHist={txHist} data={data} onClose={() => setNetModal(false)} />}
-      {histMetricModal === 'cpu' && <CpuModal data={data} color={cpuColor} onClose={() => setHistMetricModal(null)} />}
-      {(histMetricModal === 'ram' || histMetricModal === 'swap') && <RamModal data={data} color={ramColor} onClose={() => setHistMetricModal(null)} />}
-      {histMetricModal === 'disk' && <DiskModal disk={data.disk} color={diskColor} onClose={() => setHistMetricModal(null)} />}
+      {histDetail && (
+        <HistDetailModal
+          label={histDetail.label}
+          history={histDetail.history}
+          color={histDetail.color}
+          val={histDetail.val}
+          unit={histDetail.unit}
+          subtitle={histDetail.subtitle}
+          onClose={() => setHistDetail(null)}
+        />
+      )}
 
       {/* CPU Core modal */}
       {cpuCoreModal && (
