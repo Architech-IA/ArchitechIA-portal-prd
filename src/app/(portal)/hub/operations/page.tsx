@@ -696,8 +696,98 @@ function DiskModal({ disk, color, onClose }: { disk: VpsMetrics['disk']; color: 
 // estado "actual"), este popup muestra exactamente el mismo arreglo que ya
 // está pintado en el mini-sparkline del tile clickeado — así el rango que
 // tenías seleccionado (Live/1D/7D) es el mismo que ves en grande adentro.
-function HistDetailModal({ label, history, color, val, unit, subtitle, onClose }: {
-  label: string; history: number[]; color: string; val: string; unit: string; subtitle: string; onClose: () => void;
+// Fecha/hora exacta en UTC-5 (America/Bogota, sin horario de verano —
+// siempre -05:00), independiente de la zona horaria de quien mira la
+// pantalla.
+function formatUtc5(ts: number): string {
+  return new Date(ts).toLocaleString('es-CO', {
+    timeZone: 'America/Bogota',
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: true,
+  }) + ' (UTC-5)';
+}
+
+// Sparkline con puntos clickeables/hover: muestra un tooltip con el valor y
+// la hora/fecha exacta (UTC-5) de esa lectura puntual.
+function InteractiveSparkline({ history, timestamps, color, unit, height = 120 }: {
+  history: number[]; timestamps: number[]; color: string; unit: string; height?: number;
+}) {
+  const W = 320;
+  const [hover, setHover] = useState<number | null>(null);
+  if (history.length === 0) return <div style={{ height }} />;
+  if (history.length === 1) {
+    return <Sparkline history={history} color={color} height={height} />;
+  }
+  const rawMin = Math.min(...history);
+  const rawMax = Math.max(...history);
+  const span = rawMax - rawMin;
+  const min = span < 1e-6 ? rawMin - 1 : rawMin;
+  const max = span < 1e-6 ? rawMax + 1 : rawMax;
+  const coords = history.map((v, i) => ({
+    x: (i / (history.length - 1)) * W,
+    y: height - ((v - min) / (max - min)) * (height - 4) - 2,
+  }));
+  const pts = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+  const areaPath = `M${coords[0].x},${coords[0].y} ` + coords.slice(1).map(c => `L${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ') + ` L${W},${height} L0,${height} Z`;
+  const gradId = `hsg${color.replace('#', '')}`;
+  const h = hover;
+  return (
+    <div style={{ position: 'relative' }}>
+      <svg viewBox={`0 0 ${W} ${height}`} style={{ width: '100%', height, display: 'block', cursor: 'crosshair' }} preserveAspectRatio="none"
+        onMouseLeave={() => setHover(null)}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${gradId})`} />
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+        {h !== null && (
+          <line x1={coords[h].x} y1={0} x2={coords[h].x} y2={height} stroke={color} strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.5" />
+        )}
+        {coords.map((c, i) => (
+          <circle key={i} cx={c.x} cy={c.y} r={h === i ? 4 : 9}
+            fill={h === i ? color : 'transparent'}
+            stroke={h === i ? '#0f172a' : 'none'} strokeWidth={h === i ? 1.5 : 0}
+            onMouseEnter={() => setHover(i)}
+            onClick={() => setHover(i)}
+            style={{ cursor: 'pointer' }}
+          />
+        ))}
+      </svg>
+      {h !== null && (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${Math.min(92, Math.max(8, (coords[h].x / W) * 100))}%`,
+            top: coords[h].y < height / 2 ? `${((coords[h].y) / height) * 100 + 8}%` : undefined,
+            bottom: coords[h].y >= height / 2 ? `${100 - ((coords[h].y) / height) * 100 + 8}%` : undefined,
+            transform: 'translateX(-50%)',
+            background: '#0b0b1f',
+            border: `1px solid ${color}50`,
+            borderRadius: '8px',
+            padding: '6px 10px',
+            fontSize: '11px',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.5)',
+            zIndex: 1,
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 800, color }}>{history[h].toFixed(unit === '%' ? 1 : 3)}{unit}</p>
+          <p style={{ margin: '2px 0 0', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+            {timestamps[h] ? formatUtc5(timestamps[h]) : 'Hora no disponible'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistDetailModal({ label, history, timestamps, color, val, unit, subtitle, onClose }: {
+  label: string; history: number[]; timestamps: number[]; color: string; val: string; unit: string; subtitle: string; onClose: () => void;
 }) {
   const stats = history.length > 0
     ? { min: Math.min(...history), max: maxVal(history), avg: avg(history) }
@@ -710,15 +800,20 @@ function HistDetailModal({ label, history, color, val, unit, subtitle, onClose }
         <span style={{ fontSize: '11px', color: '#475569' }}>Actual</span>
         <span style={{ fontSize: '20px', fontWeight: 900, color }}>{val}</span>
       </div>
-      <div style={{ marginBottom: '18px' }}>
+      <div style={{ marginBottom: '6px' }}>
         {history.length === 0 ? (
           <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', padding: '30px 0' }}>
             Todavía no hay suficientes datos para este rango.
           </p>
         ) : (
-          <Sparkline history={history} color={color} height={120} />
+          <InteractiveSparkline history={history} timestamps={timestamps} color={color} unit={unit} height={120} />
         )}
       </div>
+      {history.length > 1 && (
+        <p style={{ margin: '0 0 16px', fontSize: '10px', color: '#334155', textAlign: 'center' }}>
+          Pasá el mouse o hacé click sobre un punto para ver su hora exacta
+        </p>
+      )}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
           {[
@@ -1160,17 +1255,18 @@ function LogsPanel() {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist, diskReadHist, diskWriteHist, connHist, histSnapshots }: {
+function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist, diskReadHist, diskWriteHist, connHist, histSnapshots, liveTimestamps }: {
   data: VpsMetrics;
   cpuHist: number[]; ramHist: number[]; rxHist: number[]; txHist: number[]; diskHist: number[];
   swapHist: number[]; diskReadHist: number[]; diskWriteHist: number[]; connHist: number[];
   histSnapshots: HistSnapshot[];
+  liveTimestamps: number[];
 }) {
   // Guarda la serie completa (no solo un id) para que el popup muestre
   // exactamente el mismo rango que estaba activo al hacer click (Live/1D/7D)
   // — antes reabría modales de "estado actual" que ignoraban el tab elegido.
   const [histDetail, setHistDetail] = useState<{
-    label: string; history: number[]; color: string; val: string; unit: string; subtitle: string;
+    label: string; history: number[]; timestamps: number[]; color: string; val: string; unit: string; subtitle: string;
   } | null>(null);
   const [ramProcsModal,  setRamProcsModal]  = useState(false);
   const [loadAvgModal,   setLoadAvgModal]   = useState(false);
@@ -1226,19 +1322,34 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         </div>
         {(() => {
           // ── Historial: agrega snapshots según rango ────────────────────────
-          const bucketed = (key: keyof HistSnapshot, hours: number, n: number): number[] => {
+          // Devuelve valores Y el timestamp (punto medio del bucket) de cada
+          // promedio horario, en paralelo — necesario para el tooltip del
+          // popup de detalle. Los buckets sin lecturas se omiten (no se
+          // rellenan con 0), así que el timestamp va índice a índice con el
+          // valor correspondiente, no con la posición fija del bucket.
+          const bucketedWithTs = (
+            key: keyof HistSnapshot,
+            hours: number,
+            n: number
+          ): { values: number[]; timestamps: number[] } => {
             const now = Date.now(), cutoff = now - hours * 3_600_000;
             const filtered = histSnapshots.filter(s => new Date(s.ts).getTime() >= cutoff);
-            if (filtered.length === 0) return [];
+            if (filtered.length === 0) return { values: [], timestamps: [] };
             const bSize = (hours * 3_600_000) / n;
-            const result: number[] = [];
+            const values: number[] = [];
+            const timestamps: number[] = [];
             for (let i = 0; i < n; i++) {
               const lo = cutoff + i * bSize, hi = lo + bSize;
               const vals = filtered.filter(s => { const t = new Date(s.ts).getTime(); return t >= lo && t < hi; }).map(s => s[key] as number);
-              if (vals.length > 0) result.push(vals.reduce((a, b) => a + b, 0) / vals.length);
+              if (vals.length > 0) {
+                values.push(vals.reduce((a, b) => a + b, 0) / vals.length);
+                timestamps.push(lo + bSize / 2);
+              }
             }
-            return result;
+            return { values, timestamps };
           };
+          const bucketed = (key: keyof HistSnapshot, hours: number, n: number): number[] =>
+            bucketedWithTs(key, hours, n).values;
           const isLive = histRange === 'live';
           const h = histRange === '7d' ? 168 : 24;
           const n = histRange === '7d' ? 42  : 24;
@@ -1246,13 +1357,19 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             ? `últimas ${MAX_HISTORY} lecturas · cada 30s`
             : histRange === '1d' ? 'últimas 24 horas · promedio por hora'
             : 'últimos 7 días · promedio cada 4h';
+          const bCpu  = bucketedWithTs('cpu',  h, n);
+          const bRam  = bucketedWithTs('ram',  h, n);
+          const bSwap = bucketedWithTs('swap', h, n);
+          const bRx   = bucketedWithTs('rx',   h, n);
+          const bTx   = bucketedWithTs('tx',   h, n);
+          const bDisk = bucketedWithTs('disk', h, n);
           const series = [
-            { label: 'CPU %',   history: isLive ? cpuHist      : bucketed('cpu',  h, n), color: cpuColor,  val: `${data.cpu.percent}%`,     unit: '%'    },
-            { label: 'RAM %',   history: isLive ? ramHist      : bucketed('ram',  h, n), color: ramColor,  val: `${data.ram.percent}%`,     unit: '%'    },
-            { label: 'Swap %',  history: isLive ? swapHist     : bucketed('swap', h, n), color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`, unit: '%'  },
-            { label: 'Red ↓',   history: isLive ? rxHist       : bucketed('rx',   h, n), color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`, unit: ' MB/s' },
-            { label: 'Red ↑',   history: isLive ? txHist       : bucketed('tx',   h, n), color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`, unit: ' MB/s' },
-            { label: 'Disco',   history: isLive ? diskReadHist : bucketed('disk', h, n), color: '#fb923c', val: `${data.disk.percent}%`,     unit: '%'    },
+            { label: 'CPU %',   history: isLive ? cpuHist      : bCpu.values,  timestamps: isLive ? liveTimestamps : bCpu.timestamps,  color: cpuColor,  val: `${data.cpu.percent}%`,     unit: '%'    },
+            { label: 'RAM %',   history: isLive ? ramHist      : bRam.values,  timestamps: isLive ? liveTimestamps : bRam.timestamps,  color: ramColor,  val: `${data.ram.percent}%`,     unit: '%'    },
+            { label: 'Swap %',  history: isLive ? swapHist     : bSwap.values, timestamps: isLive ? liveTimestamps : bSwap.timestamps, color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`, unit: '%'  },
+            { label: 'Red ↓',   history: isLive ? rxHist       : bRx.values,   timestamps: isLive ? liveTimestamps : bRx.timestamps,   color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`, unit: ' MB/s' },
+            { label: 'Red ↑',   history: isLive ? txHist       : bTx.values,   timestamps: isLive ? liveTimestamps : bTx.timestamps,   color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`, unit: ' MB/s' },
+            { label: 'Disco',   history: isLive ? diskReadHist : bDisk.values, timestamps: isLive ? liveTimestamps : bDisk.timestamps, color: '#fb923c', val: `${data.disk.percent}%`,     unit: '%'    },
           ];
           const RANGES: { k: typeof histRange; label: string }[] = [
             { k: 'live', label: 'Live' },
@@ -1281,7 +1398,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                 {series.map(s => {
                   return (
                     <div key={s.label}
-                      onClick={() => setHistDetail({ label: s.label, history: s.history, color: s.color, val: s.val, unit: s.unit, subtitle })}
+                      onClick={() => setHistDetail({ label: s.label, history: s.history, timestamps: s.timestamps, color: s.color, val: s.val, unit: s.unit, subtitle })}
                       style={{ cursor: 'pointer', borderRadius: '7px', padding: '4px', background: 'rgba(255,255,255,0.02)', transition: 'background 0.15s' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; }}
@@ -1579,6 +1696,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         <HistDetailModal
           label={histDetail.label}
           history={histDetail.history}
+          timestamps={histDetail.timestamps}
           color={histDetail.color}
           val={histDetail.val}
           unit={histDetail.unit}
@@ -2931,6 +3049,10 @@ export default function OperationsPage() {
   const diskReadHist  = useRef<number[]>([]);
   const diskWriteHist = useRef<number[]>([]);
   const connHist      = useRef<number[]>([]);
+  // Timestamp real de cada lectura Live — compartido por todas las métricas
+  // porque se toman todas en el mismo fetchStats(), para el tooltip del
+  // popup de detalle (hora/fecha exacta al hacer click/hover sobre un punto).
+  const liveTimestamps = useRef<number[]>([]);
 
   const push = (ref: React.MutableRefObject<number[]>, val: number) => {
     ref.current = [...ref.current, val].slice(-MAX_HISTORY);
@@ -2956,6 +3078,7 @@ export default function OperationsPage() {
       push(diskReadHist,  m.disk_io?.read_mbps  ?? 0);
       push(diskWriteHist, m.disk_io?.write_mbps ?? 0);
       push(connHist,     m.connections?.established ?? 0);
+      liveTimestamps.current = [...liveTimestamps.current, Date.now()].slice(-MAX_HISTORY);
       setError(null);
       setErrorSince(null);
       setNotConf(false);
@@ -2994,7 +3117,7 @@ export default function OperationsPage() {
     return () => clearInterval(id);
   }, [error]);
 
-  const resetData = () => { setData(null); setError(null); setNotConf(false); setLastFetch(null); setNextIn(30); cpuHist.current = []; ramHist.current = []; rxHist.current = []; txHist.current = []; diskHist.current = []; swapHist.current = []; diskReadHist.current = []; diskWriteHist.current = []; connHist.current = []; setHistSnapshots([]); };
+  const resetData = () => { setData(null); setError(null); setNotConf(false); setLastFetch(null); setNextIn(30); cpuHist.current = []; ramHist.current = []; rxHist.current = []; txHist.current = []; diskHist.current = []; swapHist.current = []; diskReadHist.current = []; diskWriteHist.current = []; connHist.current = []; liveTimestamps.current = []; setHistSnapshots([]); };
   const handleSelectVps = (v: 'vps1' | 'vps2') => { if (v === activeVps) return; resetData(); setActiveVps(v); setSelectedVps(v); };
   const handleBackToSelector = () => { resetData(); setSelectedVps(null); };
   const headerProps = { loading, lastFetch, nextIn, latencyMs, onRefresh: fetchStats, activeVps, onSelectVps: handleSelectVps, onBack: handleBackToSelector };
@@ -3045,6 +3168,7 @@ export default function OperationsPage() {
           diskWriteHist={diskWriteHist.current}
           connHist={connHist.current}
           histSnapshots={histSnapshots}
+          liveTimestamps={liveTimestamps.current}
         />
       )}
     </div>
