@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface DiskPartition {
@@ -1370,6 +1370,47 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
   const totalServices  = data.services.length;
   const allOk          = totalServices > 0 && activeServices === totalServices;
 
+  // Buckets de 1D/7D en una sola pasada sobre histSnapshots (antes se
+  // recalculaban con un filter() anidado por cada uno de los hasta 168
+  // buckets — O(n·m), ~2M comparaciones por render en 7D con las 6 series).
+  // Memoizado por [histSnapshots, histRange]: no se recalcula en cada poll
+  // de 30s de `data`, solo cuando cambian las lecturas o el rango elegido —
+  // eso era lo que se sentía lento al abrir 7D.
+  const bucketsPorRango = useMemo(() => {
+    if (histRange === 'live') return null;
+    const hours = histRange === '7d' ? 168 : 24;
+    const n     = histRange === '7d' ? 168 : 144;
+    const now = Date.now(), cutoff = now - hours * 3_600_000;
+    const bSize = (hours * 3_600_000) / n;
+    const claves = ['cpu', 'ram', 'swap', 'rx', 'tx', 'disk'] as const;
+    const sums: Record<(typeof claves)[number], Float64Array> = {
+      cpu: new Float64Array(n), ram: new Float64Array(n), swap: new Float64Array(n),
+      rx: new Float64Array(n), tx: new Float64Array(n), disk: new Float64Array(n),
+    };
+    const counts = new Int32Array(n);
+    for (const s of histSnapshots) {
+      const t = new Date(s.ts).getTime();
+      if (t < cutoff) continue;
+      let idx = Math.floor((t - cutoff) / bSize);
+      if (idx < 0 || idx >= n) continue;
+      counts[idx]++;
+      for (const k of claves) sums[k][idx] += (s[k] as number) ?? 0;
+    }
+    const out = {} as Record<(typeof claves)[number], { values: number[]; timestamps: number[] }>;
+    for (const k of claves) {
+      const values: number[] = [];
+      const timestamps: number[] = [];
+      for (let i = 0; i < n; i++) {
+        if (counts[i] > 0) {
+          values.push(sums[k][i] / counts[i]);
+          timestamps.push(cutoff + i * bSize + bSize / 2);
+        }
+      }
+      out[k] = { values, timestamps };
+    }
+    return out;
+  }, [histSnapshots, histRange]);
+
   return (
     <>
       <AlertsBanner data={data} />
@@ -1404,54 +1445,21 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           <GaugeSection data={data} cpuColor={cpuColor} ramColor={ramColor} diskColor={diskColor} />
         </div>
         {(() => {
-          // ── Historial: agrega snapshots según rango ────────────────────────
-          // Devuelve valores Y el timestamp (punto medio del bucket) de cada
-          // promedio horario, en paralelo — necesario para el tooltip del
-          // popup de detalle. Los buckets sin lecturas se omiten (no se
-          // rellenan con 0), así que el timestamp va índice a índice con el
-          // valor correspondiente, no con la posición fija del bucket.
-          const bucketedWithTs = (
-            key: keyof HistSnapshot,
-            hours: number,
-            n: number
-          ): { values: number[]; timestamps: number[] } => {
-            const now = Date.now(), cutoff = now - hours * 3_600_000;
-            const filtered = histSnapshots.filter(s => new Date(s.ts).getTime() >= cutoff);
-            if (filtered.length === 0) return { values: [], timestamps: [] };
-            const bSize = (hours * 3_600_000) / n;
-            const values: number[] = [];
-            const timestamps: number[] = [];
-            for (let i = 0; i < n; i++) {
-              const lo = cutoff + i * bSize, hi = lo + bSize;
-              const vals = filtered.filter(s => { const t = new Date(s.ts).getTime(); return t >= lo && t < hi; }).map(s => s[key] as number);
-              if (vals.length > 0) {
-                values.push(vals.reduce((a, b) => a + b, 0) / vals.length);
-                timestamps.push(lo + bSize / 2);
-              }
-            }
-            return { values, timestamps };
-          };
-          const bucketed = (key: keyof HistSnapshot, hours: number, n: number): number[] =>
-            bucketedWithTs(key, hours, n).values;
+          // ── Historial: usa el memo bucketsPorRango (calculado en una sola
+          // pasada y solo cuando cambian histSnapshots/histRange, no en cada
+          // poll de 30s) — ver su comentario más arriba para el porqué.
           const isLive = histRange === 'live';
-          // 1D: 144 buckets de 10 min (antes 24 de 1h — cada punto era el
-          // promedio de ~12 lecturas reales de 5 min, ahora es el promedio
-          // de solo ~2, mucho más fiel a la curva real).
-          const h = histRange === '7d' ? 168 : 24;
-          // 7D: 168 buckets de 1 hora (uno por cada hora de los 7 días,
-          // antes eran 42 de 4h) — mismo criterio que 1D: más fiel a la
-          // curva real en vez de sobre-promediar.
-          const n = histRange === '7d' ? 168 : 144;
           const subtitle = isLive
             ? `últimas ${MAX_HISTORY} lecturas · cada 30s`
             : histRange === '1d' ? 'últimas 24 horas · promedio cada 10 min'
             : 'últimos 7 días · promedio por hora';
-          const bCpu  = bucketedWithTs('cpu',  h, n);
-          const bRam  = bucketedWithTs('ram',  h, n);
-          const bSwap = bucketedWithTs('swap', h, n);
-          const bRx   = bucketedWithTs('rx',   h, n);
-          const bTx   = bucketedWithTs('tx',   h, n);
-          const bDisk = bucketedWithTs('disk', h, n);
+          const vacio = { values: [] as number[], timestamps: [] as number[] };
+          const bCpu  = bucketsPorRango?.cpu  ?? vacio;
+          const bRam  = bucketsPorRango?.ram  ?? vacio;
+          const bSwap = bucketsPorRango?.swap ?? vacio;
+          const bRx   = bucketsPorRango?.rx   ?? vacio;
+          const bTx   = bucketsPorRango?.tx   ?? vacio;
+          const bDisk = bucketsPorRango?.disk ?? vacio;
           const series = [
             { label: 'CPU %',   history: isLive ? cpuHist      : bCpu.values,  timestamps: isLive ? liveTimestamps : bCpu.timestamps,  color: cpuColor,  val: `${data.cpu.percent}%`,     unit: '%'    },
             { label: 'RAM %',   history: isLive ? ramHist      : bRam.values,  timestamps: isLive ? liveTimestamps : bRam.timestamps,  color: ramColor,  val: `${data.ram.percent}%`,     unit: '%'    },
