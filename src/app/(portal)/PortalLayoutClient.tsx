@@ -87,9 +87,11 @@ const DEFAULT_MODULE_COLOR = { icon: '#5a6577', bg: 'rgba(255,255,255,0.03)', bo
 export default function PortalLayoutClient({
   children,
   isSuperAdmin: serverIsSuperAdmin,
+  initialCollapsed = false,
 }: {
   children: React.ReactNode;
   isSuperAdmin: boolean;
+  initialCollapsed?: boolean;
 }) {
   const pathname = usePathname();
   const { title: pageTitleOverride } = usePageTitleOverride();
@@ -144,14 +146,25 @@ export default function PortalLayoutClient({
   const clientRole = (session?.user as { role?: string })?.role ?? '';
   // Doble capa: server prop O verificación client-side
   const isSuperAdmin = serverIsSuperAdmin || clientRole === 'SUPERADMIN';
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved === 'true') setCollapsed(true);
+    // Migración única: si ya existe la cookie (leída en el servidor y usada
+    // para el estado inicial), no hay nada que hacer acá. Si un usuario
+    // viejo solo tiene el valor en localStorage (de antes de que existiera
+    // la cookie), lo aplicamos y sembramos la cookie para que la próxima
+    // carga ya venga bien desde el servidor.
+    const hasCookie = document.cookie.split('; ').some(c => c.startsWith('sidebar-collapsed='));
+    if (!hasCookie) {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved === 'true') {
+        setCollapsed(true);
+        document.cookie = `sidebar-collapsed=true; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    }
     try {
       const savedSections = localStorage.getItem('sidebar-sections');
       setOpenSections(savedSections ? JSON.parse(savedSections) : {});
@@ -179,8 +192,14 @@ export default function PortalLayoutClient({
 
   const toggleCollapse = () => {
     setCollapsed(prev => {
-      localStorage.setItem('sidebar-collapsed', String(!prev));
-      return !prev;
+      const next = !prev;
+      localStorage.setItem('sidebar-collapsed', String(next));
+      // La cookie es la que lee layout.tsx en el servidor para que la
+      // primera pintura ya arranque con el ancho correcto (sin ella, cada
+      // navegación/recarga mostraba el sidebar expandido un instante antes
+      // de colapsarse).
+      document.cookie = `sidebar-collapsed=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      return next;
     });
   };
 

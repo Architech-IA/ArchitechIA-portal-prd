@@ -29,9 +29,15 @@ export default async function PortalLayout({ children }: { children: React.React
 
   const isSuperAdmin = role === 'SUPERADMIN';
 
+  // Leído en el servidor (no en localStorage) para que la primera pintura ya
+  // venga con el ancho correcto — antes el sidebar siempre arrancaba
+  // expandido y recién un useEffect lo colapsaba, causando un parpadeo
+  // visible en cada navegación/recarga.
+  const initialCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
+
   return (
     <PageTitleProvider>
-      <PortalLayoutClient isSuperAdmin={isSuperAdmin}>
+      <PortalLayoutClient isSuperAdmin={isSuperAdmin} initialCollapsed={initialCollapsed}>
         {children}
       </PortalLayoutClient>
     </PageTitleProvider>
