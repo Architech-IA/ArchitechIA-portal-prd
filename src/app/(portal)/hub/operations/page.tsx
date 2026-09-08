@@ -735,7 +735,14 @@ function InteractiveSparkline({ history, timestamps, color, unit, rango, height 
   const chartW = W - PAD_LEFT - PAD_RIGHT;
   const chartH = height - PAD_TOP - PAD_BOTTOM;
   const totalH = height;
-  const [hover, setHover] = useState<number | null>(null);
+  // hoverIdx: solo resalta el punto mientras el mouse pasa por encima (sin
+  // tooltip) — sigue el mouse continuo vía un único rect, no vía círculos
+  // individuales, para que no salte entre hit-areas superpuestas con 144
+  // puntos muy juntos. selectedIdx: fija el tooltip al hacer click, y
+  // persiste hasta el próximo click (no desaparece solo con mover el mouse).
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   if (history.length === 0) return <div style={{ height: totalH }} />;
   if (history.length === 1) {
     return <Sparkline history={history} color={color} height={totalH} />;
@@ -753,14 +760,26 @@ function InteractiveSparkline({ history, timestamps, color, unit, rango, height 
   const pts = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
   const areaPath = `M${coords[0].x},${coords[0].y} ` + coords.slice(1).map(c => `L${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ') + ` L${PAD_LEFT + chartW},${PAD_TOP + chartH} L${PAD_LEFT},${PAD_TOP + chartH} Z`;
   const gradId = `hsg${color.replace('#', '')}`;
-  const h = hover;
   const gridVals = [max, (max + min) / 2, min];
   const tickIdx = pickTickIndices(history.length, Math.min(6, history.length));
+  const activeIdx = hoverIdx ?? selectedIdx;
+
+  // Un único rect capta el mouse en todo el ancho del gráfico y calcula el
+  // punto más cercano por matemática (no por hit-test de 144 círculos
+  // superpuestos) — así el resaltado sigue al cursor sin saltos ni huecos
+  // entre puntos, sin importar cuán juntos estén.
+  const nearestIndex = (clientX: number): number => {
+    const svg = svgRef.current;
+    if (!svg) return 0;
+    const rect = svg.getBoundingClientRect();
+    const relX = ((clientX - rect.left) / rect.width) * W;
+    const t = (relX - PAD_LEFT) / chartW;
+    return Math.min(history.length - 1, Math.max(0, Math.round(t * (history.length - 1))));
+  };
 
   return (
     <div style={{ position: 'relative' }}>
-      <svg viewBox={`0 0 ${W} ${totalH}`} style={{ width: '100%', height: totalH, display: 'block', cursor: 'crosshair' }} preserveAspectRatio="none"
-        onMouseLeave={() => setHover(null)}>
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${totalH}`} style={{ width: '100%', height: totalH, display: 'block', cursor: 'crosshair' }} preserveAspectRatio="none">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.25" />
@@ -781,37 +800,47 @@ function InteractiveSparkline({ history, timestamps, color, unit, rango, height 
           );
         })}
 
-        <path d={areaPath} fill={`url(#${gradId})`} />
-        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={areaPath} fill={`url(#${gradId})`} pointerEvents="none" />
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" pointerEvents="none" />
 
-        {h !== null && (
-          <line x1={coords[h].x} y1={PAD_TOP} x2={coords[h].x} y2={PAD_TOP + chartH} stroke={color} strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.6" />
+        {activeIdx !== null && (
+          <line x1={coords[activeIdx].x} y1={PAD_TOP} x2={coords[activeIdx].x} y2={PAD_TOP + chartH} stroke={color} strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.6" pointerEvents="none" />
         )}
+        {/* Puntos: solo decorativos, el rect de abajo capta el mouse */}
         {coords.map((c, i) => (
-          <circle key={i} cx={c.x} cy={c.y} r={h === i ? 4 : 6}
-            fill={h === i ? color : 'transparent'}
-            stroke={h === i ? '#0b0b1f' : 'none'} strokeWidth={h === i ? 1.5 : 0}
-            onMouseEnter={() => setHover(i)}
-            onClick={() => setHover(i)}
-            style={{ cursor: 'pointer' }}
-          />
+          activeIdx === i && (
+            <circle key={i} cx={c.x} cy={c.y} r={i === selectedIdx ? 4.5 : 4}
+              fill={color}
+              stroke="#0b0b1f" strokeWidth={1.5}
+              pointerEvents="none"
+            />
+          )
         ))}
 
         {/* Eje temporal */}
-        <line x1={PAD_LEFT} y1={PAD_TOP + chartH} x2={PAD_LEFT + chartW} y2={PAD_TOP + chartH} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        <line x1={PAD_LEFT} y1={PAD_TOP + chartH} x2={PAD_LEFT + chartW} y2={PAD_TOP + chartH} stroke="rgba(255,255,255,0.1)" strokeWidth="1" pointerEvents="none" />
         {tickIdx.map(i => (
-          <text key={i} x={coords[i].x} y={totalH - 4} textAnchor={i === 0 ? 'start' : i === history.length - 1 ? 'end' : 'middle'} fontSize="9" fill="#475569" fontFamily="inherit">
+          <text key={i} x={coords[i].x} y={totalH - 4} textAnchor={i === 0 ? 'start' : i === history.length - 1 ? 'end' : 'middle'} fontSize="9" fill="#475569" fontFamily="inherit" pointerEvents="none">
             {timestamps[i] ? formatAxisTick(timestamps[i], rango) : ''}
           </text>
         ))}
+
+        {/* Área de detección: todo el gráfico, un solo listener continuo */}
+        <rect
+          x={PAD_LEFT} y={0} width={chartW} height={totalH}
+          fill="transparent"
+          onMouseMove={e => setHoverIdx(nearestIndex(e.clientX))}
+          onMouseLeave={() => setHoverIdx(null)}
+          onClick={e => setSelectedIdx(nearestIndex(e.clientX))}
+        />
       </svg>
-      {h !== null && (
+      {selectedIdx !== null && (
         <div
           style={{
             position: 'absolute',
-            left: `${Math.min(88, Math.max(12, (coords[h].x / W) * 100))}%`,
-            top: coords[h].y < totalH / 2 ? `${(coords[h].y / totalH) * 100 + 6}%` : undefined,
-            bottom: coords[h].y >= totalH / 2 ? `${100 - (coords[h].y / totalH) * 100 + 10}%` : undefined,
+            left: `${Math.min(88, Math.max(12, (coords[selectedIdx].x / W) * 100))}%`,
+            top: coords[selectedIdx].y < totalH / 2 ? `${(coords[selectedIdx].y / totalH) * 100 + 6}%` : undefined,
+            bottom: coords[selectedIdx].y >= totalH / 2 ? `${100 - (coords[selectedIdx].y / totalH) * 100 + 10}%` : undefined,
             transform: 'translateX(-50%)',
             background: '#0b0b1f',
             border: `1px solid ${color}50`,
@@ -824,9 +853,9 @@ function InteractiveSparkline({ history, timestamps, color, unit, rango, height 
             zIndex: 1,
           }}
         >
-          <p style={{ margin: 0, fontWeight: 800, color }}>{history[h].toFixed(unit === '%' ? 1 : 3)}{unit}</p>
+          <p style={{ margin: 0, fontWeight: 800, color }}>{history[selectedIdx].toFixed(unit === '%' ? 1 : 3)}{unit}</p>
           <p style={{ margin: '2px 0 0', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-            {timestamps[h] ? formatUtc5(timestamps[h]) : 'Hora no disponible'}
+            {timestamps[selectedIdx] ? formatUtc5(timestamps[selectedIdx]) : 'Hora no disponible'}
           </p>
         </div>
       )}
@@ -859,7 +888,7 @@ function HistDetailModal({ label, history, timestamps, color, val, unit, subtitl
       </div>
       {history.length > 1 && (
         <p style={{ margin: '0 0 16px', fontSize: '10px', color: '#334155', textAlign: 'center' }}>
-          Pasá el mouse o hacé click sobre un punto para ver su hora exacta
+          Pasá el mouse para recorrer los puntos · hacé click para fijar la hora exacta
         </p>
       )}
       {stats && (
