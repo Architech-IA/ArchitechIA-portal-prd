@@ -470,13 +470,13 @@ function DiskDonut({ used, total, color, size = 110 }: { used: number; total: nu
 }
 
 // ── Modal base (overlay + container) ─────────────────────────────────────────
-function ModalShell({ onClose, title, sub, icon, color, children }: {
-  onClose: () => void; title: string; sub: string; icon: string; color: string; children: React.ReactNode;
+function ModalShell({ onClose, title, sub, icon, color, children, maxWidth = '520px' }: {
+  onClose: () => void; title: string; sub: string; icon: string; color: string; children: React.ReactNode; maxWidth?: string;
 }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(6px)' }}
       onClick={onClose}>
-      <div style={{ width: '100%', maxWidth: '520px', maxHeight: 'calc(100vh - 40px)', background: 'rgba(9,9,24,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      <div style={{ width: '100%', maxWidth, maxHeight: 'calc(100vh - 40px)', background: 'rgba(9,9,24,0.98)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -708,33 +708,58 @@ function formatUtc5(ts: number): string {
   }) + ' (UTC-5)';
 }
 
-// Sparkline con puntos clickeables/hover: muestra un tooltip con el valor y
-// la hora/fecha exacta (UTC-5) de esa lectura puntual.
-function InteractiveSparkline({ history, timestamps, color, unit, height = 120 }: {
-  history: number[]; timestamps: number[]; color: string; unit: string; height?: number;
+// Etiqueta corta de eje (hora para Live/1D, día+mes para 7D) — siempre en
+// America/Bogota (UTC-5 fijo).
+function formatAxisTick(ts: number, rango: 'live' | '1d' | '7d'): string {
+  if (rango === '7d') {
+    return new Date(ts).toLocaleString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: 'short' });
+  }
+  return new Date(ts).toLocaleString('es-CO', { timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+// Elige ~count índices repartidos parejo a lo largo del arreglo, siempre
+// incluyendo el primero y el último, para no amontonar etiquetas del eje.
+function pickTickIndices(len: number, count: number): number[] {
+  if (len <= count) return Array.from({ length: len }, (_, i) => i);
+  const step = (len - 1) / (count - 1);
+  return Array.from({ length: count }, (_, i) => Math.round(i * step));
+}
+
+// Sparkline con eje temporal, grillas de referencia y puntos clickeables/hover
+// que muestran un tooltip con el valor y la hora/fecha exacta (UTC-5).
+function InteractiveSparkline({ history, timestamps, color, unit, rango, height = 140 }: {
+  history: number[]; timestamps: number[]; color: string; unit: string; rango: 'live' | '1d' | '7d'; height?: number;
 }) {
-  const W = 320;
+  const W = 560;
+  const PAD_LEFT = 40, PAD_RIGHT = 8, PAD_TOP = 8, PAD_BOTTOM = 22;
+  const chartW = W - PAD_LEFT - PAD_RIGHT;
+  const chartH = height - PAD_TOP - PAD_BOTTOM;
+  const totalH = height;
   const [hover, setHover] = useState<number | null>(null);
-  if (history.length === 0) return <div style={{ height }} />;
+  if (history.length === 0) return <div style={{ height: totalH }} />;
   if (history.length === 1) {
-    return <Sparkline history={history} color={color} height={height} />;
+    return <Sparkline history={history} color={color} height={totalH} />;
   }
   const rawMin = Math.min(...history);
   const rawMax = Math.max(...history);
   const span = rawMax - rawMin;
   const min = span < 1e-6 ? rawMin - 1 : rawMin;
   const max = span < 1e-6 ? rawMax + 1 : rawMax;
+  const yOf = (v: number) => PAD_TOP + chartH - ((v - min) / (max - min)) * chartH;
   const coords = history.map((v, i) => ({
-    x: (i / (history.length - 1)) * W,
-    y: height - ((v - min) / (max - min)) * (height - 4) - 2,
+    x: PAD_LEFT + (i / (history.length - 1)) * chartW,
+    y: yOf(v),
   }));
   const pts = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
-  const areaPath = `M${coords[0].x},${coords[0].y} ` + coords.slice(1).map(c => `L${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ') + ` L${W},${height} L0,${height} Z`;
+  const areaPath = `M${coords[0].x},${coords[0].y} ` + coords.slice(1).map(c => `L${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ') + ` L${PAD_LEFT + chartW},${PAD_TOP + chartH} L${PAD_LEFT},${PAD_TOP + chartH} Z`;
   const gradId = `hsg${color.replace('#', '')}`;
   const h = hover;
+  const gridVals = [max, (max + min) / 2, min];
+  const tickIdx = pickTickIndices(history.length, Math.min(6, history.length));
+
   return (
     <div style={{ position: 'relative' }}>
-      <svg viewBox={`0 0 ${W} ${height}`} style={{ width: '100%', height, display: 'block', cursor: 'crosshair' }} preserveAspectRatio="none"
+      <svg viewBox={`0 0 ${W} ${totalH}`} style={{ width: '100%', height: totalH, display: 'block', cursor: 'crosshair' }} preserveAspectRatio="none"
         onMouseLeave={() => setHover(null)}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -742,28 +767,51 @@ function InteractiveSparkline({ history, timestamps, color, unit, height = 120 }
             <stop offset="100%" stopColor={color} stopOpacity="0.02" />
           </linearGradient>
         </defs>
+
+        {/* Grilla horizontal + etiquetas de valor */}
+        {gridVals.map((v, i) => {
+          const y = yOf(v);
+          return (
+            <g key={i}>
+              <line x1={PAD_LEFT} y1={y} x2={PAD_LEFT + chartW} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray={i === 1 ? '3 3' : undefined} />
+              <text x={PAD_LEFT - 6} y={y} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#475569" fontFamily="inherit">
+                {v.toFixed(unit === '%' ? 0 : 2)}{unit === '%' ? '%' : ''}
+              </text>
+            </g>
+          );
+        })}
+
         <path d={areaPath} fill={`url(#${gradId})`} />
-        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+
         {h !== null && (
-          <line x1={coords[h].x} y1={0} x2={coords[h].x} y2={height} stroke={color} strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.5" />
+          <line x1={coords[h].x} y1={PAD_TOP} x2={coords[h].x} y2={PAD_TOP + chartH} stroke={color} strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.6" />
         )}
         {coords.map((c, i) => (
-          <circle key={i} cx={c.x} cy={c.y} r={h === i ? 4 : 9}
+          <circle key={i} cx={c.x} cy={c.y} r={h === i ? 4 : 6}
             fill={h === i ? color : 'transparent'}
-            stroke={h === i ? '#0f172a' : 'none'} strokeWidth={h === i ? 1.5 : 0}
+            stroke={h === i ? '#0b0b1f' : 'none'} strokeWidth={h === i ? 1.5 : 0}
             onMouseEnter={() => setHover(i)}
             onClick={() => setHover(i)}
             style={{ cursor: 'pointer' }}
           />
+        ))}
+
+        {/* Eje temporal */}
+        <line x1={PAD_LEFT} y1={PAD_TOP + chartH} x2={PAD_LEFT + chartW} y2={PAD_TOP + chartH} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        {tickIdx.map(i => (
+          <text key={i} x={coords[i].x} y={totalH - 4} textAnchor={i === 0 ? 'start' : i === history.length - 1 ? 'end' : 'middle'} fontSize="9" fill="#475569" fontFamily="inherit">
+            {timestamps[i] ? formatAxisTick(timestamps[i], rango) : ''}
+          </text>
         ))}
       </svg>
       {h !== null && (
         <div
           style={{
             position: 'absolute',
-            left: `${Math.min(92, Math.max(8, (coords[h].x / W) * 100))}%`,
-            top: coords[h].y < height / 2 ? `${((coords[h].y) / height) * 100 + 8}%` : undefined,
-            bottom: coords[h].y >= height / 2 ? `${100 - ((coords[h].y) / height) * 100 + 8}%` : undefined,
+            left: `${Math.min(88, Math.max(12, (coords[h].x / W) * 100))}%`,
+            top: coords[h].y < totalH / 2 ? `${(coords[h].y / totalH) * 100 + 6}%` : undefined,
+            bottom: coords[h].y >= totalH / 2 ? `${100 - (coords[h].y / totalH) * 100 + 10}%` : undefined,
             transform: 'translateX(-50%)',
             background: '#0b0b1f',
             border: `1px solid ${color}50`,
@@ -786,27 +834,27 @@ function InteractiveSparkline({ history, timestamps, color, unit, height = 120 }
   );
 }
 
-function HistDetailModal({ label, history, timestamps, color, val, unit, subtitle, onClose }: {
-  label: string; history: number[]; timestamps: number[]; color: string; val: string; unit: string; subtitle: string; onClose: () => void;
+function HistDetailModal({ label, history, timestamps, color, val, unit, subtitle, rango, onClose }: {
+  label: string; history: number[]; timestamps: number[]; color: string; val: string; unit: string; subtitle: string; rango: 'live' | '1d' | '7d'; onClose: () => void;
 }) {
   const stats = history.length > 0
     ? { min: Math.min(...history), max: maxVal(history), avg: avg(history) }
     : null;
   return (
-    <ModalShell onClose={onClose} title={label} sub={subtitle}
+    <ModalShell onClose={onClose} title={label} sub={subtitle} maxWidth="680px"
       icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
       color={color}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
-        <span style={{ fontSize: '11px', color: '#475569' }}>Actual</span>
-        <span style={{ fontSize: '20px', fontWeight: 900, color }}>{val}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '14px' }}>
+        <span style={{ fontSize: '11px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Actual</span>
+        <span style={{ fontSize: '22px', fontWeight: 900, color }}>{val}</span>
       </div>
-      <div style={{ marginBottom: '6px' }}>
+      <div style={{ marginBottom: '6px', borderRadius: '12px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.05)', padding: '12px 10px 4px' }}>
         {history.length === 0 ? (
           <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', padding: '30px 0' }}>
             Todavía no hay suficientes datos para este rango.
           </p>
         ) : (
-          <InteractiveSparkline history={history} timestamps={timestamps} color={color} unit={unit} height={120} />
+          <InteractiveSparkline history={history} timestamps={timestamps} color={color} unit={unit} rango={rango} height={160} />
         )}
       </div>
       {history.length > 1 && (
@@ -1266,7 +1314,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
   // exactamente el mismo rango que estaba activo al hacer click (Live/1D/7D)
   // — antes reabría modales de "estado actual" que ignoraban el tab elegido.
   const [histDetail, setHistDetail] = useState<{
-    label: string; history: number[]; timestamps: number[]; color: string; val: string; unit: string; subtitle: string;
+    label: string; history: number[]; timestamps: number[]; color: string; val: string; unit: string; subtitle: string; rango: 'live' | '1d' | '7d';
   } | null>(null);
   const [ramProcsModal,  setRamProcsModal]  = useState(false);
   const [loadAvgModal,   setLoadAvgModal]   = useState(false);
@@ -1351,11 +1399,14 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           const bucketed = (key: keyof HistSnapshot, hours: number, n: number): number[] =>
             bucketedWithTs(key, hours, n).values;
           const isLive = histRange === 'live';
+          // 1D: 144 buckets de 10 min (antes 24 de 1h — cada punto era el
+          // promedio de ~12 lecturas reales de 5 min, ahora es el promedio
+          // de solo ~2, mucho más fiel a la curva real).
           const h = histRange === '7d' ? 168 : 24;
-          const n = histRange === '7d' ? 42  : 24;
+          const n = histRange === '7d' ? 42  : 144;
           const subtitle = isLive
             ? `últimas ${MAX_HISTORY} lecturas · cada 30s`
-            : histRange === '1d' ? 'últimas 24 horas · promedio por hora'
+            : histRange === '1d' ? 'últimas 24 horas · promedio cada 10 min'
             : 'últimos 7 días · promedio cada 4h';
           const bCpu  = bucketedWithTs('cpu',  h, n);
           const bRam  = bucketedWithTs('ram',  h, n);
@@ -1398,7 +1449,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                 {series.map(s => {
                   return (
                     <div key={s.label}
-                      onClick={() => setHistDetail({ label: s.label, history: s.history, timestamps: s.timestamps, color: s.color, val: s.val, unit: s.unit, subtitle })}
+                      onClick={() => setHistDetail({ label: s.label, history: s.history, timestamps: s.timestamps, color: s.color, val: s.val, unit: s.unit, subtitle, rango: histRange })}
                       style={{ cursor: 'pointer', borderRadius: '7px', padding: '4px', background: 'rgba(255,255,255,0.02)', transition: 'background 0.15s' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; }}
@@ -1701,6 +1752,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           val={histDetail.val}
           unit={histDetail.unit}
           subtitle={histDetail.subtitle}
+          rango={histDetail.rango}
           onClose={() => setHistDetail(null)}
         />
       )}
