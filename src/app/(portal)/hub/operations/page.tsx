@@ -122,10 +122,18 @@ function Sparkline({ history, color, height = 36 }: { history: number[]; color: 
       </svg>
     );
   }
-  const max = Math.max(...history, 1);
+  // Normaliza entre el min y el max reales de la serie, no entre 0 y max:
+  // métricas como CPU/RAM suelen oscilar en una banda alta y angosta (ej.
+  // 56-62%) — escalar desde 0 las aplasta contra el techo y las hace ver
+  // planas aunque los datos sean reales y varíen de verdad.
+  const rawMin = Math.min(...history);
+  const rawMax = Math.max(...history);
+  const span = rawMax - rawMin;
+  const min = span < 1e-6 ? rawMin - 1 : rawMin;
+  const max = span < 1e-6 ? rawMax + 1 : rawMax;
   const coords = history.map((v, i) => {
     const x = (i / (history.length - 1)) * W;
-    const y = height - (v / max) * (height - 4) - 2;
+    const y = height - ((v - min) / (max - min)) * (height - 4) - 2;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
   const pts = coords.join(' ');
@@ -1113,6 +1121,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
   histSnapshots: HistSnapshot[];
 }) {
   const [netModal,       setNetModal]       = useState(false);
+  const [histMetricModal, setHistMetricModal] = useState<'cpu' | 'ram' | 'swap' | 'disk' | null>(null);
   const [ramProcsModal,  setRamProcsModal]  = useState(false);
   const [loadAvgModal,   setLoadAvgModal]   = useState(false);
   const [histRange,      setHistRange]      = useState<'live' | '1d' | '7d'>('live');
@@ -1188,12 +1197,12 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             : histRange === '1d' ? 'últimas 24 horas · promedio por hora'
             : 'últimos 7 días · promedio cada 4h';
           const series = [
-            { label: 'CPU %',   history: isLive ? cpuHist      : bucketed('cpu',  h, n), color: cpuColor,  val: `${data.cpu.percent}%`,                 net: false },
-            { label: 'RAM %',   history: isLive ? ramHist      : bucketed('ram',  h, n), color: ramColor,  val: `${data.ram.percent}%`,                 net: false },
-            { label: 'Swap %',  history: isLive ? swapHist     : bucketed('swap', h, n), color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`,          net: false },
-            { label: 'Red ↓',   history: isLive ? rxHist       : bucketed('rx',   h, n), color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`,             net: true  },
-            { label: 'Red ↑',   history: isLive ? txHist       : bucketed('tx',   h, n), color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`,             net: true  },
-            { label: 'Disco',   history: isLive ? diskReadHist : bucketed('disk', h, n), color: '#fb923c', val: `${data.disk.percent}%`,                net: false },
+            { label: 'CPU %',   history: isLive ? cpuHist      : bucketed('cpu',  h, n), color: cpuColor,  val: `${data.cpu.percent}%`,                 net: false, modal: 'cpu'  as const },
+            { label: 'RAM %',   history: isLive ? ramHist      : bucketed('ram',  h, n), color: ramColor,  val: `${data.ram.percent}%`,                 net: false, modal: 'ram'  as const },
+            { label: 'Swap %',  history: isLive ? swapHist     : bucketed('swap', h, n), color: '#22d3ee', val: `${data.swap?.percent ?? 0}%`,          net: false, modal: 'swap' as const },
+            { label: 'Red ↓',   history: isLive ? rxHist       : bucketed('rx',   h, n), color: '#60a5fa', val: `${data.net.rx_mbps} MB/s`,             net: true,  modal: null },
+            { label: 'Red ↑',   history: isLive ? txHist       : bucketed('tx',   h, n), color: '#a78bfa', val: `${data.net.tx_mbps} MB/s`,             net: true,  modal: null },
+            { label: 'Disco',   history: isLive ? diskReadHist : bucketed('disk', h, n), color: '#fb923c', val: `${data.disk.percent}%`,                net: false, modal: 'disk' as const },
           ];
           const RANGES: { k: typeof histRange; label: string }[] = [
             { k: 'live', label: 'Live' },
@@ -1219,21 +1228,28 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-                {series.map(s => (
-                  <div key={s.label} onClick={s.net ? () => setNetModal(true) : undefined}
-                    style={{ cursor: s.net ? 'pointer' : 'default', borderRadius: '7px', padding: '4px', background: s.net ? 'rgba(96,165,250,0.03)' : 'transparent', transition: 'background 0.15s' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
-                        {s.label}{s.net && <span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>}
-                      </span>
-                      <span style={{ fontSize: '11px', fontWeight: 800, color: s.color }}>{s.val}</span>
+                {series.map(s => {
+                  const clickable = s.net || s.modal !== null;
+                  return (
+                    <div key={s.label}
+                      onClick={s.net ? () => setNetModal(true) : s.modal ? () => setHistMetricModal(s.modal) : undefined}
+                      style={{ cursor: clickable ? 'pointer' : 'default', borderRadius: '7px', padding: '4px', background: clickable ? 'rgba(255,255,255,0.02)' : 'transparent', transition: 'background 0.15s' }}
+                      onMouseEnter={e => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                      onMouseLeave={e => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
+                          {s.label}{clickable && <span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>}
+                        </span>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: s.color }}>{s.val}</span>
+                      </div>
+                      {!isLive && s.history.length === 0
+                        ? <p style={{ margin: 0, fontSize: '10px', color: '#334155', textAlign: 'center', padding: '8px 0' }}>Recolectando...</p>
+                        : <Sparkline history={s.history} color={s.color} height={38} />
+                      }
                     </div>
-                    {!isLive && s.history.length === 0
-                      ? <p style={{ margin: 0, fontSize: '10px', color: '#334155', textAlign: 'center', padding: '8px 0' }}>Recolectando...</p>
-                      : <Sparkline history={s.history} color={s.color} height={38} />
-                    }
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
@@ -1511,6 +1527,9 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       </p>
 
       {netModal && <NetModal rxHist={rxHist} txHist={txHist} data={data} onClose={() => setNetModal(false)} />}
+      {histMetricModal === 'cpu' && <CpuModal data={data} color={cpuColor} onClose={() => setHistMetricModal(null)} />}
+      {(histMetricModal === 'ram' || histMetricModal === 'swap') && <RamModal data={data} color={ramColor} onClose={() => setHistMetricModal(null)} />}
+      {histMetricModal === 'disk' && <DiskModal disk={data.disk} color={diskColor} onClose={() => setHistMetricModal(null)} />}
 
       {/* CPU Core modal */}
       {cpuCoreModal && (
@@ -2852,11 +2871,13 @@ export default function OperationsPage() {
   }, [activeVps]);
 
   useEffect(() => {
+    // Antes solo corría una vez con [] — si se cambiaba de servidor (KVM2 ↔
+    // KVM1) el historial 1D/7D se quedaba mostrando siempre el del primero.
     fetch(activeVps === 'vps1' ? '/api/vps/history' : '/api/vps2/history', { cache: 'no-store' })
       .then(r => r.json())
       .then(d => { if (Array.isArray(d.snapshots)) setHistSnapshots(d.snapshots); })
       .catch(() => {});
-  }, []);
+  }, [activeVps]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => {
