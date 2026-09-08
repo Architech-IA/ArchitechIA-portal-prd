@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthed } from "@/lib/apiAuth";
 import { prisma } from "@/lib/prisma";
 
-const TIPOS_VALIDOS = new Set(["LOGIN", "ACCION"]);
+// LOGIN/LOGOUT: inicio/cierre de sesión. ACCION: escritura de negocio ya
+// auditada (rica en detalle: entidad/accion/detalle). VISTA: navegación a
+// una página. API: cualquier otra llamada a un endpoint (incluye lecturas,
+// exports, y también duplica en bruto las que ya llegan como ACCION —
+// deliberado, para tener cobertura completa sin perder el detalle rico).
+const TIPOS_VALIDOS = new Set(["LOGIN", "LOGOUT", "ACCION", "VISTA", "API"]);
 
 function esIpPrivada(ip: string): boolean {
   return (

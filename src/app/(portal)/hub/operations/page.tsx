@@ -2287,9 +2287,21 @@ function OverviewAppsGrid({ apps, onOpen }: { apps: AppResumen[]; onOpen: () => 
 }
 
 // ── Aplicaciones (pestaña) ─────────────────────────────────────────────────────
+const COLOR_TIPO: Record<string, string> = {
+  LOGIN: '#34d399',
+  LOGOUT: '#f87171',
+  ACCION: '#60a5fa',
+  VISTA: '#94a3b8',
+  API: '#c084fc',
+};
+const TIPOS_FILTRO = ['LOGIN', 'LOGOUT', 'ACCION', 'VISTA', 'API'];
+
 function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: AppResumen[]; loading: boolean }) {
   const [selectedApp, setSelectedApp] = useState<string | null>(null);
-  const filtrados = selectedApp ? eventos.filter(e => e.appSlug === selectedApp) : eventos;
+  const [selectedTipo, setSelectedTipo] = useState<string | null>(null);
+  const filtrados = eventos.filter(e =>
+    (!selectedApp || e.appSlug === selectedApp) && (!selectedTipo || e.tipo === selectedTipo)
+  );
 
   if (loading) {
     return <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Cargando...</p>;
@@ -2300,7 +2312,7 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setSelectedApp(null)}
           style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (selectedApp === null ? '#60a5fa50' : 'rgba(255,255,255,0.08)'), background: selectedApp === null ? '#60a5fa18' : 'rgba(255,255,255,0.02)', color: selectedApp === null ? '#60a5fa' : '#94a3b8' }}
@@ -2318,16 +2330,37 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
         ))}
       </div>
 
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setSelectedTipo(null)}
+          style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (selectedTipo === null ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'), background: selectedTipo === null ? 'rgba(255,255,255,0.06)' : 'transparent', color: selectedTipo === null ? '#e2e8f0' : '#64748b' }}
+        >
+          Todos los tipos
+        </button>
+        {TIPOS_FILTRO.map(t => {
+          const col = COLOR_TIPO[t] ?? '#64748b';
+          const activo = selectedTipo === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setSelectedTipo(activo ? null : t)}
+              style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (activo ? col + '50' : 'rgba(255,255,255,0.06)'), background: activo ? col + '18' : 'transparent', color: activo ? col : '#64748b' }}
+            >
+              {t}
+            </button>
+          );
+        })}
+      </div>
+
       {filtrados.length === 0 ? (
         <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Sin eventos</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {filtrados.map(ev => {
-            const esLogin = ev.tipo === 'LOGIN';
-            const col = esLogin ? '#34d399' : '#60a5fa';
+            const col = COLOR_TIPO[ev.tipo] ?? '#94a3b8';
             return (
               <div key={ev.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '9px 4px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: col + '18', color: col, border: '1px solid ' + col + '30', width: '52px', textAlign: 'center' }}>{ev.tipo}</span>
+                <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: col + '18', color: col, border: '1px solid ' + col + '30', width: '58px', textAlign: 'center' }}>{ev.tipo}</span>
                 <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, color: '#e2e8f0', width: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.appSlug}</span>
                 <span style={{ flex: 1, minWidth: 0, fontSize: '11px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <strong style={{ color: '#cbd5e1' }}>{ev.actorNombre}</strong>
