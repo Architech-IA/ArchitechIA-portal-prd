@@ -829,7 +829,13 @@ function InteractiveSparkline({ history, timestamps, color, unit, rango, height 
         <rect
           x={PAD_LEFT} y={0} width={chartW} height={totalH}
           fill="transparent"
-          onMouseMove={e => setHoverIdx(nearestIndex(e.clientX))}
+          onMouseMove={e => {
+            setHoverIdx(nearestIndex(e.clientX));
+            // Mover el cursor después de clickear desarma el tooltip fijado
+            // — solo debe verse mientras el mouse está quieto sobre el
+            // punto que se clickeó.
+            setSelectedIdx(null);
+          }}
           onMouseLeave={() => setHoverIdx(null)}
           onClick={e => setSelectedIdx(nearestIndex(e.clientX))}
         />
