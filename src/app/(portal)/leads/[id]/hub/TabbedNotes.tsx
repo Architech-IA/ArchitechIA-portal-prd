@@ -88,7 +88,18 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
       FontSize,
     ],
     content: tab.content || '',
-    onUpdate({ editor }) { onChange(editor.getHTML()) },
+    // Tiptap puede disparar onUpdate de forma sincronica durante la propia
+    // creacion/commit del editor (mas visible con React 19 + Turbopack) —
+    // eso terminaba llamando a onChange (setState de TabbedNotes ->
+    // setContent de PhasePanel) MIENTRAS React todavia estaba renderizando
+    // el arbol, lo que React reporta como "Cannot update a component while
+    // rendering a different component". Diferir a un microtask saca la
+    // actualizacion del ciclo de render en curso sin cambiar el comportamiento
+    // percibido (sigue siendo practicamente instantaneo).
+    onUpdate({ editor }) {
+      const html = editor.getHTML()
+      queueMicrotask(() => onChange(html))
+    },
     editorProps: {
       attributes: { class: 'rich-notes-editor focus:outline-none flex-1 text-sm text-white leading-relaxed' },
     },
