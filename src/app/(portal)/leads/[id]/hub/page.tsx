@@ -1435,7 +1435,7 @@ export default function LeadHubPage() {
                           className="text-left rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-150">
                           <div className="flex items-center justify-between mb-1">
                             <span className={`text-xs font-semibold ${c?.text ?? 'text-gray-300'}`}>{label}</span>
-                            <span className="text-[8px] text-gray-400 whitespace-nowrap">
+                            <span className="text-[8px] text-orange-400/60 whitespace-nowrap">
                               {p.updatedBy ? `${p.updatedBy} · ` : ''}
                               {new Date(p.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </span>
