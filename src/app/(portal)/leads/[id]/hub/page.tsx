@@ -23,6 +23,7 @@ interface Lead {
   phone: string | null
   status: string
   outcome: string | null
+  lostReason: string | null
   estimatedValue: number
   scope: string | null
   source: string
@@ -119,7 +120,7 @@ const STATUS_ORDER = PHASES.map(p => p.key)
 
 const EMPTY_LEAD_FORM = {
   companyName: '', contactName: '', email: '', phone: '',
-  status: 'NEW', outcome: '', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
+  status: 'NEW', outcome: '', lostReason: '', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
 }
 
 const COLOR_MAP: Record<string, { dot: string; ring: string; bg: string; text: string; border: string }> = {
@@ -174,22 +175,26 @@ function isContentEmpty(raw: string): boolean {
 }
 
 function PhasePanel({
-  phase, data, leadId, onSaved, leadStatus, onAdvance, advancing,
+  phase, data, leadId, onSaved, leadStatus, leadOutcome, leadLostReason, onAdvance, advancing, advanceError,
 }: {
   phase: typeof PHASES[0]
   data: PhaseData | null
   leadId: string
   onSaved: (updated: PhaseData) => void
   leadStatus: string | null
-  onAdvance: (newStatus: string, newOutcome?: string | null) => Promise<void>
+  leadOutcome: string | null
+  leadLostReason: string | null
+  onAdvance: (newStatus: string, newOutcome?: string | null, newLostReason?: string | null) => Promise<void>
   advancing: boolean
+  advanceError: string
 }) {
   const [content, setContent] = useState(data?.content ?? '')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [deletingFile, setDeletingFile] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
-  const [pickingOutcome, setPickingOutcome] = useState(false)
+  const [pickingLost, setPickingLost] = useState(false)
+  const [lostReasonDraft, setLostReasonDraft] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const c = COLOR_MAP[phase.color]
 
@@ -323,35 +328,9 @@ function PhasePanel({
               DONE
             </button>
           )}
-          {isCurrent && isLastPhase && !pickingOutcome && (
-            <button
-              onClick={() => setPickingOutcome(true)}
-              disabled={advancing}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
-            >
-              <CheckCircle2 size={13} /> DONE
-            </button>
-          )}
-          {isCurrent && isLastPhase && pickingOutcome && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-gray-400 mr-1">Resultado:</span>
-              <button
-                onClick={() => onAdvance('RESULT', 'WON')}
-                disabled={advancing}
-                className="px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
-              >
-                Ganado
-              </button>
-              <button
-                onClick={() => onAdvance('RESULT', 'LOST')}
-                disabled={advancing}
-                className="px-3 py-1.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
-              >
-                Perdido
-              </button>
-              <button onClick={() => setPickingOutcome(false)} disabled={advancing} className="text-gray-500 hover:text-gray-300 text-xs px-1">×</button>
-            </div>
-          )}
+          {/* La fase Resultado no tiene un boton DONE chico en el header —
+              es una decision terminal, se maneja en un panel dedicado en el
+              cuerpo (mas abajo), con el motivo obligatorio si es Perdido. */}
 
           <button
             onClick={save}
@@ -372,6 +351,83 @@ function PhasePanel({
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-hidden flex flex-col px-8 py-6">
+        {/* Resultado es una decision terminal (no tiene "siguiente fase"),
+            merece mas peso visual que el boton DONE chico del header de
+            cualquier otra fase — panel dedicado, con motivo obligatorio si
+            se marca Perdido (sin esto, leadsPerdidos en /api/reportes
+            nunca tenia ningun dato de "por que"). */}
+        {isLastPhase && isCurrent && (
+          <div className="mb-5 shrink-0">
+            {advanceError && (
+              <div className="mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">{advanceError}</div>
+            )}
+            {!leadOutcome ? (
+              !pickingLost ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => onAdvance('RESULT', 'WON')}
+                    disabled={advancing}
+                    className="flex flex-col items-center gap-1.5 py-5 rounded-xl border-2 border-green-500/30 bg-green-500/5 hover:bg-green-500/10 hover:border-green-500/50 disabled:opacity-50 transition-all"
+                  >
+                    <span className="text-2xl">🏆</span>
+                    <span className="text-sm font-bold text-green-400">Ganado</span>
+                  </button>
+                  <button
+                    onClick={() => setPickingLost(true)}
+                    disabled={advancing}
+                    className="flex flex-col items-center gap-1.5 py-5 rounded-xl border-2 border-red-500/30 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/50 disabled:opacity-50 transition-all"
+                  >
+                    <span className="text-2xl">❌</span>
+                    <span className="text-sm font-bold text-red-400">Perdido</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border-2 border-red-500/30 bg-red-500/5">
+                  <label className="block text-xs font-semibold text-red-400 mb-1.5">
+                    ¿Por qué se perdió este lead? <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    autoFocus
+                    value={lostReasonDraft}
+                    onChange={e => setLostReasonDraft(e.target.value)}
+                    rows={3}
+                    placeholder="Ej: eligió una plataforma comparadora externa por precio..."
+                    className="w-full px-3 py-2 rounded-lg bg-black/20 border border-white/10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 resize-vertical"
+                  />
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={() => onAdvance('RESULT', 'LOST', lostReasonDraft)}
+                      disabled={advancing || !lostReasonDraft.trim()}
+                      className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-colors"
+                    >
+                      {advancing ? 'Confirmando...' : 'Confirmar pérdida'}
+                    </button>
+                    <button
+                      onClick={() => { setPickingLost(false); setLostReasonDraft('') }}
+                      disabled={advancing}
+                      className="px-3 py-2 text-xs text-gray-400 hover:text-gray-200"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className={`p-4 rounded-xl border-2 ${leadOutcome === 'WON' ? 'border-green-500/30 bg-green-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{leadOutcome === 'WON' ? '🏆' : '❌'}</span>
+                  <span className={`text-sm font-bold ${leadOutcome === 'WON' ? 'text-green-400' : 'text-red-400'}`}>
+                    {leadOutcome === 'WON' ? 'Ganado' : 'Perdido'}
+                  </span>
+                </div>
+                {leadOutcome === 'LOST' && leadLostReason && (
+                  <p className="mt-2 text-xs text-gray-400 leading-relaxed">{leadLostReason}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Text editor */}
         <TabbedNotes value={content} onChange={setContent} />
 
@@ -1010,16 +1066,18 @@ export default function LeadHubPage() {
   // ruta reemplaza el registro entero, no hace patch parcial), mandando el
   // resto de los campos del lead tal cual estan.
   const [advancing, setAdvancing] = useState(false)
-  const advanceLead = async (newStatus: string, newOutcome: string | null = null) => {
+  const [advanceError, setAdvanceError] = useState('')
+  const advanceLead = async (newStatus: string, newOutcome: string | null = null, newLostReason: string | null = null) => {
     if (!lead) return
     setAdvancing(true)
+    setAdvanceError('')
     try {
       const res = await fetch(`/api/leads/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyName: lead.companyName, contactName: lead.contactName, email: lead.email,
-          phone: lead.phone || '', status: newStatus, outcome: newOutcome || '',
+          phone: lead.phone || '', status: newStatus, outcome: newOutcome || '', lostReason: newLostReason || '',
           source: lead.source, solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '',
           estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id,
         }),
@@ -1027,7 +1085,12 @@ export default function LeadHubPage() {
       if (res.ok) {
         const updated = await res.json()
         setLead(updated)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setAdvanceError(data.error || `Error ${res.status}`)
       }
+    } catch {
+      setAdvanceError('No se pudo actualizar la fase.')
     } finally {
       setAdvancing(false)
     }
@@ -1037,7 +1100,7 @@ export default function LeadHubPage() {
     if (!lead) return
     setEditFormData({
       companyName: lead.companyName, contactName: lead.contactName, email: lead.email,
-      phone: lead.phone || '', status: lead.status, outcome: lead.outcome || '', source: lead.source,
+      phone: lead.phone || '', status: lead.status, outcome: lead.outcome || '', lostReason: lead.lostReason || '', source: lead.source,
       solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '',
       estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id,
     })
@@ -1306,8 +1369,11 @@ export default function LeadHubPage() {
               leadId={id}
               onSaved={updatePhase}
               leadStatus={lead?.status ?? null}
+              leadOutcome={lead?.outcome ?? null}
+              leadLostReason={lead?.lostReason ?? null}
               onAdvance={advanceLead}
               advancing={advancing}
+              advanceError={advanceError}
             />
           ) : (
             <div className="h-full overflow-y-auto p-6">
@@ -1456,7 +1522,7 @@ export default function LeadHubPage() {
                 {editFormData.status === 'RESULT' && (
                   <div>
                     <label style={editLabelCls}>Resultado</label>
-                    <select value={editFormData.outcome} onChange={e => setEditFormData({ ...editFormData, outcome: e.target.value })} style={editInputCls}>
+                    <select value={editFormData.outcome} onChange={e => setEditFormData({ ...editFormData, outcome: e.target.value, lostReason: e.target.value === 'LOST' ? editFormData.lostReason : '' })} style={editInputCls}>
                       <option value="" style={{ background: '#0f172a' }}>Sin definir...</option>
                       <option value="WON" style={{ background: '#0f172a' }}>Ganado</option>
                       <option value="LOST" style={{ background: '#0f172a' }}>Perdido</option>
@@ -1478,6 +1544,13 @@ export default function LeadHubPage() {
                   </select>
                 </div>
               </div>
+              {editFormData.status === 'RESULT' && editFormData.outcome === 'LOST' && (
+                <div>
+                  <label style={editLabelCls}>Motivo de pérdida <span style={{ color: '#f87171' }}>*</span></label>
+                  <textarea required value={editFormData.lostReason} onChange={e => setEditFormData({ ...editFormData, lostReason: e.target.value })} rows={2}
+                    placeholder="¿Por qué se perdió este lead?" style={{ ...editInputCls, resize: 'vertical' as const }} />
+                </div>
+              )}
               <div>
                 <label style={editLabelCls}>Valor Estimado</label>
                 <input type="number" value={editFormData.estimatedValue} onChange={e => setEditFormData({ ...editFormData, estimatedValue: e.target.value })} style={editInputCls} />

@@ -35,7 +35,15 @@ export async function PUT(
 
   const { id } = await params;
   const body = await request.json();
-  const { companyName, contactName, email, phone, status, outcome, source, estimatedValue, scope, repository, notes, userId, tipo, solucionAsociada } = body;
+  const { companyName, contactName, email, phone, status, outcome, lostReason, source, estimatedValue, scope, repository, notes, userId, tipo, solucionAsociada } = body;
+
+  // Defensa en profundidad: el panel de Resultado ya exige el motivo antes
+  // de dejar confirmar "Perdido" en la UI, pero esta ruta no puede confiar
+  // solo en eso — un llamado directo a la API tiene que chocar con la misma
+  // regla de negocio (sin motivo, un LOST no aporta nada a los reportes).
+  if (status === 'RESULT' && outcome === 'LOST' && !String(lostReason || '').trim()) {
+    return NextResponse.json({ error: 'El motivo de pérdida es obligatorio.' }, { status: 400 });
+  }
 
   try {
     const prev = await prisma.lead.findUnique({ where: { id }, select: { status: true } });
@@ -47,6 +55,7 @@ export async function PUT(
         // fase se limpia para que no quede un desenlace viejo colgado si el
         // lead se mueve para atras en el pipeline.
         outcome: status === 'RESULT' ? (outcome || null) : null,
+        lostReason: status === 'RESULT' && outcome === 'LOST' ? String(lostReason).trim() : null,
         source,
         estimatedValue: parseFloat(estimatedValue) || 0, scope: scope || null, repository: repository || null, notes: notes || null, userId, tipo: tipo || null, solucionAsociada: solucionAsociada || null },
       include: { user: { select: { id: true, name: true, email: true } }, cliente: { select: { id: true, nombre: true } } },

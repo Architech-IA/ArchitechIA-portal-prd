@@ -47,6 +47,10 @@ model Lead {
   // Desenlace de la fase RESULT — no es una fase en si misma, es un campo de
   // esa fase (WON o LOST). null mientras el lead no llego a RESULT todavia.
   outcome        String?
+  // Motivo obligatorio cuando outcome=LOST (se pide en el panel de
+  // Resultado antes de poder confirmar la perdida) — sin esto,
+  // leadsPerdidos en /api/reportes no tenia ningun dato de "por que".
+  lostReason     String?
   source         String // LinkedIn, Web, Referido, etc.
   estimatedValue Float      @default(0)
   tipo             String?
