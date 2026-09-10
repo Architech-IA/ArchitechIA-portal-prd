@@ -158,6 +158,21 @@ function extractPhasePreview(content: string | null | undefined): string {
   return content.trim()
 }
 
+// El "content" real de una fase es el JSON serializado de TabbedNotes
+// ({tabs:[{content: html}]}) — un tab recien creado ya trae HTML vacio
+// ("<p></p>", no ""), asi que no alcanza con chequear string vacio: hay
+// que pelar las etiquetas de CADA tab y ver si queda texto real en alguna.
+function isContentEmpty(raw: string): boolean {
+  if (!raw) return true
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && Array.isArray(parsed.tabs)) {
+      return parsed.tabs.every((t: { content?: string }) => !stripHtml(t.content || ''))
+    }
+  } catch {}
+  return !stripHtml(raw)
+}
+
 function PhasePanel({
   phase, data, leadId, onSaved, leadStatus, onAdvance, advancing,
 }: {
@@ -187,10 +202,17 @@ function PhasePanel({
   const isCurrent = phaseIdx === currentIdx
   const isFuture = currentIdx >= 0 && phaseIdx > currentIdx
   const isLastPhase = phaseIdx === PHASES.length - 1
+  // Ni Guardar ni Adjuntar tienen sentido en una fase que no es la activa
+  // (pasada: ya se completo y quedo fija; futura: todavia no se llego ahi
+  // en el pipeline) — y Guardar tampoco si no hay contenido real que
+  // guardar (evita notas vacias "<p></p>" tapando el placeholder).
+  const canEdit = isCurrent
+  const contentEmpty = isContentEmpty(content)
 
   useEffect(() => { setContent(data?.content ?? '') }, [data])
 
   const save = async () => {
+    if (!canEdit || contentEmpty) return
     setSaving(true)
     try {
       const res = await fetch('/api/leads/hub-phase', {
@@ -208,6 +230,7 @@ function PhasePanel({
   }
 
   const uploadFile = async (file: File) => {
+    if (!canEdit) return
     if (file.size > 5 * 1024 * 1024) { alert('Máximo 5MB por archivo'); return }
     setUploading(true)
     try {
@@ -271,8 +294,9 @@ function PhasePanel({
         <div className="flex items-center gap-2">
           <button
             onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600 transition-all"
+            disabled={uploading || !canEdit}
+            title={!canEdit ? 'Esta fase no está activa — solo se puede adjuntar en la fase actual del pipeline' : undefined}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600 disabled:opacity-40 disabled:hover:text-gray-400 disabled:hover:border-gray-700 disabled:cursor-not-allowed transition-all"
           >
             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
             {uploading ? 'Subiendo...' : 'Adjuntar'}
@@ -331,14 +355,20 @@ function PhasePanel({
 
           <button
             onClick={save}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+            disabled={saving || !canEdit || contentEmpty}
+            title={!canEdit ? 'Esta fase no está activa — solo se puede guardar en la fase actual del pipeline' : contentEmpty ? 'No hay contenido para guardar' : undefined}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:hover:bg-orange-600 disabled:cursor-not-allowed text-white rounded-lg text-xs font-medium transition-colors"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : saved ? <CheckCircle2 size={13} /> : <Save size={13} />}
             {saving ? 'Guardando...' : saved ? '¡Guardado!' : 'Guardar'}
           </button>
         </div>
       </div>
+      {!canEdit && (
+        <div className="px-8 pt-3 text-xs text-gray-500 flex items-center gap-1.5 shrink-0">
+          🔒 Esta fase {isPast ? 'ya fue completada' : 'todavía no está activa'} — solo se puede editar y guardar contenido en la fase actual del pipeline.
+        </div>
+      )}
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-hidden flex flex-col px-8 py-6">

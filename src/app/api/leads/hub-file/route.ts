@@ -11,6 +11,19 @@ export async function POST(request: NextRequest) {
   const userName = (token as any).name ?? (token as any).email ?? 'unknown'
   const { hubId, name, mimeType, base64 } = await request.json()
 
+  // Misma regla que hub-phase PUT: solo se puede adjuntar en la fase
+  // activa del lead (defensa en profundidad — la UI ya deshabilita el
+  // boton Adjuntar en fases que no son la actual).
+  const hub = await prisma.leadHub.findUnique({ where: { id: hubId }, select: { leadId: true, phase: true } })
+  if (!hub) return NextResponse.json({ error: 'Fase no encontrada' }, { status: 404 })
+  const lead = await prisma.lead.findUnique({ where: { id: hub.leadId }, select: { status: true } })
+  if (lead?.status !== hub.phase) {
+    return NextResponse.json(
+      { error: `No se puede adjuntar en "${hub.phase}" — la fase activa del lead es "${lead?.status}".` },
+      { status: 409 }
+    )
+  }
+
   const size = Math.round((base64.length * 3) / 4)
   if (size > MAX_SIZE) {
     return NextResponse.json({ error: 'Archivo muy grande (máx 5MB)' }, { status: 400 })

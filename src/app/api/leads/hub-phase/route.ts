@@ -28,6 +28,26 @@ export async function PUT(request: NextRequest) {
   if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const { leadId, phase, content } = await request.json()
+
+  // Defensa en profundidad: la UI ya deshabilita Guardar cuando la fase
+  // vista no es la activa o el contenido esta vacio, pero esta ruta no
+  // puede confiar solo en eso — un llamado directo (curl, otro cliente)
+  // tiene que chocar con la misma regla. Solo se puede escribir contenido
+  // en la fase que coincide con el status REAL del lead.
+  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { status: true } })
+  if (!lead) return NextResponse.json({ error: 'Lead no encontrado' }, { status: 404 })
+  if (lead.status !== phase) {
+    return NextResponse.json(
+      { error: `No se puede guardar contenido en "${phase}" — la fase activa del lead es "${lead.status}".` },
+      { status: 409 }
+    )
+  }
+  // El chequeo de "contenido vacio" se queda solo del lado del cliente
+  // (deshabilita el boton Guardar) — ADREDE no se replica aca: el flujo de
+  // Adjuntar archivo crea el registro de LeadHub con content todavia vacio
+  // (recien se escribe algo despues), y bloquearlo aca rompería subir un
+  // archivo como primera accion en una fase.
+
   const userName = (token as any).name ?? (token as any).email ?? 'unknown'
 
   const hub = await prisma.leadHub.upsert({
