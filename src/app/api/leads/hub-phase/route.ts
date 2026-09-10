@@ -23,22 +23,28 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(phases)
 }
 
+// Mismo orden que PHASES en leads/[id]/hub/page.tsx — no se importa desde
+// ahi porque ese archivo es 'use client' y este es server-only.
+const PHASE_ORDER = ['NEW', 'CONTACTED', 'DIAGNOSIS', 'DEMO_VALIDATION', 'PROPOSAL_SENT', 'NEGOTIATION', 'RESULT']
+
 export async function PUT(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
   if (!token) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   const { leadId, phase, content } = await request.json()
 
-  // Defensa en profundidad: la UI ya deshabilita Guardar cuando la fase
-  // vista no es la activa o el contenido esta vacio, pero esta ruta no
-  // puede confiar solo en eso — un llamado directo (curl, otro cliente)
-  // tiene que chocar con la misma regla. Solo se puede escribir contenido
-  // en la fase que coincide con el status REAL del lead.
+  // Defensa en profundidad: la UI ya deshabilita Guardar en una fase
+  // FUTURA (todavia no se llego ahi) o con contenido vacio, pero esta ruta
+  // no puede confiar solo en eso — un llamado directo (curl, otro cliente)
+  // tiene que chocar con la misma regla. Una fase PASADA (ya completada) SI
+  // se puede seguir editando — solo se bloquea escribir adelantado.
   const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { status: true } })
   if (!lead) return NextResponse.json({ error: 'Lead no encontrado' }, { status: 404 })
-  if (lead.status !== phase) {
+  const currentIdx = PHASE_ORDER.indexOf(lead.status)
+  const phaseIdx = PHASE_ORDER.indexOf(phase)
+  if (currentIdx === -1 || phaseIdx === -1 || phaseIdx > currentIdx) {
     return NextResponse.json(
-      { error: `No se puede guardar contenido en "${phase}" — la fase activa del lead es "${lead.status}".` },
+      { error: `No se puede guardar contenido en "${phase}" — el pipeline todavía no llegó hasta ahí (fase activa: "${lead.status}").` },
       { status: 409 }
     )
   }

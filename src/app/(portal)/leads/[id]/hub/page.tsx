@@ -207,11 +207,14 @@ function PhasePanel({
   const isCurrent = phaseIdx === currentIdx
   const isFuture = currentIdx >= 0 && phaseIdx > currentIdx
   const isLastPhase = phaseIdx === PHASES.length - 1
-  // Ni Guardar ni Adjuntar tienen sentido en una fase que no es la activa
-  // (pasada: ya se completo y quedo fija; futura: todavia no se llego ahi
-  // en el pipeline) — y Guardar tampoco si no hay contenido real que
-  // guardar (evita notas vacias "<p></p>" tapando el placeholder).
-  const canEdit = isCurrent
+  // Solo se bloquea una fase FUTURA (todavia no se llego ahi en el
+  // pipeline, no tiene sentido llenarla antes de tiempo). Una fase pasada
+  // ya completada SI se puede seguir editando — corregir o ampliar una
+  // nota de una fase vieja es algo real (ej. la demo real que se hizo
+  // termino con mas alcance del que se habia anotado en su momento).
+  // Guardar ademas se bloquea si no hay contenido real que guardar (evita
+  // notas vacias "<p></p>" tapando el placeholder).
+  const canEdit = !isFuture
   const contentEmpty = isContentEmpty(content)
 
   useEffect(() => { setContent(data?.content ?? '') }, [data])
@@ -300,7 +303,7 @@ function PhasePanel({
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading || !canEdit}
-            title={!canEdit ? 'Esta fase no está activa — solo se puede adjuntar en la fase actual del pipeline' : undefined}
+            title={!canEdit ? 'Esta fase todavía no está activa — el pipeline no llegó hasta acá todavía' : undefined}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600 disabled:opacity-40 disabled:hover:text-gray-400 disabled:hover:border-gray-700 disabled:cursor-not-allowed transition-all"
           >
             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
@@ -335,7 +338,7 @@ function PhasePanel({
           <button
             onClick={save}
             disabled={saving || !canEdit || contentEmpty}
-            title={!canEdit ? 'Esta fase no está activa — solo se puede guardar en la fase actual del pipeline' : contentEmpty ? 'No hay contenido para guardar' : undefined}
+            title={!canEdit ? 'Esta fase todavía no está activa — el pipeline no llegó hasta acá todavía' : contentEmpty ? 'No hay contenido para guardar' : undefined}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:hover:bg-orange-600 disabled:cursor-not-allowed text-white rounded-lg text-xs font-medium transition-colors"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : saved ? <CheckCircle2 size={13} /> : <Save size={13} />}
@@ -343,9 +346,9 @@ function PhasePanel({
           </button>
         </div>
       </div>
-      {!canEdit && (
+      {isFuture && (
         <div className="px-8 pt-3 text-xs text-gray-500 flex items-center gap-1.5 shrink-0">
-          🔒 Esta fase {isPast ? 'ya fue completada' : 'todavía no está activa'} — solo se puede editar y guardar contenido en la fase actual del pipeline.
+          🔒 Esta fase todavía no está activa — el pipeline no llegó hasta acá todavía.
         </div>
       )}
 
