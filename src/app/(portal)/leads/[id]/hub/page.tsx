@@ -159,20 +159,34 @@ function extractPhasePreview(content: string | null | undefined): string {
 }
 
 function PhasePanel({
-  phase, data, leadId, onSaved,
+  phase, data, leadId, onSaved, leadStatus, onAdvance, advancing,
 }: {
   phase: typeof PHASES[0]
   data: PhaseData | null
   leadId: string
   onSaved: (updated: PhaseData) => void
+  leadStatus: string | null
+  onAdvance: (newStatus: string, newOutcome?: string | null) => Promise<void>
+  advancing: boolean
 }) {
   const [content, setContent] = useState(data?.content ?? '')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [deletingFile, setDeletingFile] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [pickingOutcome, setPickingOutcome] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const c = COLOR_MAP[phase.color]
+
+  // DONE secuencial: solo la fase que coincide con el status REAL del lead
+  // (currentIdx) se puede completar — ni una futura (bloqueada, hay que
+  // llegar en orden) ni saltarla desde una pasada (ya esta hecha).
+  const phaseIdx = STATUS_ORDER.indexOf(phase.key)
+  const currentIdx = leadStatus ? STATUS_ORDER.indexOf(leadStatus) : -1
+  const isPast = currentIdx >= 0 && phaseIdx < currentIdx
+  const isCurrent = phaseIdx === currentIdx
+  const isFuture = currentIdx >= 0 && phaseIdx > currentIdx
+  const isLastPhase = phaseIdx === PHASES.length - 1
 
   useEffect(() => { setContent(data?.content ?? '') }, [data])
 
@@ -263,6 +277,58 @@ function PhasePanel({
             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
             {uploading ? 'Subiendo...' : 'Adjuntar'}
           </button>
+
+          {/* DONE secuencial — ver la explicacion completa arriba en el
+              componente padre (advanceLead). Solo aparece habilitado en la
+              fase que coincide con lead.status; en fases ya completadas
+              queda marcado y deshabilitado; en fases futuras no se muestra
+              (no se puede saltar el orden). */}
+          {isPast && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+              <CheckCircle2 size={13} /> Completada
+            </span>
+          )}
+          {isCurrent && !isLastPhase && (
+            <button
+              onClick={() => onAdvance(PHASES[phaseIdx + 1].key)}
+              disabled={advancing}
+              title={`Marcar "${phase.label}" como completada y avanzar a "${PHASES[phaseIdx + 1].label}"`}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+            >
+              {advancing ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+              DONE
+            </button>
+          )}
+          {isCurrent && isLastPhase && !pickingOutcome && (
+            <button
+              onClick={() => setPickingOutcome(true)}
+              disabled={advancing}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+            >
+              <CheckCircle2 size={13} /> DONE
+            </button>
+          )}
+          {isCurrent && isLastPhase && pickingOutcome && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-400 mr-1">Resultado:</span>
+              <button
+                onClick={() => onAdvance('RESULT', 'WON')}
+                disabled={advancing}
+                className="px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+              >
+                Ganado
+              </button>
+              <button
+                onClick={() => onAdvance('RESULT', 'LOST')}
+                disabled={advancing}
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors"
+              >
+                Perdido
+              </button>
+              <button onClick={() => setPickingOutcome(false)} disabled={advancing} className="text-gray-500 hover:text-gray-300 text-xs px-1">×</button>
+            </div>
+          )}
+
           <button
             onClick={save}
             disabled={saving}
@@ -907,6 +973,36 @@ export default function LeadHubPage() {
   const [editError, setEditError]       = useState('')
   const [users, setUsers]               = useState<{ id: string; name: string }[]>([])
 
+  // "DONE" secuencial: marca la FASE ACTIVA como completada y mueve
+  // lead.status a la siguiente fase real (o, si ya esta en RESULT, registra
+  // el desenlace Ganado/Perdido — RESULT es terminal, no tiene "siguiente").
+  // Reusa el mismo PUT /api/leads/[id] que el form de edicion completo (esa
+  // ruta reemplaza el registro entero, no hace patch parcial), mandando el
+  // resto de los campos del lead tal cual estan.
+  const [advancing, setAdvancing] = useState(false)
+  const advanceLead = async (newStatus: string, newOutcome: string | null = null) => {
+    if (!lead) return
+    setAdvancing(true)
+    try {
+      const res = await fetch(`/api/leads/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: lead.companyName, contactName: lead.contactName, email: lead.email,
+          phone: lead.phone || '', status: newStatus, outcome: newOutcome || '',
+          source: lead.source, solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '',
+          estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id,
+        }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setLead(updated)
+      }
+    } finally {
+      setAdvancing(false)
+    }
+  }
+
   const openEditLead = () => {
     if (!lead) return
     setEditFormData({
@@ -1173,7 +1269,16 @@ export default function LeadHubPage() {
 
           {/* FASES */}
           {tab === 'fases' && (active ? (
-            <PhasePanel key={active} phase={PHASES.find(p => p.key === active)!} data={getPhaseData(active)} leadId={id} onSaved={updatePhase} />
+            <PhasePanel
+              key={active}
+              phase={PHASES.find(p => p.key === active)!}
+              data={getPhaseData(active)}
+              leadId={id}
+              onSaved={updatePhase}
+              leadStatus={lead?.status ?? null}
+              onAdvance={advanceLead}
+              advancing={advancing}
+            />
           ) : (
             <div className="h-full overflow-y-auto p-6">
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
