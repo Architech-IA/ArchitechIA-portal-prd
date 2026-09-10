@@ -6,7 +6,7 @@ export async function GET() {
 
   const [allLeads, allProposals, allProjects, registros, topSocios] = await Promise.all([
     prisma.lead.findMany({
-      select: { id: true, status: true, estimatedValue: true, createdAt: true, source: true, userId: true },
+      select: { id: true, status: true, outcome: true, estimatedValue: true, createdAt: true, source: true, userId: true },
     }),
     prisma.proposal.findMany({
       select: { id: true, status: true, amount: true, createdAt: true, userId: true },
@@ -27,13 +27,13 @@ export async function GET() {
 
   // ── KPIs globales
   const totalLeads       = allLeads.length;
-  const leadsGanados     = allLeads.filter(l => l.status === 'WON').length;
-  const leadsPerdidos    = allLeads.filter(l => l.status === 'LOST').length;
+  const leadsGanados     = allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').length;
+  const leadsPerdidos    = allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'LOST').length;
   const winRate          = totalLeads > 0 ? Math.round((leadsGanados / totalLeads) * 100) : 0;
   const avgDealSize      = leadsGanados > 0
-    ? Math.round(allLeads.filter(l => l.status === 'WON').reduce((a, l) => a + l.estimatedValue, 0) / leadsGanados)
+    ? Math.round(allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').reduce((a, l) => a + l.estimatedValue, 0) / leadsGanados)
     : 0;
-  const totalPipeline    = allLeads.filter(l => !['LOST'].includes(l.status)).reduce((a, l) => a + l.estimatedValue, 0);
+  const totalPipeline    = allLeads.filter(l => !(l.status === 'RESULT' && l.outcome === 'LOST')).reduce((a, l) => a + l.estimatedValue, 0);
 
   const totalProposals   = allProposals.length;
   const propAceptadas    = allProposals.filter(p => p.status === 'ACCEPTED').length;
@@ -52,22 +52,41 @@ export async function GET() {
     return {
       mes:      d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }),
       ingresos: registros.filter(r => r.fecha >= ini && r.fecha <= fin).reduce((a, r) => a + r.monto, 0),
-      deals:    allLeads.filter(l => l.status === 'WON' && l.createdAt >= new Date(ini) && l.createdAt <= new Date(fin + 'T23:59:59')).length,
+      deals:    allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'WON' && l.createdAt >= new Date(ini) && l.createdAt <= new Date(fin + 'T23:59:59')).length,
     };
   });
 
   // ── Pipeline por etapa
-  const ETAPAS = ['NEW','CONTACTED','DIAGNOSIS','QUALIFIED','DEMO_VALIDATION','PROPOSAL_SENT','NEGOTIATION','WON','LOST'];
+  // RESULT reemplaza a WON/LOST como fase real — pero se sigue reportando
+  // Ganado/Perdido como filas separadas del embudo (calculadas a partir de
+  // outcome, no de status) para no perder ese desglose en el reporte.
+  const ETAPAS = ['NEW','CONTACTED','DIAGNOSIS','DEMO_VALIDATION','PROPOSAL_SENT','NEGOTIATION'];
   const ETAPA_ES: Record<string, string> = {
     NEW: 'Nuevo', CONTACTED: 'Contactado', DIAGNOSIS: 'Diagnóstico',
-    QUALIFIED: 'Calificado', DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta',
-    NEGOTIATION: 'Negociación', WON: 'Ganado', LOST: 'Perdido',
+    DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta', NEGOTIATION: 'Negociación',
   };
-  const pipelineEtapas = ETAPAS.map(s => ({
-    status: s, label: ETAPA_ES[s],
-    count: allLeads.filter(l => l.status === s).length,
-    valor: allLeads.filter(l => l.status === s).reduce((a, l) => a + l.estimatedValue, 0),
-  })).filter(e => e.count > 0);
+  const pipelineEtapas = [
+    ...ETAPAS.map(s => ({
+      status: s, label: ETAPA_ES[s],
+      count: allLeads.filter(l => l.status === s).length,
+      valor: allLeads.filter(l => l.status === s).reduce((a, l) => a + l.estimatedValue, 0),
+    })),
+    {
+      status: 'RESULT_WON', label: 'Ganado',
+      count: allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').length,
+      valor: allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').reduce((a, l) => a + l.estimatedValue, 0),
+    },
+    {
+      status: 'RESULT_LOST', label: 'Perdido',
+      count: allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'LOST').length,
+      valor: allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'LOST').reduce((a, l) => a + l.estimatedValue, 0),
+    },
+    {
+      status: 'RESULT_PENDING', label: 'Resultado (sin definir)',
+      count: allLeads.filter(l => l.status === 'RESULT' && !l.outcome).length,
+      valor: allLeads.filter(l => l.status === 'RESULT' && !l.outcome).reduce((a, l) => a + l.estimatedValue, 0),
+    },
+  ].filter(e => e.count > 0);
 
   // ── Revenue por categoría
   const catMap: Record<string, number> = {};

@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
   ]);
 
   const pipelineValue = await prisma.lead.aggregate({
-    where: { userId, status: { notIn: ['LOST'] } },
+    where: { userId, NOT: { status: 'RESULT', outcome: 'LOST' } },
     _sum: { estimatedValue: true },
   });
 
-  const leadsGanados = await prisma.lead.count({ where: { userId, status: 'WON' } });
+  const leadsGanados = await prisma.lead.count({ where: { userId, status: 'RESULT', outcome: 'WON' } });
 
   return NextResponse.json({
     user: { ...user, googleConnected: !!(user?.googleAccessToken), microsoftConnected: !!(user?.microsoftAccessToken) },

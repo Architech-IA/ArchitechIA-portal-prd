@@ -13,6 +13,7 @@ interface Lead {
   email: string;
   phone: string | null;
   status: string;
+  outcome: string | null;
   source: string;
   tipo: string | null;
   solucionAsociada: string | null;
@@ -27,19 +28,25 @@ interface Lead {
 
 const EMPTY_FORM = {
   companyName: '', contactName: '', email: '', phone: '',
-  status: 'NEW', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
+  status: 'NEW', outcome: '', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
 };
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
   NEW:             { label: 'Identificación', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.25)'  },
   CONTACTED:       { label: 'Contacto',       color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.25)' },
   DIAGNOSIS:       { label: 'Diagnóstico',    color: '#22d3ee', bg: 'rgba(34,211,238,0.12)',  border: 'rgba(34,211,238,0.25)'  },
-  QUALIFIED:       { label: 'Diagnóstico',    color: '#22d3ee', bg: 'rgba(34,211,238,0.12)',  border: 'rgba(34,211,238,0.25)'  },
   DEMO_VALIDATION: { label: 'Demo',           color: '#2dd4bf', bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.25)'  },
   PROPOSAL_SENT:   { label: 'Propuesta',      color: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.25)' },
   NEGOTIATION:     { label: 'Negociación',    color: '#f97316', bg: 'rgba(249,115,22,0.12)',  border: 'rgba(249,115,22,0.25)'  },
-  WON:             { label: 'Resultado',      color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.25)'  },
-  LOST:            { label: 'Resultado',      color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.25)' },
+  RESULT:          { label: 'Resultado',      color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.25)'  },
+};
+
+// WON/LOST ya no son fases — son el desenlace (Lead.outcome) de la fase
+// RESULT. Se usa solo para pintar el badge de la tabla cuando ya hay
+// desenlace definido, en vez del generico "Resultado".
+const OUTCOME_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  WON:  { label: 'Ganado',  color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.25)'  },
+  LOST: { label: 'Perdido', color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.25)' },
 };
 
 const glass = {
@@ -110,7 +117,7 @@ export default function LeadsPage() {
   const openNew = () => { setEditLead(null); setFormData(EMPTY_FORM); setFormError(''); setShowModal(true); };
   const openEdit = (lead: Lead) => {
     setEditLead(lead); setFormError('');
-    setFormData({ companyName: lead.companyName, contactName: lead.contactName, email: lead.email, phone: lead.phone || '', status: lead.status, source: lead.source, solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '', estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id });
+    setFormData({ companyName: lead.companyName, contactName: lead.contactName, email: lead.email, phone: lead.phone || '', status: lead.status, outcome: lead.outcome || '', source: lead.source, solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '', estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id });
     setShowModal(true);
   };
 
@@ -204,9 +211,9 @@ export default function LeadsPage() {
     </div>
   );
 
-  const totalPipeline  = leads.filter(l => l.status !== 'LOST').reduce((a, l) => a + l.estimatedValue, 0);
-  const totalGanado    = leads.filter(l => l.status === 'WON').reduce((a, l) => a + l.estimatedValue, 0);
-  const leadsGanados   = leads.filter(l => l.status === 'WON').length;
+  const totalPipeline  = leads.filter(l => !(l.status === 'RESULT' && l.outcome === 'LOST')).reduce((a, l) => a + l.estimatedValue, 0);
+  const totalGanado    = leads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').reduce((a, l) => a + l.estimatedValue, 0);
+  const leadsGanados   = leads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').length;
   const tasaConversion = leads.length > 0 ? Math.round((leadsGanados / leads.length) * 100) : 0;
 
   const KPI_CARDS = [
@@ -333,7 +340,8 @@ export default function LeadsPage() {
                 </tr>
               ) : (
                 paginated.map((lead, i) => {
-                  const sm = STATUS_META[lead.status];
+                  const om = lead.status === 'RESULT' && lead.outcome ? OUTCOME_META[lead.outcome] : null;
+                  const sm = om ?? STATUS_META[lead.status];
 
 
                   return (
@@ -449,6 +457,16 @@ export default function LeadsPage() {
                     {Object.entries(STATUS_META).map(([k,v]) => <option key={k} value={k} style={{ background: '#0f172a', color: '#f1f5f9' }}>{v.label}</option>)}
                   </select>
                 </div>
+                {formData.status === 'RESULT' && (
+                  <div>
+                    <label style={labelCls}>Resultado</label>
+                    <select value={formData.outcome} onChange={e => setFormData({...formData, outcome: e.target.value})} style={selectCls}>
+                      <option value="" style={{ background: '#0f172a', color: '#f1f5f9' }}>Sin definir...</option>
+                      <option value="WON" style={{ background: '#0f172a', color: '#f1f5f9' }}>Ganado</option>
+                      <option value="LOST" style={{ background: '#0f172a', color: '#f1f5f9' }}>Perdido</option>
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label style={labelCls}>Fuente</label>
                   <select required value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} style={selectCls}>

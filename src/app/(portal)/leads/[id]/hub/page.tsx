@@ -22,6 +22,7 @@ interface Lead {
   email: string
   phone: string | null
   status: string
+  outcome: string | null
   estimatedValue: number
   scope: string | null
   source: string
@@ -107,14 +108,18 @@ const PHASES = [
   { key: 'DEMO_VALIDATION', label: 'Demo',             desc: 'Demostración de la solución propuesta',          color: 'teal'   },
   { key: 'PROPOSAL_SENT',   label: 'Propuesta',        desc: 'Propuesta técnica y comercial enviada',          color: 'indigo' },
   { key: 'NEGOTIATION',     label: 'Negociación',      desc: 'Negociación de términos y condiciones',          color: 'orange' },
-  { key: 'WON',             label: 'Resultado',        desc: 'Cierre y resultado del proceso',                 color: 'green'  },
+  // RESULT es la ultima fase real del pipeline — WON/LOST ya no son fases
+  // separadas del enum, son un desenlace (Lead.outcome) que se registra
+  // DENTRO de esta fase (ver el selector de Resultado en el form de edicion
+  // mas abajo).
+  { key: 'RESULT',          label: 'Resultado',        desc: 'Cierre y resultado del proceso',                 color: 'green'  },
 ]
 
 const STATUS_ORDER = PHASES.map(p => p.key)
 
 const EMPTY_LEAD_FORM = {
   companyName: '', contactName: '', email: '', phone: '',
-  status: 'NEW', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
+  status: 'NEW', outcome: '', source: '', solucionAsociada: '', scope: '', estimatedValue: '', notes: '', userId: '',
 }
 
 const COLOR_MAP: Record<string, { dot: string; ring: string; bg: string; text: string; border: string }> = {
@@ -906,7 +911,7 @@ export default function LeadHubPage() {
     if (!lead) return
     setEditFormData({
       companyName: lead.companyName, contactName: lead.contactName, email: lead.email,
-      phone: lead.phone || '', status: lead.status, source: lead.source,
+      phone: lead.phone || '', status: lead.status, outcome: lead.outcome || '', source: lead.source,
       solucionAsociada: lead.solucionAsociada || '', scope: lead.scope || '',
       estimatedValue: String(lead.estimatedValue), notes: lead.notes || '', userId: lead.user.id,
     })
@@ -1313,6 +1318,16 @@ export default function LeadHubPage() {
                     {PHASES.map(p => <option key={p.key} value={p.key} style={{ background: '#0f172a' }}>{p.label}</option>)}
                   </select>
                 </div>
+                {editFormData.status === 'RESULT' && (
+                  <div>
+                    <label style={editLabelCls}>Resultado</label>
+                    <select value={editFormData.outcome} onChange={e => setEditFormData({ ...editFormData, outcome: e.target.value })} style={editInputCls}>
+                      <option value="" style={{ background: '#0f172a' }}>Sin definir...</option>
+                      <option value="WON" style={{ background: '#0f172a' }}>Ganado</option>
+                      <option value="LOST" style={{ background: '#0f172a' }}>Perdido</option>
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label style={editLabelCls}>Fuente</label>
                   <select required value={editFormData.source} onChange={e => setEditFormData({ ...editFormData, source: e.target.value })} style={editInputCls}>

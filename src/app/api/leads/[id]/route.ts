@@ -35,13 +35,19 @@ export async function PUT(
 
   const { id } = await params;
   const body = await request.json();
-  const { companyName, contactName, email, phone, status, source, estimatedValue, scope, repository, notes, userId, tipo, solucionAsociada } = body;
+  const { companyName, contactName, email, phone, status, outcome, source, estimatedValue, scope, repository, notes, userId, tipo, solucionAsociada } = body;
 
   try {
     const prev = await prisma.lead.findUnique({ where: { id }, select: { status: true } });
     const lead = await prisma.lead.update({
       where: { id },
-      data: { companyName, contactName, email, phone: phone || null, status, source,
+      data: { companyName, contactName, email, phone: phone || null, status,
+        // outcome (WON/LOST) es un campo de la fase RESULT, no una fase en
+        // si — solo tiene sentido mientras status === RESULT; fuera de esa
+        // fase se limpia para que no quede un desenlace viejo colgado si el
+        // lead se mueve para atras en el pipeline.
+        outcome: status === 'RESULT' ? (outcome || null) : null,
+        source,
         estimatedValue: parseFloat(estimatedValue) || 0, scope: scope || null, repository: repository || null, notes: notes || null, userId, tipo: tipo || null, solucionAsociada: solucionAsociada || null },
       include: { user: { select: { id: true, name: true, email: true } }, cliente: { select: { id: true, nombre: true } } },
     });

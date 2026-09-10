@@ -38,19 +38,17 @@ interface PersonalData {
 
 const STATUS_LEAD: Record<string, string> = {
   NEW: 'Identificación', CONTACTED: 'Contacto', DIAGNOSIS: 'Diagnóstico',
-  QUALIFIED: 'Calificado', DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta',
-  NEGOTIATION: 'Negociación', WON: 'Ganado', LOST: 'Perdido',
+  DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta',
+  NEGOTIATION: 'Negociación', RESULT: 'Resultado',
 };
 const LEAD_STATUS_PILL: Record<string, string> = {
   NEW: 'bg-blue-500/15 text-blue-400',
   CONTACTED: 'bg-indigo-500/15 text-indigo-400',
   DIAGNOSIS: 'bg-violet-500/15 text-violet-400',
-  QUALIFIED: 'bg-cyan-500/15 text-cyan-400',
   DEMO_VALIDATION: 'bg-yellow-500/15 text-yellow-400',
   PROPOSAL_SENT: 'bg-orange-500/15 text-orange-400',
   NEGOTIATION: 'bg-amber-500/15 text-amber-400',
-  WON: 'bg-green-500/15 text-green-400',
-  LOST: 'bg-red-500/15 text-red-400',
+  RESULT: 'bg-green-500/15 text-green-400',
 };
 const PRIORITY_LEFT: Record<string, string> = {
   LOW: '#475569', MEDIUM: '#EAB308', HIGH: '#F97316', CRITICAL: '#EF4444',

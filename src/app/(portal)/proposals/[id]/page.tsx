@@ -8,7 +8,7 @@ import CommentsSection from '@/components/CommentsSection';
 interface Proposal {
   id: string; title: string; description: string; status: string;
   amount: number; sentDate: string | null; acceptedDate: string | null; createdAt: string;
-  lead: { id: string; companyName: string; contactName: string; email: string; status: string } | null;
+  lead: { id: string; companyName: string; contactName: string; email: string; status: string; outcome: string | null } | null;
   user: { id: string; name: string; email: string };
   activities: Activity[];
   tasks: Task[];
@@ -58,12 +58,10 @@ const LEAD_STAGES = [
   { key: 'NEW',             label: 'Identificación' },
   { key: 'CONTACTED',       label: 'Contacto' },
   { key: 'DIAGNOSIS',       label: 'Diagnóstico' },
-  { key: 'QUALIFIED',       label: 'Diagnóstico' },
   { key: 'DEMO_VALIDATION', label: 'Demo' },
   { key: 'PROPOSAL_SENT',   label: 'Propuesta' },
   { key: 'NEGOTIATION',     label: 'Negociación' },
-  { key: 'WON',             label: 'Resultado' },
-  { key: 'LOST',            label: 'Resultado' },
+  { key: 'RESULT',          label: 'Resultado' },
 ];
 
 function getLeadStageIndex(status: string) {
@@ -344,16 +342,17 @@ export default function ProposalDetailPage() {
         <div className="mt-5 pt-4 border-t border-gray-800">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pipeline del Lead — {lead.companyName} <span className="text-gray-600 ml-1">(click en una fase)</span></p>
           <div className="flex items-center overflow-x-auto pb-2">
-            {LEAD_STAGES.filter(s => {
-              if (s.key === 'QUALIFIED') return false;
-              if (s.key === 'WON' && lead.status !== 'WON') return false;
-              if (s.key === 'LOST' && lead.status !== 'LOST') return false;
-              return true;
-            }).map((stage, i, arr) => {
-              const isCompleted = currentIdx >= 0 && i <= currentIdx && lead.status !== 'LOST';
+            {LEAD_STAGES.map((stage, i, arr) => {
+              // WON/LOST ya no son fases separadas del enum — son el
+              // desenlace (lead.outcome) de la fase RESULT. "Perdido" se
+              // sigue pintando en la ultima casilla del stepper (donde antes
+              // vivia la fase LOST), pero ahora depende de outcome, no de
+              // otra fase distinta.
+              const isLostOutcome = lead.status === 'RESULT' && lead.outcome === 'LOST';
+              const isCompleted = currentIdx >= 0 && i <= currentIdx && !isLostOutcome;
               const isCurrent = i === currentIdx;
-              const isLost = lead.status === 'LOST' && stage.key === 'LOST';
-              const isPastLost = lead.status === 'LOST' && i < arr.length - 1;
+              const isLost = isLostOutcome && stage.key === 'RESULT';
+              const isPastLost = isLostOutcome && i < arr.length - 1;
               const isSelected = selectedStage === stage.key;
               return (
                 <div key={stage.key} className="flex items-center flex-1 min-w-0">

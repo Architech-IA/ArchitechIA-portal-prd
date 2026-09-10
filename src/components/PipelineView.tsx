@@ -12,6 +12,7 @@ interface Lead {
   email: string;
   phone: string | null;
   status: string;
+  outcome: string | null;
   source: string;
   tipo: string | null;
   scope: string | null;
@@ -22,26 +23,28 @@ interface Lead {
   user: { id: string; name: string; email: string };
 }
 
+// QUALIFIED se fusiono con DIAGNOSIS y WON/LOST ya no son estados del Lead
+// — RESULT es la unica fase real; el desenlace (Ganado/Perdido) vive en
+// Lead.outcome, no se distingue en esta vista (a diferencia del kanban de
+// /pipeline, esta agrupa todo bajo una sola columna "Resultado").
 const STATUS_TO_ETAPA: Record<string, Etapa> = {
   NEW:             'Identificación',
   CONTACTED:       'Contacto',
   DIAGNOSIS:       'Diagnóstico',
-  QUALIFIED:       'Diagnóstico',
   DEMO_VALIDATION: 'Demo',
   PROPOSAL_SENT:   'Propuesta',
   NEGOTIATION:     'Negociación',
-  WON:             'Resultado',
-  LOST:            'Resultado',
+  RESULT:          'Resultado',
 };
 
 const ETAPA_TO_STATUS: Record<Etapa, string> = {
   Identificación: 'NEW',
   Contacto:       'CONTACTED',
-  Diagnóstico:    'QUALIFIED',
+  Diagnóstico:    'DIAGNOSIS',
   Demo:           'DEMO_VALIDATION',
   Propuesta:      'PROPOSAL_SENT',
   Negociación:    'NEGOTIATION',
-  Resultado:      'WON',
+  Resultado:      'RESULT',
 };
 
 const ETAPAS: Etapa[] = ['Identificación', 'Contacto', 'Diagnóstico', 'Demo', 'Propuesta', 'Negociación', 'Resultado'];
@@ -100,7 +103,7 @@ export default function PipelineView({ leads, users, onLeadsChange }: PipelineVi
     if (!dragging) return;
     const newStatus = ETAPA_TO_STATUS[etapa];
     const prevLeads = leads;
-    onLeadsChange(leads.map(l => l.id === dragging ? { ...l, status: newStatus } : l));
+    onLeadsChange(leads.map(l => l.id === dragging ? { ...l, status: newStatus, outcome: newStatus === 'RESULT' ? l.outcome : null } : l));
     setDragging(null);
     try {
       await fetch(`/api/pipeline/${dragging}`, {
@@ -139,9 +142,9 @@ export default function PipelineView({ leads, users, onLeadsChange }: PipelineVi
     }
   };
 
-  const totalPipeline = leads.filter(l => l.status !== 'LOST').reduce((a, l) => a + l.estimatedValue, 0);
-  const totalGanado   = leads.filter(l => l.status === 'WON').reduce((a, l) => a + l.estimatedValue, 0);
-  const activos       = leads.filter(l => !['WON', 'LOST'].includes(l.status)).length;
+  const totalPipeline = leads.filter(l => !(l.status === 'RESULT' && l.outcome === 'LOST')).reduce((a, l) => a + l.estimatedValue, 0);
+  const totalGanado   = leads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').reduce((a, l) => a + l.estimatedValue, 0);
+  const activos       = leads.filter(l => l.status !== 'RESULT').length;
 
   return (
     <div>

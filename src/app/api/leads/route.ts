@@ -16,7 +16,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { companyName, contactName, email, phone, status, source, estimatedValue, scope, repository, notes, userId, tipo, solucionAsociada } = body;
+  const { companyName, contactName, email, phone, status, outcome, source, estimatedValue, scope, repository, notes, userId, tipo, solucionAsociada } = body;
 
   // Vincula con un Cliente existente (por nombre) o crea uno nuevo — nunca duplicado sin relación
   let cliente = await prisma.cliente.findFirst({
@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
   }
 
   const lead = await prisma.lead.create({
-    data: { companyName, contactName, email, phone, status, source,
+    data: { companyName, contactName, email, phone, status,
+      outcome: status === 'RESULT' ? (outcome || null) : null,
+      source,
       estimatedValue: parseFloat(estimatedValue) || 0, scope: scope || null, repository: repository || null, notes, userId, tipo: tipo || null, solucionAsociada: solucionAsociada || null,
       clienteId: cliente.id },
     include: { user: { select: { id: true, name: true, email: true } }, cliente: { select: { id: true, nombre: true } } },

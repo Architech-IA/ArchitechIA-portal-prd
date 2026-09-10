@@ -12,32 +12,48 @@ interface DBLead {
   email: string;
   phone: string | null;
   status: string;
+  outcome: string | null;
   estimatedValue: number;
   source: string;
   notes: string | null;
   user: { id: string; name: string; email: string };
 }
 
+// QUALIFIED se fusiono con DIAGNOSIS y WON/LOST ya no son estados del Lead
+// — RESULT es la unica fase real, y el desenlace (Ganado/Perdido) viaja en
+// Lead.outcome. Esta pagina sigue mostrando "Ganado"/"Perdido" como
+// columnas separadas del kanban (es una comodidad visual de esta vista, no
+// del modelo de datos), asi que la clasificacion ahora depende de status +
+// outcome, no solo de status.
 const STATUS_TO_ETAPA: Record<string, Etapa> = {
   NEW:             'Nuevo',
   CONTACTED:       'Contactado',
   DIAGNOSIS:       'Calificado',
-  QUALIFIED:       'Calificado',
   DEMO_VALIDATION: 'Propuesta',
   PROPOSAL_SENT:   'Propuesta',
   NEGOTIATION:     'Negociación',
-  WON:             'Ganado',
-  LOST:            'Perdido',
 };
+
+function leadToEtapa(l: DBLead): Etapa {
+  if (l.status === 'RESULT') return l.outcome === 'LOST' ? 'Perdido' : 'Ganado';
+  return STATUS_TO_ETAPA[l.status] ?? 'Nuevo';
+}
 
 const ETAPA_TO_STATUS: Record<Etapa, string> = {
   Nuevo:       'NEW',
   Contactado:  'CONTACTED',
-  Calificado:  'QUALIFIED',
+  Calificado:  'DIAGNOSIS',
   Propuesta:   'PROPOSAL_SENT',
   Negociación: 'NEGOTIATION',
-  Ganado:      'WON',
-  Perdido:     'LOST',
+  Ganado:      'RESULT',
+  Perdido:     'RESULT',
+};
+
+// Solo relevante cuando la etapa destino es Ganado/Perdido — el resto de
+// las columnas no tienen desenlace (outcome queda null).
+const ETAPA_TO_OUTCOME: Partial<Record<Etapa, string>> = {
+  Ganado:  'WON',
+  Perdido: 'LOST',
 };
 
 const ETAPAS: Etapa[] = ['Nuevo', 'Contactado', 'Calificado', 'Propuesta', 'Negociación', 'Ganado', 'Perdido'];
@@ -90,7 +106,7 @@ export default function PipelinePage() {
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   const leadsEnEtapa = (etapa: Etapa) =>
-    leads.filter(l => STATUS_TO_ETAPA[l.status] === etapa);
+    leads.filter(l => leadToEtapa(l) === etapa);
 
   const valorEtapa = (etapa: Etapa) =>
     leadsEnEtapa(etapa).reduce((a, l) => a + l.estimatedValue, 0);
@@ -101,14 +117,15 @@ export default function PipelinePage() {
   const handleDrop = async (etapa: Etapa) => {
     if (!dragging) return;
     const newStatus = ETAPA_TO_STATUS[etapa];
+    const newOutcome = ETAPA_TO_OUTCOME[etapa] ?? null;
     const prevLeads = leads;
-    setLeads(prev => prev.map(l => l.id === dragging ? { ...l, status: newStatus } : l));
+    setLeads(prev => prev.map(l => l.id === dragging ? { ...l, status: newStatus, outcome: newOutcome } : l));
     setDragging(null);
     try {
       await fetch(`/api/pipeline/${dragging}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, outcome: newOutcome }),
       });
     } catch {
       setLeads(prevLeads);
@@ -129,6 +146,7 @@ export default function PipelinePage() {
         estimatedValue: form.estimatedValue,
         source:         form.source || 'Pipeline',
         status:         ETAPA_TO_STATUS[form.etapa],
+        outcome:        ETAPA_TO_OUTCOME[form.etapa] ?? null,
         userId,
       }),
     });
@@ -141,9 +159,9 @@ export default function PipelinePage() {
     }
   };
 
-  const totalPipeline = leads.filter(l => l.status !== 'LOST').reduce((a, l) => a + l.estimatedValue, 0);
-  const totalGanado   = leads.filter(l => l.status === 'WON').reduce((a, l) => a + l.estimatedValue, 0);
-  const activos       = leads.filter(l => !['WON', 'LOST'].includes(l.status)).length;
+  const totalPipeline = leads.filter(l => !(l.status === 'RESULT' && l.outcome === 'LOST')).reduce((a, l) => a + l.estimatedValue, 0);
+  const totalGanado   = leads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').reduce((a, l) => a + l.estimatedValue, 0);
+  const activos       = leads.filter(l => l.status !== 'RESULT').length;
 
   if (loading) return (
     <div className="flex items-center justify-center h-screen">

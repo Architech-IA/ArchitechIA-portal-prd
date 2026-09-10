@@ -14,17 +14,17 @@ export async function OPTIONS() {
 export async function GET() {
   try {
     const [allLeads, proposals, projects, activities] = await Promise.all([
-      prisma.lead.findMany({ select: { status: true, estimatedValue: true } }),
+      prisma.lead.findMany({ select: { status: true, outcome: true, estimatedValue: true } }),
       prisma.proposal.findMany({ select: { status: true } }),
       prisma.project.findMany({ select: { status: true, progress: true } }),
       prisma.activity.count(),
     ])
 
     const totalLeads     = allLeads.length
-    const leadsGanados   = allLeads.filter(l => l.status === 'WON').length
+    const leadsGanados   = allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').length
     const winRate        = totalLeads > 0 ? Math.round((leadsGanados / totalLeads) * 100) : 0
     const pipelineValue  = allLeads
-      .filter(l => !['WON', 'LOST'].includes(l.status))
+      .filter(l => l.status !== 'RESULT')
       .reduce((a, l) => a + l.estimatedValue, 0)
 
     const activeProjects    = projects.filter(p => !['COMPLETED', 'CANCELLED'].includes(p.status)).length

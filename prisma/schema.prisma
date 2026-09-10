@@ -44,6 +44,9 @@ model Lead {
   email          String
   phone          String?
   status         LeadStatus @default(NEW)
+  // Desenlace de la fase RESULT — no es una fase en si misma, es un campo de
+  // esa fase (WON o LOST). null mientras el lead no llego a RESULT todavia.
+  outcome        String?
   source         String // LinkedIn, Web, Referido, etc.
   estimatedValue Float      @default(0)
   tipo             String?
@@ -221,16 +224,18 @@ enum ProjectRole {
   VIEWER
 }
 
+// Las 7 fases reales del pipeline de preventa (ver PHASES en
+// leads/[id]/hub/page.tsx). QUALIFIED se fusiono con DIAGNOSIS y WON/LOST
+// se fusionaron en RESULT — el desenlace ganado/perdido ahora es un campo
+// (Lead.outcome), no una fase separada del stepper.
 enum LeadStatus {
   NEW
   CONTACTED
   DIAGNOSIS
-  QUALIFIED
   DEMO_VALIDATION
   PROPOSAL_SENT
   NEGOTIATION
-  WON
-  LOST
+  RESULT
 }
 
 enum ProposalStatus {

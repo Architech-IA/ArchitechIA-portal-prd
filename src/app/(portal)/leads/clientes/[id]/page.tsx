@@ -10,6 +10,7 @@ interface LeadRow {
   companyName: string
   contactName: string
   status: string
+  outcome: string | null
   estimatedValue: number
   source: string
   createdAt: string
@@ -33,12 +34,18 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string }> 
   NEW:             { label: 'Identificación', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)'  },
   CONTACTED:       { label: 'Contacto',       color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
   DIAGNOSIS:       { label: 'Diagnóstico',    color: '#22d3ee', bg: 'rgba(34,211,238,0.12)'  },
-  QUALIFIED:       { label: 'Diagnóstico',    color: '#22d3ee', bg: 'rgba(34,211,238,0.12)'  },
   DEMO_VALIDATION: { label: 'Demo',           color: '#2dd4bf', bg: 'rgba(45,212,191,0.12)'  },
   PROPOSAL_SENT:   { label: 'Propuesta',      color: '#818cf8', bg: 'rgba(129,140,248,0.12)' },
   NEGOTIATION:     { label: 'Negociación',    color: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
-  WON:             { label: 'Ganado',         color: '#34d399', bg: 'rgba(52,211,153,0.12)'  },
-  LOST:            { label: 'Perdido',        color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
+  RESULT:          { label: 'Resultado',      color: '#34d399', bg: 'rgba(52,211,153,0.12)'  },
+}
+
+// WON/LOST ya no son estados (fases) — son el desenlace (Lead.outcome) de
+// la fase RESULT. Este mapa cubre solo esa combinacion, para pintar el
+// badge distinto de un "Resultado" todavia sin desenlace definido.
+const OUTCOME_META: Record<string, { label: string; color: string; bg: string }> = {
+  WON:  { label: 'Ganado',  color: '#34d399', bg: 'rgba(52,211,153,0.12)'  },
+  LOST: { label: 'Perdido', color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
 }
 
 export default function ClienteDetailPage() {
@@ -57,7 +64,7 @@ export default function ClienteDetailPage() {
   }
 
   const totalLeadsValue = cliente.leads.reduce((a, l) => a + l.estimatedValue, 0)
-  const wonLeads = cliente.leads.filter(l => l.status === 'WON').length
+  const wonLeads = cliente.leads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').length
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -115,7 +122,10 @@ export default function ClienteDetailPage() {
             </thead>
             <tbody>
               {cliente.leads.map(lead => {
-                const sm = STATUS_META[lead.status]
+                // En la fase RESULT, si ya hay desenlace (WON/LOST), se muestra
+                // ese badge en vez del generico "Resultado" — mas informativo.
+                const om = lead.status === 'RESULT' && lead.outcome ? OUTCOME_META[lead.outcome] : null
+                const sm = om ?? STATUS_META[lead.status]
                 return (
                   <tr key={lead.id} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer" onClick={() => router.push(`/leads/${lead.id}/hub`)}>
                     <td className="px-4 py-2.5 text-gray-200">{lead.contactName}</td>

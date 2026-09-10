@@ -121,9 +121,9 @@ async function fetchLeadContext(companyName: string): Promise<string | null> {
   })
 
   const STATUS_LABELS: Record<string, string> = {
-    NEW: 'Nuevo', CONTACTED: 'Contactado', QUALIFIED: 'Calificado',
+    NEW: 'Nuevo', CONTACTED: 'Contactado', DIAGNOSIS: 'Diagnóstico', DEMO_VALIDATION: 'Demo',
     PROPOSAL_SENT: 'Propuesta enviada', NEGOTIATION: 'Negociación',
-    WON: 'Ganado', LOST: 'Perdido',
+    RESULT: 'Resultado',
   }
 
   const INT_LABELS: Record<string, string> = { CALL: 'Llamada', EMAIL: 'Email', MEETING: 'Reunión', WHATSAPP: 'WhatsApp' }

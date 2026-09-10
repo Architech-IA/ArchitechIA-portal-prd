@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
   const myProjects = myProjectUsers.map(pu => ({ ...pu.project, projectRole: pu.role }));
 
-  const activeLeads = myLeads.filter(l => !['WON', 'LOST'].includes(l.status));
+  const activeLeads = myLeads.filter(l => l.status !== 'RESULT');
   const pipelineValue = activeLeads.reduce((a, l) => a + l.estimatedValue, 0);
   const backlogInProgress = myBacklog.filter(i => i.status === 'IN_PROGRESS').length;
 

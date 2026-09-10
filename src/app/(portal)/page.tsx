@@ -31,9 +31,9 @@ interface DashboardData {
 }
 
 const ETAPA_LABELS: Record<string, string> = {
-  NEW: 'Identificación', CONTACTED: 'Contacto', DIAGNOSIS: 'Diagnóstico', QUALIFIED: 'Calificado',
+  NEW: 'Identificación', CONTACTED: 'Contacto', DIAGNOSIS: 'Diagnóstico',
   DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta', NEGOTIATION: 'Negociación',
-  WON: 'Ganado', LOST: 'Perdido',
+  RESULT: 'Resultado',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -702,9 +702,9 @@ function getActivityDot(type: string): string {
 
 function translateStatus(status: string): string {
   const t: Record<string, string> = {
-    NEW: 'Identificación', CONTACTED: 'Contacto', QUALIFIED: 'Diagnóstico',
+    NEW: 'Identificación', CONTACTED: 'Contacto', DIAGNOSIS: 'Diagnóstico',
     PROPOSAL_SENT: 'Propuesta', NEGOTIATION: 'Negociación',
-    WON: 'Resultado', LOST: 'Resultado', DRAFT: 'Borrador', SENT: 'Enviado',
+    RESULT: 'Resultado', DRAFT: 'Borrador', SENT: 'Enviado',
     UNDER_REVIEW: 'En Revisión', ACCEPTED: 'Aceptado', REJECTED: 'Rechazado',
     PLANNING: 'Planificación', IN_PROGRESS: 'En Progreso', ON_HOLD: 'En Pausa',
     COMPLETED: 'Completado', CANCELLED: 'Cancelado',

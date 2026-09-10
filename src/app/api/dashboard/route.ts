@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     myLeads, myProposals,
   ] = await Promise.all([
     prisma.lead.findMany({
-      select: { id: true, companyName: true, status: true, estimatedValue: true,
+      select: { id: true, companyName: true, status: true, outcome: true, estimatedValue: true,
                 updatedAt: true, source: true, createdAt: true },
     }),
     prisma.proposal.findMany({
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
   const projects  = allProjects.length;
 
   const totalEstimatedValue = allLeads.reduce((a, l) => a + l.estimatedValue, 0);
-  const leadsGanados        = allLeads.filter(l => l.status === 'WON').length;
+  const leadsGanados        = allLeads.filter(l => l.status === 'RESULT' && l.outcome === 'WON').length;
   const conversionRate      = leads > 0 ? Math.round((leadsGanados / leads) * 100) : 0;
 
   const leadsByStatus     = groupCount(allLeads,     'status');
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
   const industriaLeads    = groupCount(allLeads,     'source', 'source');
 
   const leadsInactivos = allLeads
-    .filter(l => !['WON', 'LOST'].includes(l.status) && l.updatedAt < hace7dias)
+    .filter(l => l.status !== 'RESULT' && l.updatedAt < hace7dias)
     .slice(0, 5)
     .map(l => ({ id: l.id, companyName: l.companyName, status: l.status, updatedAt: l.updatedAt }));
 
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
     .slice(0, 5)
     .map(p => ({ id: p.id, name: p.name, endDate: p.endDate, progress: p.progress, priority: p.priority }));
 
-  const ETAPAS_EMBUDO = ['NEW','CONTACTED','DIAGNOSIS','QUALIFIED','DEMO_VALIDATION','PROPOSAL_SENT','NEGOTIATION','WON'];
+  const ETAPAS_EMBUDO = ['NEW','CONTACTED','DIAGNOSIS','DEMO_VALIDATION','PROPOSAL_SENT','NEGOTIATION','RESULT'];
   const embudo = ETAPAS_EMBUDO.map(status => ({
     status,
     count: allLeads.filter(l => l.status === status).length,
