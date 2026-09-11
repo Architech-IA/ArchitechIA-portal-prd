@@ -411,7 +411,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
               type="button"
               onClick={() => setPanDias(d => d - 7)}
               style={{ top: 28, height: 44 }}
-              className="absolute left-1 z-30 flex items-center justify-center w-5 rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
+              className="absolute left-0 z-30 flex items-center justify-center w-5 rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
               title="Ver días anteriores"
             >
               <ChevronLeft size={14} />
@@ -420,7 +420,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
               type="button"
               onClick={() => setPanDias(d => d + 7)}
               style={{ top: 28, height: 44 }}
-              className="absolute right-1 z-30 flex items-center justify-center w-5 rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
+              className="absolute right-0 z-30 flex items-center justify-center w-5 rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
               title="Ver días siguientes"
             >
               <ChevronRight size={14} />
@@ -430,7 +430,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
 
         <div
           ref={dayGridContainerRef}
-          className={`border border-cyan-800/40 rounded-xl overflow-x-auto ${!hasHourData && dayGrid ? 'mx-7' : ''}`}
+          className={`border border-cyan-800/40 rounded-xl overflow-x-auto ${!hasHourData && dayGrid ? 'mx-5' : ''}`}
         >
         <div className="min-w-max">
 
