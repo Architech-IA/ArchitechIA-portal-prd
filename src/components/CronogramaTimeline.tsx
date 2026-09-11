@@ -588,37 +588,35 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                     </div>
                   ))}
                 </div>
-                {/* Header fila 2: dia de semana + fecha, con "hoy" resaltado */}
+                {/* Header fila 2: dia de semana + fecha. El dia de "hoy" es un chip
+                    solido (no un sombreado de fondo, eso queda solo en las filas) */}
                 <div className="flex border-b border-cyan-800/40 bg-cyan-950/20">
                   {days.map((d, i) => {
                     const isToday = i === todayIdx
                     return (
-                      <div key={i} style={{ width: COL_W }} className="flex flex-col items-center justify-center py-1.5 border-r border-cyan-800/10 last:border-r-0">
-                        <span className={`text-[9px] font-medium capitalize ${isToday ? 'text-white' : 'text-gray-500'}`}>
-                          {d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '')}
-                        </span>
-                        <span className={`mt-0.5 text-[11px] font-bold leading-none px-1.5 py-0.5 rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-300'}`}>
-                          {d.getDate()}
-                        </span>
+                      <div key={i} style={{ width: COL_W }} className="flex items-center justify-center py-1.5 border-r border-cyan-800/10 last:border-r-0">
+                        <div className={`flex flex-col items-center justify-center rounded-lg px-2.5 py-1 ${isToday ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : ''}`}>
+                          <span className={`text-[9px] font-medium capitalize ${isToday ? 'text-white/90' : 'text-gray-500'}`}>
+                            {d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '')}
+                          </span>
+                          <span className={`mt-0.5 text-[11px] font-bold leading-none ${isToday ? 'text-white' : 'text-gray-300'}`}>
+                            {d.getDate()}
+                          </span>
+                        </div>
                       </div>
                     )
                   })}
                 </div>
 
-                {/* Columna de "hoy": banda de fondo + linea punteada atravesando
-                    header y filas, igual que la referencia (banda ancha, no solo linea). */}
-                {todayIdx >= 0 && (
-                  <>
-                    <div className="absolute top-0 bottom-0 bg-orange-500/10 z-0 pointer-events-none"
+                {/* Cuerpo (filas): banda de fondo solo aqui para la columna de "hoy",
+                    el header ya se distingue con su propio chip solido arriba. */}
+                <div className="relative">
+                  {todayIdx >= 0 && (
+                    <div className="absolute inset-y-0 bg-orange-500/10 pointer-events-none"
                       style={{ left: todayIdx * COL_W, width: COL_W }} />
-                    <div className="absolute top-0 bottom-0 border-l-2 border-dashed border-orange-500/70 z-20 pointer-events-none"
-                      style={{ left: todayIdx * COL_W + COL_W / 2 }} />
-                  </>
-                )}
-
-                {/* Filas */}
-                <div className="divide-y divide-cyan-800/15">
-                  {completas.map((f, idx) => {
+                  )}
+                  <div className="divide-y divide-cyan-800/15 relative">
+                    {completas.map((f, idx) => {
                     const s = new Date(f.fechaInicio + 'T00:00:00').getTime()
                     const e = new Date(f.fechaFin + 'T00:00:00').getTime()
                     const startIdx = Math.round((s - min) / DAY_MS)
@@ -665,7 +663,14 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                       </button>
                     )
                   })}
+                  </div>
                 </div>
+
+                {/* Linea punteada de "hoy" atravesando header + cuerpo por completo */}
+                {todayIdx >= 0 && (
+                  <div className="absolute top-0 bottom-0 border-l-2 border-dashed border-orange-500/70 z-20 pointer-events-none"
+                    style={{ left: todayIdx * COL_W + COL_W / 2 }} />
+                )}
               </div>
             )
           })()}
