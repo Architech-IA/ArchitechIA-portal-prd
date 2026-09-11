@@ -402,28 +402,29 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
         </p>
       )}
 
-      {!hasHourData && dayGrid && (
-        <div className="flex items-center justify-between px-1">
-          <button
-            type="button"
-            onClick={() => setPanDias(d => d - 7)}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-300 transition-colors"
-            title="Ver días anteriores"
-          >
-            <ChevronLeft size={16} /> Días atrás
-          </button>
-          <button
-            type="button"
-            onClick={() => setPanDias(d => d + 7)}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-300 transition-colors"
-            title="Ver días siguientes"
-          >
-            Días adelante <ChevronRight size={16} />
-          </button>
-        </div>
-      )}
+      <div className="relative">
+        {!hasHourData && dayGrid && (
+          <>
+            <button
+              type="button"
+              onClick={() => setPanDias(d => d - 7)}
+              className="absolute left-1.5 z-30 flex items-center justify-center w-6 h-[72px] rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
+              title="Ver días anteriores"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPanDias(d => d + 7)}
+              className="absolute right-1.5 z-30 flex items-center justify-center w-6 h-[72px] rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
+              title="Ver días siguientes"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
+        )}
 
-      <div ref={dayGridContainerRef} className="border border-cyan-800/40 rounded-xl overflow-x-auto">
+        <div ref={dayGridContainerRef} className="border border-cyan-800/40 rounded-xl overflow-x-auto">
         <div className="min-w-max">
 
           {/* ── HOUR-BASED GRID ── */}
@@ -724,6 +725,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
             )
           })()}
 
+        </div>
         </div>
       </div>
 
