@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CalendarRange, X, Trash2, ListPlus, CheckCircle2, Loader2 } from 'lucide-react'
 import SesionPopup from '@/components/SesionPopup'
@@ -69,6 +69,22 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [cargandoBacklog, setCargandoBacklog] = useState(false)
   const [backlogError, setBacklogError] = useState('')
+  const dayGridContainerRef = useRef<HTMLDivElement>(null)
+  const [dayGridContainerWidth, setDayGridContainerWidth] = useState(0)
+
+  // Mide el ancho disponible del contenedor de la grilla por dias para poder
+  // agregar columnas de dias vacios al final y que la linea de tiempo llene
+  // todo el ancho, en vez de dejar un hueco despues del ultimo dia con datos.
+  useEffect(() => {
+    const el = dayGridContainerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width
+      if (width) setDayGridContainerWidth(width)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   const sesiones = useMemo<SesionCard[]>(
     () => (planMarkdown ? parseSesionesFromMarkdown(planMarkdown) : []),
@@ -380,7 +396,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
         </p>
       )}
 
-      <div className="border border-cyan-800/40 rounded-xl overflow-x-auto">
+      <div ref={dayGridContainerRef} className="border border-cyan-800/40 rounded-xl overflow-x-auto">
         <div className="min-w-max">
 
           {/* ── HOUR-BASED GRID ── */}
@@ -561,9 +577,16 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
               vez de colores arbitrarios por tarea — es informacion real, no
               solo decorativa, asi que se preservo esa semantica. ── */}
           {!hasHourData && dayGrid && (() => {
-            const { min, days } = dayGrid
-            const numDays = days.length
+            const { min } = dayGrid
             const COL_W = 64
+            // Completa dias vacios al final (y si hace falta al inicio) para que
+            // la grilla llene todo el ancho disponible del contenedor, en vez de
+            // dejar un hueco despues del ultimo dia con datos.
+            const minDaysToFill = dayGridContainerWidth ? Math.ceil(dayGridContainerWidth / COL_W) : 0
+            const days = dayGrid.days.length >= minDaysToFill
+              ? dayGrid.days
+              : Array.from({ length: minDaysToFill }, (_, i) => new Date(min + i * DAY_MS))
+            const numDays = days.length
             const totalW = numDays * COL_W
             const todayStr = new Date().toISOString().slice(0, 10)
             const todayIdx = days.findIndex(d => d.toISOString().slice(0, 10) === todayStr)
