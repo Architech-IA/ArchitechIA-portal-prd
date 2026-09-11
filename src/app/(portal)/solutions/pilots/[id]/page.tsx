@@ -415,30 +415,26 @@ export default function SolucionDetailPage() {
 
   return (
     <div>
-      {/* Tabs */}
-      <div className="border-b border-gray-700 bg-gray-900/60 px-4 md:px-8">
-        <nav className="flex gap-1 overflow-x-auto overflow-y-hidden">
-          {TABS.map((t, i) => {
-            const active = activeTab === t.key
-            return (
-              <span key={t.key} className="flex items-stretch flex-shrink-0">
-                {i > 0 && <span className="w-px my-3 bg-gray-700 flex-shrink-0" />}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(t.key)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px rounded-t-md transition-colors flex-shrink-0 ${
-                    active
-                      ? 'text-orange-400 border-orange-500 bg-orange-500/10'
-                      : 'text-gray-300 border-transparent hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <t.icon size={15} />
-                  {t.label}
-                </button>
-              </span>
-            )
-          })}
-        </nav>
+      {/* Tabs — mismo tamaño/estilo que la barra de tabs del Hub de Lead
+          (leads/[id]/hub/page.tsx) para que ambos hubs se vean consistentes */}
+      <div style={{ display: 'flex', gap: '2px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)', overflowX: 'auto' }}>
+        {TABS.map(t => {
+          const active = activeTab === t.key
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setActiveTab(t.key)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 flex-shrink-0 ${
+                active
+                  ? 'border-b-orange-500 bg-orange-500/[0.07] text-orange-400'
+                  : 'border-b-transparent bg-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+              }`}
+            >
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       <div className="p-4 space-y-4">
