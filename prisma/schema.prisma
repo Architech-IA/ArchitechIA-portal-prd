@@ -91,8 +91,41 @@ model Solucion {
   backlogItems  BacklogItem[]
   sprints       Sprint[]
   epics         Epic[]
+  riesgos       Riesgo[]
+  hitos         Hito[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+}
+
+// Tab "Riesgos" del hub de proyecto (pagina de detalle de Solucion).
+model Riesgo {
+  id           String   @id @default(cuid())
+  solucionId   String
+  solucion     Solucion @relation(fields: [solucionId], references: [id], onDelete: Cascade)
+  titulo       String
+  descripcion  String?
+  severidad    String   @default("MEDIA")    // BAJA, MEDIA, ALTA, CRITICA
+  probabilidad String   @default("MEDIA")    // BAJA, MEDIA, ALTA
+  mitigacion   String?
+  estado       String   @default("ABIERTO")  // ABIERTO, MITIGADO, CERRADO
+  responsable  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Tab "Cumplimiento" del hub de proyecto — hitos/entregables comprometidos
+// con el cliente vs. fecha real de entrega.
+model Hito {
+  id                String    @id @default(cuid())
+  solucionId        String
+  solucion          Solucion  @relation(fields: [solucionId], references: [id], onDelete: Cascade)
+  titulo            String
+  descripcion       String?
+  fechaComprometida DateTime?
+  fechaReal         DateTime?
+  estado            String    @default("PENDIENTE") // PENDIENTE, CUMPLIDO, ATRASADO
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model Proposal {

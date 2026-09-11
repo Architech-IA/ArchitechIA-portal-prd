@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   Sliders, LayoutGrid, FileText, Calendar, Code2,
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
-  Trash2, Save, Plus, ListPlus,
+  Trash2, Save, Plus, ListPlus, AlertTriangle, Flag,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -42,9 +42,47 @@ const ESTADO_A_BACKLOG: Record<string, string> = {
   COMPLETADA: 'DONE',
 }
 
+interface Riesgo {
+  id: string
+  titulo: string
+  descripcion: string | null
+  severidad: string
+  probabilidad: string
+  mitigacion: string | null
+  estado: string
+  responsable: string | null
+}
+const SEVERIDADES = ['BAJA', 'MEDIA', 'ALTA', 'CRITICA']
+const PROBABILIDADES = ['BAJA', 'MEDIA', 'ALTA']
+const ESTADOS_RIESGO = ['ABIERTO', 'MITIGADO', 'CERRADO']
+const SEVERIDAD_COLOR: Record<string, string> = {
+  BAJA: 'text-gray-400 border-gray-700', MEDIA: 'text-yellow-400 border-yellow-700/50',
+  ALTA: 'text-orange-400 border-orange-700/50', CRITICA: 'text-red-400 border-red-700/50',
+}
+
+interface Hito {
+  id: string
+  titulo: string
+  descripcion: string | null
+  fechaComprometida: string | null
+  fechaReal: string | null
+  estado: string
+}
+const ESTADOS_HITO = ['PENDIENTE', 'CUMPLIDO', 'ATRASADO']
+const ESTADO_HITO_COLOR: Record<string, string> = {
+  PENDIENTE: 'text-gray-400 border-gray-700', CUMPLIDO: 'text-green-400 border-green-700/50',
+  ATRASADO: 'text-red-400 border-red-700/50',
+}
+
 interface FormState {
   nombre: string
   descripcion: string
+  // BUG REAL encontrado generalizando esta pagina: handleSave hardcodeaba
+  // tipo: 'DEMO' en cada guardado — cualquier Solucion PROJECT/PARTNERSHIP/
+  // INTERN que se editara y guardara acá quedaba reclasificada en silencio
+  // como DEMO (desaparecia de su listado real y aparecia en Pilots). Ahora
+  // se preserva el tipo original cargado, nunca se asume.
+  tipo: string
   estado: string
   valorEstimado: string
   leadId: string
@@ -53,16 +91,18 @@ interface FormState {
 }
 
 const emptyForm: FormState = {
-  nombre: '', descripcion: '', estado: 'ACTIVO', valorEstimado: '0', leadId: '', repositorio: '', planTrabajo: '',
+  nombre: '', descripcion: '', tipo: 'PROJECT', estado: 'ACTIVO', valorEstimado: '0', leadId: '', repositorio: '', planTrabajo: '',
 }
 
-type TabKey = 'general' | 'arquitectura' | 'plan' | 'cronograma' | 'codigo'
+type TabKey = 'general' | 'arquitectura' | 'plan' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
 
 const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'general', label: 'General', icon: Sliders },
   { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
   { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
   { key: 'cronograma', label: 'Cronograma', icon: Calendar },
+  { key: 'riesgos', label: 'Riesgos', icon: AlertTriangle },
+  { key: 'cumplimiento', label: 'Cumplimiento', icon: Flag },
   { key: 'codigo', label: 'Código fuente', icon: Code2 },
 ]
 
@@ -70,7 +110,7 @@ function makeId() {
   return Math.random().toString(36).slice(2, 10)
 }
 
-export default function PocDetailPage() {
+export default function SolucionDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = String(params.id)
@@ -102,6 +142,15 @@ export default function PocDetailPage() {
   const planFileInputRef = useRef<HTMLInputElement>(null)
   const htmlFileInputRef = useRef<HTMLInputElement>(null)
 
+  // Riesgos y Cumplimiento son tablas propias (Riesgo/Hito), no un blob JSON
+  // dentro de Solucion como el Cronograma — se persisten al toque (crear/
+  // editar/borrar pega directo a su API), no dependen del boton Guardar
+  // grande de esta pagina.
+  const [riesgos, setRiesgos] = useState<Riesgo[]>([])
+  const [loadingRiesgos, setLoadingRiesgos] = useState(true)
+  const [hitos, setHitos] = useState<Hito[]>([])
+  const [loadingHitos, setLoadingHitos] = useState(true)
+
   useSetPageTitle(form.nombre || null)
 
   useEffect(() => {
@@ -115,6 +164,7 @@ export default function PocDetailPage() {
         setForm({
           nombre: s.nombre,
           descripcion: s.descripcion || '',
+          tipo: s.tipo,
           estado: s.estado,
           valorEstimado: String(s.valorEstimado ?? 0),
           leadId: s.leadId || '',
@@ -154,8 +204,32 @@ export default function PocDetailPage() {
         if (!cancelled) setLoadingLeads(false)
       }
     }
+    async function loadRiesgos() {
+      try {
+        const res = await fetch(`/api/riesgos?solucionId=${id}`)
+        const data = await res.json()
+        if (!cancelled) setRiesgos(Array.isArray(data) ? data : [])
+      } catch {
+        if (!cancelled) setRiesgos([])
+      } finally {
+        if (!cancelled) setLoadingRiesgos(false)
+      }
+    }
+    async function loadHitos() {
+      try {
+        const res = await fetch(`/api/hitos?solucionId=${id}`)
+        const data = await res.json()
+        if (!cancelled) setHitos(Array.isArray(data) ? data : [])
+      } catch {
+        if (!cancelled) setHitos([])
+      } finally {
+        if (!cancelled) setLoadingHitos(false)
+      }
+    }
     load()
     loadLeads()
+    loadRiesgos()
+    loadHitos()
     return () => { cancelled = true }
   }, [id])
 
@@ -185,6 +259,44 @@ export default function PocDetailPage() {
   }
   function removeFase(fid: string) {
     setFases(prev => prev.filter(f => f.id !== fid))
+  }
+
+  async function addRiesgo() {
+    const res = await fetch('/api/riesgos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ solucionId: id, titulo: 'Nuevo riesgo' }),
+    })
+    if (res.ok) { const nuevo = await res.json(); setRiesgos(prev => [...prev, nuevo]) }
+  }
+  async function updateRiesgo(rid: string, patch: Partial<Riesgo>) {
+    setRiesgos(prev => prev.map(r => r.id === rid ? { ...r, ...patch } : r))
+    await fetch(`/api/riesgos/${rid}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+    })
+  }
+  async function removeRiesgo(rid: string) {
+    if (!window.confirm('¿Eliminar este riesgo?')) return
+    setRiesgos(prev => prev.filter(r => r.id !== rid))
+    await fetch(`/api/riesgos/${rid}`, { method: 'DELETE' })
+  }
+
+  async function addHito() {
+    const res = await fetch('/api/hitos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ solucionId: id, titulo: 'Nuevo hito' }),
+    })
+    if (res.ok) { const nuevo = await res.json(); setHitos(prev => [...prev, nuevo]) }
+  }
+  async function updateHito(hid: string, patch: Partial<Hito>) {
+    setHitos(prev => prev.map(h => h.id === hid ? { ...h, ...patch } : h))
+    await fetch(`/api/hitos/${hid}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+    })
+  }
+  async function removeHito(hid: string) {
+    if (!window.confirm('¿Eliminar este hito?')) return
+    setHitos(prev => prev.filter(h => h.id !== hid))
+    await fetch(`/api/hitos/${hid}`, { method: 'DELETE' })
   }
   function generarCronogramaDesdePlan() {
     const steps = extractStepsFromPlan(form.planTrabajo)
@@ -243,7 +355,7 @@ export default function PocDetailPage() {
         body: JSON.stringify({
           nombre: form.nombre.trim(),
           descripcion: form.descripcion.trim() || null,
-          tipo: 'DEMO',
+          tipo: form.tipo,
           estado: form.estado,
           valorEstimado: parseFloat(form.valorEstimado) || 0,
           leadId: form.leadId,
@@ -268,14 +380,14 @@ export default function PocDetailPage() {
   }
 
   async function handleDelete() {
-    if (!window.confirm('¿Eliminar esta PoC? Esta acción no se puede deshacer.')) return
+    if (!window.confirm('¿Eliminar esta Solución? Esta acción no se puede deshacer.')) return
     setDeleting(true)
     try {
       const res = await fetch(`/api/soluciones/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
       router.push('/soluciones/pilotos')
     } catch {
-      setError('No se pudo eliminar la PoC.')
+      setError('No se pudo eliminar la Solución.')
       setDeleting(false)
     }
   }
@@ -294,7 +406,7 @@ export default function PocDetailPage() {
     return (
       <div className="p-4 md:p-8">
         <div className="card p-8 text-center">
-          <p className="text-white font-semibold">PoC no encontrada</p>
+          <p className="text-white font-semibold">Solución no encontrada</p>
           <p className="text-gray-500 text-sm mt-1">Puede que haya sido eliminada.</p>
         </div>
       </div>
@@ -428,7 +540,7 @@ export default function PocDetailPage() {
               </div>
 
               <div className="border border-red-900/40 bg-red-950/10 rounded-xl p-4 mt-6">
-                <p className="text-red-400 text-sm font-semibold mb-1">Eliminar esta PoC</p>
+                <p className="text-red-400 text-sm font-semibold mb-1">Eliminar esta Solución</p>
                 <p className="text-gray-500 text-xs mb-3">Esta acción no se puede deshacer – se borra junto con su arquitectura, plan, cronograma y código asociado.</p>
                 <button
                   type="button"
@@ -437,7 +549,7 @@ export default function PocDetailPage() {
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                  Eliminar PoC
+                  Eliminar Solución
                 </button>
               </div>
             </>
@@ -621,6 +733,112 @@ export default function PocDetailPage() {
                   <button type="button" onClick={addFase} disabled={saving}
                     className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors disabled:opacity-50">
                     <Plus size={14} /> Agregar fase
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Tab: Riesgos */}
+          {activeTab === 'riesgos' && (
+            <div className="space-y-3">
+              {loadingRiesgos ? (
+                <div className="flex justify-center py-8"><Loader2 className="text-cyan-500 animate-spin" size={22} /></div>
+              ) : (
+                <>
+                  {riesgos.length === 0 && (
+                    <p className="text-gray-600 text-sm text-center py-4">Sin riesgos registrados todavía.</p>
+                  )}
+                  <div className="space-y-3">
+                    {riesgos.map(r => (
+                      <div key={r.id} className={`bg-gray-950 border rounded-xl p-3 space-y-2 ${SEVERIDAD_COLOR[r.severidad] ?? 'border-gray-700'}`}>
+                        <div className="flex items-center gap-2">
+                          <input type="text" value={r.titulo} onChange={e => updateRiesgo(r.id, { titulo: e.target.value })}
+                            placeholder="Título del riesgo"
+                            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <button type="button" onClick={() => removeRiesgo(r.id)}
+                            className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <textarea value={r.descripcion ?? ''} onChange={e => updateRiesgo(r.id, { descripcion: e.target.value })}
+                          placeholder="Descripción del riesgo" rows={2}
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-vertical" />
+                        <div className="grid grid-cols-4 gap-2">
+                          <select value={r.severidad} onChange={e => updateRiesgo(r.id, { severidad: e.target.value })} title="Severidad"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            {SEVERIDADES.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                          <select value={r.probabilidad} onChange={e => updateRiesgo(r.id, { probabilidad: e.target.value })} title="Probabilidad"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            {PROBABILIDADES.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                          <select value={r.estado} onChange={e => updateRiesgo(r.id, { estado: e.target.value })} title="Estado"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            {ESTADOS_RIESGO.map(e2 => <option key={e2} value={e2}>{e2}</option>)}
+                          </select>
+                          <input type="text" value={r.responsable ?? ''} onChange={e => updateRiesgo(r.id, { responsable: e.target.value })}
+                            placeholder="Responsable"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                        </div>
+                        <input type="text" value={r.mitigacion ?? ''} onChange={e => updateRiesgo(r.id, { mitigacion: e.target.value })}
+                          placeholder="Mitigación propuesta"
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={addRiesgo}
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors">
+                    <Plus size={14} /> Agregar riesgo
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Tab: Cumplimiento */}
+          {activeTab === 'cumplimiento' && (
+            <div className="space-y-3">
+              {loadingHitos ? (
+                <div className="flex justify-center py-8"><Loader2 className="text-cyan-500 animate-spin" size={22} /></div>
+              ) : (
+                <>
+                  {hitos.length === 0 && (
+                    <p className="text-gray-600 text-sm text-center py-4">Sin hitos registrados todavía.</p>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {hitos.map(h => (
+                      <div key={h.id} className={`bg-gray-950 border rounded-xl p-3 space-y-2 ${ESTADO_HITO_COLOR[h.estado] ?? 'border-gray-700'}`}>
+                        <div className="flex items-center gap-2">
+                          <input type="text" value={h.titulo} onChange={e => updateHito(h.id, { titulo: e.target.value })}
+                            placeholder="Título del hito / entregable"
+                            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <button type="button" onClick={() => removeHito(h.id)}
+                            className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <input type="text" value={h.descripcion ?? ''} onChange={e => updateHito(h.id, { descripcion: e.target.value })}
+                          placeholder="Descripción (opcional)"
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                        <div className="grid grid-cols-3 gap-2">
+                          <input type="date" value={h.fechaComprometida ? h.fechaComprometida.slice(0, 10) : ''}
+                            onChange={e => updateHito(h.id, { fechaComprometida: e.target.value || null })} title="Fecha comprometida"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <input type="date" value={h.fechaReal ? h.fechaReal.slice(0, 10) : ''}
+                            onChange={e => updateHito(h.id, { fechaReal: e.target.value || null })} title="Fecha real de entrega"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <select value={h.estado} onChange={e => updateHito(h.id, { estado: e.target.value })} title="Estado"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            {ESTADOS_HITO.map(es => <option key={es} value={es}>{es}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={addHito}
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors">
+                    <Plus size={14} /> Agregar hito
                   </button>
                 </>
               )}
