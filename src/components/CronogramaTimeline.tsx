@@ -71,6 +71,10 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
   const [backlogError, setBacklogError] = useState('')
   const dayGridContainerRef = useRef<HTMLDivElement>(null)
   const [dayGridContainerWidth, setDayGridContainerWidth] = useState(0)
+  // Cuanto extender la ventana visible de la linea de tiempo antes de la
+  // primera fase y despues de la ultima, controlado por los sliders.
+  const [diasAtras, setDiasAtras] = useState(3)
+  const [diasAdelante, setDiasAdelante] = useState(14)
 
   // Mide el ancho disponible del contenedor de la grilla por dias para poder
   // agregar columnas de dias vacios al final y que la linea de tiempo llene
@@ -194,12 +198,12 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
     if (hasHourData || completas.length === 0) return null
     const starts = completas.map(f => new Date(f.fechaInicio + 'T00:00:00').getTime())
     const ends = completas.map(f => new Date(f.fechaFin + 'T00:00:00').getTime())
-    const min = Math.min(...starts)
-    const max = Math.max(...ends)
+    const min = Math.min(...starts) - diasAtras * DAY_MS
+    const max = Math.max(...ends) + diasAdelante * DAY_MS
     const numDays = Math.round((max - min) / DAY_MS) + 1
     const days = Array.from({ length: numDays }, (_, i) => new Date(min + i * DAY_MS))
     return { min, max, numDays, days }
-  }, [hasHourData, completas])
+  }, [hasHourData, completas, diasAtras, diasAdelante])
 
   // ── Backlog / helpers ─────────────────────────────────────────────────────
   async function cargarEnBacklog(f: FaseCronograma) {
@@ -394,6 +398,27 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
         <p className="text-gray-600 text-xs">
           {incompletas} fase{incompletas > 1 ? 's' : ''} sin fecha completa no se muestra{incompletas > 1 ? 'n' : ''} acá — completalas en la vista Lista.
         </p>
+      )}
+
+      {!hasHourData && dayGrid && (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1">
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <span className="whitespace-nowrap">Días atrás: <span className="text-cyan-300 font-semibold">{diasAtras}</span></span>
+            <input
+              type="range" min={0} max={30} value={diasAtras}
+              onChange={e => setDiasAtras(Number(e.target.value))}
+              className="w-32 accent-cyan-500"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <span className="whitespace-nowrap">Días adelante: <span className="text-cyan-300 font-semibold">{diasAdelante}</span></span>
+            <input
+              type="range" min={0} max={60} value={diasAdelante}
+              onChange={e => setDiasAdelante(Number(e.target.value))}
+              className="w-32 accent-cyan-500"
+            />
+          </label>
+        </div>
       )}
 
       <div ref={dayGridContainerRef} className="border border-cyan-800/40 rounded-xl overflow-x-auto">
