@@ -428,7 +428,10 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
           </>
         )}
 
-        <div ref={dayGridContainerRef} className="border border-cyan-800/40 rounded-xl overflow-x-auto">
+        <div
+          ref={dayGridContainerRef}
+          className={`border border-cyan-800/40 rounded-xl overflow-x-auto ${!hasHourData && dayGrid ? 'mx-7' : ''}`}
+        >
         <div className="min-w-max">
 
           {/* ── HOUR-BASED GRID ── */}
