@@ -2,9 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import {
-  ArrowLeft, Sliders, LayoutGrid, FileText, Calendar, Code2,
+  Sliders, LayoutGrid, FileText, Calendar, Code2,
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
   Trash2, Save, Plus, ListPlus,
 } from 'lucide-react'
@@ -294,9 +293,6 @@ export default function PocDetailPage() {
   if (notFound) {
     return (
       <div className="p-4 md:p-8">
-        <Link href="/soluciones/pilotos" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-cyan-400 transition-colors mb-4">
-          <ArrowLeft size={14} /> Volver a Pilotos
-        </Link>
         <div className="card p-8 text-center">
           <p className="text-white font-semibold">PoC no encontrada</p>
           <p className="text-gray-500 text-sm mt-1">Puede que haya sido eliminada.</p>
@@ -310,13 +306,6 @@ export default function PocDetailPage() {
       {/* Tabs */}
       <div className="border-b border-gray-700 bg-gray-900/60 px-4 md:px-8">
         <nav className="flex gap-1 overflow-x-auto overflow-y-hidden">
-          <Link
-            href="/soluciones/pilotos"
-            className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-300 border-b-2 border-transparent -mb-px rounded-t-md hover:text-white hover:bg-white/5 transition-colors flex-shrink-0"
-          >
-            <ArrowLeft size={15} /> Volver a Pilotos
-          </Link>
-          <span className="w-px my-3 bg-gray-700 flex-shrink-0" />
           {TABS.map((t, i) => {
             const active = activeTab === t.key
             return (
