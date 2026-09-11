@@ -595,7 +595,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                     const isToday = i === todayIdx
                     return (
                       <div key={i} style={{ width: COL_W }} className="flex items-center justify-center py-1.5 border-r border-cyan-800/10 last:border-r-0">
-                        <div className={`flex flex-col items-center justify-center rounded-lg px-2.5 py-1 ${isToday ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : ''}`}>
+                        <div className={`flex flex-col items-center justify-center rounded-lg px-4 py-1 ${isToday ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : ''}`}>
                           <span className={`text-[9px] font-medium capitalize ${isToday ? 'text-white/90' : 'text-gray-500'}`}>
                             {d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '')}
                           </span>
