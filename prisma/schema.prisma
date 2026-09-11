@@ -86,6 +86,7 @@ model Solucion {
   arquitecturaHtml String?    // HTML del diagrama de arquitectura importado
   planTrabajo   String?       // Markdown/texto libre del plan de trabajo
   cronograma    String?       @default("[]") // JSON: [{ fase, fechaInicio, fechaFin, estado }]
+  prd           String?       @default("{}") // JSON: PRD (problema, objetivo, requisitos, etc — ver tab PRD)
   leadId        String?       @unique
   lead          Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   backlogItems  BacklogItem[]

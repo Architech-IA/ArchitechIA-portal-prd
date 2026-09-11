@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   Sliders, LayoutGrid, FileText, Calendar, Code2,
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
-  Trash2, Save, Plus, ListPlus, AlertTriangle, Flag,
+  Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -74,6 +74,36 @@ const ESTADO_HITO_COLOR: Record<string, string> = {
   ATRASADO: 'text-red-400 border-red-700/50',
 }
 
+interface Requisito {
+  id: string
+  tipo: 'historia' | 'caso_uso'
+  texto: string
+  criterioAceptacion: string
+}
+interface PrdData {
+  problema: string
+  objetivo: string
+  fueraDeAlcance: string
+  requisitos: Requisito[]
+  metricas: string
+  riesgos: string
+  personas: string
+  supuestos: string
+}
+const emptyPrd: PrdData = {
+  problema: '', objetivo: '', fueraDeAlcance: '', requisitos: [],
+  metricas: '', riesgos: '', personas: '', supuestos: '',
+}
+// Que secciones del PRD tienen sentido segun el tipo de Solucion — no todas
+// aplican igual a un PoC de venta (DEMO) que a un proyecto real con cliente.
+function prdSeccionesOpcionales(tipo: string) {
+  return {
+    metricas: tipo === 'PROJECT' || tipo === 'PARTNERSHIP',
+    riesgos: tipo === 'PROJECT' || tipo === 'PARTNERSHIP',
+    personasYSupuestos: tipo !== 'DEMO',
+  }
+}
+
 interface FormState {
   nombre: string
   descripcion: string
@@ -94,12 +124,13 @@ const emptyForm: FormState = {
   nombre: '', descripcion: '', tipo: 'PROJECT', estado: 'ACTIVO', valorEstimado: '0', leadId: '', repositorio: '', planTrabajo: '',
 }
 
-type TabKey = 'general' | 'arquitectura' | 'plan' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
+type TabKey = 'general' | 'arquitectura' | 'plan' | 'prd' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
 
 const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'general', label: 'General', icon: Sliders },
   { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
   { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
+  { key: 'prd', label: 'PRD', icon: ClipboardList },
   { key: 'cronograma', label: 'Cronograma', icon: Calendar },
   { key: 'riesgos', label: 'Riesgos', icon: AlertTriangle },
   { key: 'cumplimiento', label: 'Cumplimiento', icon: Flag },
@@ -122,6 +153,7 @@ export default function SolucionDetailPage() {
   const [archNodes, setArchNodes] = useState<ArchNode[]>([])
   const [archConnections, setArchConnections] = useState<ArchConnection[]>([])
   const [fases, setFases] = useState<FaseCronograma[]>([])
+  const [prd, setPrd] = useState<PrdData>(emptyPrd)
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(true)
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
@@ -187,6 +219,10 @@ export default function SolucionDetailPage() {
           }
         } catch { setArchNodes([]); setArchConnections([]) }
         try { setFases(s.cronograma ? JSON.parse(s.cronograma) : []) } catch { setFases([]) }
+        try {
+          const parsedPrd = s.prd ? JSON.parse(s.prd) : null
+          setPrd(parsedPrd && typeof parsedPrd === 'object' ? { ...emptyPrd, ...parsedPrd, requisitos: Array.isArray(parsedPrd.requisitos) ? parsedPrd.requisitos : [] } : emptyPrd)
+        } catch { setPrd(emptyPrd) }
       } catch {
         setNotFound(true)
       } finally {
@@ -259,6 +295,19 @@ export default function SolucionDetailPage() {
   }
   function removeFase(fid: string) {
     setFases(prev => prev.filter(f => f.id !== fid))
+  }
+
+  function updatePrdField<K extends keyof PrdData>(key: K, value: PrdData[K]) {
+    setPrd(prev => ({ ...prev, [key]: value }))
+  }
+  function addRequisito() {
+    setPrd(prev => ({ ...prev, requisitos: [...prev.requisitos, { id: makeId(), tipo: 'historia', texto: '', criterioAceptacion: '' }] }))
+  }
+  function updateRequisito(rid: string, patch: Partial<Requisito>) {
+    setPrd(prev => ({ ...prev, requisitos: prev.requisitos.map(r => r.id === rid ? { ...r, ...patch } : r) }))
+  }
+  function removeRequisito(rid: string) {
+    setPrd(prev => ({ ...prev, requisitos: prev.requisitos.filter(r => r.id !== rid) }))
   }
 
   async function addRiesgo() {
@@ -364,6 +413,7 @@ export default function SolucionDetailPage() {
           arquitecturaHtml: arquitecturaHtml || null,
           planTrabajo: form.planTrabajo.trim() || null,
           cronograma: JSON.stringify(fases),
+          prd: JSON.stringify(prd),
         }),
       })
       if (!res.ok) {
@@ -670,6 +720,109 @@ export default function SolucionDetailPage() {
               )}
             </div>
           )}
+
+          {/* Tab: PRD — Documento de Requisitos de Producto. Las secciones
+              obligatorias (problema, objetivo, requisitos, criterios de
+              aceptacion) siempre se muestran; el resto es condicional segun
+              el tipo de Solucion (un DEMO de venta no necesita metricas de
+              exito ni riesgos formales, un PROJECT si). */}
+          {activeTab === 'prd' && (() => {
+            const opc = prdSeccionesOpcionales(form.tipo)
+            const inputCls = "w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm leading-relaxed resize-vertical focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors"
+            return (
+              <div className="space-y-5">
+                <div>
+                  <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-1.5">
+                    <ClipboardList size={14} className="text-gray-500" /> Problema / contexto
+                  </label>
+                  <textarea rows={3} value={prd.problema} onChange={e => updatePrdField('problema', e.target.value)}
+                    placeholder="¿Qué necesidad o dolor motiva esta Solución?" className={inputCls} />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Objetivo y alcance</label>
+                  <textarea rows={3} value={prd.objetivo} onChange={e => updatePrdField('objetivo', e.target.value)}
+                    placeholder="¿Qué se va a construir? ¿Hasta dónde llega el compromiso?" className={inputCls} />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Fuera de alcance</label>
+                  <textarea rows={2} value={prd.fueraDeAlcance} onChange={e => updatePrdField('fueraDeAlcance', e.target.value)}
+                    placeholder="¿Qué explícitamente NO entra, para evitar negociaciones tardías?" className={inputCls} />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-300">Requisitos (historias de usuario / casos de uso)</label>
+                  </div>
+                  <div className="space-y-3">
+                    {prd.requisitos.length === 0 && (
+                      <p className="text-gray-600 text-sm text-center py-4">Sin requisitos registrados todavía.</p>
+                    )}
+                    {prd.requisitos.map(r => (
+                      <div key={r.id} className="bg-gray-950 border border-gray-700 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <select value={r.tipo} onChange={e => updateRequisito(r.id, { tipo: e.target.value as Requisito['tipo'] })}
+                            title="Tipo de requisito"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            <option value="historia">Historia de usuario</option>
+                            <option value="caso_uso">Caso de uso</option>
+                          </select>
+                          <button type="button" onClick={() => removeRequisito(r.id)}
+                            className="w-8 h-8 flex-shrink-0 ml-auto rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <textarea value={r.texto} onChange={e => updateRequisito(r.id, { texto: e.target.value })}
+                          placeholder={r.tipo === 'historia' ? 'Como [rol], quiero [acción], para [beneficio]' : 'Actor, precondiciones, flujo principal...'}
+                          rows={2}
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-vertical" />
+                        <textarea value={r.criterioAceptacion} onChange={e => updateRequisito(r.id, { criterioAceptacion: e.target.value })}
+                          placeholder="Criterio de aceptación: ¿cuándo se considera terminado este requisito?"
+                          rows={2}
+                          className="w-full bg-gray-900 border border-cyan-800/40 rounded-lg px-3 py-2 text-cyan-100 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-vertical" />
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={addRequisito}
+                    className="mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors">
+                    <Plus size={14} /> Agregar requisito
+                  </button>
+                </div>
+
+                {opc.metricas && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Métricas de éxito</label>
+                    <textarea rows={2} value={prd.metricas} onChange={e => updatePrdField('metricas', e.target.value)}
+                      placeholder="¿Cómo se sabrá si esto funcionó una vez lanzado?" className={inputCls} />
+                  </div>
+                )}
+
+                {opc.riesgos && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Riesgos y dependencias (contexto)</label>
+                    <textarea rows={2} value={prd.riesgos} onChange={e => updatePrdField('riesgos', e.target.value)}
+                      placeholder="Contexto general — el detalle formal de cada riesgo va en la pestaña Riesgos." className={inputCls} />
+                  </div>
+                )}
+
+                {opc.personasYSupuestos && (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-gray-300 mb-1.5 block">Usuarios / personas</label>
+                      <textarea rows={2} value={prd.personas} onChange={e => updatePrdField('personas', e.target.value)}
+                        placeholder="¿Quién usa esto y qué rol cumple?" className={inputCls} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-300 mb-1.5 block">Supuestos</label>
+                      <textarea rows={2} value={prd.supuestos} onChange={e => updatePrdField('supuestos', e.target.value)}
+                        placeholder="¿Qué se asume cierto pero no está validado?" className={inputCls} />
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Tab: Cronograma */}
           {activeTab === 'cronograma' && (
