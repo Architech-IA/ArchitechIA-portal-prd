@@ -552,28 +552,67 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
             )
           })()}
 
-          {/* ── DAY-BASED GRID (fallback) ── */}
+          {/* ── DAY-BASED GRID (fallback) — estilo "Project Timeline" pedido:
+              header con meses agrupados + dia/fecha, columna de "hoy"
+              resaltada con linea punteada, y filas con pills redondeadas
+              posicionadas por rango de fecha (sin la columna fija de
+              "Fase" — el nombre va DENTRO del pill, igual que la referencia).
+              El color sigue codificando el estado real (gris/cian/verde) en
+              vez de colores arbitrarios por tarea — es informacion real, no
+              solo decorativa, asi que se preservo esa semantica. ── */}
           {!hasHourData && dayGrid && (() => {
             const { min, days } = dayGrid
             const numDays = days.length
-            const dayGridStyle = { gridTemplateColumns: `repeat(${numDays}, minmax(${DAY_COL_MIN}px, 1fr))` }
+            const COL_W = 64
+            const totalW = numDays * COL_W
+            const todayStr = new Date().toISOString().slice(0, 10)
+            const todayIdx = days.findIndex(d => d.toISOString().slice(0, 10) === todayStr)
+
+            // Agrupa columnas consecutivas por mes para la fila superior del header.
+            const monthGroups: { label: string; count: number }[] = []
+            days.forEach(d => {
+              const label = d.toLocaleDateString('es-CO', { month: 'short' }).toUpperCase().replace('.', '')
+              const last = monthGroups[monthGroups.length - 1]
+              if (last && last.label === label) last.count++
+              else monthGroups.push({ label, count: 1 })
+            })
 
             return (
-              <>
-                {/* Header */}
-                <div className="flex border-b border-cyan-800/50 bg-cyan-950/40">
-                  <div className="w-44 flex-shrink-0 border-r border-cyan-800/40 px-3 py-2 text-[11px] text-cyan-200 font-semibold">Fase</div>
-                  <div className="grid flex-1" style={dayGridStyle}>
-                    {days.map((d, i) => (
-                      <div key={i} className="px-1 py-2 text-[10px] text-cyan-200 font-mono font-semibold text-center border-r border-cyan-800/30 last:border-r-0">
-                        {d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}
+              <div style={{ width: totalW }} className="relative">
+                {/* Header fila 1: meses agrupados */}
+                <div className="flex border-b border-cyan-800/30">
+                  {monthGroups.map((g, i) => (
+                    <div key={i} style={{ width: g.count * COL_W }}
+                      className="px-2 py-1.5 text-[10px] font-bold text-cyan-300 tracking-wide border-r border-cyan-800/20 last:border-r-0">
+                      {g.label}
+                    </div>
+                  ))}
+                </div>
+                {/* Header fila 2: dia de semana + fecha, con "hoy" resaltado */}
+                <div className="flex border-b border-cyan-800/40 bg-cyan-950/20">
+                  {days.map((d, i) => {
+                    const isToday = i === todayIdx
+                    return (
+                      <div key={i} style={{ width: COL_W }} className="flex flex-col items-center justify-center py-1.5 border-r border-cyan-800/10 last:border-r-0">
+                        <span className={`text-[9px] font-medium capitalize ${isToday ? 'text-white' : 'text-gray-500'}`}>
+                          {d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '')}
+                        </span>
+                        <span className={`mt-0.5 text-[11px] font-bold leading-none px-1.5 py-0.5 rounded-full ${isToday ? 'bg-orange-500 text-white' : 'text-gray-300'}`}>
+                          {d.getDate()}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
 
-                {/* Rows */}
-                <div className="divide-y divide-cyan-800/25">
+                {/* Linea vertical de "hoy" atravesando header + filas */}
+                {todayIdx >= 0 && (
+                  <div className="absolute top-0 bottom-0 border-l-2 border-dashed border-orange-500/60 z-20 pointer-events-none"
+                    style={{ left: todayIdx * COL_W + COL_W / 2 }} />
+                )}
+
+                {/* Filas */}
+                <div className="divide-y divide-cyan-800/15">
                   {completas.map((f, idx) => {
                     const s = new Date(f.fechaInicio + 'T00:00:00').getTime()
                     const e = new Date(f.fechaFin + 'T00:00:00').getTime()
@@ -587,60 +626,42 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                     const execLabel = f.fechaEjecucion
                       ? `Ejecutado: ${fmt(f.fechaEjecucion)}${f.horaEjecucion ? ' ' + f.horaEjecucion : ''}`
                       : null
-                    const execHourPct = f.horaEjecucion
-                      ? (() => { const [h, m] = f.horaEjecucion.split(':').map(Number); return ((h * 60 + m) / (24 * 60)) * 100 })()
-                      : 50
+                    const execPct = execIdx !== null ? ((execIdx + 0.5) / numDays) * 100 : null
 
                     return (
                       <button
                         key={f.id}
                         type="button"
                         onClick={() => { setSelectedId(f.id); setBacklogError('') }}
-                        className={`flex items-stretch w-full text-left transition-colors hover:bg-gray-800/50 cursor-pointer ${idx % 2 === 0 ? 'bg-gray-900/30' : 'bg-transparent'}`}
+                        className={`relative flex items-center w-full h-14 text-left transition-colors hover:bg-gray-800/40 cursor-pointer ${idx % 2 === 0 ? 'bg-gray-900/20' : 'bg-transparent'}`}
                       >
-                        <div className="w-44 flex-shrink-0 border-r border-cyan-800/30 px-3 py-3 min-w-0">
-                          <p className="text-sm text-gray-200 truncate" title={f.fase}>{f.fase || 'Sin nombre'}</p>
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 h-8 rounded-full flex items-center gap-1.5 px-3 hover:brightness-125 transition-[filter] overflow-hidden"
+                          style={{ left: startIdx * COL_W + 4, width: Math.max(spanDays * COL_W - 8, 8), background: color.bg, boxShadow: `0 2px 10px ${color.bg}50` }}
+                        >
+                          <span className="text-[11px] font-semibold text-white truncate">{f.fase || 'Sin nombre'}</span>
+                          {/* "Avatar" real: no hay asignado por fase en el modelo — se muestra
+                              un badge circular con el estado en vez de inventar una foto de
+                              persona que no existe. */}
+                          <span className="ml-auto flex-shrink-0 w-4 h-4 rounded-full bg-white/25 flex items-center justify-center">
+                            {f.estado === 'COMPLETADA' ? <CheckCircle2 size={10} className="text-white" /> : null}
+                          </span>
                         </div>
-                        <div className="grid flex-1" style={dayGridStyle}>
-                          {days.map((_, i) => {
-                            const inRange = i >= startIdx && i < startIdx + spanDays
-                            const isFirst = i === startIdx
-                            const isExec = execIdx !== null && i === execIdx
-                            return (
-                              <div key={i} className="relative h-12 border-r border-cyan-800/20 last:border-r-0 flex items-center justify-center">
-                                {inRange && (
-                                  <div
-                                    className="absolute inset-y-2.5 inset-x-0.5 rounded-md flex items-center justify-center hover:brightness-125 transition-[filter]"
-                                    style={{ background: color.bg, boxShadow: `0 0 8px ${color.bg}60` }}
-                                  >
-                                    {isFirst && spanDays >= 3 && (
-                                      <span className="text-[9px] text-white/80 font-mono px-1 truncate">{spanDays}d</span>
-                                    )}
-                                  </div>
-                                )}
-                                {isExec && (
-                                  <div
-                                    className="absolute inset-y-1 w-0.5 -translate-x-1/2 rounded-full z-10"
-                                    style={{ left: `${execHourPct}%`, background: '#ffffff', boxShadow: '0 0 4px #fff8' }}
-                                    title={execLabel ?? undefined}
-                                  >
-                                    <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow" />
-                                    {f.horaEjecucion && (
-                                      <span className="absolute top-3 left-2 text-[8px] text-white/90 font-mono whitespace-nowrap bg-gray-900/80 px-1 rounded pointer-events-none">
-                                        {f.horaEjecucion}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
+
+                        {execPct !== null && (
+                          <div
+                            className="absolute top-1 bottom-1 w-0.5 -translate-x-1/2 rounded-full z-10"
+                            style={{ left: `${execPct}%`, background: '#ffffff', boxShadow: '0 0 4px #fff8' }}
+                            title={execLabel ?? undefined}
+                          >
+                            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow" />
+                          </div>
+                        )}
                       </button>
                     )
                   })}
                 </div>
-              </>
+              </div>
             )
           })()}
 
