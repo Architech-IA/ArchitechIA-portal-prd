@@ -605,10 +605,15 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                   })}
                 </div>
 
-                {/* Linea vertical de "hoy" atravesando header + filas */}
+                {/* Columna de "hoy": banda de fondo + linea punteada atravesando
+                    header y filas, igual que la referencia (banda ancha, no solo linea). */}
                 {todayIdx >= 0 && (
-                  <div className="absolute top-0 bottom-0 border-l-2 border-dashed border-orange-500/60 z-20 pointer-events-none"
-                    style={{ left: todayIdx * COL_W + COL_W / 2 }} />
+                  <>
+                    <div className="absolute top-0 bottom-0 bg-orange-500/10 z-0 pointer-events-none"
+                      style={{ left: todayIdx * COL_W, width: COL_W }} />
+                    <div className="absolute top-0 bottom-0 border-l-2 border-dashed border-orange-500/70 z-20 pointer-events-none"
+                      style={{ left: todayIdx * COL_W + COL_W / 2 }} />
+                  </>
                 )}
 
                 {/* Filas */}
