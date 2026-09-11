@@ -405,21 +405,25 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
       <div className="relative">
         {!hasHourData && dayGrid && (
           <>
+            {/* Ancladas solo a la altura de la fila de fecha (segunda fila del
+                header), no a la fila de mes de arriba. */}
             <button
               type="button"
               onClick={() => setPanDias(d => d - 7)}
-              className="absolute left-1.5 z-30 flex items-center justify-center w-6 h-[72px] rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
+              style={{ top: 28, height: 44 }}
+              className="absolute left-1 z-30 flex items-center justify-center w-5 rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
               title="Ver días anteriores"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={14} />
             </button>
             <button
               type="button"
               onClick={() => setPanDias(d => d + 7)}
-              className="absolute right-1.5 z-30 flex items-center justify-center w-6 h-[72px] rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
+              style={{ top: 28, height: 44 }}
+              className="absolute right-1 z-30 flex items-center justify-center w-5 rounded-md bg-gray-950/60 hover:bg-cyan-900/50 text-gray-400 hover:text-cyan-300 transition-colors"
               title="Ver días siguientes"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={14} />
             </button>
           </>
         )}
