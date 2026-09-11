@@ -182,6 +182,8 @@ export default function SolucionDetailPage() {
   const [loadingRiesgos, setLoadingRiesgos] = useState(true)
   const [hitos, setHitos] = useState<Hito[]>([])
   const [loadingHitos, setLoadingHitos] = useState(true)
+  const [generandoPrd, setGenerandoPrd] = useState(false)
+  const [prdGenError, setPrdGenError] = useState('')
 
   useSetPageTitle(form.nombre || null)
 
@@ -308,6 +310,42 @@ export default function SolucionDetailPage() {
   }
   function removeRequisito(rid: string) {
     setPrd(prev => ({ ...prev, requisitos: prev.requisitos.filter(r => r.id !== rid) }))
+  }
+
+  // Genera un borrador con IA a partir de nombre/descripcion/tipo/planTrabajo
+  // ya guardados en la Solucion. Solo completa los campos de texto que estan
+  // vacios y agrega requisitos nuevos — nunca pisa lo que el usuario ya
+  // escribio a mano.
+  async function generarPrdConIA() {
+    setGenerandoPrd(true)
+    setPrdGenError('')
+    try {
+      const res = await fetch(`/api/soluciones/${id}/prd-generate`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'No se pudo generar el borrador.')
+      const draft = data.prd as Partial<PrdData>
+      setPrd(prev => ({
+        problema: prev.problema.trim() ? prev.problema : (draft.problema ?? ''),
+        objetivo: prev.objetivo.trim() ? prev.objetivo : (draft.objetivo ?? ''),
+        fueraDeAlcance: prev.fueraDeAlcance.trim() ? prev.fueraDeAlcance : (draft.fueraDeAlcance ?? ''),
+        metricas: prev.metricas.trim() ? prev.metricas : (draft.metricas ?? ''),
+        riesgos: prev.riesgos.trim() ? prev.riesgos : (draft.riesgos ?? ''),
+        personas: prev.personas.trim() ? prev.personas : (draft.personas ?? ''),
+        supuestos: prev.supuestos.trim() ? prev.supuestos : (draft.supuestos ?? ''),
+        requisitos: prev.requisitos.length > 0
+          ? prev.requisitos
+          : (Array.isArray(draft.requisitos) ? draft.requisitos : []).map(r => ({
+              id: makeId(),
+              tipo: r.tipo === 'caso_uso' ? 'caso_uso' : 'historia',
+              texto: r.texto ?? '',
+              criterioAceptacion: r.criterioAceptacion ?? '',
+            })),
+      }))
+    } catch (err: unknown) {
+      setPrdGenError(err instanceof Error ? err.message : 'Error inesperado al generar el borrador.')
+    } finally {
+      setGenerandoPrd(false)
+    }
   }
 
   async function addRiesgo() {
@@ -731,6 +769,16 @@ export default function SolucionDetailPage() {
             const inputCls = "w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm leading-relaxed resize-vertical focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors"
             return (
               <div className="space-y-5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-gray-600 text-xs">La IA completa solo los campos vacíos — nunca sobrescribe lo que ya escribiste.</p>
+                  <button type="button" onClick={generarPrdConIA} disabled={generandoPrd}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-50">
+                    {generandoPrd ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                    {generandoPrd ? 'Generando...' : 'Generar con IA'}
+                  </button>
+                </div>
+                {prdGenError && <p className="text-red-400 text-xs">{prdGenError}</p>}
+
                 <div>
                   <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-1.5">
                     <ClipboardList size={14} className="text-gray-500" /> Problema / contexto
