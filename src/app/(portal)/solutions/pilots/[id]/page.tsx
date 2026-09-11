@@ -438,7 +438,19 @@ export default function SolucionDetailPage() {
       </div>
 
       <div className="p-4 space-y-4">
-        <div className="card p-4 space-y-5">
+        {/* Mismo tratamiento "premium" de liquid glass que TabbedNotes.tsx
+            (Hub de Lead) — antes esta pagina usaba la clase .card estandar
+            del portal (blur 20px, sin gradiente ni brillo especular). */}
+        <div className="relative overflow-hidden p-4 space-y-5" style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+          backdropFilter: 'blur(40px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+          border: '1px solid rgba(255,255,255,0.11)',
+          borderRadius: 'var(--radius, 12px)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.18), 0 24px 56px rgba(0,0,0,0.45)',
+        }}>
+          {/* Specular highlight strip */}
+          <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18) 40%, rgba(255,255,255,0.08) 60%, transparent)' }} />
 
           {/* Tab: General */}
           {activeTab === 'general' && (
