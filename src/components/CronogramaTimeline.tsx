@@ -608,12 +608,17 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                   })}
                 </div>
 
-                {/* Cuerpo (filas): banda de fondo solo aqui para la columna de "hoy",
-                    el header ya se distingue con su propio chip solido arriba. */}
+                {/* Cuerpo (filas): banda de fondo + linea punteada solo aqui para la
+                    columna de "hoy" — el header ya se distingue con su propio chip
+                    solido arriba y no lleva ninguno de los dos. */}
                 <div className="relative">
                   {todayIdx >= 0 && (
-                    <div className="absolute inset-y-0 bg-orange-500/10 pointer-events-none"
-                      style={{ left: todayIdx * COL_W, width: COL_W }} />
+                    <>
+                      <div className="absolute inset-y-0 bg-orange-500/10 pointer-events-none"
+                        style={{ left: todayIdx * COL_W, width: COL_W }} />
+                      <div className="absolute inset-y-0 border-l-2 border-dashed border-orange-500/70 z-20 pointer-events-none"
+                        style={{ left: todayIdx * COL_W + COL_W / 2 }} />
+                    </>
                   )}
                   <div className="divide-y divide-cyan-800/15 relative">
                     {completas.map((f, idx) => {
@@ -665,12 +670,6 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                   })}
                   </div>
                 </div>
-
-                {/* Linea punteada de "hoy" atravesando header + cuerpo por completo */}
-                {todayIdx >= 0 && (
-                  <div className="absolute top-0 bottom-0 border-l-2 border-dashed border-orange-500/70 z-20 pointer-events-none"
-                    style={{ left: todayIdx * COL_W + COL_W / 2 }} />
-                )}
               </div>
             )
           })()}
