@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Building2, CheckCircle2, ArrowRight, Shield,
   Users, Rocket, Settings, Gauge, Plus, X, Loader2,
@@ -56,6 +57,7 @@ const defaultForm: FormState = {
 }
 
 export default function InternSolutionPage() {
+  const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<FormState>(defaultForm)
   const [saving, setSaving] = useState(false)
@@ -189,6 +191,7 @@ export default function InternSolutionPage() {
         title="Soluciones internas"
         refreshKey={refreshKey}
         headerAction={addButton}
+        onSelect={s => router.push(`/solutions/pilots/${s.id}`)}
       />
 
       {/* CTA */}

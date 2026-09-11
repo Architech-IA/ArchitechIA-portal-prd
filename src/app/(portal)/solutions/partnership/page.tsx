@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Handshake, CheckCircle2, ArrowRight, TrendingUp, Network,
   Briefcase, Award, FileText, MessageSquare,
@@ -38,6 +39,7 @@ const idealPartners = [
 ]
 
 export default function PartnershipSolutionPage() {
+  const router = useRouter()
   return (
     <div className="p-4 md:p-8 space-y-8">
       {/* Hero */}
@@ -133,7 +135,10 @@ export default function PartnershipSolutionPage() {
       </div>
 
       {/* Soluciones asociadas */}
-      <SolucionesList tipo="PARTNERSHIP" color="violet" title="Partnerships activos" />
+      <SolucionesList
+        tipo="PARTNERSHIP" color="violet" title="Partnerships activos"
+        onSelect={s => router.push(`/solutions/pilots/${s.id}`)}
+      />
 
       {/* CTA */}
       <div className="card p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">

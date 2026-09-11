@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   FolderKanban, CheckCircle2, ArrowRight, Clock, Shield,
   Users, Rocket, FileText, MessageSquare,
@@ -38,6 +39,7 @@ const process = [
 ]
 
 export default function ProjectsSolutionPage() {
+  const router = useRouter()
   return (
     <div className="p-4 md:p-8 space-y-8">
       {/* Hero */}
@@ -128,8 +130,15 @@ export default function ProjectsSolutionPage() {
         ))}
       </div>
 
-      {/* Soluciones asociadas */}
-      <SolucionesList tipo="PROJECT" color="orange" title="Projects activos" />
+      {/* Soluciones asociadas — BUG REAL: la card era clickeable (cursor-pointer
+          condicional a onSelect) pero nadie le pasaba onSelect, asi que una
+          Solucion tipo PROJECT (ej. "La Promotora Seguros") solo era
+          alcanzable escribiendo la URL de detalle a mano, nunca navegando
+          desde el portal. */}
+      <SolucionesList
+        tipo="PROJECT" color="orange" title="Projects activos"
+        onSelect={s => router.push(`/solutions/pilots/${s.id}`)}
+      />
 
       {/* CTA */}
       <div className="card p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
