@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight } from 'lucide-react'
+import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import CouncilView from './CouncilView'
+// Migrado desde /backlog (antes item propio del sidebar principal) a
+// subpage de Oficina — se reusa el componente real tal cual, sin duplicar
+// logica ni perder ninguna funcion.
+import BacklogPage from '../backlog/page'
 
 interface SubArea {
   id: string; name: string; slug: string; icon: string; color: string
@@ -84,7 +88,7 @@ function OficinaPageInner() {
   const [councilMode, setCouncilMode] = useState<'proposals' | 'chat' | 'document'>('chat')
 
   // Config / Agentes view
-  const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory'>('rooms')
+  const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory' | 'backlog'>('rooms')
   const [councilBadge, setCouncilBadge] = useState<{ debating: number; escalated: number; total: number }>({ debating: 0, escalated: 0, total: 0 })
   const [agents, setAgents]     = useState<Agent[]>([])
   const [selAgent, setSelAgent] = useState<Agent | null>(null)
@@ -283,6 +287,13 @@ function OficinaPageInner() {
             style={sideView === 'directory' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
             <Network size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Directory</span>
+          </button>}
+          {configOpen && <button
+            onClick={() => setSideView('backlog')}
+            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
+            style={sideView === 'backlog' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            <LayoutGrid size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
+            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Backlog</span>
           </button>}
         </div>
       </div>
@@ -697,6 +708,20 @@ function OficinaPageInner() {
         ) : sideView === 'directory' ? (
           /* ── DIRECTORY VIEW ── */
           <DirectoryView areas={areas} />
+
+        ) : sideView === 'backlog' ? (
+          /* ── BACKLOG VIEW ── */
+          /* Migrado desde /backlog (antes item propio del sidebar principal)
+             a subpage de Oficina, debajo de Config > Directory. Se reusa el
+             componente real de la pagina original tal cual — sin duplicar
+             logica ni perder ninguna funcion (Sprints, Epicas, Control,
+             detalle de tarea, todo sigue viviendo en el mismo archivo). El
+             componente maneja su propio scroll interno (h-full), por eso
+             el wrapper solo necesita darle una altura definida.
+          */
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <BacklogPage />
+          </div>
 
         ) : (
           /* ── ROOMS VIEW ── */

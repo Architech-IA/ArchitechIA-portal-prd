@@ -631,10 +631,14 @@ export default function BacklogPage() {
 
   const inputCls = 'w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none transition-all'
 
-  if (loading) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin text-orange-500" size={28} /></div>
+  if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-orange-500" size={28} /></div>
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    // h-full (no h-screen): esta pagina ahora tambien se monta embebida
+    // dentro de Oficina (Config > Backlog) ademas de su ruta propia — debe
+    // llenar el alto de SU contenedor padre, no del viewport entero, para no
+    // desbordar cuando esta anidada.
+    <div className="flex flex-col h-full overflow-hidden">
 
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-gray-800 flex items-center gap-2 min-w-0">
