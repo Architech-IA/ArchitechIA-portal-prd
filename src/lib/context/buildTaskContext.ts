@@ -136,6 +136,26 @@ export async function buildTaskContext(taskId: string): Promise<string> {
     }
   }
 
+  // MASD-0002-0003: decisiones de diseño/convencion que otras tareas de
+  // este mismo sprint ya reportaron (nombre de una funcion/componente,
+  // patron de carpeta, enfoque tecnico sobre algo ambiguo) — sin esto, el
+  // agente de una tarea nueva no tenia forma de enterarse de lo que ya
+  // decidio el agente de una tarea anterior del mismo sprint, salvo leyendo
+  // el mismo codigo ya escrito.
+  const sprintDecisions = await prisma.$queryRawUnsafe(`
+    SELECT summary FROM "SprintDecision"
+    WHERE "sprintId" = $1
+    ORDER BY "createdAt" DESC
+    LIMIT 5
+  `, task.sprintId) as { summary: string }[]
+
+  if (sprintDecisions.length > 0) {
+    volatileParts.push(`\n=== SPRINT DECISIONS (decisiones ya tomadas en este sprint) ===`)
+    for (const d of sprintDecisions.reverse()) {
+      volatileParts.push(`- ${d.summary}`)
+    }
+  }
+
   // Dependencia real (grafo de tareas via dependsOnTaskId). Si esta tarea
   // depende de otra, se trae su resultado REAL — sin esto, encadenar tareas
   // requeria pegar el resultado a mano en la description de la siguiente

@@ -125,6 +125,24 @@ async function resolvePrdCriterio(solucionId: string | null, prdRequisitoId: str
   }
 }
 
+// MASD-0002-0003: el agente reporta decisiones relevantes al final de su
+// resumen bajo un encabezado "DECISIONES:" (instruido en el system prompt de
+// masd_worker.py). Se extraen aca, del lado del servidor, en vez de pedirle
+// al worker un campo JSON estructurado nuevo — el resumen ya es texto libre
+// y el worker ya lo trunca/limpia; parsear una seccion de un texto que ya
+// existe es mas simple que cambiar el contrato del callback.
+function extractDecisiones(resultSummary: string): string[] {
+  const match = resultSummary.match(/DECISIONES:\s*([\s\S]*)$/i)
+  if (!match) return []
+  const bloque = match[1].trim()
+  if (!bloque || /^ninguna\.?$/i.test(bloque)) return []
+  return bloque
+    .split('\n')
+    .map(l => l.replace(/^[-•*]\s*/, '').trim())
+    .filter(l => l.length > 0 && !/^ninguna\.?$/i.test(l))
+    .slice(0, 5) // tope razonable por tarea — evita que una respuesta rara inunde la bitacora
+}
+
 export async function dispatchTask(taskId: string, extraGuidance?: string): Promise<DispatchResult> {
   const [task] = await prisma.$queryRawUnsafe(
     `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId", bi.type,
@@ -497,6 +515,20 @@ export async function finalizeExecution(opts: {
      WHERE id=$1`,
     taskId, verifiedStatus, finalResultado
   )
+
+  // MASD-0002-0003: si el agente reporto decisiones relevantes y la tarea
+  // quedo DONE de verdad (una decision de una tarea que fallo no es
+  // confiable), se guardan para que buildTaskContext() se las muestre a la
+  // proxima tarea de este mismo sprint.
+  if (verifiedStatus === 'DONE' && task.sprintId) {
+    const decisiones = extractDecisiones(resultSummary)
+    for (const summary of decisiones) {
+      await prisma.sprintDecision.create({ data: { sprintId: task.sprintId, taskId, summary } })
+    }
+    if (decisiones.length > 0) {
+      await emitTraceEvent(taskId, execId, 'info', `${decisiones.length} decisión(es) guardada(s) en la bitácora del sprint`)
+    }
+  }
 
   // Alerta real en el portal para una tarea que se intento ejecutar de
   // verdad y no llego a DONE. Bug de UX real reportado por el usuario:

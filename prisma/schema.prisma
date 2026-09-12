@@ -562,6 +562,22 @@ model Sprint {
   responsibleName String?
   createdAt   DateTime      @default(now())
   items       BacklogItem[]
+  decisions   SprintDecision[]
+}
+
+// MASD-0002-0003: memoria compartida entre tareas de un mismo sprint. Antes,
+// si el agente de la tarea A decidia una convencion (nombre de funcion,
+// patron de carpeta, enfoque tecnico), el agente de la tarea B -despachado
+// por separado- no se enteraba salvo que ambos leyeran el mismo codigo ya
+// escrito. Se captura desde el resumen final del agente (seccion
+// "DECISIONES:") y se inyecta como contexto en toda tarea nueva del sprint.
+model SprintDecision {
+  id        String   @id @default(cuid())
+  sprintId  String
+  sprint    Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  taskId    String?
+  summary   String
+  createdAt DateTime @default(now())
 }
 
 model BacklogItem {
