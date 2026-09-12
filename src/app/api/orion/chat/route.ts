@@ -5,7 +5,11 @@ import { parseUTC5 } from '@/lib/timezone'
 const OPENCODE_URL  = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY  = process.env.OPENCODE_API_KEY ?? ''
 const MAX_HISTORY   = 20
-const DEFAULT_MODEL = 'opencode-go/kimi-k2.5'
+// kimi-k2.5 quedo deprecado upstream (verificado contra /v1/models: aparece
+// listado pero responde "Model is unavailable") — kimi-k3 es el vigente.
+// Este fallback solo aplica si el Agent 'orion' no tiene llmModel propio en
+// la DB (hoy tiene 'opencode-go/qwen3.7-max', asi que no lo usa en la practica).
+const DEFAULT_MODEL = 'opencode-go/kimi-k3'
 
 const DEFAULT_SYSTEM = `Eres Orión, CEO y orquestador de ArchiTechIA. Coordinas, sintetizas y alineas. No tomas partido — buscas consenso, resumes posiciones y defines próximos pasos claros. Siempre respondés en el idioma del usuario.
 
@@ -308,7 +312,15 @@ export async function POST(req: NextRequest) {
       const modelId = model.split('/').pop()!
       const upstream = await fetch(OPENCODE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}` },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENCODE_KEY}`,
+          // OpenCode Go ahora exige un session id estable por conversacion
+          // para enrutar/cachear — sin esto la API devuelve 400
+          // MissingSessionID en TODAS las llamadas (bug real encontrado
+          // al depurar el generador de PRD, que usa el mismo proveedor).
+          'x-opencode-session': `orion-${channelType}-${channelId}`,
+        },
         body: JSON.stringify({ model: modelId, messages: [{ role: 'system', content: systemPrompt }, ...history], max_tokens: 2048, stream: true }),
         signal: AbortSignal.timeout(60_000),
       })
@@ -355,7 +367,11 @@ export async function POST(req: NextRequest) {
       const modelId = model.split('/').pop()!
       const res = await fetch(OPENCODE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}` },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENCODE_KEY}`,
+          'x-opencode-session': `orion-${channelType}-${channelId}`,
+        },
         body: JSON.stringify({ model: modelId, messages: [{ role: 'system', content: systemPrompt }, ...history], max_tokens: 2048 }),
         signal: AbortSignal.timeout(60_000),
       })
