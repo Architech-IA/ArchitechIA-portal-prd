@@ -3,7 +3,13 @@ import { prisma } from '@/lib/prisma'
 
 const OPENCODE_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
-const MODEL = 'opencode-go/kimi-k2.5'
+// La API de OpenCode Zen espera solo el nombre del modelo sin el prefijo del
+// proveedor (Orion hace lo mismo: model.split('/').pop() antes de llamar).
+// kimi-k2.5 quedo deprecado/no disponible upstream — kimi-k3 es el vigente
+// (verificado contra /v1/models). Es un modelo con razonamiento: gasta
+// tokens en "reasoning" antes del contenido final, por eso max_tokens debe
+// ser generoso o el JSON nunca llega a escribirse.
+const MODEL = 'kimi-k3'
 
 const SECCIONES_POR_TIPO: Record<string, string[]> = {
   DEMO: ['problema', 'objetivo', 'fueraDeAlcance', 'requisitos'],
@@ -148,17 +154,28 @@ Si el contexto es escaso, hacé tu mejor inferencia razonable a partir del nombr
   try {
     const upstream = await fetch(OPENCODE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}` },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENCODE_KEY}`,
+        // Requerido por OpenCode Go para enrutar/cachear — un id estable por
+        // Solucion alcanza, no hace falta que sea por-usuario.
+        'x-opencode-session': `prd-${id}`,
+      },
       body: JSON.stringify({
         model: MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Generá el borrador de PRD con este contexto:\n\n${contexto || '(sin contexto adicional — solo el nombre y tipo de Solución)'}` },
         ],
-        max_tokens: 2048,
+        // kimi-k3 razona antes de responder y ese razonamiento consume
+        // tokens del mismo presupuesto — con poco margen el JSON final
+        // nunca llega a escribirse (finish_reason: "length" con content null).
+        max_tokens: 4096,
       }),
     })
     if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => '')
+      console.error('prd-generate: upstream error', upstream.status, detail)
       return NextResponse.json({ error: 'El modelo no respondió correctamente.' }, { status: 502 })
     }
     const data = await upstream.json()
