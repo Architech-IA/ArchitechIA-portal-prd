@@ -5,11 +5,8 @@ const OPENCODE_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
 // La API de OpenCode Zen espera solo el nombre del modelo sin el prefijo del
 // proveedor (Orion hace lo mismo: model.split('/').pop() antes de llamar).
-// kimi-k2.5 quedo deprecado/no disponible upstream — kimi-k3 es el vigente
-// (verificado contra /v1/models). Es un modelo con razonamiento: gasta
-// tokens en "reasoning" antes del contenido final, por eso max_tokens debe
-// ser generoso o el JSON nunca llega a escribirse.
-const MODEL = 'kimi-k3'
+// Mismo modelo que ya usa Orion en produccion (Agent.llmModel = 'qwen3.7-max').
+const MODEL = 'qwen3.7-max'
 
 const SECCIONES_POR_TIPO: Record<string, string[]> = {
   DEMO: ['problema', 'objetivo', 'fueraDeAlcance', 'requisitos'],
@@ -167,9 +164,8 @@ Si el contexto es escaso, hacé tu mejor inferencia razonable a partir del nombr
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Generá el borrador de PRD con este contexto:\n\n${contexto || '(sin contexto adicional — solo el nombre y tipo de Solución)'}` },
         ],
-        // kimi-k3 razona antes de responder y ese razonamiento consume
-        // tokens del mismo presupuesto — con poco margen el JSON final
-        // nunca llega a escribirse (finish_reason: "length" con content null).
+        // Margen generoso: un PRD con 3-6 requisitos completos no entra
+        // comodo en 2048 tokens.
         max_tokens: 4096,
       }),
     })
