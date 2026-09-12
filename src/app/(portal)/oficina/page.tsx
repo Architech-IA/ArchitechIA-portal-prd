@@ -2,13 +2,21 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid } from 'lucide-react'
+import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid, Package } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import CouncilView from './CouncilView'
 // Migrado desde /backlog (antes item propio del sidebar principal) a
 // subpage de Oficina — se reusa el componente real tal cual, sin duplicar
 // logica ni perder ninguna funcion.
 import BacklogPage from '../backlog/page'
+// Migrado desde /solutions (idem) — se reusan el componente real de la
+// pagina indice Y su barra de tabs (Productos/Projects/Pilots/Partnership/
+// Intern/Iniciativas), exactamente lo que solutions/layout.tsx le agrega
+// cuando se visita la ruta real. Las subpaginas (pilots/[id], projects,
+// etc.) siguen viviendo en sus propias rutas — navegar a ellas desde aca
+// sale de Oficina, igual que ya pasa con los links internos de Backlog.
+import SolutionsTabs from '../solutions/SolutionsTabs'
+import SolutionsIndexPage from '../solutions/page'
 
 interface SubArea {
   id: string; name: string; slug: string; icon: string; color: string
@@ -88,7 +96,7 @@ function OficinaPageInner() {
   const [councilMode, setCouncilMode] = useState<'proposals' | 'chat' | 'document'>('chat')
 
   // Config / Agentes view
-  const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory' | 'backlog'>('rooms')
+  const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions'>('rooms')
   const [councilBadge, setCouncilBadge] = useState<{ debating: number; escalated: number; total: number }>({ debating: 0, escalated: 0, total: 0 })
   const [agents, setAgents]     = useState<Agent[]>([])
   const [selAgent, setSelAgent] = useState<Agent | null>(null)
@@ -294,6 +302,13 @@ function OficinaPageInner() {
             style={sideView === 'backlog' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
             <LayoutGrid size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Backlog</span>
+          </button>}
+          {configOpen && <button
+            onClick={() => setSideView('solutions')}
+            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
+            style={sideView === 'solutions' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            <Package size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
+            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Solutions</span>
           </button>}
         </div>
       </div>
@@ -721,6 +736,18 @@ function OficinaPageInner() {
           */
           <div className="flex-1 min-h-0 overflow-hidden">
             <BacklogPage />
+          </div>
+
+        ) : sideView === 'solutions' ? (
+          /* ── SOLUTIONS VIEW ── */
+          /* Misma composicion que solutions/layout.tsx aplica en la ruta real
+             para el indice (SolutionsTabs + la pagina) — SolutionsTabs no
+             pinta nada por si sola, inyecta su barra de tabs en el slot
+             compartido de acciones de pagina (misma barra que ya se ve al
+             entrar directo a /solutions). */
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <SolutionsTabs />
+            <SolutionsIndexPage />
           </div>
 
         ) : (
