@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   Sliders, LayoutGrid, FileText, Calendar, Code2,
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
-  Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList,
+  Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList, Play,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -72,6 +72,23 @@ const ESTADOS_HITO = ['PENDIENTE', 'CUMPLIDO', 'ATRASADO']
 const ESTADO_HITO_COLOR: Record<string, string> = {
   PENDIENTE: 'text-gray-400 border-gray-700', CUMPLIDO: 'text-green-400 border-green-700/50',
   ATRASADO: 'text-red-400 border-red-700/50',
+}
+
+// Widget compacto de tareas del backlog para esta Solucion, en el tab PRD —
+// no reemplaza el board completo de Backlog (eso vive en Oficina), solo
+// muestra el estado de las tareas ya generadas y permite dispararlas sin
+// cambiar de tab.
+interface TareaBacklog {
+  id: string
+  taskCode: string | null
+  title: string
+  status: string
+  prdRequisitoId: string | null
+}
+const ESTADO_TAREA_COLOR: Record<string, string> = {
+  BACKLOG: 'text-gray-400 border-gray-700', IN_PROGRESS: 'text-orange-400 border-orange-700/50',
+  DONE: 'text-green-400 border-green-700/50', FAILED: 'text-red-400 border-red-700/50',
+  BLOCKED: 'text-yellow-400 border-yellow-700/50',
 }
 
 interface Requisito {
@@ -189,6 +206,10 @@ export default function SolucionDetailPage() {
   const [prdGenError, setPrdGenError] = useState('')
   const [generandoBacklogPrd, setGenerandoBacklogPrd] = useState(false)
   const [backlogPrdError, setBacklogPrdError] = useState('')
+  const [tareasBacklog, setTareasBacklog] = useState<TareaBacklog[]>([])
+  const [loadingTareasBacklog, setLoadingTareasBacklog] = useState(true)
+  const [dispatchingTareaId, setDispatchingTareaId] = useState<string | null>(null)
+  const [dispatchTareaError, setDispatchTareaError] = useState('')
 
   useSetPageTitle(form.nombre || null)
 
@@ -269,12 +290,44 @@ export default function SolucionDetailPage() {
         if (!cancelled) setLoadingHitos(false)
       }
     }
+    async function loadTareasBacklog() {
+      try {
+        const res = await fetch('/api/backlog')
+        const data = await res.json()
+        if (!cancelled) setTareasBacklog(Array.isArray(data) ? data.filter((t: { solucionId?: string }) => t.solucionId === id) : [])
+      } catch {
+        if (!cancelled) setTareasBacklog([])
+      } finally {
+        if (!cancelled) setLoadingTareasBacklog(false)
+      }
+    }
     load()
     loadLeads()
     loadRiesgos()
     loadHitos()
+    loadTareasBacklog()
     return () => { cancelled = true }
   }, [id])
+
+  async function dispatchTarea(taskId: string) {
+    setDispatchingTareaId(taskId)
+    setDispatchTareaError('')
+    try {
+      const res = await fetch('/api/executor/dispatch', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || 'No se pudo disparar la tarea.')
+      }
+      setTareasBacklog(prev => prev.map(t => t.id === taskId ? { ...t, status: 'IN_PROGRESS' } : t))
+    } catch (err: unknown) {
+      setDispatchTareaError(err instanceof Error ? err.message : 'Error inesperado al disparar la tarea.')
+    } finally {
+      setDispatchingTareaId(null)
+    }
+  }
 
   function importPlanFile(file: File | undefined) {
     if (!file) return
@@ -818,6 +871,45 @@ export default function SolucionDetailPage() {
                   </button>
                 </div>
                 {prdGenError && <p className="text-red-400 text-xs">{prdGenError}</p>}
+
+                {/* Widget compacto de tareas del backlog: no reemplaza el
+                    board completo (eso vive en Oficina > Config > Backlog),
+                    solo muestra el estado de las tareas ya generadas desde
+                    este PRD y permite dispararlas sin cambiar de tab. */}
+                {tareasBacklog.length > 0 && (
+                  <div className="bg-gray-950 border border-gray-800 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-semibold text-gray-400 flex items-center gap-1.5">
+                        <ListPlus size={12} className="text-gray-600" /> Tareas del backlog ({tareasBacklog.length})
+                      </label>
+                      {loadingTareasBacklog && <Loader2 size={12} className="animate-spin text-gray-600" />}
+                    </div>
+                    {dispatchTareaError && <p className="text-red-400 text-xs mb-2">{dispatchTareaError}</p>}
+                    <div className="space-y-1.5">
+                      {tareasBacklog.map(t => {
+                        const puedeDisparar = t.status === 'BACKLOG' || t.status === 'FAILED'
+                        return (
+                          <div key={t.id} className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${ESTADO_TAREA_COLOR[t.status] ?? 'text-gray-400 border-gray-700'}`}>
+                              {t.status}
+                            </span>
+                            <span className="text-xs text-gray-300 flex-1 truncate" title={t.title}>
+                              {t.taskCode ? `${t.taskCode} — ` : ''}{t.title}
+                            </span>
+                            {t.prdRequisitoId && (
+                              <span className="text-[9px] text-cyan-400/70 flex-shrink-0">PRD</span>
+                            )}
+                            <button type="button" onClick={() => dispatchTarea(t.id)} disabled={!puedeDisparar || dispatchingTareaId === t.id}
+                              title={puedeDisparar ? 'Disparar tarea' : 'Solo se puede disparar desde BACKLOG o FAILED'}
+                              className="w-6 h-6 flex-shrink-0 rounded-md bg-gray-800 hover:bg-cyan-900/40 text-gray-500 hover:text-cyan-300 flex items-center justify-center transition-colors disabled:opacity-30 disabled:hover:bg-gray-800 disabled:hover:text-gray-500">
+                              {dispatchingTareaId === t.id ? <Loader2 size={11} className="animate-spin" /> : <Play size={11} />}
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-1.5">
