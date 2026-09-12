@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
 
   const body = await request.json()
-  const { title, description, type, priority, status, points, solucionId, assigneeId, assigneeName, sprintId, areaId: bodyAreaId } = body
+  const { title, description, type, priority, status, points, solucionId, assigneeId, assigneeName, sprintId, areaId: bodyAreaId, prdRequisitoId } = body
   const resolvedAreaId = bodyAreaId || (assigneeId === ORION_AGENT_ID || /orion/i.test(assigneeName || '') ? BACKLOG_HUB_AREA_ID : null)
 
   let taskCode: string | null = null
@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       assigneeId: assigneeId || null, assigneeName: assigneeName || null,
       sprintId: sprintId || null, taskCode,
       areaId: resolvedAreaId || null,
+      prdRequisitoId: prdRequisitoId || null,
     },
     include: {
       solucion: { select: { id: true, nombre: true, tipo: true } },

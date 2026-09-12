@@ -108,10 +108,28 @@ export async function resolveAgent(task: {
   return { agentId: DEV_AREA_FALLBACK.agentId, agentName: DEV_AREA_FALLBACK.agentName, strategy: DEV_AREA_FALLBACK.strategy }
 }
 
+// Si la tarea nacio de un requisito del PRD (BacklogItem.prdRequisitoId),
+// busca ese requisito dentro de Solucion.prd.requisitos[] y devuelve su
+// criterio de aceptacion — la debilidad real detectada fue que los agentes
+// ejecutaban sin ver nunca el PRD ni sus criterios (MASD-0003-0007).
+async function resolvePrdCriterio(solucionId: string | null, prdRequisitoId: string | null): Promise<{ texto: string; criterioAceptacion: string } | null> {
+  if (!solucionId || !prdRequisitoId) return null
+  const solucion = await prisma.solucion.findUnique({ where: { id: solucionId }, select: { prd: true } })
+  if (!solucion?.prd) return null
+  try {
+    const prd = JSON.parse(solucion.prd) as { requisitos?: { id: string; texto: string; criterioAceptacion: string }[] }
+    const req = prd.requisitos?.find(r => r.id === prdRequisitoId)
+    return req ? { texto: req.texto, criterioAceptacion: req.criterioAceptacion } : null
+  } catch {
+    return null
+  }
+}
+
 export async function dispatchTask(taskId: string, extraGuidance?: string): Promise<DispatchResult> {
   const [task] = await prisma.$queryRawUnsafe(
     `SELECT bi.id, bi.title, bi.description, bi."taskCode", bi."areaId", bi."sprintId", bi.type,
             bi."assigneeId", bi."assigneeName", bi.status, bi."dependsOnTaskId", bi."solucionId",
+            bi."prdRequisitoId",
             s."sprintCode", dep."taskCode" as "dependsOnTaskCode", dep.status as "dependsOnStatus"
      FROM "BacklogItem" bi
      LEFT JOIN "Sprint" s ON bi."sprintId" = s.id
@@ -122,7 +140,7 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
     id: string; title: string; description: string | null;
     taskCode: string; areaId: string | null; sprintId: string | null; type: string | null;
     assigneeId: string | null; assigneeName: string | null; status: string;
-    dependsOnTaskId: string | null; solucionId: string | null;
+    dependsOnTaskId: string | null; solucionId: string | null; prdRequisitoId: string | null;
     sprintCode: string | null; dependsOnTaskCode: string | null; dependsOnStatus: string | null;
   }[]
 
@@ -164,6 +182,11 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
   const context = await buildTaskContext(taskId)
   await emitTraceEvent(taskId, exec_.id, 'info', `contexto armado (buildTaskContext) — ${context.length.toLocaleString('es-AR')} caracteres`)
 
+  const prdCriterio = await resolvePrdCriterio(task.solucionId, task.prdRequisitoId)
+  if (prdCriterio) {
+    await emitTraceEvent(taskId, exec_.id, 'info', `criterio de aceptación del PRD encontrado (requisito ${task.prdRequisitoId})`)
+  }
+
   const systemPrompt = agentProfile.systemPrompt
     ?? `Eres ${agentName}, agente de ArchiTechIA ejecutando una tarea del Motor Agéntico SDD.`
   const userPrompt = [
@@ -172,6 +195,18 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
     `Ejecuta la siguiente tarea:`,
     task.title,
     task.description ?? '',
+    // Esta tarea nacio de un requisito real del PRD — el criterio de
+    // aceptacion es la definicion operativa de "terminado" que el verificador
+    // (runVerifier, ver finalizeExecution) va a usar despues. Antes esto
+    // nunca llegaba al agente: ejecutaba a ciegas de lo que el negocio
+    // realmente pidio.
+    prdCriterio ? [
+      '---',
+      'CRITERIO DE ACEPTACIÓN (del PRD — esta tarea implementa este requisito):',
+      prdCriterio.texto,
+      '',
+      `Se considera terminado cuando: ${prdCriterio.criterioAceptacion}`,
+    ].join('\n') : '',
     // Instruccion directiva, no una sugerencia de contexto mas: un texto
     // debil ("tene en cuenta esto") se pierde facil entre el resto del
     // contexto largo (buildTaskContext puede ser miles de caracteres). Se le
@@ -280,11 +315,11 @@ export async function finalizeExecution(opts: {
   const { taskId, execId, finalStatus, resultSummary, durationMs, contextUsed, toolLog } = opts
 
   const [task] = await prisma.$queryRawUnsafe(
-    `SELECT bi.id, bi.title, bi.description, bi."sprintId", bi."taskCode", bi."solucionId", s."sprintCode"
+    `SELECT bi.id, bi.title, bi.description, bi."sprintId", bi."taskCode", bi."solucionId", bi."prdRequisitoId", s."sprintCode"
      FROM "BacklogItem" bi LEFT JOIN "Sprint" s ON bi."sprintId" = s.id
      WHERE bi.id = $1`,
     taskId
-  ) as { id: string; title: string; description: string | null; sprintId: string | null; taskCode: string; solucionId: string | null; sprintCode: string | null }[]
+  ) as { id: string; title: string; description: string | null; sprintId: string | null; taskCode: string; solucionId: string | null; prdRequisitoId: string | null; sprintCode: string | null }[]
 
   if (!task) throw new Error(`Task ${taskId} not found`)
 
@@ -357,10 +392,14 @@ export async function finalizeExecution(opts: {
           .map((t) => (t.args as { rel_path?: string })?.rel_path)
           .filter((p): p is string => Boolean(p))
 
+        // MASD-0004-0004: si la tarea nacio de un requisito del PRD, el
+        // verificador ahora contrasta contra su criterio de aceptacion real
+        // en vez de aprobar solo por "compila y el resumen suena bien".
+        const prdCriterio = await resolvePrdCriterio(task.solucionId, task.prdRequisitoId)
         const verifierResult = await runVerifier({
           taskTitle: task.title,
           taskDescription: task.description,
-          acceptanceCriteria: [], // populada desde councilPlan cuando exista
+          acceptanceCriteria: prdCriterio ? [prdCriterio.criterioAceptacion] : [],
           resultSummary,
           codeCompiled: codeCheck.ran,
           filesWritten,

@@ -589,6 +589,10 @@ model BacklogItem {
   dependsOnTaskId String?
   dependsOn       BacklogItem?  @relation("TaskDependency", fields: [dependsOnTaskId], references: [id], onDelete: SetNull)
   dependents      BacklogItem[] @relation("TaskDependency")
+  // Link suave (no FK real) al id de un requisito dentro de Solucion.prd.requisitos[]
+  // JSON — permite inyectar su criterioAceptacion en el dispatch y, mas adelante,
+  // verificar el resultado contra ese criterio real (MASD-0003-0007 / MASD-0004-0004).
+  prdRequisitoId  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   activities   TaskActivity[]

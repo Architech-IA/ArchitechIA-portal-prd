@@ -79,6 +79,9 @@ interface Requisito {
   tipo: 'historia' | 'caso_uso'
   texto: string
   criterioAceptacion: string
+  // Presente una vez que "Generar backlog desde PRD" crea la tarea real
+  // asociada — evita duplicar la misma tarea si se aprieta el boton de nuevo.
+  backlogItemId?: string
 }
 interface PrdData {
   problema: string
@@ -184,6 +187,8 @@ export default function SolucionDetailPage() {
   const [loadingHitos, setLoadingHitos] = useState(true)
   const [generandoPrd, setGenerandoPrd] = useState(false)
   const [prdGenError, setPrdGenError] = useState('')
+  const [generandoBacklogPrd, setGenerandoBacklogPrd] = useState(false)
+  const [backlogPrdError, setBacklogPrdError] = useState('')
 
   useSetPageTitle(form.nombre || null)
 
@@ -345,6 +350,41 @@ export default function SolucionDetailPage() {
       setPrdGenError(err instanceof Error ? err.message : 'Error inesperado al generar el borrador.')
     } finally {
       setGenerandoPrd(false)
+    }
+  }
+
+  // Crea un BacklogItem real por cada requisito que todavia no tenga uno
+  // (evita duplicados via backlogItemId). El link se guarda en prdRequisitoId
+  // para que dispatchTask() pueda despues inyectar el criterio de aceptacion
+  // real al agente, y el verificador lo use para decidir DONE/FAILED
+  // (MASD-0003-0007 / MASD-0004-0004). Igual que "cargar en backlog" del
+  // Cronograma: el link queda en memoria hasta que se aprieta "Guardar cambios".
+  async function generarBacklogDesdePRD() {
+    setGenerandoBacklogPrd(true)
+    setBacklogPrdError('')
+    try {
+      const pendientes = prd.requisitos.filter(r => !r.backlogItemId)
+      for (const r of pendientes) {
+        const res = await fetch('/api/backlog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: r.texto.slice(0, 120) || 'Requisito sin título',
+            description: `${r.tipo === 'historia' ? 'Historia de usuario' : 'Caso de uso'}: ${r.texto}\n\nCriterio de aceptación: ${r.criterioAceptacion}`,
+            type: 'TASK',
+            priority: 'MEDIUM',
+            solucionId: id,
+            prdRequisitoId: r.id,
+          }),
+        })
+        if (!res.ok) throw new Error('No se pudo crear la tarea para un requisito.')
+        const created = await res.json()
+        updateRequisito(r.id, { backlogItemId: created.id })
+      }
+    } catch (err: unknown) {
+      setBacklogPrdError(err instanceof Error ? err.message : 'Error inesperado generando el backlog.')
+    } finally {
+      setGenerandoBacklogPrd(false)
     }
   }
 
@@ -800,9 +840,17 @@ export default function SolucionDetailPage() {
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                     <label className="text-sm font-medium text-gray-300">Requisitos (historias de usuario / casos de uso)</label>
+                    {prd.requisitos.length > 0 && (
+                      <button type="button" onClick={generarBacklogDesdePRD} disabled={generandoBacklogPrd}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-50">
+                        {generandoBacklogPrd ? <Loader2 size={12} className="animate-spin" /> : <ListPlus size={12} />}
+                        {generandoBacklogPrd ? 'Generando...' : 'Generar backlog desde PRD'}
+                      </button>
+                    )}
                   </div>
+                  {backlogPrdError && <p className="text-red-400 text-xs mb-2">{backlogPrdError}</p>}
                   <div className="space-y-3">
                     {prd.requisitos.length === 0 && (
                       <p className="text-gray-600 text-sm text-center py-4">Sin requisitos registrados todavía.</p>
@@ -816,6 +864,11 @@ export default function SolucionDetailPage() {
                             <option value="historia">Historia de usuario</option>
                             <option value="caso_uso">Caso de uso</option>
                           </select>
+                          {r.backlogItemId && (
+                            <span className="text-[10px] text-emerald-400 bg-emerald-900/20 border border-emerald-700/30 rounded-full px-2 py-0.5">
+                              En backlog
+                            </span>
+                          )}
                           <button type="button" onClick={() => removeRequisito(r.id)}
                             className="w-8 h-8 flex-shrink-0 ml-auto rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors">
                             <Trash2 size={14} />
