@@ -91,36 +91,117 @@ const ESTADO_TAREA_COLOR: Record<string, string> = {
   BLOCKED: 'text-yellow-400 border-yellow-700/50',
 }
 
+// PRD como documento robusto y desglosado (no una seccion de 4 parrafos):
+// listas reales por seccion en vez de texto libre, prioridad/estado por
+// requisito, requisitos no funcionales aparte de los funcionales, metricas
+// como KPIs medibles, y un ciclo de vida propio (Borrador/En revision/
+// Aprobado) que condiciona si se puede generar backlog desde este PRD.
+type PrioridadRequisito = 'MUST' | 'SHOULD' | 'COULD' | 'WONT'
+type EstadoRequisito = 'PROPUESTO' | 'APROBADO' | 'IMPLEMENTADO' | 'VERIFICADO'
+type EstadoDocumentoPrd = 'BORRADOR' | 'EN_REVISION' | 'APROBADO'
+
 interface Requisito {
   id: string
   tipo: 'historia' | 'caso_uso'
   texto: string
   criterioAceptacion: string
+  prioridad: PrioridadRequisito
+  estado: EstadoRequisito
   // Presente una vez que "Generar backlog desde PRD" crea la tarea real
   // asociada — evita duplicar la misma tarea si se aprieta el boton de nuevo.
   backlogItemId?: string
 }
+interface ItemTexto { id: string; texto: string }
+interface Persona { id: string; rol: string; necesidad: string }
+interface RequisitoNoFuncional { id: string; categoria: string; texto: string }
+interface Metrica { id: string; nombre: string; meta: string; comoSeMide: string }
+
+// Secciones que son simplemente listas de texto — mismo shape (ItemTexto[]),
+// mismos handlers genericos (addSimpleItem/updateSimpleItem/removeSimpleItem)
+// en vez de duplicar CRUD por cada una.
+const SIMPLE_LIST_KEYS = ['objetivosEspecificos', 'dentroDeAlcance', 'fueraDeAlcance', 'supuestos', 'riesgos', 'dependencias', 'preguntasAbiertas'] as const
+type SimpleListKey = typeof SIMPLE_LIST_KEYS[number]
+
 interface PrdData {
+  estadoDocumento: EstadoDocumentoPrd
+  resumenEjecutivo: string
   problema: string
-  objetivo: string
-  fueraDeAlcance: string
+  objetivoGeneral: string
+  objetivosEspecificos: ItemTexto[]
+  dentroDeAlcance: ItemTexto[]
+  fueraDeAlcance: ItemTexto[]
+  personas: Persona[]
   requisitos: Requisito[]
-  metricas: string
-  riesgos: string
-  personas: string
-  supuestos: string
+  requisitosNoFuncionales: RequisitoNoFuncional[]
+  metricas: Metrica[]
+  riesgos: ItemTexto[]
+  dependencias: ItemTexto[]
+  supuestos: ItemTexto[]
+  preguntasAbiertas: ItemTexto[]
 }
 const emptyPrd: PrdData = {
-  problema: '', objetivo: '', fueraDeAlcance: '', requisitos: [],
-  metricas: '', riesgos: '', personas: '', supuestos: '',
+  estadoDocumento: 'BORRADOR',
+  resumenEjecutivo: '', problema: '', objetivoGeneral: '',
+  objetivosEspecificos: [], dentroDeAlcance: [], fueraDeAlcance: [],
+  personas: [], requisitos: [], requisitosNoFuncionales: [], metricas: [],
+  riesgos: [], dependencias: [], supuestos: [], preguntasAbiertas: [],
 }
+
+// Migra un PRD guardado con el shape viejo (campos de texto libre: objetivo,
+// fueraDeAlcance, metricas, riesgos, personas, supuestos como strings) al
+// shape nuevo desglosado — sin esto, las Soluciones que ya tenian un PRD
+// real guardado (ej. La Promotora Seguros, generado con IA antes de este
+// cambio) perderian ese contenido al abrir la pagina.
+function migrarPrd(raw: Record<string, unknown>): PrdData {
+  const asItemTexto = (v: unknown): ItemTexto[] => {
+    if (Array.isArray(v)) return v.filter((x): x is ItemTexto => !!x && typeof x === 'object' && 'texto' in x)
+    if (typeof v === 'string' && v.trim()) return [{ id: makeId(), texto: v }]
+    return []
+  }
+  const objetivoViejo = typeof raw.objetivo === 'string' ? raw.objetivo : ''
+  const metricasViejas = typeof raw.metricas === 'string' && raw.metricas.trim()
+    ? [{ id: makeId(), nombre: 'Meta general', meta: raw.metricas as string, comoSeMide: '' }]
+    : []
+  const personasViejas = typeof raw.personas === 'string' && raw.personas.trim()
+    ? [{ id: makeId(), rol: 'General', necesidad: raw.personas as string }]
+    : []
+  return {
+    estadoDocumento: (raw.estadoDocumento as EstadoDocumentoPrd) ?? 'BORRADOR',
+    resumenEjecutivo: typeof raw.resumenEjecutivo === 'string' ? raw.resumenEjecutivo : '',
+    problema: typeof raw.problema === 'string' ? raw.problema : '',
+    objetivoGeneral: typeof raw.objetivoGeneral === 'string' ? raw.objetivoGeneral : objetivoViejo,
+    objetivosEspecificos: asItemTexto(raw.objetivosEspecificos),
+    dentroDeAlcance: asItemTexto(raw.dentroDeAlcance),
+    fueraDeAlcance: asItemTexto(raw.fueraDeAlcance),
+    personas: Array.isArray(raw.personas) ? raw.personas as Persona[] : personasViejas,
+    requisitos: Array.isArray(raw.requisitos)
+      ? (raw.requisitos as Partial<Requisito>[]).map(r => ({
+          id: r.id ?? makeId(),
+          tipo: r.tipo === 'caso_uso' ? 'caso_uso' : 'historia',
+          texto: r.texto ?? '',
+          criterioAceptacion: r.criterioAceptacion ?? '',
+          prioridad: r.prioridad ?? 'SHOULD',
+          estado: r.estado ?? 'PROPUESTO',
+          backlogItemId: r.backlogItemId,
+        }))
+      : [],
+    requisitosNoFuncionales: Array.isArray(raw.requisitosNoFuncionales) ? raw.requisitosNoFuncionales as RequisitoNoFuncional[] : [],
+    metricas: Array.isArray(raw.metricas) ? raw.metricas as Metrica[] : metricasViejas,
+    riesgos: asItemTexto(raw.riesgos),
+    dependencias: asItemTexto(raw.dependencias),
+    supuestos: asItemTexto(raw.supuestos),
+    preguntasAbiertas: asItemTexto(raw.preguntasAbiertas),
+  }
+}
+
 // Que secciones del PRD tienen sentido segun el tipo de Solucion — no todas
 // aplican igual a un PoC de venta (DEMO) que a un proyecto real con cliente.
 function prdSeccionesOpcionales(tipo: string) {
   return {
+    requisitosNoFuncionales: tipo === 'PROJECT' || tipo === 'PARTNERSHIP',
     metricas: tipo === 'PROJECT' || tipo === 'PARTNERSHIP',
-    riesgos: tipo === 'PROJECT' || tipo === 'PARTNERSHIP',
-    personasYSupuestos: tipo !== 'DEMO',
+    riesgosYDependencias: tipo === 'PROJECT' || tipo === 'PARTNERSHIP',
+    personasYSupuestosYPreguntas: tipo !== 'DEMO',
   }
 }
 
@@ -249,7 +330,7 @@ export default function SolucionDetailPage() {
         try { setFases(s.cronograma ? JSON.parse(s.cronograma) : []) } catch { setFases([]) }
         try {
           const parsedPrd = s.prd ? JSON.parse(s.prd) : null
-          setPrd(parsedPrd && typeof parsedPrd === 'object' ? { ...emptyPrd, ...parsedPrd, requisitos: Array.isArray(parsedPrd.requisitos) ? parsedPrd.requisitos : [] } : emptyPrd)
+          setPrd(parsedPrd && typeof parsedPrd === 'object' ? migrarPrd(parsedPrd) : emptyPrd)
         } catch { setPrd(emptyPrd) }
       } catch {
         setNotFound(true)
@@ -360,8 +441,22 @@ export default function SolucionDetailPage() {
   function updatePrdField<K extends keyof PrdData>(key: K, value: PrdData[K]) {
     setPrd(prev => ({ ...prev, [key]: value }))
   }
+
+  // Handlers genericos para las 7 secciones que son listas de texto simples
+  // (objetivosEspecificos, dentroDeAlcance, fueraDeAlcance, supuestos,
+  // riesgos, dependencias, preguntasAbiertas) — mismo shape, mismo CRUD.
+  function addSimpleItem(key: SimpleListKey) {
+    setPrd(prev => ({ ...prev, [key]: [...prev[key], { id: makeId(), texto: '' }] }))
+  }
+  function updateSimpleItem(key: SimpleListKey, itemId: string, texto: string) {
+    setPrd(prev => ({ ...prev, [key]: prev[key].map(it => it.id === itemId ? { ...it, texto } : it) }))
+  }
+  function removeSimpleItem(key: SimpleListKey, itemId: string) {
+    setPrd(prev => ({ ...prev, [key]: prev[key].filter(it => it.id !== itemId) }))
+  }
+
   function addRequisito() {
-    setPrd(prev => ({ ...prev, requisitos: [...prev.requisitos, { id: makeId(), tipo: 'historia', texto: '', criterioAceptacion: '' }] }))
+    setPrd(prev => ({ ...prev, requisitos: [...prev.requisitos, { id: makeId(), tipo: 'historia', texto: '', criterioAceptacion: '', prioridad: 'SHOULD', estado: 'PROPUESTO' }] }))
   }
   function updateRequisito(rid: string, patch: Partial<Requisito>) {
     setPrd(prev => ({ ...prev, requisitos: prev.requisitos.map(r => r.id === rid ? { ...r, ...patch } : r) }))
@@ -370,10 +465,39 @@ export default function SolucionDetailPage() {
     setPrd(prev => ({ ...prev, requisitos: prev.requisitos.filter(r => r.id !== rid) }))
   }
 
+  function addPersona() {
+    setPrd(prev => ({ ...prev, personas: [...prev.personas, { id: makeId(), rol: '', necesidad: '' }] }))
+  }
+  function updatePersona(pid: string, patch: Partial<Persona>) {
+    setPrd(prev => ({ ...prev, personas: prev.personas.map(p => p.id === pid ? { ...p, ...patch } : p) }))
+  }
+  function removePersona(pid: string) {
+    setPrd(prev => ({ ...prev, personas: prev.personas.filter(p => p.id !== pid) }))
+  }
+
+  function addRnF() {
+    setPrd(prev => ({ ...prev, requisitosNoFuncionales: [...prev.requisitosNoFuncionales, { id: makeId(), categoria: 'performance', texto: '' }] }))
+  }
+  function updateRnF(rid: string, patch: Partial<RequisitoNoFuncional>) {
+    setPrd(prev => ({ ...prev, requisitosNoFuncionales: prev.requisitosNoFuncionales.map(r => r.id === rid ? { ...r, ...patch } : r) }))
+  }
+  function removeRnF(rid: string) {
+    setPrd(prev => ({ ...prev, requisitosNoFuncionales: prev.requisitosNoFuncionales.filter(r => r.id !== rid) }))
+  }
+
+  function addMetrica() {
+    setPrd(prev => ({ ...prev, metricas: [...prev.metricas, { id: makeId(), nombre: '', meta: '', comoSeMide: '' }] }))
+  }
+  function updateMetrica(mid: string, patch: Partial<Metrica>) {
+    setPrd(prev => ({ ...prev, metricas: prev.metricas.map(m => m.id === mid ? { ...m, ...patch } : m) }))
+  }
+  function removeMetrica(mid: string) {
+    setPrd(prev => ({ ...prev, metricas: prev.metricas.filter(m => m.id !== mid) }))
+  }
+
   // Genera un borrador con IA a partir de nombre/descripcion/tipo/planTrabajo
-  // ya guardados en la Solucion. Solo completa los campos de texto que estan
-  // vacios y agrega requisitos nuevos — nunca pisa lo que el usuario ya
-  // escribio a mano.
+  // ya guardados en la Solucion. Solo completa las secciones vacias —
+  // nunca pisa lo que el usuario ya escribio a mano.
   async function generarPrdConIA() {
     setGenerandoPrd(true)
     setPrdGenError('')
@@ -381,23 +505,23 @@ export default function SolucionDetailPage() {
       const res = await fetch(`/api/soluciones/${id}/prd-generate`, { method: 'POST' })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || 'No se pudo generar el borrador.')
-      const draft = data.prd as Partial<PrdData>
+      const draft = migrarPrd((data.prd ?? {}) as Record<string, unknown>)
       setPrd(prev => ({
-        problema: prev.problema.trim() ? prev.problema : (draft.problema ?? ''),
-        objetivo: prev.objetivo.trim() ? prev.objetivo : (draft.objetivo ?? ''),
-        fueraDeAlcance: prev.fueraDeAlcance.trim() ? prev.fueraDeAlcance : (draft.fueraDeAlcance ?? ''),
-        metricas: prev.metricas.trim() ? prev.metricas : (draft.metricas ?? ''),
-        riesgos: prev.riesgos.trim() ? prev.riesgos : (draft.riesgos ?? ''),
-        personas: prev.personas.trim() ? prev.personas : (draft.personas ?? ''),
-        supuestos: prev.supuestos.trim() ? prev.supuestos : (draft.supuestos ?? ''),
-        requisitos: prev.requisitos.length > 0
-          ? prev.requisitos
-          : (Array.isArray(draft.requisitos) ? draft.requisitos : []).map(r => ({
-              id: makeId(),
-              tipo: r.tipo === 'caso_uso' ? 'caso_uso' : 'historia',
-              texto: r.texto ?? '',
-              criterioAceptacion: r.criterioAceptacion ?? '',
-            })),
+        estadoDocumento: prev.estadoDocumento,
+        resumenEjecutivo: prev.resumenEjecutivo.trim() ? prev.resumenEjecutivo : draft.resumenEjecutivo,
+        problema: prev.problema.trim() ? prev.problema : draft.problema,
+        objetivoGeneral: prev.objetivoGeneral.trim() ? prev.objetivoGeneral : draft.objetivoGeneral,
+        objetivosEspecificos: prev.objetivosEspecificos.length > 0 ? prev.objetivosEspecificos : draft.objetivosEspecificos,
+        dentroDeAlcance: prev.dentroDeAlcance.length > 0 ? prev.dentroDeAlcance : draft.dentroDeAlcance,
+        fueraDeAlcance: prev.fueraDeAlcance.length > 0 ? prev.fueraDeAlcance : draft.fueraDeAlcance,
+        personas: prev.personas.length > 0 ? prev.personas : draft.personas,
+        requisitos: prev.requisitos.length > 0 ? prev.requisitos : draft.requisitos,
+        requisitosNoFuncionales: prev.requisitosNoFuncionales.length > 0 ? prev.requisitosNoFuncionales : draft.requisitosNoFuncionales,
+        metricas: prev.metricas.length > 0 ? prev.metricas : draft.metricas,
+        riesgos: prev.riesgos.length > 0 ? prev.riesgos : draft.riesgos,
+        dependencias: prev.dependencias.length > 0 ? prev.dependencias : draft.dependencias,
+        supuestos: prev.supuestos.length > 0 ? prev.supuestos : draft.supuestos,
+        preguntasAbiertas: prev.preguntasAbiertas.length > 0 ? prev.preguntasAbiertas : draft.preguntasAbiertas,
       }))
     } catch (err: unknown) {
       setPrdGenError(err instanceof Error ? err.message : 'Error inesperado al generar el borrador.')
@@ -412,7 +536,17 @@ export default function SolucionDetailPage() {
   // real al agente, y el verificador lo use para decidir DONE/FAILED
   // (MASD-0003-0007 / MASD-0004-0004). Igual que "cargar en backlog" del
   // Cronograma: el link queda en memoria hasta que se aprieta "Guardar cambios".
+  const PRIORIDAD_A_BACKLOG: Record<PrioridadRequisito, string> = {
+    MUST: 'HIGH', SHOULD: 'MEDIUM', COULD: 'LOW', WONT: 'LOW',
+  }
+
+  // Solo se puede generar backlog desde un PRD ya Aprobado — evita crear
+  // tareas reales de un documento a medio escribir que despues cambia.
   async function generarBacklogDesdePRD() {
+    if (prd.estadoDocumento !== 'APROBADO') {
+      setBacklogPrdError('El PRD debe estar en estado "Aprobado" antes de generar backlog.')
+      return
+    }
     setGenerandoBacklogPrd(true)
     setBacklogPrdError('')
     try {
@@ -425,7 +559,7 @@ export default function SolucionDetailPage() {
             title: r.texto.slice(0, 120) || 'Requisito sin título',
             description: `${r.tipo === 'historia' ? 'Historia de usuario' : 'Caso de uso'}: ${r.texto}\n\nCriterio de aceptación: ${r.criterioAceptacion}`,
             type: 'TASK',
-            priority: 'MEDIUM',
+            priority: PRIORIDAD_A_BACKLOG[r.prioridad] ?? 'MEDIUM',
             solucionId: id,
             prdRequisitoId: r.id,
           }),
@@ -852,24 +986,76 @@ export default function SolucionDetailPage() {
             </div>
           )}
 
-          {/* Tab: PRD — Documento de Requisitos de Producto. Las secciones
-              obligatorias (problema, objetivo, requisitos, criterios de
-              aceptacion) siempre se muestran; el resto es condicional segun
-              el tipo de Solucion (un DEMO de venta no necesita metricas de
-              exito ni riesgos formales, un PROJECT si). */}
+          {/* Tab: PRD — Documento de Requisitos de Producto. Robusto y
+              desglosado: cada seccion es una lista real de items (no un
+              parrafo suelto), los requisitos tienen prioridad MoSCoW y
+              estado propio, y el documento en si tiene un ciclo de vida
+              (Borrador/En revision/Aprobado) que condiciona si se puede
+              generar backlog desde el. Las secciones condicionales varian
+              segun el tipo de Solucion (un DEMO no necesita el mismo nivel
+              de detalle que un PROJECT real con cliente). */}
           {activeTab === 'prd' && (() => {
             const opc = prdSeccionesOpcionales(form.tipo)
             const inputCls = "w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm leading-relaxed resize-vertical focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors"
+            const itemInputCls = "flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors"
+
+            const ESTADO_DOC_COLOR: Record<EstadoDocumentoPrd, string> = {
+              BORRADOR: 'text-gray-400 border-gray-700 bg-gray-900',
+              EN_REVISION: 'text-yellow-400 border-yellow-700/50 bg-yellow-900/10',
+              APROBADO: 'text-green-400 border-green-700/50 bg-green-900/10',
+            }
+            const PRIORIDAD_LABEL: Record<PrioridadRequisito, string> = { MUST: 'Must', SHOULD: 'Should', COULD: 'Could', WONT: "Won't" }
+            const ESTADO_REQ_COLOR: Record<EstadoRequisito, string> = {
+              PROPUESTO: 'text-gray-400 border-gray-700', APROBADO: 'text-cyan-400 border-cyan-700/50',
+              IMPLEMENTADO: 'text-orange-400 border-orange-700/50', VERIFICADO: 'text-green-400 border-green-700/50',
+            }
+
+            // Renderiza una de las 7 secciones "lista de texto simple" —
+            // evita repetir el mismo bloque de mapeo/agregar/borrar 7 veces.
+            function renderSimpleList(key: SimpleListKey, label: string, placeholder: string) {
+              return (
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">{label}</label>
+                  <div className="space-y-1.5">
+                    {prd[key].length === 0 && <p className="text-gray-600 text-xs py-1">Sin ítems todavía.</p>}
+                    {prd[key].map(item => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <input type="text" value={item.texto} onChange={e => updateSimpleItem(key, item.id, e.target.value)}
+                          placeholder={placeholder} className={itemInputCls} />
+                        <button type="button" onClick={() => removeSimpleItem(key, item.id)}
+                          className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => addSimpleItem(key)}
+                    className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                    <Plus size={12} /> Agregar ítem
+                  </button>
+                </div>
+              )
+            }
+
             return (
               <div className="space-y-5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <p className="text-gray-600 text-xs">La IA completa solo los campos vacíos — nunca sobrescribe lo que ya escribiste.</p>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-gray-500">Estado del documento:</label>
+                    <select value={prd.estadoDocumento} onChange={e => updatePrdField('estadoDocumento', e.target.value as EstadoDocumentoPrd)}
+                      className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[prd.estadoDocumento]}`}>
+                      <option value="BORRADOR">Borrador</option>
+                      <option value="EN_REVISION">En revisión</option>
+                      <option value="APROBADO">Aprobado</option>
+                    </select>
+                  </div>
                   <button type="button" onClick={generarPrdConIA} disabled={generandoPrd}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-50">
                     {generandoPrd ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
                     {generandoPrd ? 'Generando...' : 'Generar con IA'}
                   </button>
                 </div>
+                <p className="text-gray-600 text-xs -mt-3">La IA completa solo las secciones vacías — nunca sobrescribe lo que ya escribiste.</p>
                 {prdGenError && <p className="text-red-400 text-xs">{prdGenError}</p>}
 
                 {/* Widget compacto de tareas del backlog: no reemplaza el
@@ -912,31 +1098,61 @@ export default function SolucionDetailPage() {
                 )}
 
                 <div>
+                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Resumen ejecutivo</label>
+                  <textarea rows={2} value={prd.resumenEjecutivo} onChange={e => updatePrdField('resumenEjecutivo', e.target.value)}
+                    placeholder="2-3 líneas: lo primero que debería leer cualquiera sobre esta Solución." className={inputCls} />
+                </div>
+
+                <div>
                   <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-1.5">
                     <ClipboardList size={14} className="text-gray-500" /> Problema / contexto
                   </label>
                   <textarea rows={3} value={prd.problema} onChange={e => updatePrdField('problema', e.target.value)}
-                    placeholder="¿Qué necesidad o dolor motiva esta Solución?" className={inputCls} />
+                    placeholder="¿Qué necesidad o dolor motiva esta Solución? Justificá con evidencia si es posible, no solo intuición." className={inputCls} />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Objetivo y alcance</label>
-                  <textarea rows={3} value={prd.objetivo} onChange={e => updatePrdField('objetivo', e.target.value)}
-                    placeholder="¿Qué se va a construir? ¿Hasta dónde llega el compromiso?" className={inputCls} />
+                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Objetivo general</label>
+                  <textarea rows={2} value={prd.objetivoGeneral} onChange={e => updatePrdField('objetivoGeneral', e.target.value)}
+                    placeholder="¿Qué se va a lograr, en una frase?" className={inputCls} />
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Fuera de alcance</label>
-                  <textarea rows={2} value={prd.fueraDeAlcance} onChange={e => updatePrdField('fueraDeAlcance', e.target.value)}
-                    placeholder="¿Qué explícitamente NO entra, para evitar negociaciones tardías?" className={inputCls} />
-                </div>
+                {renderSimpleList('objetivosEspecificos', 'Objetivos específicos', 'Un objetivo concreto y medible')}
+                {renderSimpleList('dentroDeAlcance', 'Dentro de alcance', 'Qué SÍ entra en esta versión')}
+                {renderSimpleList('fueraDeAlcance', 'Fuera de alcance', 'Qué explícitamente NO entra, para evitar negociaciones tardías')}
+
+                {opc.personasYSupuestosYPreguntas && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Usuarios / personas</label>
+                    <div className="space-y-2">
+                      {prd.personas.length === 0 && <p className="text-gray-600 text-xs py-1">Sin personas registradas todavía.</p>}
+                      {prd.personas.map(p => (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <input type="text" value={p.rol} onChange={e => updatePersona(p.id, { rol: e.target.value })}
+                            placeholder="Rol (ej: Ejecutivo de ventas)" className="w-40 flex-shrink-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <input type="text" value={p.necesidad} onChange={e => updatePersona(p.id, { necesidad: e.target.value })}
+                            placeholder="Necesidad principal" className={itemInputCls} />
+                          <button type="button" onClick={() => removePersona(p.id)}
+                            className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={addPersona}
+                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                      <Plus size={12} /> Agregar persona
+                    </button>
+                  </div>
+                )}
 
                 <div>
                   <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                    <label className="text-sm font-medium text-gray-300">Requisitos (historias de usuario / casos de uso)</label>
+                    <label className="text-sm font-medium text-gray-300">Requisitos funcionales (historias de usuario / casos de uso)</label>
                     {prd.requisitos.length > 0 && (
-                      <button type="button" onClick={generarBacklogDesdePRD} disabled={generandoBacklogPrd}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-50">
+                      <button type="button" onClick={generarBacklogDesdePRD} disabled={generandoBacklogPrd || prd.estadoDocumento !== 'APROBADO'}
+                        title={prd.estadoDocumento !== 'APROBADO' ? 'El documento debe estar Aprobado para generar backlog' : undefined}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-40">
                         {generandoBacklogPrd ? <Loader2 size={12} className="animate-spin" /> : <ListPlus size={12} />}
                         {generandoBacklogPrd ? 'Generando...' : 'Generar backlog desde PRD'}
                       </button>
@@ -949,12 +1165,25 @@ export default function SolucionDetailPage() {
                     )}
                     {prd.requisitos.map(r => (
                       <div key={r.id} className="bg-gray-950 border border-gray-700 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <select value={r.tipo} onChange={e => updateRequisito(r.id, { tipo: e.target.value as Requisito['tipo'] })}
                             title="Tipo de requisito"
                             className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
                             <option value="historia">Historia de usuario</option>
                             <option value="caso_uso">Caso de uso</option>
+                          </select>
+                          <select value={r.prioridad} onChange={e => updateRequisito(r.id, { prioridad: e.target.value as PrioridadRequisito })}
+                            title="Prioridad (MoSCoW)"
+                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            {(Object.keys(PRIORIDAD_LABEL) as PrioridadRequisito[]).map(p => <option key={p} value={p}>{PRIORIDAD_LABEL[p]}</option>)}
+                          </select>
+                          <select value={r.estado} onChange={e => updateRequisito(r.id, { estado: e.target.value as EstadoRequisito })}
+                            title="Estado del requisito"
+                            className={`bg-gray-900 border rounded-lg px-2 py-1.5 text-xs focus:outline-none appearance-none cursor-pointer ${ESTADO_REQ_COLOR[r.estado]}`}>
+                            <option value="PROPUESTO">Propuesto</option>
+                            <option value="APROBADO">Aprobado</option>
+                            <option value="IMPLEMENTADO">Implementado</option>
+                            <option value="VERIFICADO">Verificado</option>
                           </select>
                           {r.backlogItemId && (
                             <span className="text-[10px] text-emerald-400 bg-emerald-900/20 border border-emerald-700/30 rounded-full px-2 py-0.5">
@@ -983,34 +1212,75 @@ export default function SolucionDetailPage() {
                   </button>
                 </div>
 
+                {opc.requisitosNoFuncionales && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Requisitos no funcionales</label>
+                    <div className="space-y-2">
+                      {prd.requisitosNoFuncionales.length === 0 && <p className="text-gray-600 text-xs py-1">Sin requisitos no funcionales todavía.</p>}
+                      {prd.requisitosNoFuncionales.map(r => (
+                        <div key={r.id} className="flex items-center gap-2">
+                          <select value={r.categoria} onChange={e => updateRnF(r.id, { categoria: e.target.value })}
+                            className="w-36 flex-shrink-0 bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            <option value="performance">Performance</option>
+                            <option value="seguridad">Seguridad</option>
+                            <option value="compatibilidad">Compatibilidad</option>
+                            <option value="escalabilidad">Escalabilidad</option>
+                            <option value="otro">Otro</option>
+                          </select>
+                          <input type="text" value={r.texto} onChange={e => updateRnF(r.id, { texto: e.target.value })}
+                            placeholder="Ej: tiempo de respuesta < 2s bajo carga normal" className={itemInputCls} />
+                          <button type="button" onClick={() => removeRnF(r.id)}
+                            className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={addRnF}
+                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                      <Plus size={12} /> Agregar requisito no funcional
+                    </button>
+                  </div>
+                )}
+
                 {opc.metricas && (
                   <div>
-                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Métricas de éxito</label>
-                    <textarea rows={2} value={prd.metricas} onChange={e => updatePrdField('metricas', e.target.value)}
-                      placeholder="¿Cómo se sabrá si esto funcionó una vez lanzado?" className={inputCls} />
+                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Métricas de éxito (KPIs)</label>
+                    <div className="space-y-2">
+                      {prd.metricas.length === 0 && <p className="text-gray-600 text-xs py-1">Sin métricas registradas todavía.</p>}
+                      {prd.metricas.map(m => (
+                        <div key={m.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+                          <input type="text" value={m.nombre} onChange={e => updateMetrica(m.id, { nombre: e.target.value })}
+                            placeholder="KPI" className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <input type="text" value={m.meta} onChange={e => updateMetrica(m.id, { meta: e.target.value })}
+                            placeholder="Meta" className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <input type="text" value={m.comoSeMide} onChange={e => updateMetrica(m.id, { comoSeMide: e.target.value })}
+                            placeholder="Cómo se mide" className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+                          <button type="button" onClick={() => removeMetrica(m.id)}
+                            className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={addMetrica}
+                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                      <Plus size={12} /> Agregar métrica
+                    </button>
                   </div>
                 )}
 
-                {opc.riesgos && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Riesgos y dependencias (contexto)</label>
-                    <textarea rows={2} value={prd.riesgos} onChange={e => updatePrdField('riesgos', e.target.value)}
-                      placeholder="Contexto general — el detalle formal de cada riesgo va en la pestaña Riesgos." className={inputCls} />
-                  </div>
-                )}
-
-                {opc.personasYSupuestos && (
+                {opc.riesgosYDependencias && (
                   <>
-                    <div>
-                      <label className="text-sm font-medium text-gray-300 mb-1.5 block">Usuarios / personas</label>
-                      <textarea rows={2} value={prd.personas} onChange={e => updatePrdField('personas', e.target.value)}
-                        placeholder="¿Quién usa esto y qué rol cumple?" className={inputCls} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-300 mb-1.5 block">Supuestos</label>
-                      <textarea rows={2} value={prd.supuestos} onChange={e => updatePrdField('supuestos', e.target.value)}
-                        placeholder="¿Qué se asume cierto pero no está validado?" className={inputCls} />
-                    </div>
+                    {renderSimpleList('riesgos', 'Riesgos', 'Un riesgo — el detalle formal (mitigación, severidad) va en la pestaña Riesgos')}
+                    {renderSimpleList('dependencias', 'Dependencias técnicas / de otros equipos', 'Qué bloquea o es bloqueado por esto')}
+                  </>
+                )}
+
+                {opc.personasYSupuestosYPreguntas && (
+                  <>
+                    {renderSimpleList('supuestos', 'Supuestos', 'Qué se asume cierto pero no está validado')}
+                    {renderSimpleList('preguntasAbiertas', 'Preguntas abiertas', 'Una duda sin resolver que no bloquea el arranque')}
                   </>
                 )}
               </div>

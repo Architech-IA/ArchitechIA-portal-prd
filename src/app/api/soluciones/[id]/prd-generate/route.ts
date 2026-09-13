@@ -8,11 +8,13 @@ const OPENCODE_KEY = process.env.OPENCODE_API_KEY ?? ''
 // Mismo modelo que ya usa Orion en produccion (Agent.llmModel = 'qwen3.7-max').
 const MODEL = 'qwen3.7-max'
 
+// Debe reflejar prdSeccionesOpcionales() del frontend (pilots/[id]/page.tsx)
+// — mismas 4 obligatorias siempre, mismas condicionales por tipo.
 const SECCIONES_POR_TIPO: Record<string, string[]> = {
-  DEMO: ['problema', 'objetivo', 'fueraDeAlcance', 'requisitos'],
-  PROJECT: ['problema', 'objetivo', 'fueraDeAlcance', 'requisitos', 'metricas', 'riesgos', 'personas', 'supuestos'],
-  PARTNERSHIP: ['problema', 'objetivo', 'fueraDeAlcance', 'requisitos', 'metricas', 'riesgos', 'personas', 'supuestos'],
-  INTERN: ['problema', 'objetivo', 'fueraDeAlcance', 'requisitos', 'personas', 'supuestos'],
+  DEMO: ['resumenEjecutivo', 'problema', 'objetivoGeneral', 'objetivosEspecificos', 'dentroDeAlcance', 'fueraDeAlcance', 'requisitos'],
+  PROJECT: ['resumenEjecutivo', 'problema', 'objetivoGeneral', 'objetivosEspecificos', 'dentroDeAlcance', 'fueraDeAlcance', 'personas', 'requisitos', 'requisitosNoFuncionales', 'metricas', 'riesgos', 'dependencias', 'supuestos', 'preguntasAbiertas'],
+  PARTNERSHIP: ['resumenEjecutivo', 'problema', 'objetivoGeneral', 'objetivosEspecificos', 'dentroDeAlcance', 'fueraDeAlcance', 'personas', 'requisitos', 'requisitosNoFuncionales', 'metricas', 'riesgos', 'dependencias', 'supuestos', 'preguntasAbiertas'],
+  INTERN: ['resumenEjecutivo', 'problema', 'objetivoGeneral', 'objetivosEspecificos', 'dentroDeAlcance', 'fueraDeAlcance', 'personas', 'requisitos', 'supuestos', 'preguntasAbiertas'],
 }
 
 // Mismo criterio de limpieza que usa Orion para leer el Lead Hub (TabbedNotes
@@ -131,21 +133,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     solucion.descripcion?.trim() || solucion.planTrabajo?.trim() || fasesTexto || riesgosTexto || hitosTexto || leadHubTexto
   )
 
-  const systemPrompt = `Sos un analista de producto que redacta borradores de PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA.
-Con el contexto que te den, generá un borrador de PRD en español, conciso y concreto — nunca genérico o de relleno.
+  const systemPrompt = `Sos un analista de producto que redacta borradores de PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA. El PRD debe ser un documento robusto y desglosado — cada sección es una lista de ítems concretos, nunca un párrafo genérico de relleno.
+Con el contexto que te den, generá un borrador en español, conciso y concreto.
 Devolvé SOLO un objeto JSON (sin markdown, sin texto alrededor) con esta forma exacta:
 {
+  "resumenEjecutivo": "string (2-3 líneas)",
   "problema": "string",
-  "objetivo": "string",
-  "fueraDeAlcance": "string",
-  "requisitos": [ { "tipo": "historia" | "caso_uso", "texto": "string", "criterioAceptacion": "string" } ],
-  "metricas": "string",
-  "riesgos": "string",
-  "personas": "string",
-  "supuestos": "string"
+  "objetivoGeneral": "string (una frase)",
+  "objetivosEspecificos": [ { "texto": "string" } ],
+  "dentroDeAlcance": [ { "texto": "string" } ],
+  "fueraDeAlcance": [ { "texto": "string" } ],
+  "personas": [ { "rol": "string", "necesidad": "string" } ],
+  "requisitos": [ { "tipo": "historia" | "caso_uso", "texto": "string", "criterioAceptacion": "string", "prioridad": "MUST" | "SHOULD" | "COULD" | "WONT" } ],
+  "requisitosNoFuncionales": [ { "categoria": "performance" | "seguridad" | "compatibilidad" | "escalabilidad" | "otro", "texto": "string" } ],
+  "metricas": [ { "nombre": "string", "meta": "string", "comoSeMide": "string" } ],
+  "riesgos": [ { "texto": "string" } ],
+  "dependencias": [ { "texto": "string" } ],
+  "supuestos": [ { "texto": "string" } ],
+  "preguntasAbiertas": [ { "texto": "string" } ]
 }
-Incluí SOLO estas claves (usá string vacío "" para las que no apliquen): ${secciones.join(', ')}.
-Generá entre 3 y 6 requisitos como historias de usuario (formato "Como [rol], quiero [acción], para [beneficio]"), cada uno con su criterio de aceptación concreto.
+Incluí SOLO estas claves (array vacío [] o string vacío "" para las que no apliquen): ${secciones.join(', ')}.
+Generá entre 4 y 8 requisitos como historias de usuario (formato "Como [rol], quiero [acción], para [beneficio]"), cada uno con su criterio de aceptación concreto y medible, y una prioridad MoSCoW realista (no todo puede ser MUST).
+Cuando la sección aplique, generá también 2-4 objetivos específicos, 2-4 ítems de alcance (dentro y fuera), 2-3 personas, 2-4 requisitos no funcionales, 2-3 métricas con meta numérica cuando sea posible, y los riesgos/dependencias/supuestos/preguntas que correspondan — no dejes una sección vacía solo por pereza si el contexto da para llenarla.
 Si el contexto es escaso, hacé tu mejor inferencia razonable a partir del nombre y tipo de Solución, pero no inventes detalles muy específicos (nombres de personas, cifras exactas) que no estén en el contexto.`
 
   try {
@@ -164,9 +173,9 @@ Si el contexto es escaso, hacé tu mejor inferencia razonable a partir del nombr
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Generá el borrador de PRD con este contexto:\n\n${contexto || '(sin contexto adicional — solo el nombre y tipo de Solución)'}` },
         ],
-        // Margen generoso: un PRD con 3-6 requisitos completos no entra
-        // comodo en 2048 tokens.
-        max_tokens: 4096,
+        // Margen generoso: el PRD desglosado tiene ~14 secciones, varias
+        // como listas de varios items cada una — no entra comodo en 4096.
+        max_tokens: 6144,
       }),
     })
     if (!upstream.ok) {
