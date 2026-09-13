@@ -375,7 +375,12 @@ export default function SolucionDetailPage() {
       try {
         const res = await fetch('/api/backlog')
         const data = await res.json()
-        if (!cancelled) setTareasBacklog(Array.isArray(data) ? data.filter((t: { solucionId?: string }) => t.solucionId === id) : [])
+        // Solo tareas que nacieron de ESTE PRD (prdRequisitoId real) — no
+        // todo el historial de la Solucion. El widget muestra "que genero
+        // este documento", no "toda la actividad de este proyecto" (eso ya
+        // esta en Oficina > Backlog); mostrar tareas viejas sin relacion al
+        // PRD actual confundia mas de lo que ayudaba.
+        if (!cancelled) setTareasBacklog(Array.isArray(data) ? data.filter((t: { solucionId?: string; prdRequisitoId?: string | null }) => t.solucionId === id && !!t.prdRequisitoId) : [])
       } catch {
         if (!cancelled) setTareasBacklog([])
       } finally {
