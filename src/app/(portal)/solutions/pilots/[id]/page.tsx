@@ -996,8 +996,6 @@ export default function SolucionDetailPage() {
               de detalle que un PROJECT real con cliente). */}
           {activeTab === 'prd' && (() => {
             const opc = prdSeccionesOpcionales(form.tipo)
-            const inputCls = "w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm leading-relaxed resize-vertical focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors"
-            const itemInputCls = "flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors"
 
             const ESTADO_DOC_COLOR: Record<EstadoDocumentoPrd, string> = {
               BORRADOR: 'text-gray-400 border-gray-700 bg-gray-900',
@@ -1006,31 +1004,53 @@ export default function SolucionDetailPage() {
             }
             const PRIORIDAD_LABEL: Record<PrioridadRequisito, string> = { MUST: 'Must', SHOULD: 'Should', COULD: 'Could', WONT: "Won't" }
             const ESTADO_REQ_COLOR: Record<EstadoRequisito, string> = {
-              PROPUESTO: 'text-gray-400 border-gray-700', APROBADO: 'text-cyan-400 border-cyan-700/50',
-              IMPLEMENTADO: 'text-orange-400 border-orange-700/50', VERIFICADO: 'text-green-400 border-green-700/50',
+              PROPUESTO: 'bg-gray-100 text-gray-600', APROBADO: 'bg-cyan-100 text-cyan-700',
+              IMPLEMENTADO: 'bg-orange-100 text-orange-700', VERIFICADO: 'bg-green-100 text-green-700',
             }
 
-            // Renderiza una de las 7 secciones "lista de texto simple" —
-            // evita repetir el mismo bloque de mapeo/agregar/borrar 7 veces.
+            // Look "hoja de documento" (Word/Docs/LaTeX): pagina clara con
+            // titulos numerados, en vez de la pila de cajitas grises del
+            // formulario original. Los campos narrativos se ven como texto
+            // corrido (sin borde, sin fondo) y solo se resaltan al enfocar;
+            // las listas se ven como listas reales (numeradas o con vineta),
+            // no como filas con recuadro. La barra de herramientas (estado,
+            // generar IA, tareas del backlog) se queda en el tema oscuro del
+            // portal, afuera de la "hoja" — no es parte del documento en si.
+            const narrativeCls = "w-full bg-transparent border-0 border-b border-transparent hover:border-gray-200 focus:border-gray-300 text-gray-800 text-[14px] leading-relaxed resize-none focus:outline-none placeholder-gray-400 py-0.5 transition-colors"
+            const tableInputCls = "w-full bg-transparent border-0 text-gray-800 text-[13px] focus:outline-none placeholder-gray-400 px-2 py-1.5"
+
+            let seccion = 0
+            function Titulo({ children }: { children: React.ReactNode }) {
+              seccion += 1
+              return (
+                <h2 className="font-serif text-[17px] font-bold text-gray-900 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200">
+                  {seccion}. {children}
+                </h2>
+              )
+            }
+
+            // Renderiza una de las 7 secciones "lista de texto simple" como
+            // una lista real (vineta + texto corrido), no filas con recuadro.
             function renderSimpleList(key: SimpleListKey, label: string, placeholder: string) {
               return (
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">{label}</label>
-                  <div className="space-y-1.5">
-                    {prd[key].length === 0 && <p className="text-gray-600 text-xs py-1">Sin ítems todavía.</p>}
+                <div className="mb-6">
+                  <Titulo>{label}</Titulo>
+                  <div>
+                    {prd[key].length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin ítems todavía.</p>}
                     {prd[key].map(item => (
-                      <div key={item.id} className="flex items-center gap-2">
+                      <div key={item.id} className="flex items-start gap-2 group py-0.5">
+                        <span className="text-gray-400 text-sm mt-0.5 select-none">•</span>
                         <input type="text" value={item.texto} onChange={e => updateSimpleItem(key, item.id, e.target.value)}
-                          placeholder={placeholder} className={itemInputCls} />
+                          placeholder={placeholder} className={narrativeCls + ' flex-1'} />
                         <button type="button" onClick={() => removeSimpleItem(key, item.id)}
-                          className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
+                          className="w-6 h-6 flex-shrink-0 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Trash2 size={12} />
                         </button>
                       </div>
                     ))}
                   </div>
                   <button type="button" onClick={() => addSimpleItem(key)}
-                    className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                    className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-600 transition-colors">
                     <Plus size={12} /> Agregar ítem
                   </button>
                 </div>
@@ -1038,7 +1058,8 @@ export default function SolucionDetailPage() {
             }
 
             return (
-              <div className="space-y-5">
+              <div className="space-y-4">
+                {/* Barra de herramientas — tema oscuro del portal, no forma parte de "la hoja" */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <label className="text-xs text-gray-500">Estado del documento:</label>
@@ -1055,7 +1076,7 @@ export default function SolucionDetailPage() {
                     {generandoPrd ? 'Generando...' : 'Generar con IA'}
                   </button>
                 </div>
-                <p className="text-gray-600 text-xs -mt-3">La IA completa solo las secciones vacías — nunca sobrescribe lo que ya escribiste.</p>
+                <p className="text-gray-600 text-xs">La IA completa solo las secciones vacías — nunca sobrescribe lo que ya escribiste.</p>
                 {prdGenError && <p className="text-red-400 text-xs">{prdGenError}</p>}
 
                 {/* Widget compacto de tareas del backlog: no reemplaza el
@@ -1102,174 +1123,223 @@ export default function SolucionDetailPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Resumen ejecutivo</label>
-                  <textarea rows={2} value={prd.resumenEjecutivo} onChange={e => updatePrdField('resumenEjecutivo', e.target.value)}
-                    placeholder="2-3 líneas: lo primero que debería leer cualquiera sobre esta Solución." className={inputCls} />
-                </div>
+                {/* La hoja del documento — papel claro, tipografia de
+                    documento, dentro del panel oscuro del portal. */}
+                <div className="bg-white rounded-sm shadow-2xl mx-auto" style={{ maxWidth: '840px' }}>
+                  <div className="px-10 sm:px-16 py-12">
+                    <h1 className="font-serif text-2xl font-bold text-gray-900 mb-1">{form.nombre || 'Sin nombre'} — PRD</h1>
+                    <p className="text-gray-400 text-xs mb-8">Documento de Requisitos de Producto</p>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-300 flex items-center gap-1.5 mb-1.5">
-                    <ClipboardList size={14} className="text-gray-500" /> Problema / contexto
-                  </label>
-                  <textarea rows={3} value={prd.problema} onChange={e => updatePrdField('problema', e.target.value)}
-                    placeholder="¿Qué necesidad o dolor motiva esta Solución? Justificá con evidencia si es posible, no solo intuición." className={inputCls} />
-                </div>
+                    <div className="mb-6">
+                      <Titulo>Resumen ejecutivo</Titulo>
+                      <textarea rows={2} value={prd.resumenEjecutivo} onChange={e => updatePrdField('resumenEjecutivo', e.target.value)}
+                        placeholder="2-3 líneas: lo primero que debería leer cualquiera sobre esta Solución." className={narrativeCls} />
+                    </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-300 mb-1.5 block">Objetivo general</label>
-                  <textarea rows={2} value={prd.objetivoGeneral} onChange={e => updatePrdField('objetivoGeneral', e.target.value)}
-                    placeholder="¿Qué se va a lograr, en una frase?" className={inputCls} />
-                </div>
+                    <div className="mb-6">
+                      <Titulo>Problema / contexto</Titulo>
+                      <textarea rows={3} value={prd.problema} onChange={e => updatePrdField('problema', e.target.value)}
+                        placeholder="¿Qué necesidad o dolor motiva esta Solución? Justificá con evidencia si es posible, no solo intuición." className={narrativeCls} />
+                    </div>
+
+                    <div className="mb-6">
+                      <Titulo>Objetivo general</Titulo>
+                      <textarea rows={2} value={prd.objetivoGeneral} onChange={e => updatePrdField('objetivoGeneral', e.target.value)}
+                        placeholder="¿Qué se va a lograr, en una frase?" className={narrativeCls} />
+                    </div>
 
                 {renderSimpleList('objetivosEspecificos', 'Objetivos específicos', 'Un objetivo concreto y medible')}
                 {renderSimpleList('dentroDeAlcance', 'Dentro de alcance', 'Qué SÍ entra en esta versión')}
                 {renderSimpleList('fueraDeAlcance', 'Fuera de alcance', 'Qué explícitamente NO entra, para evitar negociaciones tardías')}
 
                 {opc.personasYSupuestosYPreguntas && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Usuarios / personas</label>
-                    <div className="space-y-2">
-                      {prd.personas.length === 0 && <p className="text-gray-600 text-xs py-1">Sin personas registradas todavía.</p>}
-                      {prd.personas.map(p => (
-                        <div key={p.id} className="flex items-center gap-2">
-                          <input type="text" value={p.rol} onChange={e => updatePersona(p.id, { rol: e.target.value })}
-                            placeholder="Rol (ej: Ejecutivo de ventas)" className="w-40 flex-shrink-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <input type="text" value={p.necesidad} onChange={e => updatePersona(p.id, { necesidad: e.target.value })}
-                            placeholder="Necesidad principal" className={itemInputCls} />
-                          <button type="button" onClick={() => removePersona(p.id)}
-                            className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="mb-6">
+                    <Titulo>Usuarios / personas</Titulo>
+                    {prd.personas.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin personas registradas todavía.</p>}
+                    {prd.personas.length > 0 && (
+                      <table className="w-full border-collapse mb-1">
+                        <thead>
+                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                            <th className="font-semibold pb-1 pr-2 w-40">Rol</th>
+                            <th className="font-semibold pb-1">Necesidad principal</th>
+                            <th className="w-6"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {prd.personas.map(p => (
+                            <tr key={p.id} className="border-t border-gray-100 group">
+                              <td className="align-top"><input type="text" value={p.rol} onChange={e => updatePersona(p.id, { rol: e.target.value })}
+                                placeholder="Ej: Ejecutivo de ventas" className={tableInputCls + ' font-medium'} /></td>
+                              <td className="align-top"><input type="text" value={p.necesidad} onChange={e => updatePersona(p.id, { necesidad: e.target.value })}
+                                placeholder="Necesidad principal" className={tableInputCls} /></td>
+                              <td className="align-top">
+                                <button type="button" onClick={() => removePersona(p.id)}
+                                  className="w-6 h-6 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                     <button type="button" onClick={addPersona}
-                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-600 transition-colors">
                       <Plus size={12} /> Agregar persona
                     </button>
                   </div>
                 )}
 
-                <div>
-                  <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                    <label className="text-sm font-medium text-gray-300">Requisitos funcionales (historias de usuario / casos de uso)</label>
-                    {prd.requisitos.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <Titulo>Requisitos funcionales (historias de usuario / casos de uso)</Titulo>
+                  </div>
+                  {prd.requisitos.length > 0 && (
+                    <div className="flex justify-end -mt-1 mb-2">
                       <button type="button" onClick={generarBacklogDesdePRD} disabled={generandoBacklogPrd || prd.estadoDocumento !== 'APROBADO'}
                         title={prd.estadoDocumento !== 'APROBADO' ? 'El documento debe estar Aprobado para generar backlog' : undefined}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-40">
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-cyan-700 text-xs font-medium transition-colors disabled:opacity-40">
                         {generandoBacklogPrd ? <Loader2 size={12} className="animate-spin" /> : <ListPlus size={12} />}
                         {generandoBacklogPrd ? 'Generando...' : 'Generar backlog desde PRD'}
                       </button>
-                    )}
-                  </div>
-                  {backlogPrdError && <p className="text-red-400 text-xs mb-2">{backlogPrdError}</p>}
-                  <div className="space-y-3">
+                    </div>
+                  )}
+                  {backlogPrdError && <p className="text-red-500 text-xs mb-2">{backlogPrdError}</p>}
+                  <div className="divide-y divide-gray-100">
                     {prd.requisitos.length === 0 && (
-                      <p className="text-gray-600 text-sm text-center py-4">Sin requisitos registrados todavía.</p>
+                      <p className="text-gray-400 text-sm text-center py-4 italic">Sin requisitos registrados todavía.</p>
                     )}
-                    {prd.requisitos.map(r => (
-                      <div key={r.id} className="bg-gray-950 border border-gray-700 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
+                    {prd.requisitos.map((r, i) => (
+                      <div key={r.id} className="py-3 group">
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          <span className="text-gray-400 text-xs font-mono">R{i + 1}</span>
                           <select value={r.tipo} onChange={e => updateRequisito(r.id, { tipo: e.target.value as Requisito['tipo'] })}
                             title="Tipo de requisito"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-700 text-[11px] focus:outline-none focus:border-cyan-400 transition-colors appearance-none cursor-pointer">
                             <option value="historia">Historia de usuario</option>
                             <option value="caso_uso">Caso de uso</option>
                           </select>
                           <select value={r.prioridad} onChange={e => updateRequisito(r.id, { prioridad: e.target.value as PrioridadRequisito })}
                             title="Prioridad (MoSCoW)"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
+                            className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-700 text-[11px] focus:outline-none focus:border-cyan-400 transition-colors appearance-none cursor-pointer">
                             {(Object.keys(PRIORIDAD_LABEL) as PrioridadRequisito[]).map(p => <option key={p} value={p}>{PRIORIDAD_LABEL[p]}</option>)}
                           </select>
                           <select value={r.estado} onChange={e => updateRequisito(r.id, { estado: e.target.value as EstadoRequisito })}
                             title="Estado del requisito"
-                            className={`bg-gray-900 border rounded-lg px-2 py-1.5 text-xs focus:outline-none appearance-none cursor-pointer ${ESTADO_REQ_COLOR[r.estado]}`}>
+                            className={`border-0 rounded-full px-2 py-1 text-[11px] font-medium focus:outline-none appearance-none cursor-pointer ${ESTADO_REQ_COLOR[r.estado]}`}>
                             <option value="PROPUESTO">Propuesto</option>
                             <option value="APROBADO">Aprobado</option>
                             <option value="IMPLEMENTADO">Implementado</option>
                             <option value="VERIFICADO">Verificado</option>
                           </select>
                           {r.backlogItemId && (
-                            <span className="text-[10px] text-emerald-400 bg-emerald-900/20 border border-emerald-700/30 rounded-full px-2 py-0.5">
+                            <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
                               En backlog
                             </span>
                           )}
                           <button type="button" onClick={() => removeRequisito(r.id)}
-                            className="w-8 h-8 flex-shrink-0 ml-auto rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors">
-                            <Trash2 size={14} />
+                            className="w-6 h-6 flex-shrink-0 ml-auto rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 size={13} />
                           </button>
                         </div>
                         <textarea value={r.texto} onChange={e => updateRequisito(r.id, { texto: e.target.value })}
                           placeholder={r.tipo === 'historia' ? 'Como [rol], quiero [acción], para [beneficio]' : 'Actor, precondiciones, flujo principal...'}
-                          rows={2}
-                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-vertical" />
+                          rows={2} className={narrativeCls} />
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400 mt-1.5 mb-0.5">Criterio de aceptación</p>
                         <textarea value={r.criterioAceptacion} onChange={e => updateRequisito(r.id, { criterioAceptacion: e.target.value })}
-                          placeholder="Criterio de aceptación: ¿cuándo se considera terminado este requisito?"
-                          rows={2}
-                          className="w-full bg-gray-900 border border-cyan-800/40 rounded-lg px-3 py-2 text-cyan-100 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-vertical" />
+                          placeholder="¿Cuándo se considera terminado este requisito?"
+                          rows={2} className={narrativeCls} />
                       </div>
                     ))}
                   </div>
                   <button type="button" onClick={addRequisito}
-                    className="mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors">
+                    className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-gray-300 text-gray-400 hover:text-cyan-600 hover:border-cyan-300 text-sm transition-colors">
                     <Plus size={14} /> Agregar requisito
                   </button>
                 </div>
 
                 {opc.requisitosNoFuncionales && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Requisitos no funcionales</label>
-                    <div className="space-y-2">
-                      {prd.requisitosNoFuncionales.length === 0 && <p className="text-gray-600 text-xs py-1">Sin requisitos no funcionales todavía.</p>}
-                      {prd.requisitosNoFuncionales.map(r => (
-                        <div key={r.id} className="flex items-center gap-2">
-                          <select value={r.categoria} onChange={e => updateRnF(r.id, { categoria: e.target.value })}
-                            className="w-36 flex-shrink-0 bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
-                            <option value="performance">Performance</option>
-                            <option value="seguridad">Seguridad</option>
-                            <option value="compatibilidad">Compatibilidad</option>
-                            <option value="escalabilidad">Escalabilidad</option>
-                            <option value="otro">Otro</option>
-                          </select>
-                          <input type="text" value={r.texto} onChange={e => updateRnF(r.id, { texto: e.target.value })}
-                            placeholder="Ej: tiempo de respuesta < 2s bajo carga normal" className={itemInputCls} />
-                          <button type="button" onClick={() => removeRnF(r.id)}
-                            className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="mb-6">
+                    <Titulo>Requisitos no funcionales</Titulo>
+                    {prd.requisitosNoFuncionales.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin requisitos no funcionales todavía.</p>}
+                    {prd.requisitosNoFuncionales.length > 0 && (
+                      <table className="w-full border-collapse mb-1">
+                        <thead>
+                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                            <th className="font-semibold pb-1 pr-2 w-36">Categoría</th>
+                            <th className="font-semibold pb-1">Requisito</th>
+                            <th className="w-6"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {prd.requisitosNoFuncionales.map(r => (
+                            <tr key={r.id} className="border-t border-gray-100 group">
+                              <td className="align-top">
+                                <select value={r.categoria} onChange={e => updateRnF(r.id, { categoria: e.target.value })}
+                                  className="bg-transparent border-0 text-gray-700 text-[12px] focus:outline-none appearance-none cursor-pointer py-1.5">
+                                  <option value="performance">Performance</option>
+                                  <option value="seguridad">Seguridad</option>
+                                  <option value="compatibilidad">Compatibilidad</option>
+                                  <option value="escalabilidad">Escalabilidad</option>
+                                  <option value="otro">Otro</option>
+                                </select>
+                              </td>
+                              <td className="align-top"><input type="text" value={r.texto} onChange={e => updateRnF(r.id, { texto: e.target.value })}
+                                placeholder="Ej: tiempo de respuesta < 2s bajo carga normal" className={tableInputCls} /></td>
+                              <td className="align-top">
+                                <button type="button" onClick={() => removeRnF(r.id)}
+                                  className="w-6 h-6 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                     <button type="button" onClick={addRnF}
-                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-600 transition-colors">
                       <Plus size={12} /> Agregar requisito no funcional
                     </button>
                   </div>
                 )}
 
                 {opc.metricas && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-300 mb-1.5 block">Métricas de éxito (KPIs)</label>
-                    <div className="space-y-2">
-                      {prd.metricas.length === 0 && <p className="text-gray-600 text-xs py-1">Sin métricas registradas todavía.</p>}
-                      {prd.metricas.map(m => (
-                        <div key={m.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
-                          <input type="text" value={m.nombre} onChange={e => updateMetrica(m.id, { nombre: e.target.value })}
-                            placeholder="KPI" className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <input type="text" value={m.meta} onChange={e => updateMetrica(m.id, { meta: e.target.value })}
-                            placeholder="Meta" className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <input type="text" value={m.comoSeMide} onChange={e => updateMetrica(m.id, { comoSeMide: e.target.value })}
-                            placeholder="Cómo se mide" className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <button type="button" onClick={() => removeMetrica(m.id)}
-                            className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-600 hover:text-red-400 flex items-center justify-center transition-colors">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="mb-6">
+                    <Titulo>Métricas de éxito (KPIs)</Titulo>
+                    {prd.metricas.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin métricas registradas todavía.</p>}
+                    {prd.metricas.length > 0 && (
+                      <table className="w-full border-collapse mb-1">
+                        <thead>
+                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                            <th className="font-semibold pb-1 pr-2">KPI</th>
+                            <th className="font-semibold pb-1 pr-2">Meta</th>
+                            <th className="font-semibold pb-1">Cómo se mide</th>
+                            <th className="w-6"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {prd.metricas.map(m => (
+                            <tr key={m.id} className="border-t border-gray-100 group">
+                              <td className="align-top"><input type="text" value={m.nombre} onChange={e => updateMetrica(m.id, { nombre: e.target.value })}
+                                placeholder="KPI" className={tableInputCls + ' font-medium'} /></td>
+                              <td className="align-top"><input type="text" value={m.meta} onChange={e => updateMetrica(m.id, { meta: e.target.value })}
+                                placeholder="Meta" className={tableInputCls} /></td>
+                              <td className="align-top"><input type="text" value={m.comoSeMide} onChange={e => updateMetrica(m.id, { comoSeMide: e.target.value })}
+                                placeholder="Cómo se mide" className={tableInputCls} /></td>
+                              <td className="align-top">
+                                <button type="button" onClick={() => removeMetrica(m.id)}
+                                  className="w-6 h-6 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                     <button type="button" onClick={addMetrica}
-                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-600 hover:text-cyan-400 transition-colors">
+                      className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-600 transition-colors">
                       <Plus size={12} /> Agregar métrica
                     </button>
                   </div>
@@ -1288,6 +1358,8 @@ export default function SolucionDetailPage() {
                     {renderSimpleList('preguntasAbiertas', 'Preguntas abiertas', 'Una duda sin resolver que no bloquea el arranque')}
                   </>
                 )}
+                  </div>
+                </div>
               </div>
             )
           })()}
