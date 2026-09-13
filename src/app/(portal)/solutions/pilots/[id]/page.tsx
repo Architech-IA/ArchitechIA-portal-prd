@@ -1071,7 +1071,12 @@ export default function SolucionDetailPage() {
                       {loadingTareasBacklog && <Loader2 size={12} className="animate-spin text-gray-600" />}
                     </div>
                     {dispatchTareaError && <p className="text-red-400 text-xs mb-2">{dispatchTareaError}</p>}
-                    <div className="space-y-1.5">
+                    {/* max-h + scroll interno: sin esto, una Solucion con
+                        muchas tareas (ej. 17+) empujaba todo el resto del
+                        documento PRD fuera de la vista — parecia que el PRD
+                        habia desaparecido cuando en realidad solo estaba
+                        muy abajo del scroll. */}
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                       {tareasBacklog.map(t => {
                         const puedeDisparar = t.status === 'BACKLOG' || t.status === 'FAILED'
                         return (
