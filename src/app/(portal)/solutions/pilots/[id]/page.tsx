@@ -504,6 +504,13 @@ export default function SolucionDetailPage() {
   // ya guardados en la Solucion. Solo completa las secciones vacias —
   // nunca pisa lo que el usuario ya escribio a mano.
   async function generarPrdConIA() {
+    // Guardia contra doble-disparo (doble click antes de que el boton se
+    // deshabilite): dos llamadas concurrentes usan el mismo x-opencode-session
+    // (fijo por Solucion, no por request) del lado del servidor, y una de
+    // las dos puede volver con error mientras la otra si genero contenido —
+    // exactamente el caso real reportado (contenido visible + error visible
+    // al mismo tiempo).
+    if (generandoPrd) return
     setGenerandoPrd(true)
     setPrdGenError('')
     try {
@@ -1024,12 +1031,29 @@ export default function SolucionDetailPage() {
             const narrativeCls = "w-full bg-transparent border-0 border-b border-transparent hover:border-gray-200 focus:border-gray-300 text-gray-800 text-[14px] leading-relaxed resize-none focus:outline-none placeholder-gray-400 py-0.5 transition-colors"
             const tableInputCls = "w-full bg-transparent border-0 text-gray-800 text-[13px] focus:outline-none placeholder-gray-400 px-2 py-1.5"
 
-            let seccion = 0
-            function Titulo({ children }: { children: React.ReactNode }) {
-              seccion += 1
+            // Numeracion de secciones precalculada (sin contador mutable en
+            // el cuerpo del render): un `let` que se incrementaba dentro de
+            // <Titulo> se duplicaba en dev porque React vuelve a invocar el
+            // render de cada elemento JSX una vez mas (Strict Mode) — eso
+            // hacia que la numeracion saltara de 2 en 2 (2, 4, 6...). Con el
+            // orden calculado una sola vez, afuera del render de cada
+            // titulo, el resultado es siempre el mismo sin importar cuantas
+            // veces React invoque el componente.
+            const seccionesVisibles: string[] = [
+              'resumen', 'problema', 'objetivoGeneral', 'objetivosEspecificos', 'dentroDeAlcance', 'fueraDeAlcance',
+              ...(opc.personasYSupuestosYPreguntas ? ['personas'] : []),
+              'requisitos',
+              ...(opc.requisitosNoFuncionales ? ['rnf'] : []),
+              ...(opc.metricas ? ['metricas'] : []),
+              ...(opc.riesgosYDependencias ? ['riesgos', 'dependencias'] : []),
+              ...(opc.personasYSupuestosYPreguntas ? ['supuestos', 'preguntasAbiertas'] : []),
+            ]
+            const numeroDe = (key: string) => seccionesVisibles.indexOf(key) + 1
+
+            function Titulo({ n, children }: { n: number; children: React.ReactNode }) {
               return (
                 <h2 className="font-serif text-[17px] font-bold text-gray-900 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200">
-                  {seccion}. {children}
+                  {n}. {children}
                 </h2>
               )
             }
@@ -1039,7 +1063,7 @@ export default function SolucionDetailPage() {
             function renderSimpleList(key: SimpleListKey, label: string, placeholder: string) {
               return (
                 <div className="mb-6">
-                  <Titulo>{label}</Titulo>
+                  <Titulo n={numeroDe(key)}>{label}</Titulo>
                   <div>
                     {prd[key].length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin ítems todavía.</p>}
                     {prd[key].map(item => (
@@ -1136,19 +1160,19 @@ export default function SolucionDetailPage() {
                     <p className="text-gray-400 text-xs mb-8">Documento de Requisitos de Producto</p>
 
                     <div className="mb-6">
-                      <Titulo>Resumen ejecutivo</Titulo>
+                      <Titulo n={numeroDe('resumen')}>Resumen ejecutivo</Titulo>
                       <textarea rows={2} value={prd.resumenEjecutivo} onChange={e => updatePrdField('resumenEjecutivo', e.target.value)}
                         placeholder="2-3 líneas: lo primero que debería leer cualquiera sobre esta Solución." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
-                      <Titulo>Problema / contexto</Titulo>
+                      <Titulo n={numeroDe('problema')}>Problema / contexto</Titulo>
                       <textarea rows={3} value={prd.problema} onChange={e => updatePrdField('problema', e.target.value)}
                         placeholder="¿Qué necesidad o dolor motiva esta Solución? Justificá con evidencia si es posible, no solo intuición." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
-                      <Titulo>Objetivo general</Titulo>
+                      <Titulo n={numeroDe('objetivoGeneral')}>Objetivo general</Titulo>
                       <textarea rows={2} value={prd.objetivoGeneral} onChange={e => updatePrdField('objetivoGeneral', e.target.value)}
                         placeholder="¿Qué se va a lograr, en una frase?" className={narrativeCls} />
                     </div>
@@ -1159,7 +1183,7 @@ export default function SolucionDetailPage() {
 
                 {opc.personasYSupuestosYPreguntas && (
                   <div className="mb-6">
-                    <Titulo>Usuarios / personas</Titulo>
+                    <Titulo n={numeroDe('personas')}>Usuarios / personas</Titulo>
                     {prd.personas.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin personas registradas todavía.</p>}
                     {prd.personas.length > 0 && (
                       <table className="w-full border-collapse mb-1">
@@ -1197,7 +1221,7 @@ export default function SolucionDetailPage() {
 
                 <div className="mb-6">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <Titulo>Requisitos funcionales (historias de usuario / casos de uso)</Titulo>
+                    <Titulo n={numeroDe('requisitos')}>Requisitos funcionales (historias de usuario / casos de uso)</Titulo>
                   </div>
                   {prd.requisitos.length > 0 && (
                     <div className="flex justify-end -mt-1 mb-2">
@@ -1265,7 +1289,7 @@ export default function SolucionDetailPage() {
 
                 {opc.requisitosNoFuncionales && (
                   <div className="mb-6">
-                    <Titulo>Requisitos no funcionales</Titulo>
+                    <Titulo n={numeroDe('rnf')}>Requisitos no funcionales</Titulo>
                     {prd.requisitosNoFuncionales.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin requisitos no funcionales todavía.</p>}
                     {prd.requisitosNoFuncionales.length > 0 && (
                       <table className="w-full border-collapse mb-1">
@@ -1311,7 +1335,7 @@ export default function SolucionDetailPage() {
 
                 {opc.metricas && (
                   <div className="mb-6">
-                    <Titulo>Métricas de éxito (KPIs)</Titulo>
+                    <Titulo n={numeroDe('metricas')}>Métricas de éxito (KPIs)</Titulo>
                     {prd.metricas.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin métricas registradas todavía.</p>}
                     {prd.metricas.length > 0 && (
                       <table className="w-full border-collapse mb-1">

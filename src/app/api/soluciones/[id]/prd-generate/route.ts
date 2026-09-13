@@ -153,8 +153,19 @@ Devolvé SOLO un objeto JSON (sin markdown, sin texto alrededor) con esta forma 
   "preguntasAbiertas": [ { "texto": "string" } ]
 }
 Incluí SOLO estas claves (array vacío [] o string vacío "" para las que no apliquen): ${secciones.join(', ')}.
-Generá entre 4 y 8 requisitos como historias de usuario (formato "Como [rol], quiero [acción], para [beneficio]"), cada uno con su criterio de aceptación concreto y medible, y una prioridad MoSCoW realista (no todo puede ser MUST).
-Cuando la sección aplique, generá también 2-4 objetivos específicos, 2-4 ítems de alcance (dentro y fuera), 2-3 personas, 2-4 requisitos no funcionales, 2-3 métricas con meta numérica cuando sea posible, y los riesgos/dependencias/supuestos/preguntas que correspondan — no dejes una sección vacía solo por pereza si el contexto da para llenarla.
+Este es un documento REAL para uso profesional, no un resumen — priorizá profundidad y volumen de contenido sobre brevedad en TODAS las secciones:
+- "resumenEjecutivo": 4-6 líneas, no 2.
+- "problema": 2-3 párrafos completos (separados por \\n\\n), con contexto, evidencia o señales concretas, y consecuencia de no resolverlo — no una sola oración genérica.
+- "objetivoGeneral": una frase, pero específica y verificable.
+- "objetivosEspecificos": 4-6 ítems, cada uno medible.
+- "dentroDeAlcance" y "fueraDeAlcance": 4-6 ítems cada uno.
+- "personas": 3-4 personas distintas.
+- "requisitos": entre 8 y 12 (no menos de 8 cuando la sección aplica), cubriendo el flujo completo de principio a fin, no solo el caso feliz — incluí también algún caso borde o de error. Cada uno con criterio de aceptación concreto, medible y verificable (no "funciona bien", sino algo que se pueda comprobar), y prioridad MoSCoW realista (no todo puede ser MUST — repartí entre las 4).
+- "requisitosNoFuncionales": 4-6 ítems, al menos uno de cada categoría relevante (performance, seguridad, compatibilidad, escalabilidad).
+- "metricas": 3-5 KPIs, cada uno con meta numérica concreta cuando sea posible (porcentaje, tiempo, cantidad) y cómo se mide en términos operativos reales.
+- "riesgos" y "dependencias": 3-5 ítems cada uno.
+- "supuestos" y "preguntasAbiertas": 3-5 ítems cada uno.
+No dejes una sección corta o vacía por pereza si el contexto da para llenarla — es preferible un documento largo y específico a uno breve y genérico.
 Si el contexto es escaso, hacé tu mejor inferencia razonable a partir del nombre y tipo de Solución, pero no inventes detalles muy específicos (nombres de personas, cifras exactas) que no estén en el contexto.`
 
   try {
@@ -173,9 +184,10 @@ Si el contexto es escaso, hacé tu mejor inferencia razonable a partir del nombr
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Generá el borrador de PRD con este contexto:\n\n${contexto || '(sin contexto adicional — solo el nombre y tipo de Solución)'}` },
         ],
-        // Margen generoso: el PRD desglosado tiene ~14 secciones, varias
-        // como listas de varios items cada una — no entra comodo en 4096.
-        max_tokens: 6144,
+        // Margen generoso: se le pide contenido bastante mas extenso por
+        // seccion (8-12 requisitos, parrafos completos, 3-6 items por
+        // lista) — 6144 se quedaba corto para eso.
+        max_tokens: 8192,
       }),
     })
     if (!upstream.ok) {
