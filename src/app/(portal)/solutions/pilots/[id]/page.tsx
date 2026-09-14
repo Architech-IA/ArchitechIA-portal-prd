@@ -6,6 +6,7 @@ import {
   Sliders, LayoutGrid, FileText, Calendar, Code2,
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
   Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList, Play,
+  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Printer,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -178,9 +179,9 @@ function migrarPrd(raw: Record<string, unknown>): PrdData {
     : []
   return {
     estadoDocumento: (raw.estadoDocumento as EstadoDocumentoPrd) ?? 'BORRADOR',
-    resumenEjecutivo: typeof raw.resumenEjecutivo === 'string' ? raw.resumenEjecutivo : '',
-    problema: typeof raw.problema === 'string' ? raw.problema : '',
-    objetivoGeneral: typeof raw.objetivoGeneral === 'string' ? raw.objetivoGeneral : objetivoViejo,
+    resumenEjecutivo: escapeIfPlain(typeof raw.resumenEjecutivo === 'string' ? raw.resumenEjecutivo : ''),
+    problema: escapeIfPlain(typeof raw.problema === 'string' ? raw.problema : ''),
+    objetivoGeneral: escapeIfPlain(typeof raw.objetivoGeneral === 'string' ? raw.objetivoGeneral : objetivoViejo),
     objetivosEspecificos: asItemTexto(raw.objetivosEspecificos),
     dentroDeAlcance: asItemTexto(raw.dentroDeAlcance),
     fueraDeAlcance: asItemTexto(raw.fueraDeAlcance),
@@ -191,8 +192,8 @@ function migrarPrd(raw: Record<string, unknown>): PrdData {
       ? (raw.requisitos as Partial<Requisito>[]).map(r => ({
           id: r.id ?? makeId(),
           tipo: r.tipo === 'caso_uso' ? 'caso_uso' : 'historia',
-          texto: r.texto ?? '',
-          criterioAceptacion: r.criterioAceptacion ?? '',
+          texto: escapeIfPlain(r.texto ?? ''),
+          criterioAceptacion: escapeIfPlain(r.criterioAceptacion ?? ''),
           prioridad: r.prioridad ?? 'SHOULD',
           estado: r.estado ?? 'PROPUESTO',
           backlogItemId: r.backlogItemId,
@@ -293,6 +294,91 @@ function AutoTextarea({ value, onChange, placeholder, className }: {
   )
 }
 
+// Texto plano (recien generado por la IA, o migrado del shape viejo de
+// PrdData) que ahora se guarda como HTML editable con formato (bold/
+// italic/alineacion). Si ya parece HTML (el usuario ya lo edito con el
+// editor rico), se deja tal cual. Si es texto plano, se escapan entidades
+// y los saltos de linea se convierten en <br> para que se vea igual que
+// antes en el textarea plano.
+function escapeIfPlain(s: string): string {
+  if (!s) return s
+  if (/<[a-z][\s\S]*>/i.test(s)) return s
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+}
+
+// Campo de texto enriquecido (bold/italic/underline/alineacion/tamaño) via
+// contentEditable + document.execCommand. Es una API deprecada en el spec
+// pero sigue soportada en todos los navegadores evergreen para este set
+// acotado de comandos — se prefiere sobre sumar una libreria de editor
+// completa (Tiptap) solo para este toolbar chico. Definido a nivel de
+// modulo por la misma razon que AutoTextarea: si se redefine en cada
+// render, React lo remonta en cada tecla y se pierde el foco/cursor.
+function RichTextField({ value, onChange, placeholder, className }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const lastPushed = useRef(value)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // Solo sincroniza si el cambio vino de afuera (ej. "Generar con IA") —
+    // nunca mientras el usuario esta escribiendo, o el cursor saltaria al
+    // principio del campo en cada tecla.
+    if (value !== lastPushed.current && el.innerHTML !== value) {
+      el.innerHTML = value
+    }
+    lastPushed.current = value
+  }, [value])
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      onInput={() => {
+        const html = ref.current?.innerHTML ?? ''
+        lastPushed.current = html
+        onChange(html)
+      }}
+      data-placeholder={placeholder}
+      className={`${className} empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400`}
+    />
+  )
+}
+
+// document.execCommand actua sobre la seleccion activa del documento, sin
+// importar cual RichTextField la contiene — por eso un solo toolbar
+// compartido alcanza, no hace falta uno por campo.
+function execCmd(cmd: string, value?: string) {
+  document.execCommand(cmd, false, value)
+}
+function stepFontSize(delta: number) {
+  const current = Number(document.queryCommandValue('fontSize')) || 3
+  execCmd('fontSize', String(Math.min(7, Math.max(1, current + delta))))
+}
+
+function RichToolbar() {
+  const btnCls = "w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+  // onMouseDown + preventDefault (no onClick): un click normal le saca el
+  // foco/seleccion al contentEditable ANTES de que el handler corra,
+  // dejando a execCommand sin nada sobre que actuar.
+  const on = (fn: () => void) => (e: React.MouseEvent) => { e.preventDefault(); fn() }
+  return (
+    <div className="flex items-center gap-0.5 bg-gray-900 border border-gray-700 rounded-lg p-1 print:hidden">
+      <button type="button" title="Negrita" onMouseDown={on(() => execCmd('bold'))} className={btnCls}><Bold size={13} /></button>
+      <button type="button" title="Cursiva" onMouseDown={on(() => execCmd('italic'))} className={btnCls}><Italic size={13} /></button>
+      <button type="button" title="Subrayado" onMouseDown={on(() => execCmd('underline'))} className={btnCls}><Underline size={13} /></button>
+      <div className="w-px h-4 bg-gray-700 mx-0.5" />
+      <button type="button" title="Alinear izquierda" onMouseDown={on(() => execCmd('justifyLeft'))} className={btnCls}><AlignLeft size={13} /></button>
+      <button type="button" title="Centrar" onMouseDown={on(() => execCmd('justifyCenter'))} className={btnCls}><AlignCenter size={13} /></button>
+      <button type="button" title="Alinear derecha" onMouseDown={on(() => execCmd('justifyRight'))} className={btnCls}><AlignRight size={13} /></button>
+      <button type="button" title="Justificar" onMouseDown={on(() => execCmd('justifyFull'))} className={btnCls}><AlignJustify size={13} /></button>
+      <div className="w-px h-4 bg-gray-700 mx-0.5" />
+      <button type="button" title="Aumentar tamaño" onMouseDown={on(() => stepFontSize(1))} className={btnCls + ' text-[10px] font-bold w-auto px-1.5'}>A+</button>
+      <button type="button" title="Disminuir tamaño" onMouseDown={on(() => stepFontSize(-1))} className={btnCls + ' text-[10px] font-bold w-auto px-1.5'}>A-</button>
+    </div>
+  )
+}
+
 export default function SolucionDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -306,6 +392,14 @@ export default function SolucionDetailPage() {
   const [archConnections, setArchConnections] = useState<ArchConnection[]>([])
   const [fases, setFases] = useState<FaseCronograma[]>([])
   const [prd, setPrd] = useState<PrdData>(emptyPrd)
+  // Snapshot del PRD ya guardado, para el indicador de "cambios sin
+  // guardar" dentro del propio documento (el guardado real sigue siendo
+  // el boton grande de toda la pagina, este solo avisa si hace falta usarlo).
+  const prdSavedSnapshot = useRef<string>(JSON.stringify(emptyPrd))
+  const [prdDirty, setPrdDirty] = useState(false)
+  useEffect(() => {
+    setPrdDirty(JSON.stringify(prd) !== prdSavedSnapshot.current)
+  }, [prd])
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(true)
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
@@ -381,8 +475,10 @@ export default function SolucionDetailPage() {
         try { setFases(s.cronograma ? JSON.parse(s.cronograma) : []) } catch { setFases([]) }
         try {
           const parsedPrd = s.prd ? JSON.parse(s.prd) : null
-          setPrd(parsedPrd && typeof parsedPrd === 'object' ? migrarPrd(parsedPrd) : emptyPrd)
-        } catch { setPrd(emptyPrd) }
+          const cargado = parsedPrd && typeof parsedPrd === 'object' ? migrarPrd(parsedPrd) : emptyPrd
+          setPrd(cargado)
+          prdSavedSnapshot.current = JSON.stringify(cargado)
+        } catch { setPrd(emptyPrd); prdSavedSnapshot.current = JSON.stringify(emptyPrd) }
       } catch {
         setNotFound(true)
       } finally {
@@ -750,6 +846,8 @@ export default function SolucionDetailPage() {
       }
       setCurrentLeadId(form.leadId)
       setSavedAt(Date.now())
+      prdSavedSnapshot.current = JSON.stringify(prd)
+      setPrdDirty(false)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error inesperado.')
     } finally {
@@ -1103,10 +1201,14 @@ export default function SolucionDetailPage() {
 
             function Titulo({ n, children }: { n: number; children: React.ReactNode }) {
               return (
-                <h2 className="text-[17px] font-bold text-gray-900 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200">
+                <h2 id={`prd-seccion-${n}`} className="text-[17px] font-bold text-gray-900 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200 scroll-mt-6">
                   {n}. {children}
                 </h2>
               )
+            }
+            const totalSecciones = seccionesVisibles.length
+            function irASeccion(n: number) {
+              document.getElementById(`prd-seccion-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }
 
             // Renderiza una de las 7 secciones "lista de texto simple" como
@@ -1139,31 +1241,48 @@ export default function SolucionDetailPage() {
 
             return (
               <div className="space-y-4">
-                {/* Barra de herramientas — tema oscuro del portal, no forma parte de "la hoja" */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-500">Estado del documento:</label>
-                    <select value={prd.estadoDocumento} onChange={e => updatePrdField('estadoDocumento', e.target.value as EstadoDocumentoPrd)}
-                      className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[prd.estadoDocumento]}`}>
-                      <option value="BORRADOR">Borrador</option>
-                      <option value="EN_REVISION">En revisión</option>
-                      <option value="APROBADO">Aprobado</option>
-                    </select>
+                {/* Barra de herramientas — tema oscuro del portal, no forma parte de "la hoja". print:hidden para que no salga al imprimir/exportar. */}
+                <div className="flex items-center justify-between gap-2 flex-wrap print:hidden">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-500">Estado del documento:</label>
+                      <select value={prd.estadoDocumento} onChange={e => updatePrdField('estadoDocumento', e.target.value as EstadoDocumentoPrd)}
+                        className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[prd.estadoDocumento]}`}>
+                        <option value="BORRADOR">Borrador</option>
+                        <option value="EN_REVISION">En revisión</option>
+                        <option value="APROBADO">Aprobado</option>
+                      </select>
+                    </div>
+                    {/* Indicador de cambios sin guardar en ESTE documento — el
+                        guardado real sigue siendo el boton grande de toda la
+                        pagina, esto solo avisa si hace falta usarlo. */}
+                    <span className={`text-[11px] flex items-center gap-1 ${prdDirty ? 'text-orange-400' : 'text-gray-600'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${prdDirty ? 'bg-orange-400' : 'bg-gray-600'}`} />
+                      {prdDirty ? 'Cambios sin guardar' : 'Guardado'}
+                    </span>
                   </div>
-                  <button type="button" onClick={generarPrdConIA} disabled={generandoPrd}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-50">
-                    {generandoPrd ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                    {generandoPrd ? 'Generando...' : 'Generar con IA'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <RichToolbar />
+                    <button type="button" onClick={() => window.print()}
+                      title="Imprimir / Exportar a PDF"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
+                      <Printer size={12} /> Imprimir / PDF
+                    </button>
+                    <button type="button" onClick={generarPrdConIA} disabled={generandoPrd}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-700/40 text-cyan-300 text-xs font-medium transition-colors disabled:opacity-50">
+                      {generandoPrd ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                      {generandoPrd ? 'Generando...' : 'Generar con IA'}
+                    </button>
+                  </div>
                 </div>
-                {prdGenError && <p className="text-red-400 text-xs">{prdGenError}</p>}
+                {prdGenError && <p className="text-red-400 text-xs print:hidden">{prdGenError}</p>}
 
                 {/* Widget compacto de tareas del backlog: no reemplaza el
                     board completo (eso vive en Oficina > Config > Backlog),
                     solo muestra el estado de las tareas ya generadas desde
                     este PRD y permite dispararlas sin cambiar de tab. */}
                 {tareasBacklog.length > 0 && (
-                  <div className="bg-gray-950 border border-gray-800 rounded-xl p-3">
+                  <div className="bg-gray-950 border border-gray-800 rounded-xl p-3 print:hidden">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-semibold text-gray-400 flex items-center gap-1.5">
                         <ListPlus size={12} className="text-gray-600" /> Tareas del backlog ({tareasBacklog.length})
@@ -1203,27 +1322,30 @@ export default function SolucionDetailPage() {
                 )}
 
                 {/* La hoja del documento — papel claro, tipografia de
-                    documento, dentro del panel oscuro del portal. */}
-                <div className="bg-white rounded-sm shadow-2xl mx-auto" style={{ maxWidth: '840px', fontFamily: 'var(--font-archivo)' }}>
+                    documento, dentro del panel oscuro del portal. Al
+                    imprimir: sin sombra ni ancho maximo, ocupa toda la
+                    pagina como un documento real. */}
+                <div className="bg-white rounded-sm shadow-2xl mx-auto max-w-[840px] print:shadow-none print:rounded-none print:mx-0 print:max-w-none"
+                  style={{ fontFamily: 'var(--font-archivo)' }}>
                   <div className="px-10 sm:px-16 py-12">
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">{form.nombre || 'Sin nombre'} — PRD</h1>
                     <p className="text-gray-400 text-xs mb-8">Documento de Requisitos de Producto</p>
 
                     <div className="mb-6">
                       <Titulo n={numeroDe('resumen')}>Resumen ejecutivo</Titulo>
-                      <AutoTextarea value={prd.resumenEjecutivo} onChange={v => updatePrdField('resumenEjecutivo', v)}
+                      <RichTextField value={prd.resumenEjecutivo} onChange={v => updatePrdField('resumenEjecutivo', v)}
                         placeholder="2-3 líneas: lo primero que debería leer cualquiera sobre esta Solución." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
                       <Titulo n={numeroDe('problema')}>Problema / contexto</Titulo>
-                      <AutoTextarea value={prd.problema} onChange={v => updatePrdField('problema', v)}
+                      <RichTextField value={prd.problema} onChange={v => updatePrdField('problema', v)}
                         placeholder="¿Qué necesidad o dolor motiva esta Solución? Justificá con evidencia si es posible, no solo intuición." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
                       <Titulo n={numeroDe('objetivoGeneral')}>Objetivo general</Titulo>
-                      <AutoTextarea value={prd.objetivoGeneral} onChange={v => updatePrdField('objetivoGeneral', v)}
+                      <RichTextField value={prd.objetivoGeneral} onChange={v => updatePrdField('objetivoGeneral', v)}
                         placeholder="¿Qué se va a lograr, en una frase?" className={narrativeCls} />
                     </div>
 
@@ -1247,9 +1369,9 @@ export default function SolucionDetailPage() {
                         <tbody>
                           {prd.personas.map(p => (
                             <tr key={p.id} className="border-t border-gray-100 group">
-                              <td className="align-top"><input type="text" value={p.rol} onChange={e => updatePersona(p.id, { rol: e.target.value })}
+                              <td className="align-top"><AutoTextarea value={p.rol} onChange={v => updatePersona(p.id, { rol: v })}
                                 placeholder="Ej: Ejecutivo de ventas" className={tableInputCls + ' font-medium'} /></td>
-                              <td className="align-top"><input type="text" value={p.necesidad} onChange={e => updatePersona(p.id, { necesidad: e.target.value })}
+                              <td className="align-top"><AutoTextarea value={p.necesidad} onChange={v => updatePersona(p.id, { necesidad: v })}
                                 placeholder="Necesidad principal" className={tableInputCls} /></td>
                               <td className="align-top">
                                 <button type="button" onClick={() => removePersona(p.id)}
@@ -1321,11 +1443,11 @@ export default function SolucionDetailPage() {
                             <Trash2 size={13} />
                           </button>
                         </div>
-                        <AutoTextarea value={r.texto} onChange={v => updateRequisito(r.id, { texto: v })}
+                        <RichTextField value={r.texto} onChange={v => updateRequisito(r.id, { texto: v })}
                           placeholder={r.tipo === 'historia' ? 'Como [rol], quiero [acción], para [beneficio]' : 'Actor, precondiciones, flujo principal...'}
                           className={narrativeCls} />
                         <p className="text-[10px] uppercase tracking-wide text-gray-400 mt-1.5 mb-0.5">Criterio de aceptación</p>
-                        <AutoTextarea value={r.criterioAceptacion} onChange={v => updateRequisito(r.id, { criterioAceptacion: v })}
+                        <RichTextField value={r.criterioAceptacion} onChange={v => updateRequisito(r.id, { criterioAceptacion: v })}
                           placeholder="¿Cuándo se considera terminado este requisito?"
                           className={narrativeCls} />
                       </div>
@@ -1363,7 +1485,7 @@ export default function SolucionDetailPage() {
                                   <option value="otro">Otro</option>
                                 </select>
                               </td>
-                              <td className="align-top"><input type="text" value={r.texto} onChange={e => updateRnF(r.id, { texto: e.target.value })}
+                              <td className="align-top"><AutoTextarea value={r.texto} onChange={v => updateRnF(r.id, { texto: v })}
                                 placeholder="Ej: tiempo de respuesta < 2s bajo carga normal" className={tableInputCls} /></td>
                               <td className="align-top">
                                 <button type="button" onClick={() => removeRnF(r.id)}
@@ -1400,11 +1522,11 @@ export default function SolucionDetailPage() {
                         <tbody>
                           {prd.metricas.map(m => (
                             <tr key={m.id} className="border-t border-gray-100 group">
-                              <td className="align-top"><input type="text" value={m.nombre} onChange={e => updateMetrica(m.id, { nombre: e.target.value })}
+                              <td className="align-top"><AutoTextarea value={m.nombre} onChange={v => updateMetrica(m.id, { nombre: v })}
                                 placeholder="KPI" className={tableInputCls + ' font-medium'} /></td>
-                              <td className="align-top"><input type="text" value={m.meta} onChange={e => updateMetrica(m.id, { meta: e.target.value })}
+                              <td className="align-top"><AutoTextarea value={m.meta} onChange={v => updateMetrica(m.id, { meta: v })}
                                 placeholder="Meta" className={tableInputCls} /></td>
-                              <td className="align-top"><input type="text" value={m.comoSeMide} onChange={e => updateMetrica(m.id, { comoSeMide: e.target.value })}
+                              <td className="align-top"><AutoTextarea value={m.comoSeMide} onChange={v => updateMetrica(m.id, { comoSeMide: v })}
                                 placeholder="Cómo se mide" className={tableInputCls} /></td>
                               <td className="align-top">
                                 <button type="button" onClick={() => removeMetrica(m.id)}
@@ -1438,6 +1560,19 @@ export default function SolucionDetailPage() {
                   </>
                 )}
                   </div>
+                </div>
+
+                {/* Indice lateral flotante — con el documento ya bastante
+                    largo (10-12 requisitos + todas las secciones), poder
+                    saltar directo a una seccion vale la pena. Solo en
+                    pantallas anchas, y nunca al imprimir. */}
+                <div className="hidden xl:flex flex-col gap-1 fixed right-6 top-40 print:hidden z-10">
+                  {Array.from({ length: totalSecciones }, (_, i) => i + 1).map(n => (
+                    <button key={n} type="button" onClick={() => irASeccion(n)} title={`Ir a la sección ${n}`}
+                      className="w-6 h-6 rounded-full bg-gray-900/80 border border-gray-700 text-gray-400 hover:bg-cyan-900/60 hover:text-cyan-300 hover:border-cyan-600 text-[10px] font-semibold flex items-center justify-center transition-colors">
+                      {n}
+                    </button>
+                  ))}
                 </div>
               </div>
             )
