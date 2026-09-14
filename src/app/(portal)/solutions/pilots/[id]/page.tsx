@@ -152,9 +152,20 @@ const emptyPrd: PrdData = {
 // shape nuevo desglosado — sin esto, las Soluciones que ya tenian un PRD
 // real guardado (ej. La Promotora Seguros, generado con IA antes de este
 // cambio) perderian ese contenido al abrir la pagina.
+// El JSON que devuelve el generador de IA nunca trae "id" (no tiene forma
+// de saber que nuestro estado de React lo necesita como key) — asignarlo
+// aca, una sola vez, evita el bug real que se vio en produccion: items sin
+// id terminaban con key={undefined} en los .map(), y React tira "Each
+// child in a list should have a unique key prop" para CADA lista poblada
+// por la IA (objetivos, alcance, requisitos no funcionales, metricas,
+// riesgos, dependencias, supuestos, preguntas, personas).
 function migrarPrd(raw: Record<string, unknown>): PrdData {
   const asItemTexto = (v: unknown): ItemTexto[] => {
-    if (Array.isArray(v)) return v.filter((x): x is ItemTexto => !!x && typeof x === 'object' && 'texto' in x)
+    if (Array.isArray(v)) {
+      return v
+        .filter((x): x is { id?: string; texto?: string } => !!x && typeof x === 'object' && 'texto' in x)
+        .map(x => ({ id: x.id ?? makeId(), texto: x.texto ?? '' }))
+    }
     if (typeof v === 'string' && v.trim()) return [{ id: makeId(), texto: v }]
     return []
   }
@@ -173,7 +184,9 @@ function migrarPrd(raw: Record<string, unknown>): PrdData {
     objetivosEspecificos: asItemTexto(raw.objetivosEspecificos),
     dentroDeAlcance: asItemTexto(raw.dentroDeAlcance),
     fueraDeAlcance: asItemTexto(raw.fueraDeAlcance),
-    personas: Array.isArray(raw.personas) ? raw.personas as Persona[] : personasViejas,
+    personas: Array.isArray(raw.personas)
+      ? (raw.personas as Partial<Persona>[]).map(p => ({ id: p.id ?? makeId(), rol: p.rol ?? '', necesidad: p.necesidad ?? '' }))
+      : personasViejas,
     requisitos: Array.isArray(raw.requisitos)
       ? (raw.requisitos as Partial<Requisito>[]).map(r => ({
           id: r.id ?? makeId(),
@@ -185,8 +198,12 @@ function migrarPrd(raw: Record<string, unknown>): PrdData {
           backlogItemId: r.backlogItemId,
         }))
       : [],
-    requisitosNoFuncionales: Array.isArray(raw.requisitosNoFuncionales) ? raw.requisitosNoFuncionales as RequisitoNoFuncional[] : [],
-    metricas: Array.isArray(raw.metricas) ? raw.metricas as Metrica[] : metricasViejas,
+    requisitosNoFuncionales: Array.isArray(raw.requisitosNoFuncionales)
+      ? (raw.requisitosNoFuncionales as Partial<RequisitoNoFuncional>[]).map(r => ({ id: r.id ?? makeId(), categoria: r.categoria ?? 'otro', texto: r.texto ?? '' }))
+      : [],
+    metricas: Array.isArray(raw.metricas)
+      ? (raw.metricas as Partial<Metrica>[]).map(m => ({ id: m.id ?? makeId(), nombre: m.nombre ?? '', meta: m.meta ?? '', comoSeMide: m.comoSeMide ?? '' }))
+      : metricasViejas,
     riesgos: asItemTexto(raw.riesgos),
     dependencias: asItemTexto(raw.dependencias),
     supuestos: asItemTexto(raw.supuestos),
