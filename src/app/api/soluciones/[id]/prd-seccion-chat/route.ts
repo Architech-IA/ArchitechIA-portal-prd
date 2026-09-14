@@ -165,8 +165,9 @@ Reglas de la entrevista:
 2. No preguntes algo que el contexto ya responde, ni algo que ya se respondió antes en esta conversación.
 3. Nunca hagas más de 3 preguntas en total. Si el usuario pide generar ya, dice que no sabe / no tiene esa información, o ya le hiciste 3 preguntas, generá el contenido final directamente haciendo tu mejor inferencia razonable para lo que falte (sin inventar cifras o nombres muy específicos que no estén en el contexto).
 4. Si el contexto ya alcanza para un buen contenido desde el primer turno, generá directamente sin preguntar nada.
-5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
-   - Para preguntar: {"tipo": "pregunta", "mensaje": "string"}
+5. Cada vez que preguntes, proponé también EXACTAMENTE 5 respuestas posibles distintas entre sí, concretas y directamente utilizables tal cual (no genéricas como "otra opción"), para que la persona pueda elegir una con un clic en vez de escribir. El usuario siempre puede además escribir su propia respuesta libremente, así que las 5 opciones son sugerencias, no las únicas respuestas válidas.
+6. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
+   - Para preguntar: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}  (exactamente 5 opciones)
    - Para el contenido final: {"tipo": "contenido", "valor": <el valor con la forma indicada arriba>}`
 
   const messages = [
@@ -199,7 +200,7 @@ Reglas de la entrevista:
     }
     const data = await upstream.json()
     const content = data?.choices?.[0]?.message?.content ?? ''
-    const parsed = extractJsonObject(content) as { tipo?: string; mensaje?: string; valor?: unknown } | null
+    const parsed = extractJsonObject(content) as { tipo?: string; mensaje?: string; opciones?: unknown; valor?: unknown } | null
     if (!parsed || (parsed.tipo !== 'pregunta' && parsed.tipo !== 'contenido')) {
       return NextResponse.json({ error: 'No se pudo interpretar la respuesta del modelo.' }, { status: 502 })
     }

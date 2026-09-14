@@ -399,7 +399,9 @@ const AI_OPCIONES_SECCION = [
 // tanto para armar valorActual (lo que ya hay en el PRD) como para aplicar
 // lo que el modelo genera al terminar la entrevista. Debe reflejar
 // SECCION_INFO del backend (prd-seccion-chat/route.ts).
-type AiChatMsg = { role: 'user' | 'assistant'; content: string }
+// `opciones` solo aplica a preguntas del asistente: 5 respuestas sugeridas
+// de un click, ademas de poder escribir cualquier otra cosa en el input.
+type AiChatMsg = { role: 'user' | 'assistant'; content: string; opciones?: string[] }
 
 export default function SolucionDetailPage() {
   const params = useParams()
@@ -712,8 +714,9 @@ export default function SolucionDetailPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || 'No se pudo continuar la conversación.')
       if (data.tipo === 'pregunta') {
+        const opciones = Array.isArray(data.opciones) ? data.opciones.map((o: unknown) => String(o)).filter(Boolean).slice(0, 5) : []
         setAiChat(prev => (prev && prev.seccionKey === seccionKey)
-          ? { ...prev, mensajes: [...historial, { role: 'assistant', content: String(data.mensaje ?? '') }], cargando: false }
+          ? { ...prev, mensajes: [...historial, { role: 'assistant', content: String(data.mensaje ?? ''), opciones }], cargando: false }
           : prev)
       } else if (data.tipo === 'contenido') {
         aplicarContenidoIA(seccionKey, data.valor)
@@ -1765,8 +1768,26 @@ export default function SolucionDetailPage() {
                           <p className="text-xs text-gray-400 italic">Pensando en la primera pregunta...</p>
                         )}
                         {aiChat.mensajes.map((m, i) => (
-                          <div key={i} className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[88%] ${m.role === 'assistant' ? 'bg-cyan-50 text-gray-800 mr-auto rounded-tl-sm' : 'bg-gray-900 text-white ml-auto rounded-tr-sm'}`}>
-                            {m.content}
+                          <div key={i}>
+                            <div className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[88%] ${m.role === 'assistant' ? 'bg-cyan-50 text-gray-800 mr-auto rounded-tl-sm' : 'bg-gray-900 text-white ml-auto rounded-tr-sm'}`}>
+                              {m.content}
+                            </div>
+                            {/* 5 respuestas sugeridas de un click + la opcion
+                                6 (el input de abajo, para escribir cualquier
+                                otra cosa) — solo en la pregunta mas reciente,
+                                mientras siga sin responderse. */}
+                            {m.role === 'assistant' && i === aiChat.mensajes.length - 1 && !aiChat.listo && !aiChat.cargando
+                              && m.opciones && m.opciones.length > 0 && (
+                              <div className="mt-2 flex flex-col items-start gap-1.5">
+                                {m.opciones.map((op, oi) => (
+                                  <button key={oi} type="button"
+                                    onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op)}
+                                    className="text-left text-xs text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg px-3 py-1.5 max-w-[92%] transition-colors">
+                                    {op}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                         {aiChat.cargando && aiChat.mensajes.length > 0 && (
@@ -1787,6 +1808,9 @@ export default function SolucionDetailPage() {
                                 </button>
                               </div>
                             )}
+                            {aiChat.mensajes.length > 0 && aiChat.mensajes[aiChat.mensajes.length - 1]?.opciones?.length ? (
+                              <p className="px-6 pt-2 text-[10px] text-gray-400">O escribí tu propia respuesta:</p>
+                            ) : null}
                             <div className="px-6 py-3 flex items-center gap-2">
                               <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
                                 onKeyDown={e => {
