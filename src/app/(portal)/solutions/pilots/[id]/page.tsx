@@ -1718,27 +1718,27 @@ export default function SolucionDetailPage() {
                   ))}
                 </div>
 
-                {/* Panel de IA por seccion: popup a pantalla completa (no un
-                    blade angosto) con fondo oscurecido detras — mismo lugar
-                    de entrada (desde la derecha) pero ocupando toda la
-                    pagina, con el contenido centrado en un ancho legible
-                    adentro. Se mantiene siempre montado (no condicional) para
-                    que la transicion de entrada/salida se vea, alternando
-                    solo las clases de opacidad/traslacion segun aiPanel. */}
+                {/* Panel lateral de IA por seccion, estilo "blade" de
+                    Azure/AWS (y de widgets tipo Intercom/soporte): panel
+                    angosto anclado a la derecha, con el fondo oscurecido
+                    cubriendo TODA la pagina detras (eso es lo que "ocupa
+                    toda la pagina" — el overlay, no el panel en si; version
+                    anterior lo hizo panel-ancho-completo por error). Se
+                    mantiene siempre montado (no condicional) para que la
+                    transicion de entrada/salida se vea, alternando solo las
+                    clases de opacidad/traslacion segun aiPanel. */}
                 <div onClick={() => setAiPanel(null)}
                   className={`fixed inset-0 bg-black/40 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
-                <div className={`fixed inset-0 w-full h-full bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
-                  <div className="flex items-center justify-between gap-2 px-6 sm:px-10 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-white">
-                    <div className="min-w-0 max-w-2xl w-full mx-auto flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Sección {aiPanel?.n ?? ''}</p>
-                        <h3 className="text-base font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
-                      </div>
-                      <button type="button" onClick={() => setAiPanel(null)}
-                        className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                        <X size={18} />
-                      </button>
+                <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+                  <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Sección {aiPanel?.n ?? ''}</p>
+                      <h3 className="text-base font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
                     </div>
+                    <button type="button" onClick={() => setAiPanel(null)}
+                      className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                      <X size={18} />
+                    </button>
                   </div>
 
                   {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key ? (
@@ -1746,7 +1746,7 @@ export default function SolucionDetailPage() {
                     // veces, segun el prompt del backend) antes de generar
                     // el contenido final de esta sección y aplicarlo al PRD.
                     <div className="flex-1 flex flex-col min-h-0">
-                      <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-4">
+                      <div className="flex-1 overflow-y-auto px-6 py-4">
                         <div className="max-w-2xl w-full mx-auto space-y-2.5">
                         <button type="button" onClick={() => setAiChat(null)}
                           className="text-[11px] text-gray-400 hover:text-cyan-600 flex items-center gap-0.5 mb-1 transition-colors">
@@ -1770,7 +1770,7 @@ export default function SolucionDetailPage() {
                         <div className="border-t border-gray-100">
                           <div className="max-w-2xl w-full mx-auto">
                             {aiChat.mensajes.length > 0 && !aiChat.cargando && (
-                              <div className="px-6 sm:px-10 pt-3">
+                              <div className="px-6 pt-3">
                                 <button type="button"
                                   onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, 'Generá la sección ya con la información disponible, no preguntes más.')}
                                   className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
@@ -1778,7 +1778,7 @@ export default function SolucionDetailPage() {
                                 </button>
                               </div>
                             )}
-                            <div className="px-6 sm:px-10 py-3 flex items-center gap-2">
+                            <div className="px-6 py-3 flex items-center gap-2">
                               <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
                                 onKeyDown={e => {
                                   if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
@@ -1797,7 +1797,7 @@ export default function SolucionDetailPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="px-6 sm:px-10 py-3 border-t border-gray-100">
+                        <div className="px-6 py-3 border-t border-gray-100">
                           <div className="max-w-2xl w-full mx-auto">
                             <button type="button" onClick={() => setAiPanel(null)}
                               className="w-full text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-2 transition-colors">
@@ -1808,7 +1808,7 @@ export default function SolucionDetailPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-4">
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
                       <div className="max-w-2xl w-full mx-auto space-y-2">
                         <p className="text-xs text-gray-400 mb-2">Elegí qué querés que la IA haga con esta sección.</p>
                         {AI_OPCIONES_SECCION.map(op => (
