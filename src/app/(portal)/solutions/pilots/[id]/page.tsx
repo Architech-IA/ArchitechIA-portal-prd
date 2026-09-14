@@ -1103,7 +1103,7 @@ export default function SolucionDetailPage() {
 
             function Titulo({ n, children }: { n: number; children: React.ReactNode }) {
               return (
-                <h2 className="font-serif text-[17px] font-bold text-gray-900 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200">
+                <h2 className="text-[17px] font-bold text-gray-900 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200">
                   {n}. {children}
                 </h2>
               )
@@ -1204,9 +1204,9 @@ export default function SolucionDetailPage() {
 
                 {/* La hoja del documento — papel claro, tipografia de
                     documento, dentro del panel oscuro del portal. */}
-                <div className="bg-white rounded-sm shadow-2xl mx-auto" style={{ maxWidth: '840px' }}>
+                <div className="bg-white rounded-sm shadow-2xl mx-auto" style={{ maxWidth: '840px', fontFamily: 'var(--font-archivo)' }}>
                   <div className="px-10 sm:px-16 py-12">
-                    <h1 className="font-serif text-2xl font-bold text-gray-900 mb-1">{form.nombre || 'Sin nombre'} — PRD</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">{form.nombre || 'Sin nombre'} — PRD</h1>
                     <p className="text-gray-400 text-xs mb-8">Documento de Requisitos de Producto</p>
 
                     <div className="mb-6">
