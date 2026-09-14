@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useRouter } from 'next/navigation'
 import {
   Sliders, LayoutGrid, FileText, Calendar, Code2,
@@ -1721,15 +1722,23 @@ export default function SolucionDetailPage() {
                 {/* Panel lateral de IA por seccion, estilo "blade" de
                     Azure/AWS (y de widgets tipo Intercom/soporte): panel
                     angosto anclado a la derecha, con el fondo oscurecido
-                    cubriendo TODA la pagina detras (eso es lo que "ocupa
-                    toda la pagina" — el overlay, no el panel en si; version
-                    anterior lo hizo panel-ancho-completo por error). Se
+                    cubriendo TODA la pagina detras. Renderizado con un
+                    portal a document.body a proposito: el tab de PRD vive
+                    adentro de la tarjeta "glass" (backdropFilter: blur(...))
+                    que envuelve todos los tabs de esta pagina, y un
+                    backdrop-filter en un ancestor crea su propio "containing
+                    block" para position:fixed — sin el portal, este panel
+                    quedaba atrapado dentro de esa tarjeta (empezaba debajo
+                    de la barra de tabs y no llegaba al fondo real de la
+                    pantalla) en vez de cubrir el viewport completo. Se
                     mantiene siempre montado (no condicional) para que la
                     transicion de entrada/salida se vea, alternando solo las
                     clases de opacidad/traslacion segun aiPanel. */}
-                <div onClick={() => setAiPanel(null)}
-                  className={`fixed inset-0 bg-black/40 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
-                <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+                {typeof document !== 'undefined' && createPortal(
+                  <>
+                    <div onClick={() => setAiPanel(null)}
+                      className={`fixed inset-0 bg-black/60 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
+                    <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
                   <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
                     <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Sección {aiPanel?.n ?? ''}</p>
@@ -1833,7 +1842,10 @@ export default function SolucionDetailPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                    </div>
+                  </>,
+                  document.body
+                )}
               </div>
             )
           })()}
