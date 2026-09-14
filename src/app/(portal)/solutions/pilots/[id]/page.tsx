@@ -7,7 +7,7 @@ import {
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
   Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList, Play,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Printer,
-  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb,
+  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb, PenLine, Send, ChevronLeft,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -380,16 +380,25 @@ function RichToolbar() {
   )
 }
 
-// Opciones del panel lateral de IA por sección del PRD — solo visual por
-// ahora (pedido explícito del usuario), sin acción real conectada todavía.
+// Opciones del panel lateral de IA por sección del PRD. Solo la primera
+// ("generar") esta conectada de verdad — abre una mini-entrevista (preguntas
+// del modelo si hace falta info, hasta generar el contenido final). El resto
+// sigue siendo solo visual por ahora, sin acción real conectada todavía.
 const AI_OPCIONES_SECCION = [
-  { id: 'mejorar', label: 'Mejorar redacción', desc: 'Reescribe el texto con un tono más claro y profesional.', icon: Wand2 },
+  { id: 'generar', label: 'Generar sección con IA', desc: 'Te hace preguntas si hace falta info, y genera el contenido final de esta sección.', icon: Wand2, accion: true },
+  { id: 'mejorar', label: 'Mejorar redacción', desc: 'Reescribe el texto con un tono más claro y profesional.', icon: PenLine },
   { id: 'expandir', label: 'Expandir / detallar', desc: 'Agrega más profundidad, contexto y ejemplos concretos.', icon: Sparkles },
   { id: 'resumir', label: 'Resumir', desc: 'Condensa el contenido de esta sección a lo esencial.', icon: Minimize2 },
   { id: 'traducir', label: 'Traducir a inglés', desc: 'Genera una versión en inglés de esta sección.', icon: Languages },
   { id: 'revisar', label: 'Revisar y corregir', desc: 'Corrige gramática, ortografía y consistencia.', icon: CheckCircle2 },
   { id: 'sugerir', label: 'Sugerir alternativas', desc: 'Propone otros enfoques u opciones para esta sección.', icon: Lightbulb },
 ] as const
+
+// Shape esperado del "valor" que devuelve el chat de IA por sección — usado
+// tanto para armar valorActual (lo que ya hay en el PRD) como para aplicar
+// lo que el modelo genera al terminar la entrevista. Debe reflejar
+// SECCION_INFO del backend (prd-seccion-chat/route.ts).
+type AiChatMsg = { role: 'user' | 'assistant'; content: string }
 
 export default function SolucionDetailPage() {
   const params = useParams()
@@ -412,9 +421,21 @@ export default function SolucionDetailPage() {
   useEffect(() => {
     setPrdDirty(JSON.stringify(prd) !== prdSavedSnapshot.current)
   }, [prd])
-  // Panel lateral de IA por sección del PRD (estilo blade de Azure/AWS) —
-  // por ahora solo visual, las opciones no ejecutan nada todavía.
-  const [aiPanel, setAiPanel] = useState<{ n: number; titulo: string } | null>(null)
+  // Panel lateral de IA por sección del PRD (estilo blade de Azure/AWS). La
+  // opción "Generar sección con IA" abre una mini-entrevista: el chat vive
+  // en su propio estado, separado del panel, para que cerrar/reabrir el
+  // panel en la MISMA sección no pierda la conversación en curso (solo se
+  // resetea si se cambia a otra sección, via el efecto de abajo).
+  const [aiPanel, setAiPanel] = useState<{ n: number; key: string; titulo: string } | null>(null)
+  const [aiChat, setAiChat] = useState<{
+    seccionKey: string
+    mensajes: AiChatMsg[]
+    cargando: boolean
+    error: string | null
+    listo: boolean
+  } | null>(null)
+  const [aiChatInput, setAiChatInput] = useState('')
+  useEffect(() => { setAiChat(null); setAiChatInput('') }, [aiPanel?.key])
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(true)
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
@@ -607,6 +628,105 @@ export default function SolucionDetailPage() {
 
   function updatePrdField<K extends keyof PrdData>(key: K, value: PrdData[K]) {
     setPrd(prev => ({ ...prev, [key]: value }))
+  }
+
+  // Lo que ya hay en el PRD para una sección, en la forma "plana" que espera
+  // el backend del chat de IA (sin ids internos ni HTML de edicion) — para
+  // que la entrevista sepa que ya existe y pueda completar/mejorar en vez de
+  // ignorarlo.
+  function valorActualDeSeccion(seccionKey: string): unknown {
+    switch (seccionKey) {
+      case 'resumen': return prd.resumenEjecutivo
+      case 'problema': return prd.problema
+      case 'objetivoGeneral': return prd.objetivoGeneral
+      case 'objetivosEspecificos': case 'dentroDeAlcance': case 'fueraDeAlcance':
+      case 'riesgos': case 'dependencias': case 'supuestos': case 'preguntasAbiertas':
+        return prd[seccionKey as SimpleListKey].map(it => it.texto)
+      case 'personas': return prd.personas.map(p => ({ rol: p.rol, necesidad: p.necesidad }))
+      case 'requisitos': return prd.requisitos.map(r => ({ tipo: r.tipo, texto: r.texto, criterioAceptacion: r.criterioAceptacion, prioridad: r.prioridad }))
+      case 'rnf': return prd.requisitosNoFuncionales.map(r => ({ categoria: r.categoria, texto: r.texto }))
+      case 'metricas': return prd.metricas.map(m => ({ nombre: m.nombre, meta: m.meta, comoSeMide: m.comoSeMide }))
+      default: return null
+    }
+  }
+
+  // Aplica el "valor" final que devolvio el chat de IA (tipo: "contenido") a
+  // la seccion correspondiente del PRD, generando ids nuevos para cada item
+  // (el modelo nunca los incluye).
+  function aplicarContenidoIA(seccionKey: string, valor: unknown) {
+    switch (seccionKey) {
+      case 'resumen': updatePrdField('resumenEjecutivo', escapeIfPlain(String(valor ?? ''))); break
+      case 'problema': updatePrdField('problema', escapeIfPlain(String(valor ?? ''))); break
+      case 'objetivoGeneral': updatePrdField('objetivoGeneral', escapeIfPlain(String(valor ?? ''))); break
+      case 'objetivosEspecificos': case 'dentroDeAlcance': case 'fueraDeAlcance':
+      case 'riesgos': case 'dependencias': case 'supuestos': case 'preguntasAbiertas': {
+        const items = Array.isArray(valor) ? valor.map(v => String(v)) : []
+        updatePrdField(seccionKey as SimpleListKey, items.map(texto => ({ id: makeId(), texto })))
+        break
+      }
+      case 'personas': {
+        const items = Array.isArray(valor) ? valor : []
+        updatePrdField('personas', items.map((p: any) => ({ id: makeId(), rol: String(p?.rol ?? ''), necesidad: String(p?.necesidad ?? '') })))
+        break
+      }
+      case 'requisitos': {
+        const items = Array.isArray(valor) ? valor : []
+        const prioridadesValidas: PrioridadRequisito[] = ['MUST', 'SHOULD', 'COULD', 'WONT']
+        updatePrdField('requisitos', items.map((r: any) => ({
+          id: makeId(),
+          tipo: r?.tipo === 'caso_uso' ? 'caso_uso' : 'historia',
+          texto: escapeIfPlain(String(r?.texto ?? '')),
+          criterioAceptacion: escapeIfPlain(String(r?.criterioAceptacion ?? '')),
+          prioridad: prioridadesValidas.includes(r?.prioridad) ? r.prioridad : 'SHOULD',
+          estado: 'PROPUESTO' as EstadoRequisito,
+        })))
+        break
+      }
+      case 'rnf': {
+        const items = Array.isArray(valor) ? valor : []
+        updatePrdField('requisitosNoFuncionales', items.map((r: any) => ({ id: makeId(), categoria: String(r?.categoria ?? 'otro'), texto: String(r?.texto ?? '') })))
+        break
+      }
+      case 'metricas': {
+        const items = Array.isArray(valor) ? valor : []
+        updatePrdField('metricas', items.map((m: any) => ({ id: makeId(), nombre: String(m?.nombre ?? ''), meta: String(m?.meta ?? ''), comoSeMide: String(m?.comoSeMide ?? '') })))
+        break
+      }
+    }
+  }
+
+  // Un turno de la mini-entrevista de IA por sección: manda el historial +
+  // (opcionalmente) la nueva respuesta del usuario, y segun el "tipo" que
+  // devuelve el backend, o agrega la pregunta siguiente al chat, o aplica el
+  // contenido final directamente al PRD.
+  async function enviarTurnoAI(seccionKey: string, historialPrevio: AiChatMsg[], mensajeUsuario?: string) {
+    const historial = mensajeUsuario ? [...historialPrevio, { role: 'user' as const, content: mensajeUsuario }] : historialPrevio
+    setAiChat(prev => (prev && prev.seccionKey === seccionKey) ? { ...prev, mensajes: historial, cargando: true, error: null } : prev)
+    try {
+      const res = await fetch(`/api/soluciones/${id}/prd-seccion-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seccionKey, valorActual: valorActualDeSeccion(seccionKey), historial }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'No se pudo continuar la conversación.')
+      if (data.tipo === 'pregunta') {
+        setAiChat(prev => (prev && prev.seccionKey === seccionKey)
+          ? { ...prev, mensajes: [...historial, { role: 'assistant', content: String(data.mensaje ?? '') }], cargando: false }
+          : prev)
+      } else if (data.tipo === 'contenido') {
+        aplicarContenidoIA(seccionKey, data.valor)
+        setAiChat(prev => (prev && prev.seccionKey === seccionKey)
+          ? { ...prev, mensajes: [...historial, { role: 'assistant', content: 'Contenido generado y aplicado a la sección.' }], cargando: false, listo: true }
+          : prev)
+      } else {
+        throw new Error('Respuesta inesperada del asistente.')
+      }
+    } catch (err: unknown) {
+      setAiChat(prev => (prev && prev.seccionKey === seccionKey)
+        ? { ...prev, cargando: false, error: err instanceof Error ? err.message : 'Error inesperado.' }
+        : prev)
+    }
   }
 
   // Handlers genericos para las 7 secciones que son listas de texto simples
@@ -1214,14 +1334,14 @@ export default function SolucionDetailPage() {
             ]
             const numeroDe = (key: string) => seccionesVisibles.indexOf(key) + 1
 
-            function Titulo({ n, children }: { n: number; children: React.ReactNode }) {
+            function Titulo({ n, k, children }: { n: number; k: string; children: React.ReactNode }) {
               return (
                 <div className="flex items-center gap-2 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200 group/titulo">
                   <h2 id={`prd-seccion-${n}`} className="text-[17px] font-bold text-gray-900 scroll-mt-6 flex-1 min-w-0">
                     {n}. {children}
                   </h2>
                   <button type="button"
-                    onClick={() => setAiPanel({ n, titulo: typeof children === 'string' ? children : `Sección ${n}` })}
+                    onClick={() => setAiPanel({ n, key: k, titulo: typeof children === 'string' ? children : `Sección ${n}` })}
                     title="Asistente de IA para esta sección"
                     className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-cyan-600/60 border border-cyan-200 hover:text-white hover:bg-cyan-600 hover:border-cyan-600 transition-colors print:hidden opacity-0 group-hover/titulo:opacity-100 focus:opacity-100">
                     <Sparkles size={12} />
@@ -1239,7 +1359,7 @@ export default function SolucionDetailPage() {
             function renderSimpleList(key: SimpleListKey, label: string, placeholder: string) {
               return (
                 <div className="mb-6">
-                  <Titulo n={numeroDe(key)}>{label}</Titulo>
+                  <Titulo n={numeroDe(key)} k={key}>{label}</Titulo>
                   <div>
                     {prd[key].length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin ítems todavía.</p>}
                     {prd[key].map(item => (
@@ -1355,19 +1475,19 @@ export default function SolucionDetailPage() {
                     <p className="text-gray-400 text-xs mb-8">Documento de Requisitos de Producto</p>
 
                     <div className="mb-6">
-                      <Titulo n={numeroDe('resumen')}>Resumen ejecutivo</Titulo>
+                      <Titulo n={numeroDe('resumen')} k="resumen">Resumen ejecutivo</Titulo>
                       <RichTextField value={prd.resumenEjecutivo} onChange={v => updatePrdField('resumenEjecutivo', v)}
                         placeholder="2-3 líneas: lo primero que debería leer cualquiera sobre esta Solución." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
-                      <Titulo n={numeroDe('problema')}>Problema / contexto</Titulo>
+                      <Titulo n={numeroDe('problema')} k="problema">Problema / contexto</Titulo>
                       <RichTextField value={prd.problema} onChange={v => updatePrdField('problema', v)}
                         placeholder="¿Qué necesidad o dolor motiva esta Solución? Justificá con evidencia si es posible, no solo intuición." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
-                      <Titulo n={numeroDe('objetivoGeneral')}>Objetivo general</Titulo>
+                      <Titulo n={numeroDe('objetivoGeneral')} k="objetivoGeneral">Objetivo general</Titulo>
                       <RichTextField value={prd.objetivoGeneral} onChange={v => updatePrdField('objetivoGeneral', v)}
                         placeholder="¿Qué se va a lograr, en una frase?" className={narrativeCls} />
                     </div>
@@ -1378,7 +1498,7 @@ export default function SolucionDetailPage() {
 
                 {opc.personasYSupuestosYPreguntas && (
                   <div className="mb-6">
-                    <Titulo n={numeroDe('personas')}>Usuarios / personas</Titulo>
+                    <Titulo n={numeroDe('personas')} k="personas">Usuarios / personas</Titulo>
                     {prd.personas.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin personas registradas todavía.</p>}
                     {prd.personas.length > 0 && (
                       <table className="w-full border-collapse mb-1">
@@ -1416,7 +1536,7 @@ export default function SolucionDetailPage() {
 
                 <div className="mb-6">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <Titulo n={numeroDe('requisitos')}>Requisitos funcionales (historias de usuario / casos de uso)</Titulo>
+                    <Titulo n={numeroDe('requisitos')} k="requisitos">Requisitos funcionales (historias de usuario / casos de uso)</Titulo>
                   </div>
                   {prd.requisitos.length > 0 && (
                     <div className="flex justify-end -mt-1 mb-2">
@@ -1484,7 +1604,7 @@ export default function SolucionDetailPage() {
 
                 {opc.requisitosNoFuncionales && (
                   <div className="mb-6">
-                    <Titulo n={numeroDe('rnf')}>Requisitos no funcionales</Titulo>
+                    <Titulo n={numeroDe('rnf')} k="rnf">Requisitos no funcionales</Titulo>
                     {prd.requisitosNoFuncionales.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin requisitos no funcionales todavía.</p>}
                     {prd.requisitosNoFuncionales.length > 0 && (
                       <table className="w-full border-collapse mb-1">
@@ -1530,7 +1650,7 @@ export default function SolucionDetailPage() {
 
                 {opc.metricas && (
                   <div className="mb-6">
-                    <Titulo n={numeroDe('metricas')}>Métricas de éxito (KPIs)</Titulo>
+                    <Titulo n={numeroDe('metricas')} k="metricas">Métricas de éxito (KPIs)</Titulo>
                     {prd.metricas.length === 0 && <p className="text-gray-400 text-xs italic py-1">Sin métricas registradas todavía.</p>}
                     {prd.metricas.length > 0 && (
                       <table className="w-full border-collapse mb-1">
@@ -1618,24 +1738,91 @@ export default function SolucionDetailPage() {
                       <X size={16} />
                     </button>
                   </div>
-                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
-                    <p className="text-xs text-gray-400 mb-2">Elegí qué querés que la IA haga con esta sección.</p>
-                    {AI_OPCIONES_SECCION.map(op => (
-                      <button key={op.id} type="button"
-                        className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
-                        <span className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                          <op.icon size={15} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
-                          <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="px-5 py-3 border-t border-gray-100">
-                    <p className="text-[10px] text-gray-300 text-center">Próximamente conectado con el motor de IA</p>
-                  </div>
+
+                  {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key ? (
+                    // Vista de entrevista: la IA puede preguntar (hasta 3
+                    // veces, segun el prompt del backend) antes de generar
+                    // el contenido final de esta sección y aplicarlo al PRD.
+                    <div className="flex-1 flex flex-col min-h-0">
+                      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
+                        <button type="button" onClick={() => setAiChat(null)}
+                          className="text-[11px] text-gray-400 hover:text-cyan-600 flex items-center gap-0.5 mb-1 transition-colors">
+                          <ChevronLeft size={12} /> Volver a opciones
+                        </button>
+                        {aiChat.mensajes.length === 0 && aiChat.cargando && (
+                          <p className="text-xs text-gray-400 italic">Pensando en la primera pregunta...</p>
+                        )}
+                        {aiChat.mensajes.map((m, i) => (
+                          <div key={i} className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[88%] ${m.role === 'assistant' ? 'bg-cyan-50 text-gray-800 mr-auto rounded-tl-sm' : 'bg-gray-900 text-white ml-auto rounded-tr-sm'}`}>
+                            {m.content}
+                          </div>
+                        ))}
+                        {aiChat.cargando && aiChat.mensajes.length > 0 && (
+                          <p className="text-xs text-gray-400 italic">Escribiendo...</p>
+                        )}
+                        {aiChat.error && <p className="text-xs text-red-500">{aiChat.error}</p>}
+                      </div>
+                      {!aiChat.listo ? (
+                        <div className="border-t border-gray-100">
+                          {aiChat.mensajes.length > 0 && !aiChat.cargando && (
+                            <div className="px-5 pt-3">
+                              <button type="button"
+                                onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, 'Generá la sección ya con la información disponible, no preguntes más.')}
+                                className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
+                                Generar ya con lo que tengo
+                              </button>
+                            </div>
+                          )}
+                          <div className="px-5 py-3 flex items-center gap-2">
+                            <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
+                                  enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim())
+                                  setAiChatInput('')
+                                }
+                              }}
+                              placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
+                              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
+                            <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
+                              onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim()); setAiChatInput('') }}
+                              className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
+                              <Send size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-5 py-3 border-t border-gray-100">
+                          <button type="button" onClick={() => setAiPanel(null)}
+                            className="w-full text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-2 transition-colors">
+                            Listo, cerrar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+                      <p className="text-xs text-gray-400 mb-2">Elegí qué querés que la IA haga con esta sección.</p>
+                      {AI_OPCIONES_SECCION.map(op => (
+                        <button key={op.id} type="button"
+                          onClick={() => {
+                            if ('accion' in op && op.accion && aiPanel) {
+                              setAiChat({ seccionKey: aiPanel.key, mensajes: [], cargando: true, error: null, listo: false })
+                              enviarTurnoAI(aiPanel.key, [])
+                            }
+                          }}
+                          className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
+                          <span className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                            <op.icon size={15} />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
+                            <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
+                          </span>
+                        </button>
+                      ))}
+                      <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )
