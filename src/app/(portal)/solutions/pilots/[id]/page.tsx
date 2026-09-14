@@ -1156,7 +1156,6 @@ export default function SolucionDetailPage() {
                     {generandoPrd ? 'Generando...' : 'Generar con IA'}
                   </button>
                 </div>
-                <p className="text-gray-600 text-xs">La IA completa solo las secciones vacías — nunca sobrescribe lo que ya escribiste.</p>
                 {prdGenError && <p className="text-red-400 text-xs">{prdGenError}</p>}
 
                 {/* Widget compacto de tareas del backlog: no reemplaza el
