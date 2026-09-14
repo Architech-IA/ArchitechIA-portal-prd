@@ -7,6 +7,7 @@ import {
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
   Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList, Play,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Printer,
+  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -379,6 +380,17 @@ function RichToolbar() {
   )
 }
 
+// Opciones del panel lateral de IA por sección del PRD — solo visual por
+// ahora (pedido explícito del usuario), sin acción real conectada todavía.
+const AI_OPCIONES_SECCION = [
+  { id: 'mejorar', label: 'Mejorar redacción', desc: 'Reescribe el texto con un tono más claro y profesional.', icon: Wand2 },
+  { id: 'expandir', label: 'Expandir / detallar', desc: 'Agrega más profundidad, contexto y ejemplos concretos.', icon: Sparkles },
+  { id: 'resumir', label: 'Resumir', desc: 'Condensa el contenido de esta sección a lo esencial.', icon: Minimize2 },
+  { id: 'traducir', label: 'Traducir a inglés', desc: 'Genera una versión en inglés de esta sección.', icon: Languages },
+  { id: 'revisar', label: 'Revisar y corregir', desc: 'Corrige gramática, ortografía y consistencia.', icon: CheckCircle2 },
+  { id: 'sugerir', label: 'Sugerir alternativas', desc: 'Propone otros enfoques u opciones para esta sección.', icon: Lightbulb },
+] as const
+
 export default function SolucionDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -400,6 +412,9 @@ export default function SolucionDetailPage() {
   useEffect(() => {
     setPrdDirty(JSON.stringify(prd) !== prdSavedSnapshot.current)
   }, [prd])
+  // Panel lateral de IA por sección del PRD (estilo blade de Azure/AWS) —
+  // por ahora solo visual, las opciones no ejecutan nada todavía.
+  const [aiPanel, setAiPanel] = useState<{ n: number; titulo: string } | null>(null)
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(true)
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
@@ -1201,9 +1216,17 @@ export default function SolucionDetailPage() {
 
             function Titulo({ n, children }: { n: number; children: React.ReactNode }) {
               return (
-                <h2 id={`prd-seccion-${n}`} className="text-[17px] font-bold text-gray-900 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200 scroll-mt-6">
-                  {n}. {children}
-                </h2>
+                <div className="flex items-center gap-2 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200 group/titulo">
+                  <h2 id={`prd-seccion-${n}`} className="text-[17px] font-bold text-gray-900 scroll-mt-6 flex-1 min-w-0">
+                    {n}. {children}
+                  </h2>
+                  <button type="button"
+                    onClick={() => setAiPanel({ n, titulo: typeof children === 'string' ? children : `Sección ${n}` })}
+                    title="Asistente de IA para esta sección"
+                    className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-cyan-600/60 border border-cyan-200 hover:text-white hover:bg-cyan-600 hover:border-cyan-600 transition-colors print:hidden opacity-0 group-hover/titulo:opacity-100 focus:opacity-100">
+                    <Sparkles size={12} />
+                  </button>
+                </div>
               )
             }
             const totalSecciones = seccionesVisibles.length
@@ -1573,6 +1596,46 @@ export default function SolucionDetailPage() {
                       {n}
                     </button>
                   ))}
+                </div>
+
+                {/* Panel lateral de IA por seccion, estilo "blade" de
+                    Azure/AWS: fondo oscurecido + panel que entra desde la
+                    derecha. Se mantiene siempre montado (no condicional) para
+                    que la transicion de entrada/salida se vea, alternando
+                    solo las clases de opacidad/traslacion segun aiPanel. Por
+                    ahora es solo visual — las opciones no ejecutan nada, se
+                    conectaran a futuro con el motor de IA. */}
+                <div onClick={() => setAiPanel(null)}
+                  className={`fixed inset-0 bg-black/20 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
+                <div className={`fixed top-0 right-0 h-full w-full sm:w-[380px] bg-white shadow-2xl border-l border-gray-200 z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+                  <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-white">
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Sección {aiPanel?.n ?? ''}</p>
+                      <h3 className="text-sm font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
+                    </div>
+                    <button type="button" onClick={() => setAiPanel(null)}
+                      className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+                    <p className="text-xs text-gray-400 mb-2">Elegí qué querés que la IA haga con esta sección.</p>
+                    {AI_OPCIONES_SECCION.map(op => (
+                      <button key={op.id} type="button"
+                        className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
+                        <span className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                          <op.icon size={15} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
+                          <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="px-5 py-3 border-t border-gray-100">
+                    <p className="text-[10px] text-gray-300 text-center">Próximamente conectado con el motor de IA</p>
+                  </div>
                 </div>
               </div>
             )
