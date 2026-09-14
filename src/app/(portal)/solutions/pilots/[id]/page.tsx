@@ -259,6 +259,33 @@ function makeId() {
   return Math.random().toString(36).slice(2, 10)
 }
 
+// Textarea que crece con el contenido en vez de scrollear adentro de una
+// caja chica — asi el PRD se lee como un documento real (Word/Docs), no
+// como un formulario con `rows` fijo. Definido a nivel de modulo (no
+// adentro del render del tab PRD): un componente redefinido en cada render
+// hace que React lo desmonte y remonte en cada tecla, perdiendo el foco.
+function AutoTextarea({ value, onChange, placeholder, className }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; className?: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={1}
+      className={className}
+    />
+  )
+}
+
 export default function SolucionDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -1178,19 +1205,19 @@ export default function SolucionDetailPage() {
 
                     <div className="mb-6">
                       <Titulo n={numeroDe('resumen')}>Resumen ejecutivo</Titulo>
-                      <textarea rows={2} value={prd.resumenEjecutivo} onChange={e => updatePrdField('resumenEjecutivo', e.target.value)}
+                      <AutoTextarea value={prd.resumenEjecutivo} onChange={v => updatePrdField('resumenEjecutivo', v)}
                         placeholder="2-3 líneas: lo primero que debería leer cualquiera sobre esta Solución." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
                       <Titulo n={numeroDe('problema')}>Problema / contexto</Titulo>
-                      <textarea rows={3} value={prd.problema} onChange={e => updatePrdField('problema', e.target.value)}
+                      <AutoTextarea value={prd.problema} onChange={v => updatePrdField('problema', v)}
                         placeholder="¿Qué necesidad o dolor motiva esta Solución? Justificá con evidencia si es posible, no solo intuición." className={narrativeCls} />
                     </div>
 
                     <div className="mb-6">
                       <Titulo n={numeroDe('objetivoGeneral')}>Objetivo general</Titulo>
-                      <textarea rows={2} value={prd.objetivoGeneral} onChange={e => updatePrdField('objetivoGeneral', e.target.value)}
+                      <AutoTextarea value={prd.objetivoGeneral} onChange={v => updatePrdField('objetivoGeneral', v)}
                         placeholder="¿Qué se va a lograr, en una frase?" className={narrativeCls} />
                     </div>
 
@@ -1288,13 +1315,13 @@ export default function SolucionDetailPage() {
                             <Trash2 size={13} />
                           </button>
                         </div>
-                        <textarea value={r.texto} onChange={e => updateRequisito(r.id, { texto: e.target.value })}
+                        <AutoTextarea value={r.texto} onChange={v => updateRequisito(r.id, { texto: v })}
                           placeholder={r.tipo === 'historia' ? 'Como [rol], quiero [acción], para [beneficio]' : 'Actor, precondiciones, flujo principal...'}
-                          rows={2} className={narrativeCls} />
+                          className={narrativeCls} />
                         <p className="text-[10px] uppercase tracking-wide text-gray-400 mt-1.5 mb-0.5">Criterio de aceptación</p>
-                        <textarea value={r.criterioAceptacion} onChange={e => updateRequisito(r.id, { criterioAceptacion: e.target.value })}
+                        <AutoTextarea value={r.criterioAceptacion} onChange={v => updateRequisito(r.id, { criterioAceptacion: v })}
                           placeholder="¿Cuándo se considera terminado este requisito?"
-                          rows={2} className={narrativeCls} />
+                          className={narrativeCls} />
                       </div>
                     ))}
                   </div>
