@@ -1718,25 +1718,27 @@ export default function SolucionDetailPage() {
                   ))}
                 </div>
 
-                {/* Panel lateral de IA por seccion, estilo "blade" de
-                    Azure/AWS: fondo oscurecido + panel que entra desde la
-                    derecha. Se mantiene siempre montado (no condicional) para
+                {/* Panel de IA por seccion: popup a pantalla completa (no un
+                    blade angosto) con fondo oscurecido detras — mismo lugar
+                    de entrada (desde la derecha) pero ocupando toda la
+                    pagina, con el contenido centrado en un ancho legible
+                    adentro. Se mantiene siempre montado (no condicional) para
                     que la transicion de entrada/salida se vea, alternando
-                    solo las clases de opacidad/traslacion segun aiPanel. Por
-                    ahora es solo visual — las opciones no ejecutan nada, se
-                    conectaran a futuro con el motor de IA. */}
+                    solo las clases de opacidad/traslacion segun aiPanel. */}
                 <div onClick={() => setAiPanel(null)}
-                  className={`fixed inset-0 bg-black/20 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
-                <div className={`fixed top-0 right-0 h-full w-full sm:w-[380px] bg-white shadow-2xl border-l border-gray-200 z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
-                  <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-white">
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Sección {aiPanel?.n ?? ''}</p>
-                      <h3 className="text-sm font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
+                  className={`fixed inset-0 bg-black/40 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
+                <div className={`fixed inset-0 w-full h-full bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+                  <div className="flex items-center justify-between gap-2 px-6 sm:px-10 py-4 border-b border-gray-100 bg-gradient-to-r from-cyan-50 to-white">
+                    <div className="min-w-0 max-w-2xl w-full mx-auto flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Sección {aiPanel?.n ?? ''}</p>
+                        <h3 className="text-base font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
+                      </div>
+                      <button type="button" onClick={() => setAiPanel(null)}
+                        className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                        <X size={18} />
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setAiPanel(null)}
-                      className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                      <X size={16} />
-                    </button>
                   </div>
 
                   {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key ? (
@@ -1744,7 +1746,8 @@ export default function SolucionDetailPage() {
                     // veces, segun el prompt del backend) antes de generar
                     // el contenido final de esta sección y aplicarlo al PRD.
                     <div className="flex-1 flex flex-col min-h-0">
-                      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
+                      <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-4">
+                        <div className="max-w-2xl w-full mx-auto space-y-2.5">
                         <button type="button" onClick={() => setAiChat(null)}
                           className="text-[11px] text-gray-400 hover:text-cyan-600 flex items-center gap-0.5 mb-1 transition-colors">
                           <ChevronLeft size={12} /> Volver a opciones
@@ -1761,66 +1764,73 @@ export default function SolucionDetailPage() {
                           <p className="text-xs text-gray-400 italic">Escribiendo...</p>
                         )}
                         {aiChat.error && <p className="text-xs text-red-500">{aiChat.error}</p>}
+                        </div>
                       </div>
                       {!aiChat.listo ? (
                         <div className="border-t border-gray-100">
-                          {aiChat.mensajes.length > 0 && !aiChat.cargando && (
-                            <div className="px-5 pt-3">
-                              <button type="button"
-                                onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, 'Generá la sección ya con la información disponible, no preguntes más.')}
-                                className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
-                                Generar ya con lo que tengo
+                          <div className="max-w-2xl w-full mx-auto">
+                            {aiChat.mensajes.length > 0 && !aiChat.cargando && (
+                              <div className="px-6 sm:px-10 pt-3">
+                                <button type="button"
+                                  onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, 'Generá la sección ya con la información disponible, no preguntes más.')}
+                                  className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
+                                  Generar ya con lo que tengo
+                                </button>
+                              </div>
+                            )}
+                            <div className="px-6 sm:px-10 py-3 flex items-center gap-2">
+                              <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
+                                    enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim())
+                                    setAiChatInput('')
+                                  }
+                                }}
+                                placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
+                                className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
+                              <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
+                                onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim()); setAiChatInput('') }}
+                                className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
+                                <Send size={14} />
                               </button>
                             </div>
-                          )}
-                          <div className="px-5 py-3 flex items-center gap-2">
-                            <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
-                                  enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim())
-                                  setAiChatInput('')
-                                }
-                              }}
-                              placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
-                              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
-                            <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
-                              onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim()); setAiChatInput('') }}
-                              className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
-                              <Send size={14} />
-                            </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="px-5 py-3 border-t border-gray-100">
-                          <button type="button" onClick={() => setAiPanel(null)}
-                            className="w-full text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-2 transition-colors">
-                            Listo, cerrar
-                          </button>
+                        <div className="px-6 sm:px-10 py-3 border-t border-gray-100">
+                          <div className="max-w-2xl w-full mx-auto">
+                            <button type="button" onClick={() => setAiPanel(null)}
+                              className="w-full text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-2 transition-colors">
+                              Listo, cerrar
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
-                      <p className="text-xs text-gray-400 mb-2">Elegí qué querés que la IA haga con esta sección.</p>
-                      {AI_OPCIONES_SECCION.map(op => (
-                        <button key={op.id} type="button"
-                          onClick={() => {
-                            if ('accion' in op && op.accion && aiPanel) {
-                              setAiChat({ seccionKey: aiPanel.key, mensajes: [], cargando: true, error: null, listo: false })
-                              enviarTurnoAI(aiPanel.key, [])
-                            }
-                          }}
-                          className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
-                          <span className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                            <op.icon size={15} />
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
-                            <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
-                          </span>
-                        </button>
-                      ))}
-                      <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
+                    <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-4">
+                      <div className="max-w-2xl w-full mx-auto space-y-2">
+                        <p className="text-xs text-gray-400 mb-2">Elegí qué querés que la IA haga con esta sección.</p>
+                        {AI_OPCIONES_SECCION.map(op => (
+                          <button key={op.id} type="button"
+                            onClick={() => {
+                              if ('accion' in op && op.accion && aiPanel) {
+                                setAiChat({ seccionKey: aiPanel.key, mensajes: [], cargando: true, error: null, listo: false })
+                                enviarTurnoAI(aiPanel.key, [])
+                              }
+                            }}
+                            className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
+                            <span className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                              <op.icon size={15} />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
+                              <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
+                            </span>
+                          </button>
+                        ))}
+                        <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
+                      </div>
                     </div>
                   )}
                 </div>
