@@ -282,6 +282,13 @@ function AutoTextarea({ value, onChange, placeholder, className }: {
       placeholder={placeholder}
       rows={1}
       className={className}
+      // Los navegadores le ponen overflow:auto a cualquier textarea por
+      // defecto — sin esto, un redondeo de 1px entre scrollHeight y el
+      // height que le asignamos alcanza para que aparezca una barra de
+      // scroll finita aunque el contenido entero ya se vea. Como este
+      // textarea SIEMPRE crece con el contenido, nunca necesita scroll
+      // interno propio.
+      style={{ overflow: 'hidden' }}
     />
   )
 }
