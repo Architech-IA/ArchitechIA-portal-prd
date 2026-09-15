@@ -1481,6 +1481,18 @@ export default function SolucionDetailPage() {
                       {generandoPrd ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
                       {generandoPrd ? 'Generando...' : 'Generar con IA'}
                     </button>
+                    {/* Atajo al guardado global de la pagina (el mismo
+                        handleSave/estado que el boton grande de abajo) —
+                        pedido por el usuario para no tener que bajar hasta
+                        el final de una pagina larga cada vez que edita el
+                        PRD. El boton de abajo se deja igual, sigue
+                        funcionando en todos los tabs. */}
+                    <button type="button" onClick={handleSave} disabled={saving || deleting}
+                      title={savedAt && !saving ? `Guardado ${new Date(savedAt).toLocaleTimeString('es-CO')}` : undefined}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-xs font-semibold transition-colors">
+                      {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                      {saving ? 'Guardando...' : 'Guardar cambios'}
+                    </button>
                   </div>
                 </div>
                 {prdGenError && <p className="text-red-400 text-xs print:hidden">{prdGenError}</p>}
