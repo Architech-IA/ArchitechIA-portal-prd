@@ -105,12 +105,17 @@ Las prioridades tienen que estar REALMENTE repartidas entre las 4 opciones: JAM�
 // el modelo devuelve antes de aceptarlo (ver validarValorContenido). Debe
 // reflejar SECCION_INFO de arriba y valorActualDeSeccion/aplicarContenidoIA
 // del frontend (pilots/[id]/page.tsx).
-type SeccionKind = 'texto' | 'lista' | 'personas' | 'requisitos' | 'rnf' | 'metricas'
+// 'requisito_item' es distinto a los demas: no es una seccion del PRD, es
+// el DEBATE sobre UN requisito puntual ya existente (boton de IA dentro de
+// cada fila R1/R2/... de Requisitos funcionales). No pasa por SECCION_INFO
+// (su system prompt es otro, ver mas abajo).
+type SeccionKind = 'texto' | 'lista' | 'personas' | 'requisitos' | 'rnf' | 'metricas' | 'requisito_item'
 const SECCION_KIND: Record<string, SeccionKind> = {
   resumen: 'texto', problema: 'texto', objetivoGeneral: 'texto',
   objetivosEspecificos: 'lista', dentroDeAlcance: 'lista', fueraDeAlcance: 'lista',
   personas: 'personas', requisitos: 'requisitos', rnf: 'rnf', metricas: 'metricas',
   riesgos: 'lista', dependencias: 'lista', supuestos: 'lista', preguntasAbiertas: 'lista',
+  requisito_item: 'requisito_item',
 }
 
 // El modelo a veces devuelve tipo:"contenido" con datos incompletos (ítems
@@ -170,6 +175,14 @@ function validarValorContenido(seccionKey: string, valor: unknown): string | nul
       return null
     }
 
+    case 'requisito_item': {
+      const v = valor as Record<string, unknown> | null
+      if (!v || !esTextoNoVacio(v.texto) || !esTextoNoVacio(v.criterioAceptacion)) {
+        return 'no devolvió texto o criterio de aceptación completos para el requisito.'
+      }
+      return null
+    }
+
     default:
       return null
   }
@@ -180,11 +193,14 @@ type ChatMsg = { role: 'user' | 'assistant'; content: string }
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json().catch(() => ({})) as {
-    seccionKey?: string; valorActual?: unknown; historial?: ChatMsg[]
+    seccionKey?: string; valorActual?: unknown; historial?: ChatMsg[]; itemId?: string
     contextoPrd?: { dentroDeAlcance?: unknown; objetivosEspecificos?: unknown; personas?: unknown }
   }
   const seccionKey = String(body.seccionKey || '')
-  const info = SECCION_INFO[seccionKey]
+  const esDebateItem = seccionKey === 'requisito_item'
+  const info = esDebateItem
+    ? { label: 'Requisito funcional (debate)', schema: '{"texto": string, "criterioAceptacion": string}' }
+    : SECCION_INFO[seccionKey]
   if (!info) return NextResponse.json({ error: 'Sección desconocida.' }, { status: 400 })
 
   const historialEntrada: ChatMsg[] = Array.isArray(body.historial)
@@ -259,7 +275,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       : null,
   ].filter(Boolean).join('\n\n')
 
-  const systemPrompt = `Sos un analista de producto experto que ayuda a completar UNA sola sección de un PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
+  const systemPrompt = esDebateItem ? `Sos un analista de producto senior que DEBATE y refina, junto con quien lo escribió, UN requisito funcional que YA EXISTE en un PRD (Product Requirements Document) de ArchiTechIA — esto no es una entrevista para generar algo desde cero, el requisito ya está escrito y tu rol es cuestionarlo, señalar huecos concretos, y proponer mejoras puntuales.
+
+Requisito actual (texto y criterio de aceptación):
+${JSON.stringify(body.valorActual ?? null)}
+
+Contexto conocido de la Solución:
+${contexto || '(sin contexto adicional — solo el nombre y tipo de Solución)'}
+
+Reglas del debate:
+1. Cada turno tuyo es UNA sola idea: o señalás una debilidad concreta (ambigüedad, caso no cubierto, criterio de aceptación poco medible/verificable) y proponés una mejora puntual, o hacés una pregunta puntual si necesitás más info del usuario para refinarlo. Nunca una lista de varias objeciones juntas.
+2. Generá el contenido final revisado cuando el usuario esté de acuerdo con una mejora, pida aplicar los cambios, o diga que el requisito ya está bien como está (en ese último caso, devolvé el mismo texto y criterio, sin inventar cambios).
+3. Nunca hagas más de 3 intervenciones de debate antes de ofrecer una versión final (aunque el usuario no esté de acuerdo con nada, en la 3ra ofrecé tu mejor version igual).
+4. Cada vez que uses tipo "pregunta" (tu turno de debate, sea objeción o pregunta), proponé también EXACTAMENTE 5 respuestas/posturas posibles para que el usuario elija con un clic, ademas de poder escribir la propia.
+5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
+   - Para seguir debatiendo: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}
+   - Para la versión final: {"tipo": "contenido", "valor": {"texto": "string", "criterioAceptacion": "string"}}` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de un PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
 
 Sección a trabajar: "${info.label}"
 El valor final que vas a generar debe ser: ${info.schema}
@@ -283,7 +314,7 @@ Reglas de la entrevista:
     { role: 'system' as const, content: systemPrompt },
     ...(historial.length > 0
       ? historial
-      : [{ role: 'user' as const, content: 'Empezá la entrevista: hacé tu primera pregunta.' }]),
+      : [{ role: 'user' as const, content: esDebateItem ? 'Empezá el debate: dame tu primera observación u objeción sobre este requisito.' : 'Empezá la entrevista: hacé tu primera pregunta.' }]),
   ]
 
   try {
@@ -294,7 +325,10 @@ Reglas de la entrevista:
         'Authorization': `Bearer ${OPENCODE_KEY}`,
         // Estable por Solucion+seccion — evita cruzar sesiones entre
         // distintas secciones/entrevistas de un mismo PRD.
-        'x-opencode-session': `prd-seccion-${id}-${seccionKey}`,
+        // Estable por Solucion+seccion (o por requisito puntual, si aplica)
+        // — evita cruzar sesiones entre distintas secciones/entrevistas, o
+        // entre el debate de un requisito y el de otro, de un mismo PRD.
+        'x-opencode-session': `prd-seccion-${id}-${seccionKey}${body.itemId ? `-${body.itemId}` : ''}`,
       },
       body: JSON.stringify({
         model: MODEL,

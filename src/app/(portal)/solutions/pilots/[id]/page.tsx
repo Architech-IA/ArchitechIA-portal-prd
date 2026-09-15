@@ -8,7 +8,7 @@ import {
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
   Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList, Play,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Printer,
-  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb, PenLine, Send, ChevronLeft,
+  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb, PenLine, Send, ChevronLeft, MessageSquare,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -402,6 +402,14 @@ const AI_OPCIONES_SECCION = [
   { id: 'sugerir', label: 'Sugerir alternativas', desc: 'Propone otros enfoques u opciones para esta sección.', icon: Lightbulb },
 ] as const
 
+// Opciones del panel de IA cuando se abre DESDE un requisito puntual (no
+// desde el título de toda la sección) — a diferencia de arriba, esta sí
+// está conectada de entrada: no hay nada "solo visual" que mostrar todavía
+// a nivel de un ítem individual.
+const AI_OPCIONES_ITEM = [
+  { id: 'debatir', label: 'Debatir contenido existente', desc: 'La IA cuestiona y propone mejoras puntuales sobre este requisito, no lo reemplaza sin más.', icon: MessageSquare, accion: true },
+] as const
+
 // Shape esperado del "valor" que devuelve el chat de IA por sección — usado
 // tanto para armar valorActual (lo que ya hay en el PRD) como para aplicar
 // lo que el modelo genera al terminar la entrevista. Debe reflejar
@@ -436,16 +444,20 @@ export default function SolucionDetailPage() {
   // en su propio estado, separado del panel, para que cerrar/reabrir el
   // panel en la MISMA sección no pierda la conversación en curso (solo se
   // resetea si se cambia a otra sección, via el efecto de abajo).
-  const [aiPanel, setAiPanel] = useState<{ n: number; key: string; titulo: string } | null>(null)
+  // `itemId` solo se usa para el boton de IA DENTRO de un requisito puntual
+  // (debate sobre ese unico requisito) — cuando esta ausente, el panel es a
+  // nivel de seccion completa (comportamiento de siempre).
+  const [aiPanel, setAiPanel] = useState<{ n: number; key: string; titulo: string; itemId?: string } | null>(null)
   const [aiChat, setAiChat] = useState<{
     seccionKey: string
+    itemId?: string
     mensajes: AiChatMsg[]
     cargando: boolean
     error: string | null
     listo: boolean
   } | null>(null)
   const [aiChatInput, setAiChatInput] = useState('')
-  useEffect(() => { setAiChat(null); setAiChatInput('') }, [aiPanel?.key])
+  useEffect(() => { setAiChat(null); setAiChatInput('') }, [aiPanel?.key, aiPanel?.itemId])
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(true)
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
@@ -720,16 +732,25 @@ export default function SolucionDetailPage() {
   // (opcionalmente) la nueva respuesta del usuario, y segun el "tipo" que
   // devuelve el backend, o agrega la pregunta siguiente al chat, o aplica el
   // contenido final directamente al PRD.
-  async function enviarTurnoAI(seccionKey: string, historialPrevio: AiChatMsg[], mensajeUsuario?: string) {
+  async function enviarTurnoAI(seccionKey: string, historialPrevio: AiChatMsg[], mensajeUsuario?: string, itemId?: string) {
     const historial = mensajeUsuario ? [...historialPrevio, { role: 'user' as const, content: mensajeUsuario }] : historialPrevio
-    setAiChat(prev => (prev && prev.seccionKey === seccionKey) ? { ...prev, mensajes: historial, cargando: true, error: null } : prev)
+    const coincide = (c: typeof aiChat) => !!c && c.seccionKey === seccionKey && c.itemId === itemId
+    setAiChat(prev => coincide(prev) ? { ...prev!, mensajes: historial, cargando: true, error: null } : prev)
     try {
+      // Debate de UN requisito puntual (itemId presente): el "valorActual" es
+      // solo texto+criterioAceptacion de ESE requisito, no toda la sección.
+      const requisitoDebate = itemId ? prd.requisitos.find(r => r.id === itemId) : undefined
+      const valorActual = itemId
+        ? (requisitoDebate ? { texto: requisitoDebate.texto, criterioAceptacion: requisitoDebate.criterioAceptacion } : null)
+        : valorActualDeSeccion(seccionKey)
+
       const res = await fetch(`/api/soluciones/${id}/prd-seccion-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           seccionKey,
-          valorActual: valorActualDeSeccion(seccionKey),
+          itemId,
+          valorActual,
           historial,
           // Solo relevante para "requisitos" (el backend lo usa para exigir
           // que TODO lo que ya está definido en alcance/personas/objetivos
@@ -747,20 +768,28 @@ export default function SolucionDetailPage() {
       if (!res.ok) throw new Error(data?.error || 'No se pudo continuar la conversación.')
       if (data.tipo === 'pregunta') {
         const opciones = Array.isArray(data.opciones) ? data.opciones.map((o: unknown) => String(o)).filter(Boolean).slice(0, 5) : []
-        setAiChat(prev => (prev && prev.seccionKey === seccionKey)
-          ? { ...prev, mensajes: [...historial, { role: 'assistant', content: String(data.mensaje ?? ''), opciones }], cargando: false }
+        setAiChat(prev => coincide(prev)
+          ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: String(data.mensaje ?? ''), opciones }], cargando: false }
           : prev)
       } else if (data.tipo === 'contenido') {
-        aplicarContenidoIA(seccionKey, data.valor)
-        setAiChat(prev => (prev && prev.seccionKey === seccionKey)
-          ? { ...prev, mensajes: [...historial, { role: 'assistant', content: 'Contenido generado y aplicado a la sección.' }], cargando: false, listo: true }
+        if (itemId) {
+          const v = (data.valor ?? {}) as { texto?: unknown; criterioAceptacion?: unknown }
+          updateRequisito(itemId, {
+            texto: escapeIfPlain(String(v.texto ?? '')),
+            criterioAceptacion: escapeIfPlain(String(v.criterioAceptacion ?? '')),
+          })
+        } else {
+          aplicarContenidoIA(seccionKey, data.valor)
+        }
+        setAiChat(prev => coincide(prev)
+          ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: itemId ? 'Versión revisada aplicada a este requisito.' : 'Contenido generado y aplicado a la sección.' }], cargando: false, listo: true }
           : prev)
       } else {
         throw new Error('Respuesta inesperada del asistente.')
       }
     } catch (err: unknown) {
-      setAiChat(prev => (prev && prev.seccionKey === seccionKey)
-        ? { ...prev, cargando: false, error: err instanceof Error ? err.message : 'Error inesperado.' }
+      setAiChat(prev => coincide(prev)
+        ? { ...prev!, cargando: false, error: err instanceof Error ? err.message : 'Error inesperado.' }
         : prev)
     }
   }
@@ -1621,8 +1650,14 @@ export default function SolucionDetailPage() {
                               En backlog
                             </span>
                           )}
+                          <button type="button"
+                            onClick={() => setAiPanel({ n: numeroDe('requisitos'), key: 'requisito_item', titulo: `Requisito R${i + 1}`, itemId: r.id })}
+                            title="Asistente de IA para este requisito"
+                            className="w-6 h-6 flex-shrink-0 ml-auto rounded-full flex items-center justify-center text-cyan-600/60 border border-cyan-200 hover:text-white hover:bg-cyan-600 hover:border-cyan-600 transition-colors print:hidden opacity-0 group-hover:opacity-100 focus:opacity-100">
+                            <Sparkles size={12} />
+                          </button>
                           <button type="button" onClick={() => removeRequisito(r.id)}
-                            className="w-6 h-6 flex-shrink-0 ml-auto rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            className="w-6 h-6 flex-shrink-0 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <Trash2 size={13} />
                           </button>
                         </div>
@@ -1780,7 +1815,9 @@ export default function SolucionDetailPage() {
                     <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
                   <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Sección {aiPanel?.n ?? ''}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">
+                        Asistente IA · {aiPanel?.itemId ? 'Requisito' : `Sección ${aiPanel?.n ?? ''}`}
+                      </p>
                       <h3 className="text-base font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
                     </div>
                     <button type="button" onClick={() => setAiPanel(null)}
@@ -1789,7 +1826,7 @@ export default function SolucionDetailPage() {
                     </button>
                   </div>
 
-                  {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key ? (
+                  {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key && aiChat.itemId === aiPanel.itemId ? (
                     // Vista de entrevista: la IA puede preguntar (hasta 3
                     // veces, segun el prompt del backend) antes de generar
                     // el contenido final de esta sección y aplicarlo al PRD.
@@ -1817,7 +1854,7 @@ export default function SolucionDetailPage() {
                               <div className="mt-2 flex flex-col items-start gap-1.5">
                                 {m.opciones.map((op, oi) => (
                                   <button key={oi} type="button"
-                                    onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op)}
+                                    onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op, aiChat.itemId)}
                                     className="text-left text-xs text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg px-3 py-1.5 max-w-[92%] transition-colors">
                                     {op}
                                   </button>
@@ -1838,9 +1875,13 @@ export default function SolucionDetailPage() {
                             {aiChat.mensajes.length > 0 && !aiChat.cargando && (
                               <div className="px-6 pt-3">
                                 <button type="button"
-                                  onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, 'Generá la sección ya con la información disponible, no preguntes más.')}
+                                  onClick={() => enviarTurnoAI(
+                                    aiChat.seccionKey, aiChat.mensajes,
+                                    aiChat.itemId ? 'Aplicá ya tu mejor versión, no sigas debatiendo.' : 'Generá la sección ya con la información disponible, no preguntes más.',
+                                    aiChat.itemId
+                                  )}
                                   className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
-                                  Generar ya con lo que tengo
+                                  {aiChat.itemId ? 'Aplicar ya la mejor versión' : 'Generar ya con lo que tengo'}
                                 </button>
                               </div>
                             )}
@@ -1851,14 +1892,14 @@ export default function SolucionDetailPage() {
                               <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
                                 onKeyDown={e => {
                                   if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
-                                    enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim())
+                                    enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId)
                                     setAiChatInput('')
                                   }
                                 }}
                                 placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
                                 className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
                               <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
-                                onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim()); setAiChatInput('') }}
+                                onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId); setAiChatInput('') }}
                                 className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
                                 <Send size={14} />
                               </button>
@@ -1879,20 +1920,25 @@ export default function SolucionDetailPage() {
                   ) : (
                     <div className="flex-1 overflow-y-auto px-6 py-4">
                       <div className="max-w-2xl w-full mx-auto space-y-2">
-                        <p className="text-xs text-gray-400 mb-2">Elegí qué querés que la IA haga con esta sección.</p>
-                        {AI_OPCIONES_SECCION.map(op => (
+                        <p className="text-xs text-gray-400 mb-2">
+                          {aiPanel?.itemId ? 'Elegí qué querés hacer con este requisito.' : 'Elegí qué querés que la IA haga con esta sección.'}
+                        </p>
+                        {(aiPanel?.itemId ? AI_OPCIONES_ITEM : AI_OPCIONES_SECCION).map(op => (
                           <button key={op.id} type="button"
                             onClick={() => {
                               if ('accion' in op && op.accion && aiPanel) {
-                                // La IA reemplaza toda la sección al terminar
-                                // la entrevista — si ya había algo escrito
-                                // (a mano o de una generación anterior), se
-                                // perdería sin este aviso.
-                                if (seccionTieneContenido(aiPanel.key) && !window.confirm(
+                                // Reemplazo de toda la sección: si ya había
+                                // contenido (a mano o de una generación
+                                // anterior), se perdería sin este aviso. El
+                                // debate de un requisito puntual no reemplaza
+                                // nada sin que el usuario lo acuerde durante
+                                // la charla, asi que no hace falta confirmar
+                                // antes de arrancar.
+                                if (!aiPanel.itemId && seccionTieneContenido(aiPanel.key) && !window.confirm(
                                   'Esta sección ya tiene contenido. Generarla con IA va a reemplazarlo por completo. ¿Continuar?'
                                 )) return
-                                setAiChat({ seccionKey: aiPanel.key, mensajes: [], cargando: true, error: null, listo: false })
-                                enviarTurnoAI(aiPanel.key, [])
+                                setAiChat({ seccionKey: aiPanel.key, itemId: aiPanel.itemId, mensajes: [], cargando: true, error: null, listo: false })
+                                enviarTurnoAI(aiPanel.key, [], undefined, aiPanel.itemId)
                               }
                             }}
                             className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
@@ -1905,7 +1951,9 @@ export default function SolucionDetailPage() {
                             </span>
                           </button>
                         ))}
-                        <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
+                        {!aiPanel?.itemId && (
+                          <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
+                        )}
                       </div>
                     </div>
                   )}
