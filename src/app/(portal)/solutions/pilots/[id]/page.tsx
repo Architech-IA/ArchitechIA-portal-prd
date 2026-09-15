@@ -1549,7 +1549,11 @@ export default function SolucionDetailPage() {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Titulo n={numeroDe('requisitos')} k="requisitos">Requisitos funcionales (historias de usuario / casos de uso)</Titulo>
                   </div>
-                  {prd.requisitos.length > 0 && (
+                  {/* Oculto a pedido del usuario ("quita este boton mientras
+                      tanto del lienzo de PRD") — la funcion sigue intacta
+                      (generarBacklogDesdePRD, etc.), solo se saco el botón
+                      de la vista. Volver a mostrar: restaurar este bloque. */}
+                  {false && prd.requisitos.length > 0 && (
                     <div className="flex justify-end -mt-1 mb-2">
                       <button type="button" onClick={generarBacklogDesdePRD} disabled={generandoBacklogPrd || prd.estadoDocumento !== 'APROBADO'}
                         title={prd.estadoDocumento !== 'APROBADO' ? 'El documento debe estar Aprobado para generar backlog' : undefined}
