@@ -76,7 +76,7 @@ const SECCION_INFO: Record<string, { label: string; schema: string }> = {
   personas: { label: 'Usuarios / personas', schema: 'un array de 3-4 objetos {"rol": string, "necesidad": string}' },
   requisitos: {
     label: 'Requisitos funcionales',
-    schema: 'un array de 8-12 objetos {"tipo": "historia" | "caso_uso", "texto": string, "criterioAceptacion": string, "prioridad": "MUST" | "SHOULD" | "COULD" | "WONT"}, cubriendo el flujo completo (no solo el caso feliz) con prioridades MoSCoW repartidas realistamente',
+    schema: 'un array de ENTRE 8 Y 12 objetos (nunca menos de 8, ni siquiera en el primer intento) {"tipo": "historia" | "caso_uso", "texto": string, "criterioAceptacion": string (concreto y verificable, nunca algo vago como "funciona bien"), "prioridad": "MUST" | "SHOULD" | "COULD" | "WONT"}. Tienen que cubrir el flujo completo de principio a fin (no solo el caso feliz — incluí también algún caso borde o de error). Las prioridades tienen que estar REALMENTE repartidas entre las 4 opciones: JAMÁS pongas "MUST" en todos los ítems — como referencia, de 8-12 requisitos algo como 3-4 MUST, 3-4 SHOULD, 2-3 COULD y 0-2 WONT es una distribución realista',
   },
   rnf: { label: 'Requisitos no funcionales', schema: 'un array de 4-6 objetos {"categoria": "performance" | "seguridad" | "compatibilidad" | "escalabilidad" | "otro", "texto": string}' },
   metricas: { label: 'Métricas de éxito (KPIs)', schema: 'un array de 3-5 objetos {"nombre": string, "meta": string (con valor numérico concreto cuando aplique), "comoSeMide": string}' },
