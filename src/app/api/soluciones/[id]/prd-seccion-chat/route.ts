@@ -76,7 +76,22 @@ const SECCION_INFO: Record<string, { label: string; schema: string }> = {
   personas: { label: 'Usuarios / personas', schema: 'un array de 3-4 objetos {"rol": string, "necesidad": string}' },
   requisitos: {
     label: 'Requisitos funcionales',
-    schema: 'un array de ENTRE 8 Y 12 objetos (nunca menos de 8, ni siquiera en el primer intento) {"tipo": "historia" | "caso_uso", "texto": string, "criterioAceptacion": string (concreto y verificable, nunca algo vago como "funciona bien"), "prioridad": "MUST" | "SHOULD" | "COULD" | "WONT"}. Tienen que cubrir el flujo completo de principio a fin (no solo el caso feliz — incluí también algún caso borde o de error). Las prioridades tienen que estar REALMENTE repartidas entre las 4 opciones: JAMÁS pongas "MUST" en todos los ítems — como referencia, de 8-12 requisitos algo como 3-4 MUST, 3-4 SHOULD, 2-3 COULD y 0-2 WONT es una distribución realista',
+    schema: `un array de ENTRE 8 Y 15 objetos (nunca menos de 8, ni siquiera en el primer intento — usá más de 12 si hace falta para cubrir todo, ver abajo) {"tipo": "historia" | "caso_uso", "texto": string, "criterioAceptacion": string (concreto y verificable, nunca algo vago como "funciona bien"), "prioridad": "MUST" | "SHOULD" | "COULD" | "WONT"}.
+
+COBERTURA OBLIGATORIA — no es solo el flujo principal feliz, tienen que quedar representados, cuando el contexto lo justifique:
+- Cada ítem de "Dentro de alcance" ya definido en el PRD (si te lo pasaron en el contexto) — ninguno puede quedar sin al menos un requisito.
+- Cada rol/persona ya definido en el PRD — al menos un requisito pensado para su necesidad específica.
+- El ciclo de vida completo del dato o proceso central: creación, consulta/listado, edición y baja/cancelación (no solo "crear").
+- Permisos y control de acceso (quién puede hacer qué), si la Solución distingue roles.
+- Validaciones y manejo de errores: qué pasa si un dato es inválido, si falla una integración externa, si hay datos duplicados o inconsistentes.
+- Integraciones externas mencionadas en el contexto (APIs, otros sistemas) y qué pasa si no responden.
+- Reportes, métricas o visibilidad para quien administra o supervisa (si aplica al tipo de Solución).
+- Notificaciones o alertas relevantes al flujo (si aplica).
+- Configuración/administración básica que el negocio necesitaría (si aplica).
+
+No inventes secciones de alcance que no existan — cubrí SOLO lo que el contexto sugiere que aplica a esta Solución específica, pero cubrilo de verdad en vez de limitarte al caso feliz de un solo flujo.
+
+Las prioridades tienen que estar REALMENTE repartidas entre las 4 opciones: JAMÁS pongas "MUST" en todos los ítems — como referencia, algo como un tercio MUST, un tercio SHOULD, y el resto entre COULD y WONT es una distribución realista.`,
   },
   rnf: { label: 'Requisitos no funcionales', schema: 'un array de 4-6 objetos {"categoria": "performance" | "seguridad" | "compatibilidad" | "escalabilidad" | "otro", "texto": string}' },
   metricas: { label: 'Métricas de éxito (KPIs)', schema: 'un array de 3-5 objetos {"nombre": string, "meta": string (con valor numérico concreto cuando aplique), "comoSeMide": string}' },
@@ -164,7 +179,10 @@ type ChatMsg = { role: 'user' | 'assistant'; content: string }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const body = await request.json().catch(() => ({})) as { seccionKey?: string; valorActual?: unknown; historial?: ChatMsg[] }
+  const body = await request.json().catch(() => ({})) as {
+    seccionKey?: string; valorActual?: unknown; historial?: ChatMsg[]
+    contextoPrd?: { dentroDeAlcance?: unknown; objetivosEspecificos?: unknown; personas?: unknown }
+  }
   const seccionKey = String(body.seccionKey || '')
   const info = SECCION_INFO[seccionKey]
   if (!info) return NextResponse.json({ error: 'Sección desconocida.' }, { status: 400 })
@@ -211,6 +229,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .filter(Boolean)
     .join('\n\n')
 
+  // Solo se usa para "requisitos" — el usuario reporto que la entrevista se
+  // estaba quedando corta (no cubria todo el alcance, escenarios, personas
+  // ni funcionalidades ya definidas en OTRAS secciones del mismo PRD). El
+  // frontend manda esto ademas del contexto de la Solucion en si.
+  const asStringArray = (v: unknown): string[] => Array.isArray(v) ? v.map(x => String(x)).filter(s => s.trim()) : []
+  const alcanceLista = asStringArray(body.contextoPrd?.dentroDeAlcance)
+  const objetivosLista = asStringArray(body.contextoPrd?.objetivosEspecificos)
+  const personasLista = asStringArray(body.contextoPrd?.personas)
+
   const contexto = [
     `Nombre: ${solucion.nombre}`,
     solucion.descripcion ? `Descripción: ${solucion.descripcion}` : null,
@@ -221,6 +248,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     hitosTexto ? `Hitos de cumplimiento:\n${hitosTexto}` : null,
     lead ? `Cliente/Lead asociado: ${lead.companyName} (contacto: ${lead.contactName})` : null,
     leadHubTexto ? `Notas del proceso de preventa (Lead Hub):\n${truncar(leadHubTexto, 4000)}` : null,
+    seccionKey === 'requisitos' && alcanceLista.length > 0
+      ? `Dentro de alcance ya definido en este PRD (CADA UNO de estos ítems tiene que quedar cubierto por al menos un requisito):\n${alcanceLista.map(t => `- ${t}`).join('\n')}`
+      : null,
+    seccionKey === 'requisitos' && objetivosLista.length > 0
+      ? `Objetivos específicos ya definidos en este PRD:\n${objetivosLista.map(t => `- ${t}`).join('\n')}`
+      : null,
+    seccionKey === 'requisitos' && personasLista.length > 0
+      ? `Personas/usuarios ya definidos en este PRD (cada rol relevante tiene que tener al menos un requisito pensado para su necesidad):\n${personasLista.map(t => `- ${t}`).join('\n')}`
+      : null,
   ].filter(Boolean).join('\n\n')
 
   const systemPrompt = `Sos un analista de producto experto que ayuda a completar UNA sola sección de un PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
@@ -263,7 +299,10 @@ Reglas de la entrevista:
       body: JSON.stringify({
         model: MODEL,
         messages,
-        max_tokens: 4096,
+        // "requisitos" ahora pide cubrir alcance/personas/CRUD/permisos/
+        // errores/integraciones/reportes ademas del flujo principal, hasta
+        // 15 items — 4096 se quedaba corto para eso.
+        max_tokens: seccionKey === 'requisitos' ? 7168 : 4096,
       }),
     })
     if (!upstream.ok) {

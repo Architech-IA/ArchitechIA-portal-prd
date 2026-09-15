@@ -727,7 +727,21 @@ export default function SolucionDetailPage() {
       const res = await fetch(`/api/soluciones/${id}/prd-seccion-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seccionKey, valorActual: valorActualDeSeccion(seccionKey), historial }),
+        body: JSON.stringify({
+          seccionKey,
+          valorActual: valorActualDeSeccion(seccionKey),
+          historial,
+          // Solo relevante para "requisitos" (el backend lo usa para exigir
+          // que TODO lo que ya está definido en alcance/personas/objetivos
+          // quede cubierto por al menos un requisito, no solo el flujo
+          // principal) — se manda igual para las demás secciones, el
+          // backend simplemente lo ignora si no aplica.
+          contextoPrd: {
+            dentroDeAlcance: prd.dentroDeAlcance.map(it => it.texto).filter(Boolean),
+            objetivosEspecificos: prd.objetivosEspecificos.map(it => it.texto).filter(Boolean),
+            personas: prd.personas.map(p => `${p.rol}: ${p.necesidad}`).filter(s => s.trim() !== ':'),
+          },
+        }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || 'No se pudo continuar la conversación.')
