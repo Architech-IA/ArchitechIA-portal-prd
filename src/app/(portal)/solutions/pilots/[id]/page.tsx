@@ -660,6 +660,17 @@ export default function SolucionDetailPage() {
     }
   }
 
+  // Antes "Generar sección con IA" pisaba lo que ya había en esa sección sin
+  // avisar (texto libre → string no vacío; listas/tablas → longitud > 0).
+  // Se usa para pedir confirmación antes de arrancar la entrevista si hay
+  // algo que se perdería.
+  function seccionTieneContenido(seccionKey: string): boolean {
+    const v = valorActualDeSeccion(seccionKey)
+    if (typeof v === 'string') return v.trim().length > 0
+    if (Array.isArray(v)) return v.length > 0
+    return false
+  }
+
   // Aplica el "valor" final que devolvio el chat de IA (tipo: "contenido") a
   // la seccion correspondiente del PRD, generando ids nuevos para cada item
   // (el modelo nunca los incluye).
@@ -1859,6 +1870,13 @@ export default function SolucionDetailPage() {
                           <button key={op.id} type="button"
                             onClick={() => {
                               if ('accion' in op && op.accion && aiPanel) {
+                                // La IA reemplaza toda la sección al terminar
+                                // la entrevista — si ya había algo escrito
+                                // (a mano o de una generación anterior), se
+                                // perdería sin este aviso.
+                                if (seccionTieneContenido(aiPanel.key) && !window.confirm(
+                                  'Esta sección ya tiene contenido. Generarla con IA va a reemplazarlo por completo. ¿Continuar?'
+                                )) return
                                 setAiChat({ seccionKey: aiPanel.key, mensajes: [], cargando: true, error: null, listo: false })
                                 enviarTurnoAI(aiPanel.key, [])
                               }

@@ -86,6 +86,80 @@ const SECCION_INFO: Record<string, { label: string; schema: string }> = {
   preguntasAbiertas: { label: 'Preguntas abiertas', schema: 'un array de 3-5 strings' },
 }
 
+// Que forma de "valor" espera cada seccion — usado SOLO para validar lo que
+// el modelo devuelve antes de aceptarlo (ver validarValorContenido). Debe
+// reflejar SECCION_INFO de arriba y valorActualDeSeccion/aplicarContenidoIA
+// del frontend (pilots/[id]/page.tsx).
+type SeccionKind = 'texto' | 'lista' | 'personas' | 'requisitos' | 'rnf' | 'metricas'
+const SECCION_KIND: Record<string, SeccionKind> = {
+  resumen: 'texto', problema: 'texto', objetivoGeneral: 'texto',
+  objetivosEspecificos: 'lista', dentroDeAlcance: 'lista', fueraDeAlcance: 'lista',
+  personas: 'personas', requisitos: 'requisitos', rnf: 'rnf', metricas: 'metricas',
+  riesgos: 'lista', dependencias: 'lista', supuestos: 'lista', preguntasAbiertas: 'lista',
+}
+
+// El modelo a veces devuelve tipo:"contenido" con datos incompletos (ítems
+// vacíos, menos requisitos de los pedidos, todo con la misma prioridad,
+// etc.) — sin esto, esa basura se aplicaba en silencio al PRD porque el
+// frontend solo chequeaba que `tipo` fuera un valor válido, nunca la forma
+// real de `valor`. Devuelve `null` si esta OK, o un mensaje describiendo
+// que esta mal (se lo mostramos al usuario en vez de aplicar algo roto).
+function validarValorContenido(seccionKey: string, valor: unknown): string | null {
+  const kind = SECCION_KIND[seccionKey]
+  const esTextoNoVacio = (v: unknown) => typeof v === 'string' && v.trim().length > 0
+
+  switch (kind) {
+    case 'texto':
+      if (!esTextoNoVacio(valor)) return 'no devolvió texto para esta sección.'
+      return null
+
+    case 'lista': {
+      if (!Array.isArray(valor) || valor.length === 0) return 'no devolvió ninguna lista de ítems.'
+      if (valor.some(v => !esTextoNoVacio(v))) return 'devolvió algún ítem vacío en la lista.'
+      return null
+    }
+
+    case 'personas': {
+      if (!Array.isArray(valor) || valor.length === 0) return 'no devolvió ninguna persona.'
+      if ((valor as Record<string, unknown>[]).some(p => !esTextoNoVacio(p?.rol) || !esTextoNoVacio(p?.necesidad))) {
+        return 'devolvió alguna persona con rol o necesidad vacíos.'
+      }
+      return null
+    }
+
+    case 'requisitos': {
+      if (!Array.isArray(valor)) return 'no devolvió una lista de requisitos.'
+      if (valor.length < 8) return `devolvió solo ${valor.length} requisito(s); se esperaban al menos 8.`
+      const prioridadesValidas = new Set(['MUST', 'SHOULD', 'COULD', 'WONT'])
+      const items = valor as Record<string, unknown>[]
+      for (const r of items) {
+        if (!esTextoNoVacio(r?.texto) || !esTextoNoVacio(r?.criterioAceptacion)) {
+          return 'devolvió algún requisito sin texto o sin criterio de aceptación.'
+        }
+        if (!prioridadesValidas.has(String(r?.prioridad))) return 'devolvió algún requisito con una prioridad inválida.'
+      }
+      const prioridadesUsadas = new Set(items.map(r => r.prioridad))
+      if (prioridadesUsadas.size < 2) return 'devolvió todos los requisitos con la misma prioridad (sin variedad MoSCoW).'
+      return null
+    }
+
+    case 'rnf': {
+      if (!Array.isArray(valor) || valor.length === 0) return 'no devolvió requisitos no funcionales.'
+      if ((valor as Record<string, unknown>[]).some(r => !esTextoNoVacio(r?.texto))) return 'devolvió algún requisito no funcional sin texto.'
+      return null
+    }
+
+    case 'metricas': {
+      if (!Array.isArray(valor) || valor.length === 0) return 'no devolvió métricas.'
+      if ((valor as Record<string, unknown>[]).some(m => !esTextoNoVacio(m?.nombre))) return 'devolvió alguna métrica sin nombre.'
+      return null
+    }
+
+    default:
+      return null
+  }
+}
+
 type ChatMsg = { role: 'user' | 'assistant'; content: string }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -202,6 +276,18 @@ Reglas de la entrevista:
     const parsed = extractJsonObject(content) as { tipo?: string; mensaje?: string; opciones?: unknown; valor?: unknown } | null
     if (!parsed || (parsed.tipo !== 'pregunta' && parsed.tipo !== 'contenido')) {
       return NextResponse.json({ error: 'No se pudo interpretar la respuesta del modelo.' }, { status: 502 })
+    }
+    // Antes esto se devolvía tal cual y el frontend lo aplicaba al PRD sin
+    // chequear nada mas que "tipo" — si el modelo entregaba menos ítems de
+    // los pedidos, campos vacíos, o (en requisitos) todo con la misma
+    // prioridad, quedaba aplicado en silencio. Ahora se valida la forma real
+    // de "valor" antes de aceptarlo.
+    if (parsed.tipo === 'contenido') {
+      const problema = validarValorContenido(seccionKey, parsed.valor)
+      if (problema) {
+        console.error('prd-seccion-chat: contenido invalido', seccionKey, problema)
+        return NextResponse.json({ error: `La IA generó contenido incompleto (${problema}). Probá de nuevo.` }, { status: 502 })
+      }
     }
     return NextResponse.json(parsed)
   } catch {
