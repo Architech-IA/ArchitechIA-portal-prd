@@ -175,13 +175,13 @@ function validarValorContenido(seccionKey: string, valor: unknown): string | nul
       return null
     }
 
-    case 'requisito_item': {
-      const v = valor as Record<string, unknown> | null
-      if (!v || !esTextoNoVacio(v.texto) || !esTextoNoVacio(v.criterioAceptacion)) {
-        return 'no devolvió texto o criterio de aceptación completos para el requisito.'
-      }
+    // El debate de un requisito puntual ahora edita UN SOLO campo por vez
+    // (texto O criterioAceptacion, nunca los dos juntos — pedido explícito
+    // del usuario), asi que "valor" es directamente el string revisado de
+    // ese campo, mismo shape que 'texto'.
+    case 'requisito_item':
+      if (!esTextoNoVacio(valor)) return 'no devolvió el contenido revisado para este campo del requisito.'
       return null
-    }
 
     default:
       return null
@@ -194,12 +194,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params
   const body = await request.json().catch(() => ({})) as {
     seccionKey?: string; valorActual?: unknown; historial?: ChatMsg[]; itemId?: string
+    // Solo aplica al debate de un requisito puntual: cuál de los dos campos
+    // se está debatiendo. Nunca los dos a la vez (pedido explícito del
+    // usuario — antes se editaban juntos).
+    campo?: 'texto' | 'criterioAceptacion'
+    // Contexto del requisito completo (el campo que NO se está debatiendo
+    // ahora), para que el modelo entienda el requisito entero aunque solo
+    // pueda tocar uno de los dos campos.
+    contextoRequisito?: { texto?: unknown; criterioAceptacion?: unknown }
     contextoPrd?: { dentroDeAlcance?: unknown; objetivosEspecificos?: unknown; personas?: unknown }
   }
   const seccionKey = String(body.seccionKey || '')
   const esDebateItem = seccionKey === 'requisito_item'
+  const campoDebate: 'texto' | 'criterioAceptacion' = body.campo === 'criterioAceptacion' ? 'criterioAceptacion' : 'texto'
+  const campoLabel = campoDebate === 'texto' ? 'la historia de usuario / caso de uso' : 'el criterio de aceptación'
   const info = esDebateItem
-    ? { label: 'Requisito funcional (debate)', schema: '{"texto": string, "criterioAceptacion": string}' }
+    ? { label: `Requisito funcional (debate de ${campoLabel})`, schema: `un string: ${campoLabel} revisado` }
     : SECCION_INFO[seccionKey]
   if (!info) return NextResponse.json({ error: 'Sección desconocida.' }, { status: 400 })
 
@@ -275,22 +285,27 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       : null,
   ].filter(Boolean).join('\n\n')
 
-  const systemPrompt = esDebateItem ? `Sos un analista de producto senior que DEBATE y refina, junto con quien lo escribió, UN requisito funcional que YA EXISTE en un PRD (Product Requirements Document) de ArchiTechIA — esto no es una entrevista para generar algo desde cero, el requisito ya está escrito y tu rol es cuestionarlo, señalar huecos concretos, y proponer mejoras puntuales.
+  const systemPrompt = esDebateItem ? `Sos un analista de producto senior que DEBATE y refina, junto con quien lo escribió, ${campoLabel} de UN requisito funcional que YA EXISTE en un PRD (Product Requirements Document) de ArchiTechIA — esto no es una entrevista para generar algo desde cero, el requisito ya está escrito y tu rol es cuestionarlo, señalar huecos concretos, y proponer mejoras puntuales.
 
-Requisito actual (texto y criterio de aceptación):
-${JSON.stringify(body.valorActual ?? null)}
+IMPORTANTE: tu trabajo es EXCLUSIVAMENTE sobre ${campoLabel}. El otro campo del requisito NO es tuyo para modificar — se muestra abajo solo como contexto, para que tu propuesta sea coherente con el resto del requisito.
+
+Historia de usuario / caso de uso (texto) actual:
+${JSON.stringify((body.contextoRequisito?.texto ?? (campoDebate === 'texto' ? body.valorActual : null)) ?? null)}
+
+Criterio de aceptación actual:
+${JSON.stringify((body.contextoRequisito?.criterioAceptacion ?? (campoDebate === 'criterioAceptacion' ? body.valorActual : null)) ?? null)}
 
 Contexto conocido de la Solución:
 ${contexto || '(sin contexto adicional — solo el nombre y tipo de Solución)'}
 
 Reglas del debate:
-1. Cada turno tuyo es UNA sola idea: o señalás una debilidad concreta (ambigüedad, caso no cubierto, criterio de aceptación poco medible/verificable) y proponés una mejora puntual, o hacés una pregunta puntual si necesitás más info del usuario para refinarlo. Nunca una lista de varias objeciones juntas.
-2. Generá el contenido final revisado cuando el usuario esté de acuerdo con una mejora, pida aplicar los cambios, o diga que el requisito ya está bien como está (en ese último caso, devolvé el mismo texto y criterio, sin inventar cambios).
+1. Cada turno tuyo es UNA sola idea, siempre sobre ${campoLabel}: o señalás una debilidad concreta (ambigüedad, caso no cubierto${campoDebate === 'criterioAceptacion' ? ', algo poco medible/verificable' : ''}) y proponés una mejora puntual, o hacés una pregunta puntual si necesitás más info del usuario para refinarlo. Nunca una lista de varias objeciones juntas, y nunca propongas cambios al otro campo.
+2. Generá el contenido final revisado (solo ${campoLabel}) cuando el usuario esté de acuerdo con una mejora, pida aplicar los cambios, o diga que ya está bien como está (en ese último caso, devolvé el mismo contenido, sin inventar cambios).
 3. Nunca hagas más de 3 intervenciones de debate antes de ofrecer una versión final (aunque el usuario no esté de acuerdo con nada, en la 3ra ofrecé tu mejor version igual).
 4. Cada vez que uses tipo "pregunta" (tu turno de debate, sea objeción o pregunta), proponé también EXACTAMENTE 5 respuestas/posturas posibles para que el usuario elija con un clic, ademas de poder escribir la propia.
 5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
    - Para seguir debatiendo: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}
-   - Para la versión final: {"tipo": "contenido", "valor": {"texto": "string", "criterioAceptacion": "string"}}` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de un PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
+   - Para la versión final: {"tipo": "contenido", "valor": "string"}  (SOLO ${campoLabel}, un string plano, no un objeto)` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de un PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
 
 Sección a trabajar: "${info.label}"
 El valor final que vas a generar debe ser: ${info.schema}
@@ -314,7 +329,7 @@ Reglas de la entrevista:
     { role: 'system' as const, content: systemPrompt },
     ...(historial.length > 0
       ? historial
-      : [{ role: 'user' as const, content: esDebateItem ? 'Empezá el debate: dame tu primera observación u objeción sobre este requisito.' : 'Empezá la entrevista: hacé tu primera pregunta.' }]),
+      : [{ role: 'user' as const, content: esDebateItem ? `Empezá el debate: dame tu primera observación u objeción sobre ${campoLabel} de este requisito.` : 'Empezá la entrevista: hacé tu primera pregunta.' }]),
   ]
 
   try {
@@ -328,7 +343,7 @@ Reglas de la entrevista:
         // Estable por Solucion+seccion (o por requisito puntual, si aplica)
         // — evita cruzar sesiones entre distintas secciones/entrevistas, o
         // entre el debate de un requisito y el de otro, de un mismo PRD.
-        'x-opencode-session': `prd-seccion-${id}-${seccionKey}${body.itemId ? `-${body.itemId}` : ''}`,
+        'x-opencode-session': `prd-seccion-${id}-${seccionKey}${body.itemId ? `-${body.itemId}` : ''}${esDebateItem ? `-${campoDebate}` : ''}`,
       },
       body: JSON.stringify({
         model: MODEL,

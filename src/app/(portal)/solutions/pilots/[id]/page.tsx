@@ -407,7 +407,8 @@ const AI_OPCIONES_SECCION = [
 // está conectada de entrada: no hay nada "solo visual" que mostrar todavía
 // a nivel de un ítem individual.
 const AI_OPCIONES_ITEM = [
-  { id: 'debatir', label: 'Debatir contenido existente', desc: 'La IA cuestiona y propone mejoras puntuales sobre este requisito, no lo reemplaza sin más.', icon: MessageSquare, accion: true },
+  { id: 'debatir_texto', label: 'Debatir historia de usuario / caso de uso', desc: 'La IA cuestiona y propone mejoras puntuales solo sobre el texto, no toca el criterio de aceptación.', icon: MessageSquare, accion: true, campo: 'texto' as const },
+  { id: 'debatir_criterio', label: 'Debatir criterio de aceptación', desc: 'La IA cuestiona y propone mejoras puntuales solo sobre el criterio de aceptación, no toca el texto.', icon: CheckCircle2, accion: true, campo: 'criterioAceptacion' as const },
 ] as const
 
 // Shape esperado del "valor" que devuelve el chat de IA por sección — usado
@@ -451,6 +452,9 @@ export default function SolucionDetailPage() {
   const [aiChat, setAiChat] = useState<{
     seccionKey: string
     itemId?: string
+    // Solo aplica al debate de un requisito puntual: cuál de los dos campos
+    // se está debatiendo ahora (nunca ambos a la vez).
+    campo?: 'texto' | 'criterioAceptacion'
     mensajes: AiChatMsg[]
     cargando: boolean
     error: string | null
@@ -732,16 +736,17 @@ export default function SolucionDetailPage() {
   // (opcionalmente) la nueva respuesta del usuario, y segun el "tipo" que
   // devuelve el backend, o agrega la pregunta siguiente al chat, o aplica el
   // contenido final directamente al PRD.
-  async function enviarTurnoAI(seccionKey: string, historialPrevio: AiChatMsg[], mensajeUsuario?: string, itemId?: string) {
+  async function enviarTurnoAI(seccionKey: string, historialPrevio: AiChatMsg[], mensajeUsuario?: string, itemId?: string, campo?: 'texto' | 'criterioAceptacion') {
     const historial = mensajeUsuario ? [...historialPrevio, { role: 'user' as const, content: mensajeUsuario }] : historialPrevio
-    const coincide = (c: typeof aiChat) => !!c && c.seccionKey === seccionKey && c.itemId === itemId
+    const coincide = (c: typeof aiChat) => !!c && c.seccionKey === seccionKey && c.itemId === itemId && c.campo === campo
     setAiChat(prev => coincide(prev) ? { ...prev!, mensajes: historial, cargando: true, error: null } : prev)
     try {
       // Debate de UN requisito puntual (itemId presente): el "valorActual" es
-      // solo texto+criterioAceptacion de ESE requisito, no toda la sección.
+      // SOLO el campo elegido (texto O criterioAceptacion, nunca los dos a
+      // la vez) — el otro campo se manda aparte como contexto de lectura.
       const requisitoDebate = itemId ? prd.requisitos.find(r => r.id === itemId) : undefined
       const valorActual = itemId
-        ? (requisitoDebate ? { texto: requisitoDebate.texto, criterioAceptacion: requisitoDebate.criterioAceptacion } : null)
+        ? (requisitoDebate ? requisitoDebate[campo === 'criterioAceptacion' ? 'criterioAceptacion' : 'texto'] : null)
         : valorActualDeSeccion(seccionKey)
 
       const res = await fetch(`/api/soluciones/${id}/prd-seccion-chat`, {
@@ -750,7 +755,9 @@ export default function SolucionDetailPage() {
         body: JSON.stringify({
           seccionKey,
           itemId,
+          campo,
           valorActual,
+          contextoRequisito: requisitoDebate ? { texto: requisitoDebate.texto, criterioAceptacion: requisitoDebate.criterioAceptacion } : undefined,
           historial,
           // Solo relevante para "requisitos" (el backend lo usa para exigir
           // que TODO lo que ya está definido en alcance/personas/objetivos
@@ -772,17 +779,13 @@ export default function SolucionDetailPage() {
           ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: String(data.mensaje ?? ''), opciones }], cargando: false }
           : prev)
       } else if (data.tipo === 'contenido') {
-        if (itemId) {
-          const v = (data.valor ?? {}) as { texto?: unknown; criterioAceptacion?: unknown }
-          updateRequisito(itemId, {
-            texto: escapeIfPlain(String(v.texto ?? '')),
-            criterioAceptacion: escapeIfPlain(String(v.criterioAceptacion ?? '')),
-          })
+        if (itemId && campo) {
+          updateRequisito(itemId, { [campo]: escapeIfPlain(String(data.valor ?? '')) })
         } else {
           aplicarContenidoIA(seccionKey, data.valor)
         }
         setAiChat(prev => coincide(prev)
-          ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: itemId ? 'Versión revisada aplicada a este requisito.' : 'Contenido generado y aplicado a la sección.' }], cargando: false, listo: true }
+          ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: itemId ? 'Versión revisada aplicada.' : 'Contenido generado y aplicado a la sección.' }], cargando: false, listo: true }
           : prev)
       } else {
         throw new Error('Respuesta inesperada del asistente.')
@@ -1866,7 +1869,7 @@ export default function SolucionDetailPage() {
                               <div className="mt-2 flex flex-col items-start gap-1.5">
                                 {m.opciones.map((op, oi) => (
                                   <button key={oi} type="button"
-                                    onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op, aiChat.itemId)}
+                                    onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op, aiChat.itemId, aiChat.campo)}
                                     className="text-left text-xs text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg px-3 py-1.5 max-w-[92%] transition-colors">
                                     {op}
                                   </button>
@@ -1890,7 +1893,7 @@ export default function SolucionDetailPage() {
                                   onClick={() => enviarTurnoAI(
                                     aiChat.seccionKey, aiChat.mensajes,
                                     aiChat.itemId ? 'Aplicá ya tu mejor versión, no sigas debatiendo.' : 'Generá la sección ya con la información disponible, no preguntes más.',
-                                    aiChat.itemId
+                                    aiChat.itemId, aiChat.campo
                                   )}
                                   className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
                                   {aiChat.itemId ? 'Aplicar ya la mejor versión' : 'Generar ya con lo que tengo'}
@@ -1904,14 +1907,14 @@ export default function SolucionDetailPage() {
                               <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
                                 onKeyDown={e => {
                                   if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
-                                    enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId)
+                                    enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo)
                                     setAiChatInput('')
                                   }
                                 }}
                                 placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
                                 className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
                               <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
-                                onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId); setAiChatInput('') }}
+                                onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo); setAiChatInput('') }}
                                 className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
                                 <Send size={14} />
                               </button>
@@ -1949,8 +1952,9 @@ export default function SolucionDetailPage() {
                                 if (!aiPanel.itemId && seccionTieneContenido(aiPanel.key) && !window.confirm(
                                   'Esta sección ya tiene contenido. Generarla con IA va a reemplazarlo por completo. ¿Continuar?'
                                 )) return
-                                setAiChat({ seccionKey: aiPanel.key, itemId: aiPanel.itemId, mensajes: [], cargando: true, error: null, listo: false })
-                                enviarTurnoAI(aiPanel.key, [], undefined, aiPanel.itemId)
+                                const campo = 'campo' in op ? op.campo : undefined
+                                setAiChat({ seccionKey: aiPanel.key, itemId: aiPanel.itemId, campo, mensajes: [], cargando: true, error: null, listo: false })
+                                enviarTurnoAI(aiPanel.key, [], undefined, aiPanel.itemId, campo)
                               }
                             }}
                             className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
