@@ -319,14 +319,21 @@ function RichTextField({ value, onChange, placeholder, className }: {
   value: string; onChange: (v: string) => void; placeholder?: string; className?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const lastPushed = useRef(value)
+  // null a proposito (nunca un string) para poder distinguir "todavia no se
+  // pinto nada" del primer valor real. Con `useRef(value)` el primer render
+  // comparaba el valor contra si mismo y nunca pintaba nada — se notaba en
+  // filas que nacen YA con contenido (ej. un requisito que la IA genera de
+  // cero): el campo quedaba con el placeholder aunque el dato si habia
+  // llegado, porque el componente se monta por primera vez con ese valor.
+  const lastPushed = useRef<string | null>(null)
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    // Solo sincroniza si el cambio vino de afuera (ej. "Generar con IA") —
-    // nunca mientras el usuario esta escribiendo, o el cursor saltaria al
-    // principio del campo en cada tecla.
-    if (value !== lastPushed.current && el.innerHTML !== value) {
+    // Primer render: siempre pintar el valor inicial, tenga contenido o no.
+    // Despues: solo sincroniza si el cambio vino de afuera (ej. "Generar con
+    // IA") — nunca mientras el usuario esta escribiendo, o el cursor
+    // saltaria al principio del campo en cada tecla.
+    if (lastPushed.current === null || (value !== lastPushed.current && el.innerHTML !== value)) {
       el.innerHTML = value
     }
     lastPushed.current = value
