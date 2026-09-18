@@ -258,6 +258,67 @@ const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'codigo', label: 'Código fuente', icon: Code2 },
 ]
 
+
+// Stepper de "fase del proyecto" (venta confirmada → cierre). Todo derivado
+// de datos que ya existen en esta pagina — no hay un campo nuevo que
+// mantener a mano. Las fases cuyo documento/proceso todavia no existe en el
+// portal se muestran como "proximamente" (no clickeables) para que el mapa
+// completo sea visible sin fingir que ya funcionan.
+type EstadoFase = 'hecho' | 'progreso' | 'pendiente' | 'proximamente'
+interface FaseProyecto { key: string; label: string; estado: EstadoFase; tab?: TabKey; hint: string }
+
+function calcularFases(prd: PrdData, archNodesCount: number, tareas: TareaBacklog[]): FaseProyecto[] {
+  const prdTieneContenido = !!(prd.resumenEjecutivo.trim() || prd.problema.trim() || prd.requisitos.length > 0)
+  const estadoPrd: EstadoFase = prd.estadoDocumento === 'APROBADO' ? 'hecho' : prdTieneContenido ? 'progreso' : 'pendiente'
+
+  const reqs = prd.requisitos
+  const conBacklog = reqs.filter(r => r.backlogItemId).length
+  const estadoBacklog: EstadoFase = reqs.length > 0 && conBacklog === reqs.length ? 'hecho' : conBacklog > 0 ? 'progreso' : 'pendiente'
+
+  const hayActividad = tareas.some(t => t.status === 'IN_PROGRESS' || t.status === 'DONE' || t.status === 'FAILED')
+  const todasDone = tareas.length > 0 && tareas.every(t => t.status === 'DONE')
+  const estadoEjec: EstadoFase = todasDone ? 'hecho' : hayActividad ? 'progreso' : 'pendiente'
+
+  return [
+    { key: 'prd', label: 'PRD', estado: estadoPrd, tab: 'prd', hint: 'Hecho cuando el documento está en estado Aprobado.' },
+    { key: 'diseno', label: 'Diseño técnico', estado: archNodesCount > 0 ? 'progreso' : 'pendiente', tab: 'arquitectura',
+      hint: 'Hoy solo refleja si hay diagrama de arquitectura; el documento de Diseño Técnico (modelo de datos, stack, decisiones) aún no existe.' },
+    { key: 'plan-ejec', label: 'Plan de ejecución', estado: 'proximamente', hint: 'Próximamente: QA, despliegue, RACI, gestión de cambios, comunicación.' },
+    { key: 'backlog', label: 'Backlog', estado: estadoBacklog, tab: 'prd', hint: 'Requisitos del PRD convertidos en tareas reales del backlog.' },
+    { key: 'ejecucion', label: 'Ejecución', estado: estadoEjec, tab: 'prd', hint: 'Tareas del backlog generadas desde este PRD (en curso / terminadas).' },
+    { key: 'qa', label: 'QA / Aceptación', estado: 'proximamente', hint: 'Próximamente: aceptación formal del cliente.' },
+    { key: 'despliegue', label: 'Despliegue', estado: 'proximamente', hint: 'Próximamente: registro de despliegues por ambiente.' },
+    { key: 'cierre', label: 'Cierre', estado: 'proximamente', hint: 'Próximamente: snapshot as-built y resumen final.' },
+  ]
+}
+
+function FaseStepper({ fases, onIr }: { fases: FaseProyecto[]; onIr: (t: TabKey) => void }) {
+  const color: Record<EstadoFase, string> = {
+    hecho: 'border-emerald-600/60 bg-emerald-900/20 text-emerald-300',
+    progreso: 'border-orange-600/60 bg-orange-900/20 text-orange-300',
+    pendiente: 'border-gray-700 bg-gray-900/40 text-gray-400',
+    proximamente: 'border-dashed border-gray-800 bg-transparent text-gray-600',
+  }
+  return (
+    <div className="flex items-center gap-1 px-4 py-2 overflow-x-auto print:hidden" style={{ background: 'rgba(8,8,26,0.5)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      {fases.map((f, i) => {
+        const clickable = !!f.tab && f.estado !== 'proximamente'
+        return (
+          <div key={f.key} className="flex items-center gap-1 flex-shrink-0">
+            <button type="button" disabled={!clickable} onClick={() => f.tab && onIr(f.tab)} title={f.hint}
+              className={'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors ' + color[f.estado] + (clickable ? ' hover:brightness-125 cursor-pointer' : ' cursor-default')}>
+              {f.estado === 'hecho' ? <CheckCircle2 size={12} /> : <span className="text-[10px] opacity-70">{i + 1}</span>}
+              {f.label}
+              {f.estado === 'proximamente' && <span className="text-[9px] uppercase tracking-wide opacity-70">pronto</span>}
+            </button>
+            {i < fases.length - 1 && <span className="text-gray-700 text-xs">›</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function makeId() {
   return Math.random().toString(36).slice(2, 10)
 }
@@ -1094,6 +1155,8 @@ export default function SolucionDetailPage() {
 
   return (
     <div>
+      <FaseStepper fases={calcularFases(prd, archNodes.length, tareasBacklog)} onIr={setActiveTab} />
+
       {/* Tabs — mismo tamaño/estilo que la barra de tabs del Hub de Lead
           (leads/[id]/hub/page.tsx) para que ambos hubs se vean consistentes */}
       <div style={{ display: 'flex', gap: '2px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)', overflowX: 'auto' }}>
