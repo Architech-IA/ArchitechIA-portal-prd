@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { callOpenCode } from '@/lib/opencodeChat'
 
 const SYSTEM = `Sos un arquitecto de software experto en sistemas empresariales latinoamericanos.
 Dado el contexto de un proyecto de software, generás un mapa de arquitectura isométrico en JSON.
@@ -88,18 +89,11 @@ export async function POST(req: NextRequest) {
 
   const prompt = `Contexto del proyecto:\n${context}\n\nGenerá el mapa de arquitectura del sistema que se necesita construir para este cliente.`
 
-  // ── Call Claude CLI ───────────────────────────────────────────────────────
+  // ── Llamada al modelo (HTTP directo) ──────────────────────────────────────
   try {
-    const { exec } = await import('child_process')
-    const { promisify } = await import('util')
-    const execAsync = promisify(exec)
-
-    const sq  = "'"
-    const esc = sq + '\\' + "'" + sq
-    const safe = (s: string) => s.split(sq).join(esc)
-
-    const cmd = `claude --model claude-sonnet-5 --system-prompt '${safe(SYSTEM)}' -p '${safe(prompt)}'`
-    const { stdout } = await execAsync(cmd, { timeout: 90_000 })
+    // HTTP directo a OpenCode Zen (antes exec de la CLI claude, que dependia de un
+    // login del VPS y se rompia con "Not logged in").
+    const stdout = await callOpenCode(SYSTEM, prompt, `lead-arch-${leadId}`)
 
     const raw = stripMd(stdout.trim())
     const data = JSON.parse(raw)
