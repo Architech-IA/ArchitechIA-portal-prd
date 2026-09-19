@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import MeetingHub from './MeetingHub';
 import { toDatetimeLocalInput, getDateStrUTC5, getTodayStrUTC5, getTimeStrUTC5, getDateFullUTC5, getDayUTC5, getWeekdayDateUTC5 } from '@/lib/timezone';
 
 interface Meeting {
@@ -18,6 +19,7 @@ interface Meeting {
   notes: string | null;
   actaFile: string | null;
   actaFileName: string | null;
+  hub: string | null;
   userId: string;
   user: { id: string; name: string; email: string };
   createdAt: string;
@@ -281,6 +283,9 @@ export default function MeetingsPage() {
   const [actaFileNameState, setActaFileNameState] = useState('');
   const [externalAttendees, setExternalAttendees] = useState<string[]>([]);
   const [attendeeInput, setAttendeeInput] = useState('');
+  // Hub de la reunion (popup de trabajo, distinto del popup de agendar)
+  const [hubMeetingId, setHubMeetingId] = useState<string | null>(null);
+  const openHubAfterSave = useRef(false);
 
   useEffect(() => {
     Promise.all([
@@ -291,6 +296,7 @@ export default function MeetingsPage() {
   }, []);
 
   const openNew = () => {
+    openHubAfterSave.current = false;
     setEditMeeting(null);
     setFormError('');
     const now = new Date();
@@ -305,6 +311,7 @@ export default function MeetingsPage() {
   };
 
   const openEdit = (m: Meeting) => {
+    openHubAfterSave.current = false;
     setEditMeeting(m);
     setFormError('');
     setForm({
@@ -336,13 +343,14 @@ export default function MeetingsPage() {
         const saved = await res.json();
         setMeetings(prev => editMeeting ? prev.map(m => m.id === saved.id ? saved : m) : [saved, ...prev]);
         setShowModal(false);
+        if (openHubAfterSave.current) setHubMeetingId(saved.id);
       } else {
         const d = await res.json();
         setFormError(d.error || `Error ${res.status}`);
       }
     } catch {
       setFormError('Error de conexión.');
-    } finally { setSaving(false); }
+    } finally { setSaving(false); openHubAfterSave.current = false; }
   };
 
   const handleDelete = async () => {
@@ -574,6 +582,7 @@ export default function MeetingsPage() {
                         )}
                       </div>
                       <div className="flex gap-2 mt-2">
+                        <button onClick={() => setHubMeetingId(m.id)} className="text-xs font-semibold text-orange-400 hover:text-orange-300">Abrir hub</button>
                         <button onClick={() => openEdit(m)} className="text-xs text-gray-400 hover:text-white">Editar</button>
                         <button onClick={() => handleStatusToggle(m)} className={`text-xs transition-colors ${m.status === 'COMPLETED' ? 'text-gray-600 hover:text-blue-400' : 'text-green-400 hover:text-green-300'}`}>
                           {m.status === 'COMPLETED' ? 'Reabrir' : 'Completar'}
@@ -623,6 +632,7 @@ export default function MeetingsPage() {
                   </p>
                 )}
                                 <div className="flex gap-2 mt-2">
+                                  <button onClick={() => setHubMeetingId(m.id)} className="text-xs font-semibold text-orange-400 hover:text-orange-300">Abrir hub</button>
                                   <button onClick={() => openEdit(m)} className="text-xs text-gray-500 hover:text-gray-300">Editar</button>
                                   <button onClick={() => handleStatusToggle(m)} className={`text-xs ${m.status === 'COMPLETED' ? 'text-blue-400 hover:text-blue-300' : 'text-green-400 hover:text-green-300'}`}>
                                     {m.status === 'COMPLETED' ? 'Reabrir' : 'Completar'}
@@ -754,7 +764,7 @@ export default function MeetingsPage() {
                           return (
                             <div
                               key={m.id}
-                              onClick={() => openEdit(m)}
+                              onClick={() => setHubMeetingId(m.id)}
                               style={{ top: `${top}px`, height: `${height}px` }}
                               className={`absolute inset-x-0.5 rounded px-1.5 py-0.5 border-l-2 cursor-pointer overflow-hidden ${cls} ${m.status === 'COMPLETED' ? 'opacity-50' : ''} hover:brightness-110 transition-all`}
                               title={m.title}
@@ -863,7 +873,8 @@ export default function MeetingsPage() {
                         {/* Estado + acciones */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[m.status]}`}>{translateStatus(m.status)}</span>
-                          <button onClick={() => openEdit(m)} className="p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/[0.05]">
+                          <button onClick={() => setHubMeetingId(m.id)} title="Abrir hub de la reunión" className="px-2 py-1 text-[11px] font-semibold text-orange-400 hover:text-orange-300 transition-colors rounded hover:bg-white/[0.05]">Hub</button>
+                          <button onClick={() => openEdit(m)} title="Editar datos" className="p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/[0.05]">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </button>
                           <button onClick={() => setConfirmDel(m)} className="p-1.5 text-gray-700 hover:text-red-400 transition-colors rounded hover:bg-red-900/20">
@@ -1302,6 +1313,12 @@ export default function MeetingsPage() {
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.1)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.18)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.1)'; }}
                 >Cancelar</button>
+                {!editMeeting && (
+                  <button type="submit" disabled={saving} onClick={() => { openHubAfterSave.current = true; }}
+                    className="px-5 py-2 rounded-xl text-sm font-semibold text-orange-300 transition-all duration-200 disabled:opacity-60"
+                    style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(251,146,60,0.35)' }}
+                  >Crear y abrir hub</button>
+                )}
                 <button type="submit" disabled={saving}
                   className="px-5 py-2 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-200"
                   style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95))', border: '1px solid rgba(251,146,60,0.4)', boxShadow: '0 0 20px rgba(249,115,22,0.25), 0 0 0 1px rgba(255,255,255,0.08) inset', backdropFilter: 'blur(8px)' }}
@@ -1317,6 +1334,27 @@ export default function MeetingsPage() {
           </div>
         </div>
       )}
+
+
+      {/* Hub de la reunión (popup de trabajo: agenda, notas, decisiones, acciones, archivos) */}
+      {hubMeetingId && (() => {
+        const hm = meetings.find(m => m.id === hubMeetingId);
+        if (!hm) return null;
+        return (
+          <MeetingHub
+            key={hm.id}
+            meeting={hm}
+            asistentes={hm.attendees ? resolveAttendees(hm.attendees, users).split(',').map(a => a.trim()).filter(Boolean) : []}
+            typeLabel={TYPE_LABELS[hm.type] || hm.type}
+            fechaTexto={`${getDateFullUTC5(hm.date)} · ${getTimeStrUTC5(hm.date)}${hm.endDate ? ` — ${getTimeStrUTC5(hm.endDate)}` : ''}`}
+            onClose={() => setHubMeetingId(null)}
+            onEdit={() => { openEdit(hm); openHubAfterSave.current = true; setHubMeetingId(null); }}
+            onToggleStatus={() => { void handleStatusToggle(hm); }}
+            onHubSaved={(id, hub) => setMeetings(prev => prev.map(m => m.id === id ? { ...m, hub } : m))}
+            onActaChanged={u => setMeetings(prev => prev.map(m => m.id === u.id ? { ...m, actaFile: u.actaFile, actaFileName: u.actaFileName } : m))}
+          />
+        );
+      })()}
 
       {/* Modal eliminar */}
       {confirmDel && (

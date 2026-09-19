@@ -432,6 +432,8 @@ model Meeting {
   actaFile      String?
   actaFileName  String?
   googleEventId String?
+  hub           String?   // JSON: agenda, notas y decisiones del hub de la reunion
+  actions       MeetingAction[]
   userId        String
   user          User      @relation(fields: [userId], references: [id])
   activities    Activity[]
@@ -1022,4 +1024,21 @@ model AppEvento {
   creadoEn     DateTime @default(now())
 
   @@index([appSlug, creadoEn])
+}
+
+// Acciones (action items) que salen de una reunion — se ven y se editan en el
+// hub de la reunion; backlogItemId queda para enlazarlas a una tarea real.
+model MeetingAction {
+  id            String    @id @default(cuid())
+  meetingId     String
+  meeting       Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  texto         String
+  responsable   String?
+  fechaLimite   DateTime?
+  estado        String    @default("PENDIENTE") // PENDIENTE, EN_CURSO, HECHA
+  backlogItemId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([meetingId])
 }
