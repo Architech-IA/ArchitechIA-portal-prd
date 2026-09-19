@@ -455,17 +455,22 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
               <div className="flex justify-between gap-3"><dt className="text-gray-500">Estado</dt>
                 <dd><span className={`px-1.5 py-0.5 rounded-full text-[10px] ${soloLectura ? 'bg-green-500/20 text-green-400' : meeting.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
                   {soloLectura ? 'Completada' : meeting.status === 'CANCELLED' ? 'Cancelada' : 'Programada'}</span></dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Lugar</dt><dd className="text-gray-200 text-right truncate">{meeting.location || '—'}</dd></div>
-              {meeting.user?.name && <div className="flex justify-between gap-3"><dt className="text-gray-500">Organiza</dt><dd className="text-gray-200 text-right truncate">{meeting.user.name}</dd></div>}
+              <div className="flex justify-between gap-3 items-center"><dt className="text-gray-500">Lugar</dt>
+                <dd className="text-gray-200 text-right truncate flex items-center justify-end gap-1.5">
+                  {meeting.location || '—'}
+                  {meeting.link && (
+                    <a href={meeting.link} target="_blank" rel="noreferrer" title="Abrir enlace de la reunión" aria-label="Abrir enlace de la reunión"
+                      className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-orange-300 border border-orange-600/40 bg-orange-900/20 hover:bg-orange-900/40 hover:text-orange-200 transition-colors">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </a>
+                  )}
+                </dd></div>
               <div className="flex justify-between gap-3"><dt className="text-gray-500">Asistentes</dt><dd className="text-gray-200">{asistentes.length}</dd></div>
             </dl>
             {asistentes.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {asistentes.map(a => <span key={a} className="text-[10px] text-gray-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">{a}</span>)}
               </div>
-            )}
-            {meeting.link && (
-              <a href={meeting.link} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[11px] text-orange-300 hover:text-orange-200 underline underline-offset-2">Abrir enlace de la reunión</a>
             )}
           </section>
 
