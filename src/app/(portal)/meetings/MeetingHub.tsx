@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import RichNotes from '../leads/[id]/hub/RichNotes';
+import dynamic from 'next/dynamic';
+
+// Mismo editor con pestañas del hub de Leads (guarda un JSON { tabs } en hub.notas)
+const TabbedNotes = dynamic(() => import('../leads/[id]/hub/TabbedNotes'), { ssr: false });
 import { getDateStrUTC5, getTimeStrUTC5 } from '@/lib/timezone';
 
 // Hub de la reunion: popup grande para PREPARAR (agenda), TOMAR NOTAS,
@@ -27,16 +30,35 @@ export interface HubMeeting {
 }
 
 interface Item { id: string; texto: string }
-interface Pagina { id: string; titulo: string; html: string }
-interface HubData { objetivo: string; puntos: Item[]; notas: string; decisiones: Item[]; paginas: Pagina[] }
+interface HubData { objetivo: string; puntos: Item[]; notas: string; decisiones: Item[] }
 interface Accion {
   id: string; texto: string; responsable: string | null;
   fechaLimite: string | null; estado: 'PENDIENTE' | 'EN_CURSO' | 'HECHA'; backlogItemId: string | null;
 }
 
-const EMPTY_HUB: HubData = { objetivo: '', puntos: [], notas: '', decisiones: [], paginas: [] };
+const EMPTY_HUB: HubData = { objetivo: '', puntos: [], notas: '', decisiones: [] };
 const PLANTILLA_DAILY = ['Qué hice desde la última daily', 'Qué haré hoy', 'Bloqueos e impedimentos'];
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+// Las pestañas viven en hub.notas como JSON { tabs: [...] } (formato de TabbedNotes).
+// Si quedaron 'paginas' de una version previa, se pliegan ahi.
+function migrarNotas(notas: string, paginas: unknown): string {
+  if (!Array.isArray(paginas) || paginas.length === 0) return notas;
+  let tabs: { id: string; name: string; content: string }[] = [];
+  try { const v = JSON.parse(notas); if (v && Array.isArray(v.tabs)) tabs = v.tabs; } catch {}
+  if (tabs.length === 0) tabs = [{ id: uid(), name: 'General', content: notas }];
+  for (const x of paginas as { id?: string; titulo?: string; html?: string }[]) {
+    tabs.push({ id: x?.id || uid(), name: typeof x?.titulo === 'string' && x.titulo ? x.titulo : 'Nota', content: typeof x?.html === 'string' ? x.html : '' });
+  }
+  return JSON.stringify({ tabs });
+}
+
+// Texto plano de las notas (sea HTML suelto o el JSON de pestañas)
+function textoNotas(raw: string): string {
+  let t = raw;
+  try { const v = JSON.parse(raw); if (v && Array.isArray(v.tabs)) t = v.tabs.map((x: { content?: string }) => x.content || '').join(' '); } catch {}
+  return t.replace(/<[^>]+>/g, '').trim();
+}
 
 function parseHub(raw: string | null): HubData {
   if (!raw) return EMPTY_HUB;
@@ -47,11 +69,8 @@ function parseHub(raw: string | null): HubData {
       : [];
     return {
       objetivo: typeof p.objetivo === 'string' ? p.objetivo : '',
-      puntos: items(p.puntos), notas: typeof p.notas === 'string' ? p.notas : '',
+      puntos: items(p.puntos), notas: migrarNotas(typeof p.notas === 'string' ? p.notas : '', p.paginas),
       decisiones: items(p.decisiones),
-      paginas: Array.isArray(p.paginas)
-        ? p.paginas.map((x: { id?: string; titulo?: string; html?: string }) => ({ id: x?.id || uid(), titulo: typeof x?.titulo === 'string' ? x.titulo : '', html: typeof x?.html === 'string' ? x.html : '' }))
-        : [],
     };
   } catch { return EMPTY_HUB; }
 }
@@ -95,9 +114,6 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
   onActaChanged: (updated: { id: string; actaFile: string | null; actaFileName: string | null }) => void;
 }) {
   const [tab, setTab] = useState<TabKey>('agenda');
-  // Sub-pestanas del tab Contenido: 'main' = notas originales, el resto son hub.paginas
-  const [paginaSel, setPaginaSel] = useState<string>('main');
-  const [renombrando, setRenombrando] = useState<string | null>(null);
   const [hub, setHub] = useState<HubData>(() => parseHub(meeting.hub));
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const lastSaved = useRef<string>(JSON.stringify(parseHub(meeting.hub)));
@@ -246,11 +262,11 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
   const vencida = (a: Accion) => !!a.fechaLimite && a.estado !== 'HECHA' && diaNum(getDateStrUTC5(a.fechaLimite)) < diaNum(hoyStr);
   const vencidas = accPend.filter(vencida).length;
   const hechas = acciones.length - accPend.length;
-  const notasConContenido = hub.notas.replace(/<[^>]+>/g, '').trim().length > 0;
+  const notasConContenido = textoNotas(hub.notas).length > 0;
   const nPuntos = hub.puntos.filter(p => p.texto.trim()).length;
   const checklist: { tab: TabKey; label: string; ok: boolean; detalle: string }[] = [
     { tab: 'agenda', label: 'Agenda', ok: nPuntos > 0, detalle: nPuntos > 0 ? `${nPuntos} punto${nPuntos === 1 ? '' : 's'}` : 'Sin definir' },
-    { tab: 'notas', label: 'Contenido', ok: notasConContenido || hub.paginas.some(p => p.html.replace(/<[^>]+>/g, '').trim()), detalle: notasConContenido || hub.paginas.some(p => p.html.replace(/<[^>]+>/g, '').trim()) ? 'Con contenido' : 'Sin contenido' },
+    { tab: 'notas', label: 'Contenido', ok: notasConContenido, detalle: notasConContenido ? 'Con contenido' : 'Sin contenido' },
     { tab: 'archivos', label: 'Acta', ok: !!meeting.actaFile, detalle: meeting.actaFile ? (meeting.actaFileName || 'Adjunta') : 'Sin adjuntar' },
   ];
   const TABS: { key: TabKey; label: string; badge?: number }[] = [
@@ -356,52 +372,8 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
           )}
 
           {tab === 'notas' && (
-            <div>
-              <div className="flex items-center gap-1 mb-3 flex-wrap">
-                {([{ id: 'main', titulo: 'General', html: '' }, ...hub.paginas] as Pagina[]).map(p => {
-                  const activa = paginaSel === p.id;
-                  const extra = p.id !== 'main';
-                  return (
-                    <div key={p.id} className={`group flex items-center rounded-lg border text-xs transition-colors ${activa ? 'bg-orange-500/15 border-orange-500/40 text-orange-300' : 'border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}>
-                      {extra && renombrando === p.id && !soloLectura ? (
-                        <input autoFocus defaultValue={p.titulo} maxLength={40}
-                          onBlur={e => { const t = e.target.value.trim() || 'Sin título'; setHub(h => ({ ...h, paginas: h.paginas.map(x => x.id === p.id ? { ...x, titulo: t } : x) })); setRenombrando(null); }}
-                          onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur(); }}
-                          className="bg-transparent outline-none px-2.5 py-1.5 w-28 text-orange-200" />
-                      ) : (
-                        <button type="button" onClick={() => setPaginaSel(p.id)}
-                          onDoubleClick={() => { if (extra && !soloLectura) { setPaginaSel(p.id); setRenombrando(p.id); } }}
-                          title={extra && !soloLectura ? 'Doble clic para renombrar' : undefined}
-                          className="px-2.5 py-1.5 font-semibold">{p.titulo || 'Sin título'}</button>
-                      )}
-                      {extra && !soloLectura && (
-                        <button type="button" aria-label="Eliminar pestaña" title="Eliminar pestaña"
-                          onClick={() => {
-                            if (p.html.replace(/<[^>]+>/g, '').trim() && !window.confirm('Esta pestaña tiene contenido. ¿Eliminarla?')) return;
-                            setHub(h => ({ ...h, paginas: h.paginas.filter(x => x.id !== p.id) }));
-                            if (paginaSel === p.id) setPaginaSel('main');
-                          }}
-                          className="pr-2 text-gray-500 hover:text-red-400">×</button>
-                      )}
-                    </div>
-                  );
-                })}
-                {!soloLectura && (
-                  <button type="button" title="Agregar pestaña"
-                    onClick={() => { const id = uid(); setHub(h => ({ ...h, paginas: [...h.paginas, { id, titulo: 'Nueva pestaña', html: '' }] })); setPaginaSel(id); setRenombrando(id); }}
-                    className="px-2.5 py-1.5 rounded-lg border border-dashed border-white/15 text-xs text-gray-400 hover:text-orange-300 hover:border-orange-500/40">+ Pestaña</button>
-                )}
-              </div>
-              <div {...(soloLectura ? { inert: true } : {})}>
-                {paginaSel === 'main' || !hub.paginas.some(p => p.id === paginaSel) ? (
-                  <RichNotes key="main" value={hub.notas} onChange={html => setHub(h => ({ ...h, notas: html }))}
-                    placeholder="Notas de la reunión: lo que se discute, contexto, ideas…" />
-                ) : (
-                  <RichNotes key={paginaSel} value={hub.paginas.find(p => p.id === paginaSel)!.html}
-                    onChange={html => setHub(h => ({ ...h, paginas: h.paginas.map(x => x.id === paginaSel ? { ...x, html } : x) }))}
-                    placeholder="Escribe aquí…" />
-                )}
-              </div>
+            <div className="h-full min-h-[460px] flex flex-col" {...(soloLectura ? { inert: true } : {})}>
+              <TabbedNotes value={hub.notas} onChange={v => setHub(h => ({ ...h, notas: v }))} />
             </div>
           )}
 
