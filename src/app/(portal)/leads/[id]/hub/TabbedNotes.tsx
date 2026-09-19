@@ -201,15 +201,18 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const renameRef = useRef<HTMLInputElement>(null)
+  // Espejo de tabs para calcular el siguiente estado FUERA del updater de setState:
+  // llamar a onChange dentro de setTabs(prev => ...) actualiza al padre en pleno render.
+  const tabsRef = useRef(tabs)
+  tabsRef.current = tabs
 
   const emit = useCallback((next: NoteTab[]) => onChange(serialize(next)), [onChange])
 
   const updateTabContent = useCallback((id: string, html: string) => {
-    setTabs(prev => {
-      const next = prev.map(t => t.id === id ? { ...t, content: html } : t)
-      emit(next)
-      return next
-    })
+    const next = tabsRef.current.map(t => t.id === id ? { ...t, content: html } : t)
+    tabsRef.current = next
+    setTabs(next)
+    emit(next)
   }, [emit])
 
   const addTab = () => {
