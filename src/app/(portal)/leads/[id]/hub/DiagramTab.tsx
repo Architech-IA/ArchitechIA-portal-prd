@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Save, Loader2, Sparkles, X, ZoomIn, ZoomOut, Maximize2, Download, Info } from 'lucide-react'
+import { Save, Loader2, Sparkles, X, ZoomIn, ZoomOut, Maximize2, Download, Info, Link2 } from 'lucide-react'
 
 interface DiagNode {
   id: string; label: string; description?: string; type?: string; x: number; y: number
@@ -58,6 +58,12 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   const [hoveredNode, setHoveredNode]     = useState<string | null>(null)
   const [connectFrom, setConnectFrom]     = useState<string | null>(null)
   const [connectLine, setConnectLine]     = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
+  // Modo "Conectar" (clic en origen, clic en destino): alternativa visible al Shift+drag.
+  const [connectMode, setConnectMode]     = useState(false)
+  const [connectSource, setConnectSource] = useState<string | null>(null)
+  // Conexion seleccionada (clic sobre la linea) — se elimina con el boton ✕ o con Supr.
+  const [selectedEdge, setSelectedEdge]   = useState<string | null>(null)
+  const [hoveredEdge, setHoveredEdge]     = useState<string | null>(null)
 
   const svgRef    = useRef<SVGSVGElement>(null)
   const vpRef     = useRef(vp)
@@ -146,7 +152,60 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
     return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
   }, [connectFrom, clientToSvg])
 
+  // ── Agregar / eliminar conexiones (compartido por modo Conectar, panel lateral y teclado) ──
+  function addEdge(fromId: string, toId: string) {
+    if (fromId === toId) return
+    setDiag(prev => {
+      const exists = prev.edges.some(e => (e.from === fromId && e.to === toId) || (e.from === toId && e.to === fromId))
+      if (exists) return prev
+      return { ...prev, edges: [...prev.edges, { id: `e${Date.now()}-${seq++}`, from: fromId, to: toId }] }
+    })
+  }
+  function removeEdge(edgeId: string) {
+    setDiag(prev => ({ ...prev, edges: prev.edges.filter(e => e.id !== edgeId) }))
+    setSelectedEdge(null)
+  }
+  function toggleConnectMode() {
+    setConnectMode(m => !m)
+    setConnectSource(null); setConnectLine(null); setSelectedEdge(null); setSelected(null)
+  }
+  function handleConnectClick(nodeId: string) {
+    if (!connectSource) { setConnectSource(nodeId); return }
+    if (connectSource === nodeId) { setConnectSource(null); return }
+    addEdge(connectSource, nodeId)
+    setConnectSource(null)   // se queda en modo conectar para encadenar varias conexiones
+  }
+
+  // Linea punteada del origen al cursor mientras se elige el destino.
+  useEffect(() => {
+    if (!connectSource) return
+    const onMove = (e: MouseEvent) => {
+      const c = clientToSvg(e.clientX, e.clientY); if (!c) return
+      const src = diagRef.current.nodes.find(n => n.id === connectSource); if (!src) return
+      const { cx, cy } = svgPos(src)
+      setConnectLine({ x1: cx, y1: cy, x2: c.svgX, y2: c.svgY })
+    }
+    document.addEventListener('mousemove', onMove)
+    return () => { document.removeEventListener('mousemove', onMove); setConnectLine(null) }
+  }, [connectSource, clientToSvg])
+
+  // Teclado: Esc sale del modo conectar / deselecciona; Supr elimina la conexion seleccionada.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      const enCampo = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)
+      if (e.key === 'Escape') {
+        setConnectMode(false); setConnectSource(null); setConnectLine(null); setSelectedEdge(null)
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEdge && !enCampo) {
+        e.preventDefault(); removeEdge(selectedEdge)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [selectedEdge])
+
   const startNodeDrag = (e: React.MouseEvent, nodeId: string) => {
+    if (connectMode) { e.stopPropagation(); e.preventDefault(); return }
     e.stopPropagation(); e.preventDefault()
     if (e.shiftKey) {
       setConnectFrom(nodeId)
@@ -236,7 +295,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   }, [])
 
   const onSvgDown = (e: React.MouseEvent) => {
-    if ((e.target as Element).closest('[data-node]')) return
+    if ((e.target as Element).closest('[data-node],[data-edge]')) return
     panning.current = true; panMoved.current = false
     origin.current = { mx: e.clientX, my: e.clientY, vx: vp.x, vy: vp.y }
   }
@@ -247,10 +306,13 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   }
   const onSvgUp = (e: React.MouseEvent) => {
     panning.current = false
-    if (!panMoved.current && !(e.target as Element).closest('[data-node]')) setSelected(null)
+    if (!panMoved.current && !(e.target as Element).closest('[data-node],[data-edge]')) {
+      setSelected(null); setSelectedEdge(null); setConnectSource(null); setConnectLine(null)
+    }
   }
   const onSvgDblClick = (e: React.MouseEvent) => {
-    if ((e.target as Element).closest('[data-node]')) return
+    if (connectMode) return
+    if ((e.target as Element).closest('[data-node],[data-edge]')) return
     const c = clientToSvg(e.clientX, e.clientY); if (!c) return
     const cell = svgToGrid(c.svgX, c.svgY); if (!cell) return
     if (diag.nodes.some(n => snap(n.x) === cell.gx && snap(n.y) === cell.gy)) return
@@ -295,7 +357,9 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                 <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-900 border-l border-t border-gray-700 rotate-45" />
                 {[
                   ['Doble click', 'en celda vacía para agregar'],
+                  ['Botón Conectar', 'clic en origen y luego en destino'],
                   ['Shift + drag', 'entre nodos para conectar'],
+                  ['Clic en una línea', 'para seleccionarla y eliminarla (Supr)'],
                   ['Drag', 'para mover componentes'],
                 ].map(([key, desc]) => (
                   <p key={key} className="text-[11px] leading-snug text-gray-400">
@@ -307,6 +371,12 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           </div>
         </div>
         <div className="flex gap-2 shrink-0 pt-1">
+          <button onClick={toggleConnectMode} aria-pressed={connectMode}
+            aria-label="Modo conectar componentes"
+            title="Conectar: clic en el componente de origen y luego en el de destino (Esc para salir)"
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all active:scale-95 ${connectMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}`}>
+            <Link2 size={14} /> {connectMode ? 'Conectando…' : 'Conectar'}
+          </button>
           {/* Primary action */}
           <button onClick={generate} disabled={generating || saving}
             aria-label="Generar diagrama con IA"
@@ -314,7 +384,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             {generating ? 'Generando...' : 'Generar'}
           </button>
-          <button onClick={exportPng}
+          <button onClick={() => { setSelectedEdge(null); setConnectSource(null); setTimeout(exportPng, 60) }}
             aria-label="Exportar como PNG"
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-300 transition-all active:scale-95">
             <Download size={14} /> PNG
@@ -359,6 +429,17 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             </div>
           )}
 
+          {connectMode && !connectFrom && (
+            <div className="absolute top-3 left-3 z-10 bg-blue-950/80 border border-blue-800/60 text-blue-300 text-[11px] px-3 py-1.5 rounded-lg pointer-events-none">
+              {connectSource ? 'Ahora hacé clic en el componente de destino (Esc para salir)' : 'Modo conectar: hacé clic en el componente de origen (Esc para salir)'}
+            </div>
+          )}
+          {selectedEdge && !connectMode && (
+            <div className="absolute top-3 left-3 z-10 bg-red-950/80 border border-red-800/60 text-red-300 text-[11px] px-3 py-1.5 rounded-lg pointer-events-none">
+              Conexión seleccionada — clic en ✕ o tecla Supr para eliminarla
+            </div>
+          )}
+
           {generating && (
             <div className="absolute inset-0 bg-gray-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-10 gap-3">
               <Loader2 size={22} className="animate-spin text-orange-400" />
@@ -375,7 +456,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
 
           <svg ref={svgRef}
             style={{ width: '100%', height: '100%', display: 'block',
-              cursor: connectFrom ? 'crosshair' : panning.current ? 'grabbing' : 'default', userSelect: 'none' }}
+              cursor: connectFrom || connectMode ? 'crosshair' : panning.current ? 'grabbing' : 'default', userSelect: 'none' }}
             onWheel={onWheel} onMouseDown={onSvgDown} onMouseMove={onSvgMove} onMouseUp={onSvgUp}
             onDoubleClick={onSvgDblClick} onMouseLeave={() => { panning.current = false }}>
 
@@ -405,17 +486,36 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                   strokeWidth="2" strokeDasharray="4 3" />
               )}
 
-              {/* Edges — increased contrast (#3d7ab0 instead of #2e4a6a) */}
+              {/* Conexiones: clic para seleccionar (se pone roja, con boton ✕ en el medio;
+                  tambien Supr). La linea invisible mas gruesa facilita el clic. */}
               {diag.edges.map(edge => {
                 const fn = diag.nodes.find(n => n.id === edge.from)
                 const tn = diag.nodes.find(n => n.id === edge.to)
                 if (!fn || !tn) return null
                 const fa = svgPos(fn), ta = svgPos(tn)
                 const isSel = selected === fn.id || selected === tn.id
+                const isEdgeSel = selectedEdge === edge.id
+                const isEdgeHov = hoveredEdge === edge.id
+                const mx = (fa.cx + ta.cx) / 2, my = (fa.cy + ta.cy) / 2
                 return (
-                  <line key={edge.id} x1={fa.cx} y1={fa.cy} x2={ta.cx} y2={ta.cy}
-                    stroke={isSel ? '#f97316' : '#3d7ab0'} strokeWidth={isSel ? 2.5 : 1.5}
-                    opacity={selected && !isSel ? 0.15 : 1} />
+                  <g key={edge.id} data-edge="1" style={{ cursor: connectMode ? 'crosshair' : 'pointer' }}
+                    onMouseEnter={() => setHoveredEdge(edge.id)} onMouseLeave={() => setHoveredEdge(null)}
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); if (connectMode) return; setSelected(null); setSelectedEdge(isEdgeSel ? null : edge.id) }}>
+                    <line x1={fa.cx} y1={fa.cy} x2={ta.cx} y2={ta.cy} stroke="transparent" strokeWidth={16} />
+                    <line x1={fa.cx} y1={fa.cy} x2={ta.cx} y2={ta.cy}
+                      stroke={isEdgeSel ? '#ef4444' : isEdgeHov ? '#7fb2e0' : isSel ? '#f97316' : '#3d7ab0'}
+                      strokeWidth={isEdgeSel ? 3 : isSel || isEdgeHov ? 2.5 : 1.5}
+                      opacity={selected && !isSel ? 0.15 : 1} style={{ pointerEvents: 'none' }} />
+                    {isEdgeSel && (
+                      <g style={{ cursor: 'pointer' }} onClick={e => { e.stopPropagation(); removeEdge(edge.id) }}>
+                        <circle cx={mx} cy={my} r={12} fill="#7f1d1d" stroke="#ef4444" strokeWidth="1.5" />
+                        <path d={`M${mx - 4} ${my - 4} L${mx + 4} ${my + 4} M${mx + 4} ${my - 4} L${mx - 4} ${my + 4}`}
+                          stroke="#fecaca" strokeWidth="2" strokeLinecap="round" />
+                        <title>Eliminar conexión</title>
+                      </g>
+                    )}
+                  </g>
                 )
               })}
 
@@ -436,20 +536,26 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                 )
                 const color = tc(node.type)
                 const fill    = sel ? '#1a2d40' : hov ? '#1e2a38' : '#161c27'
-                const stroke  = sel ? '#f97316' : hov ? '#5a8ab0' : connected ? '#4a6080' : '#2a3a50'
-                const sw      = sel || hov ? 2 : 1.5
+                const isSrc   = connectSource === node.id
+                const stroke  = isSrc ? '#3b82f6' : sel ? '#f97316' : hov ? '#5a8ab0' : connected ? '#4a6080' : '#2a3a50'
+                const sw      = isSrc ? 3 : sel || hov ? 2 : 1.5
                 const txtFill = sel ? '#f97316' : hov ? '#f1f5f9' : '#e2e8f0'
                 return (
                   <g key={node.id} data-node="1"
                     style={{
-                      cursor: connectFrom ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
+                      cursor: connectFrom || connectMode ? 'crosshair' : isDragging ? 'grabbing' : 'grab',
                       opacity: selected && !sel && !connected ? 0.2 : isDragging ? 0.5 : 1,
                       transition: opaTrans,
                     }}
                     onMouseEnter={() => setHoveredNode(node.id)}
                     onMouseLeave={() => setHoveredNode(null)}
                     onMouseDown={e => startNodeDrag(e, node.id)}
-                    onClick={e => { e.stopPropagation(); if (hasDragged.current || connectFrom) return; setSelected(sel ? null : node.id) }}>
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (connectMode) { handleConnectClick(node.id); return }
+                      if (hasDragged.current || connectFrom) return
+                      setSelectedEdge(null); setSelected(sel ? null : node.id)
+                    }}>
                     {(hov || sel) && (
                       <rect x={x - 3} y={y - 3} width={W + 6} height={H + 6} rx="11"
                         fill="none" stroke={sel ? '#f97316' : '#3a6a94'} strokeWidth="1" opacity="0.35" />
@@ -520,22 +626,33 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             </div>
             {(() => {
               const edges = diag.edges.filter(e => e.from === selNode.id || e.to === selNode.id)
-              if (!edges.length) return null
+              const conectados = new Set(edges.map(e => (e.from === selNode.id ? e.to : e.from)))
+              const candidatos = diag.nodes.filter(n => n.id !== selNode.id && !conectados.has(n.id))
               return (
                 <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-800">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Conectado con</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Conexiones</p>
+                  {edges.length === 0 && <p className="text-[11px] text-gray-600 italic">Sin conexiones.</p>}
                   {edges.map(edge => {
                     const other = diag.nodes.find(n => n.id === (edge.from === selNode.id ? edge.to : edge.from))
                     return (
-                      <div key={edge.id} className="flex items-center gap-1.5 group text-[11px] text-gray-400">
+                      <div key={edge.id} className="flex items-center gap-1.5 text-[11px] text-gray-400">
                         <span className="text-gray-600">—</span>
                         <span className="flex-1 truncate">{other?.label}</span>
-                        <button onClick={() => setDiag(p => ({ ...p, edges: p.edges.filter(e2 => e2.id !== edge.id) }))}
+                        <button onClick={() => removeEdge(edge.id)}
                           aria-label={`Eliminar conexión con ${other?.label}`}
-                          className="opacity-0 group-hover:opacity-100 text-red-500"><X size={9} /></button>
+                          title="Eliminar conexión"
+                          className="w-5 h-5 flex items-center justify-center rounded text-gray-500 hover:text-red-400 hover:bg-red-500/10"><X size={11} /></button>
                       </div>
                     )
                   })}
+                  {candidatos.length > 0 && (
+                    <select value="" onChange={e => { if (e.target.value) addEdge(selNode.id, e.target.value) }}
+                      aria-label="Agregar conexión"
+                      className="mt-0.5 bg-gray-800 text-gray-300 text-[11px] px-2 py-1.5 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 w-full">
+                      <option value="">+ Agregar conexión con…</option>
+                      {candidatos.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
+                    </select>
+                  )}
                 </div>
               )
             })()}
