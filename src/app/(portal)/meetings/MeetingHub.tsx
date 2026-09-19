@@ -467,7 +467,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                 </dd></div>
               <div className="flex justify-between gap-3"><dt className="text-gray-500">Asistentes</dt><dd className="text-gray-200">{meeting.type === 'INTERNAL_DAILY' ? 'ArchitechIA' : asistentes.length}</dd></div>
             </dl>
-            {asistentes.length > 0 && (
+            {meeting.type !== 'INTERNAL_DAILY' && asistentes.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {asistentes.map(a => <span key={a} className="text-[10px] text-gray-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">{a}</span>)}
               </div>
