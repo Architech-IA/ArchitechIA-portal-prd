@@ -8,7 +8,7 @@ import {
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
   Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList, Play,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Printer,
-  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb, PenLine, Send, ChevronLeft, MessageSquare,
+  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb, PenLine, Send, ChevronLeft, MessageSquare, Boxes,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -245,19 +245,122 @@ const emptyForm: FormState = {
   nombre: '', descripcion: '', tipo: 'PROJECT', estado: 'ACTIVO', valorEstimado: '0', leadId: '', repositorio: '', planTrabajo: '',
 }
 
-type TabKey = 'general' | 'arquitectura' | 'plan' | 'prd' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
+type TabKey = 'general' | 'arquitectura' | 'plan' | 'prd' | 'diseno' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
 
 const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'general', label: 'General', icon: Sliders },
   { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
   { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
   { key: 'prd', label: 'PRD', icon: ClipboardList },
+  { key: 'diseno', label: 'Diseño Técnico', icon: Boxes },
   { key: 'cronograma', label: 'Cronograma', icon: Calendar },
   { key: 'riesgos', label: 'Riesgos', icon: AlertTriangle },
   { key: 'cumplimiento', label: 'Cumplimiento', icon: Flag },
   { key: 'codigo', label: 'Código fuente', icon: Code2 },
 ]
 
+
+// Diseño técnico: documento hermano del PRD (el "cómo" se construye, no el
+// "qué"). Mismo patrón: secciones numeradas, ciclo de vida propio, IA por
+// sección. Se persiste en Solucion.disenoTecnico (JSON).
+interface Entidad { id: string; nombre: string; atributos: string; relaciones: string }
+interface StackItem { id: string; capa: string; tecnologia: string; justificacion: string }
+interface Integracion { id: string; sistema: string; proposito: string; detalle: string; siFalla: string }
+interface DecisionTec { id: string; decision: string; alternativas: string; justificacion: string }
+type DTListKey = 'entidades' | 'stack' | 'integraciones' | 'decisiones'
+
+interface DisenoData {
+  estadoDocumento: EstadoDocumentoPrd
+  arquitectura: string
+  entidades: Entidad[]
+  stack: StackItem[]
+  integraciones: Integracion[]
+  decisiones: DecisionTec[]
+  seguridad: string
+  escalabilidad: string
+}
+const emptyDiseno: DisenoData = {
+  estadoDocumento: 'BORRADOR', arquitectura: '', entidades: [], stack: [], integraciones: [],
+  decisiones: [], seguridad: '', escalabilidad: '',
+}
+
+// Configuración de las 4 secciones-tabla: columnas, textos y clave de IA.
+const DT_TABLAS: Record<DTListKey, {
+  aiKey: string; n: number; titulo: string; addLabel: string; vacio: string
+  cols: { campo: string; label: string; ph: string; ancho?: string }[]
+}> = {
+  entidades: {
+    aiKey: 'dt_modelo', n: 2, titulo: 'Modelo de datos (entidades clave)', addLabel: 'Agregar entidad',
+    vacio: 'Sin entidades todavía.',
+    cols: [
+      { campo: 'nombre', label: 'Entidad', ph: 'Ej: Cotización', ancho: 'w-40' },
+      { campo: 'atributos', label: 'Atributos principales', ph: 'Ej: id, cliente, fecha, estado, total' },
+      { campo: 'relaciones', label: 'Relaciones', ph: 'Ej: pertenece a Cliente; tiene muchas Ofertas' },
+    ],
+  },
+  stack: {
+    aiKey: 'dt_stack', n: 3, titulo: 'Stack tecnológico', addLabel: 'Agregar tecnología',
+    vacio: 'Sin tecnologías todavía.',
+    cols: [
+      { campo: 'capa', label: 'Capa', ph: 'Ej: Frontend', ancho: 'w-32' },
+      { campo: 'tecnologia', label: 'Tecnología', ph: 'Ej: Next.js + TypeScript', ancho: 'w-48' },
+      { campo: 'justificacion', label: 'Por qué', ph: 'Razón concreta de la elección' },
+    ],
+  },
+  integraciones: {
+    aiKey: 'dt_integraciones', n: 4, titulo: 'Integraciones externas', addLabel: 'Agregar integración',
+    vacio: 'Sin integraciones todavía.',
+    cols: [
+      { campo: 'sistema', label: 'Sistema', ph: 'Ej: API de Allianz', ancho: 'w-36' },
+      { campo: 'proposito', label: 'Propósito', ph: 'Para qué se usa' },
+      { campo: 'detalle', label: 'Cómo se conecta', ph: 'Protocolo, auth, formato' },
+      { campo: 'siFalla', label: 'Si falla', ph: 'Qué pasa si no responde' },
+    ],
+  },
+  decisiones: {
+    aiKey: 'dt_decisiones', n: 5, titulo: 'Decisiones técnicas clave', addLabel: 'Agregar decisión',
+    vacio: 'Sin decisiones registradas todavía.',
+    cols: [
+      { campo: 'decision', label: 'Decisión', ph: 'Qué se decidió', ancho: 'w-44' },
+      { campo: 'alternativas', label: 'Alternativas consideradas', ph: 'Qué otras opciones se evaluaron' },
+      { campo: 'justificacion', label: 'Justificación', ph: 'Por qué se eligió esta' },
+    ],
+  },
+}
+
+function itemVacioDT(key: DTListKey): Record<string, string> {
+  const o: Record<string, string> = { id: makeId() }
+  for (const c of DT_TABLAS[key].cols) o[c.campo] = ''
+  return o
+}
+
+function migrarDiseno(raw: Record<string, unknown>): DisenoData {
+  const str = (v: unknown) => (typeof v === 'string' ? v : '')
+  const lista = <T extends { id: string }>(v: unknown, campos: string[]): T[] =>
+    Array.isArray(v)
+      ? v.map((x: Record<string, unknown>) => {
+          const o: Record<string, unknown> = { id: typeof x?.id === 'string' && x.id ? x.id : makeId() }
+          for (const c of campos) o[c] = str(x?.[c])
+          return o as unknown as T
+        })
+      : []
+  const estado = raw.estadoDocumento
+  return {
+    estadoDocumento: estado === 'EN_REVISION' || estado === 'APROBADO' ? estado : 'BORRADOR',
+    arquitectura: escapeIfPlain(str(raw.arquitectura)),
+    entidades: lista<Entidad>(raw.entidades, ['nombre', 'atributos', 'relaciones']),
+    stack: lista<StackItem>(raw.stack, ['capa', 'tecnologia', 'justificacion']),
+    integraciones: lista<Integracion>(raw.integraciones, ['sistema', 'proposito', 'detalle', 'siFalla']),
+    decisiones: lista<DecisionTec>(raw.decisiones, ['decision', 'alternativas', 'justificacion']),
+    seguridad: escapeIfPlain(str(raw.seguridad)),
+    escalabilidad: escapeIfPlain(str(raw.escalabilidad)),
+  }
+}
+
+function disenoTieneContenido(d: DisenoData): boolean {
+  return !!(d.arquitectura.trim() || d.seguridad.trim() || d.escalabilidad.trim()
+    || d.entidades.length || d.stack.length || d.integraciones.length || d.decisiones.length)
+}
 
 // Stepper de "fase del proyecto" (venta confirmada → cierre). Todo derivado
 // de datos que ya existen en esta pagina — no hay un campo nuevo que
@@ -267,9 +370,12 @@ const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
 type EstadoFase = 'hecho' | 'progreso' | 'pendiente' | 'proximamente'
 interface FaseProyecto { key: string; label: string; estado: EstadoFase; tab?: TabKey; hint: string }
 
-function calcularFases(prd: PrdData, archNodesCount: number, tareas: TareaBacklog[]): FaseProyecto[] {
+function calcularFases(prd: PrdData, diseno: DisenoData, archNodesCount: number, tareas: TareaBacklog[]): FaseProyecto[] {
   const prdTieneContenido = !!(prd.resumenEjecutivo.trim() || prd.problema.trim() || prd.requisitos.length > 0)
   const estadoPrd: EstadoFase = prd.estadoDocumento === 'APROBADO' ? 'hecho' : prdTieneContenido ? 'progreso' : 'pendiente'
+
+  const estadoDiseno: EstadoFase = diseno.estadoDocumento === 'APROBADO' ? 'hecho'
+    : (disenoTieneContenido(diseno) || archNodesCount > 0) ? 'progreso' : 'pendiente'
 
   const reqs = prd.requisitos
   const conBacklog = reqs.filter(r => r.backlogItemId).length
@@ -281,8 +387,7 @@ function calcularFases(prd: PrdData, archNodesCount: number, tareas: TareaBacklo
 
   return [
     { key: 'prd', label: 'PRD', estado: estadoPrd, tab: 'prd', hint: 'Hecho cuando el documento está en estado Aprobado.' },
-    { key: 'diseno', label: 'Diseño técnico', estado: archNodesCount > 0 ? 'progreso' : 'pendiente', tab: 'arquitectura',
-      hint: 'Hoy solo refleja si hay diagrama de arquitectura; el documento de Diseño Técnico (modelo de datos, stack, decisiones) aún no existe.' },
+    { key: 'diseno', label: 'Diseño técnico', estado: estadoDiseno, tab: 'diseno', hint: 'Hecho cuando el documento de Diseño Técnico está en estado Aprobado.' },
     { key: 'plan-ejec', label: 'Plan de ejecución', estado: 'proximamente', hint: 'Próximamente: QA, despliegue, RACI, gestión de cambios, comunicación.' },
     { key: 'backlog', label: 'Backlog', estado: estadoBacklog, tab: 'prd', hint: 'Requisitos del PRD convertidos en tareas reales del backlog.' },
     { key: 'ejecucion', label: 'Ejecución', estado: estadoEjec, tab: 'prd', hint: 'Tareas del backlog generadas desde este PRD (en curso / terminadas).' },
@@ -501,6 +606,13 @@ export default function SolucionDetailPage() {
   useEffect(() => {
     setPrdDirty(JSON.stringify(prd) !== prdSavedSnapshot.current)
   }, [prd])
+  // Diseño técnico (tab hermano del PRD), mismo esquema de "cambios sin guardar".
+  const [diseno, setDiseno] = useState<DisenoData>(emptyDiseno)
+  const disenoSavedSnapshot = useRef<string>(JSON.stringify(emptyDiseno))
+  const [disenoDirty, setDisenoDirty] = useState(false)
+  useEffect(() => {
+    setDisenoDirty(JSON.stringify(diseno) !== disenoSavedSnapshot.current)
+  }, [diseno])
   // Panel lateral de IA por sección del PRD (estilo blade de Azure/AWS). La
   // opción "Generar sección con IA" abre una mini-entrevista: el chat vive
   // en su propio estado, separado del panel, para que cerrar/reabrir el
@@ -602,6 +714,12 @@ export default function SolucionDetailPage() {
           setPrd(cargado)
           prdSavedSnapshot.current = JSON.stringify(cargado)
         } catch { setPrd(emptyPrd); prdSavedSnapshot.current = JSON.stringify(emptyPrd) }
+        try {
+          const parsedDt = s.disenoTecnico ? JSON.parse(s.disenoTecnico) : null
+          const cargadoDt = parsedDt && typeof parsedDt === 'object' ? migrarDiseno(parsedDt) : emptyDiseno
+          setDiseno(cargadoDt)
+          disenoSavedSnapshot.current = JSON.stringify(cargadoDt)
+        } catch { setDiseno(emptyDiseno); disenoSavedSnapshot.current = JSON.stringify(emptyDiseno) }
       } catch {
         setNotFound(true)
       } finally {
@@ -717,6 +835,26 @@ export default function SolucionDetailPage() {
     setPrd(prev => ({ ...prev, [key]: value }))
   }
 
+  // Diseño técnico: handlers genericos para sus 4 secciones-tabla.
+  function updateDisenoField<K extends keyof DisenoData>(key: K, value: DisenoData[K]) {
+    setDiseno(prev => ({ ...prev, [key]: value }))
+  }
+  function addDTItem(key: DTListKey) {
+    setDiseno(prev => ({ ...prev, [key]: [...(prev[key] as unknown as Record<string, string>[]), itemVacioDT(key)] }) as DisenoData)
+  }
+  function updateDTItem(key: DTListKey, itemId: string, campo: string, valor: string) {
+    setDiseno(prev => ({
+      ...prev,
+      [key]: (prev[key] as unknown as Record<string, string>[]).map(it => it.id === itemId ? { ...it, [campo]: valor } : it),
+    }) as DisenoData)
+  }
+  function removeDTItem(key: DTListKey, itemId: string) {
+    setDiseno(prev => ({
+      ...prev,
+      [key]: (prev[key] as unknown as Record<string, string>[]).filter(it => it.id !== itemId),
+    }) as DisenoData)
+  }
+
   // Lo que ya hay en el PRD para una sección, en la forma "plana" que espera
   // el backend del chat de IA (sin ids internos ni HTML de edicion) — para
   // que la entrevista sepa que ya existe y pueda completar/mejorar en vez de
@@ -733,6 +871,13 @@ export default function SolucionDetailPage() {
       case 'requisitos': return prd.requisitos.map(r => ({ tipo: r.tipo, texto: r.texto, criterioAceptacion: r.criterioAceptacion, prioridad: r.prioridad }))
       case 'rnf': return prd.requisitosNoFuncionales.map(r => ({ categoria: r.categoria, texto: r.texto }))
       case 'metricas': return prd.metricas.map(m => ({ nombre: m.nombre, meta: m.meta, comoSeMide: m.comoSeMide }))
+      case 'dt_arquitectura': return diseno.arquitectura
+      case 'dt_seguridad': return diseno.seguridad
+      case 'dt_escalabilidad': return diseno.escalabilidad
+      case 'dt_modelo': return diseno.entidades.map(({ id: _i, ...r }) => r)
+      case 'dt_stack': return diseno.stack.map(({ id: _i, ...r }) => r)
+      case 'dt_integraciones': return diseno.integraciones.map(({ id: _i, ...r }) => r)
+      case 'dt_decisiones': return diseno.decisiones.map(({ id: _i, ...r }) => r)
       default: return null
     }
   }
@@ -790,6 +935,20 @@ export default function SolucionDetailPage() {
         updatePrdField('metricas', items.map((m: any) => ({ id: makeId(), nombre: String(m?.nombre ?? ''), meta: String(m?.meta ?? ''), comoSeMide: String(m?.comoSeMide ?? '') })))
         break
       }
+      case 'dt_arquitectura': updateDisenoField('arquitectura', escapeIfPlain(String(valor ?? ''))); break
+      case 'dt_seguridad': updateDisenoField('seguridad', escapeIfPlain(String(valor ?? ''))); break
+      case 'dt_escalabilidad': updateDisenoField('escalabilidad', escapeIfPlain(String(valor ?? ''))); break
+      case 'dt_modelo': case 'dt_stack': case 'dt_integraciones': case 'dt_decisiones': {
+        const key = ({ dt_modelo: 'entidades', dt_stack: 'stack', dt_integraciones: 'integraciones', dt_decisiones: 'decisiones' } as const)[seccionKey]
+        const items = Array.isArray(valor) ? valor : []
+        const nuevos = items.map((x: Record<string, unknown>) => {
+          const o: Record<string, string> = { id: makeId() }
+          for (const c of DT_TABLAS[key].cols) o[c.campo] = String(x?.[c.campo] ?? '')
+          return o
+        })
+        setDiseno(prev => ({ ...prev, [key]: nuevos }) as DisenoData)
+        break
+      }
     }
   }
 
@@ -829,6 +988,8 @@ export default function SolucionDetailPage() {
             dentroDeAlcance: prd.dentroDeAlcance.map(it => it.texto).filter(Boolean),
             objetivosEspecificos: prd.objetivosEspecificos.map(it => it.texto).filter(Boolean),
             personas: prd.personas.map(p => `${p.rol}: ${p.necesidad}`).filter(s => s.trim() !== ':'),
+            requisitos: prd.requisitos.map(r => `[${r.prioridad}] ${r.texto.replace(/<[^>]+>/g, ' ')}`).filter(t => t.length > 12),
+            requisitosNoFuncionales: prd.requisitosNoFuncionales.map(r => `${r.categoria}: ${r.texto}`).filter(t => t.length > 12),
           },
         }),
       })
@@ -1102,6 +1263,7 @@ export default function SolucionDetailPage() {
           planTrabajo: form.planTrabajo.trim() || null,
           cronograma: JSON.stringify(fases),
           prd: JSON.stringify(prd),
+          disenoTecnico: JSON.stringify(diseno),
         }),
       })
       if (!res.ok) {
@@ -1112,6 +1274,8 @@ export default function SolucionDetailPage() {
       setSavedAt(Date.now())
       prdSavedSnapshot.current = JSON.stringify(prd)
       setPrdDirty(false)
+      disenoSavedSnapshot.current = JSON.stringify(diseno)
+      setDisenoDirty(false)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error inesperado.')
     } finally {
@@ -1155,7 +1319,178 @@ export default function SolucionDetailPage() {
 
   return (
     <div>
-      <FaseStepper fases={calcularFases(prd, archNodes.length, tareasBacklog)} onIr={setActiveTab} />
+      <FaseStepper fases={calcularFases(prd, diseno, archNodes.length, tareasBacklog)} onIr={setActiveTab} />
+
+      {/* Panel lateral de IA por seccion, estilo "blade" de
+          Azure/AWS (y de widgets tipo Intercom/soporte): panel
+          angosto anclado a la derecha, con el fondo oscurecido
+          cubriendo TODA la pagina detras. Renderizado con un
+          portal a document.body a proposito: el tab de PRD vive
+          adentro de la tarjeta "glass" (backdropFilter: blur(...))
+          que envuelve todos los tabs de esta pagina, y un
+          backdrop-filter en un ancestor crea su propio "containing
+          block" para position:fixed — sin el portal, este panel
+          quedaba atrapado dentro de esa tarjeta (empezaba debajo
+          de la barra de tabs y no llegaba al fondo real de la
+          pantalla) en vez de cubrir el viewport completo. Se
+          mantiene siempre montado (no condicional) para que la
+          transicion de entrada/salida se vea, alternando solo las
+          clases de opacidad/traslacion segun aiPanel. */}
+      {typeof document !== 'undefined' && createPortal(
+        <>
+          <div onClick={() => setAiPanel(null)}
+            className={`fixed inset-0 bg-black/60 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
+          <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">
+              Asistente IA · {aiPanel?.itemId ? 'Requisito' : `Sección ${aiPanel?.n ?? ''}`}
+            </p>
+            <h3 className="text-base font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
+          </div>
+          <button type="button" onClick={() => setAiPanel(null)}
+            className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key && aiChat.itemId === aiPanel.itemId ? (
+          // Vista de entrevista: la IA puede preguntar (hasta 3
+          // veces, segun el prompt del backend) antes de generar
+          // el contenido final de esta sección y aplicarlo al PRD.
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="max-w-2xl w-full mx-auto space-y-2.5">
+              <button type="button" onClick={() => setAiChat(null)}
+                className="text-[11px] text-gray-400 hover:text-cyan-600 flex items-center gap-0.5 mb-1 transition-colors">
+                <ChevronLeft size={12} /> Volver a opciones
+              </button>
+              {aiChat.mensajes.length === 0 && aiChat.cargando && (
+                <p className="text-xs text-gray-400 italic">Pensando en la primera pregunta...</p>
+              )}
+              {aiChat.mensajes.map((m, i) => (
+                <div key={i}>
+                  <div className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[88%] ${m.role === 'assistant' ? 'bg-cyan-50 text-gray-800 mr-auto rounded-tl-sm' : 'bg-gray-900 text-white ml-auto rounded-tr-sm'}`}>
+                    {m.content}
+                  </div>
+                  {/* 5 respuestas sugeridas de un click + la opcion
+                      6 (el input de abajo, para escribir cualquier
+                      otra cosa) — solo en la pregunta mas reciente,
+                      mientras siga sin responderse. */}
+                  {m.role === 'assistant' && i === aiChat.mensajes.length - 1 && !aiChat.listo && !aiChat.cargando
+                    && m.opciones && m.opciones.length > 0 && (
+                    <div className="mt-2 flex flex-col items-start gap-1.5">
+                      {m.opciones.map((op, oi) => (
+                        <button key={oi} type="button"
+                          onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op, aiChat.itemId, aiChat.campo)}
+                          className="text-left text-xs text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg px-3 py-1.5 max-w-[92%] transition-colors">
+                          {op}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {aiChat.cargando && aiChat.mensajes.length > 0 && (
+                <p className="text-xs text-gray-400 italic">Escribiendo...</p>
+              )}
+              {aiChat.error && <p className="text-xs text-red-500">{aiChat.error}</p>}
+              </div>
+            </div>
+            {!aiChat.listo ? (
+              <div className="border-t border-gray-100">
+                <div className="max-w-2xl w-full mx-auto">
+                  {aiChat.mensajes.length > 0 && !aiChat.cargando && (
+                    <div className="px-6 pt-3">
+                      <button type="button"
+                        onClick={() => enviarTurnoAI(
+                          aiChat.seccionKey, aiChat.mensajes,
+                          aiChat.itemId ? 'Aplicá ya tu mejor versión, no sigas debatiendo.' : 'Generá la sección ya con la información disponible, no preguntes más.',
+                          aiChat.itemId, aiChat.campo
+                        )}
+                        className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
+                        {aiChat.itemId ? 'Aplicar ya la mejor versión' : 'Generar ya con lo que tengo'}
+                      </button>
+                    </div>
+                  )}
+                  {aiChat.mensajes.length > 0 && aiChat.mensajes[aiChat.mensajes.length - 1]?.opciones?.length ? (
+                    <p className="px-6 pt-2 text-[10px] text-gray-400">O escribí tu propia respuesta:</p>
+                  ) : null}
+                  <div className="px-6 py-3 flex items-center gap-2">
+                    <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
+                          enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo)
+                          setAiChatInput('')
+                        }
+                      }}
+                      placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
+                      className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
+                    <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
+                      onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo); setAiChatInput('') }}
+                      className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
+                      <Send size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="px-6 py-3 border-t border-gray-100">
+                <div className="max-w-2xl w-full mx-auto">
+                  <button type="button" onClick={() => setAiPanel(null)}
+                    className="w-full text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-2 transition-colors">
+                    Listo, cerrar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="max-w-2xl w-full mx-auto space-y-2">
+              <p className="text-xs text-gray-400 mb-2">
+                {aiPanel?.itemId ? 'Elegí qué querés hacer con este requisito.' : 'Elegí qué querés que la IA haga con esta sección.'}
+              </p>
+              {(aiPanel?.itemId ? AI_OPCIONES_ITEM : AI_OPCIONES_SECCION).map(op => (
+                <button key={op.id} type="button"
+                  onClick={() => {
+                    if ('accion' in op && op.accion && aiPanel) {
+                      // Reemplazo de toda la sección: si ya había
+                      // contenido (a mano o de una generación
+                      // anterior), se perdería sin este aviso. El
+                      // debate de un requisito puntual no reemplaza
+                      // nada sin que el usuario lo acuerde durante
+                      // la charla, asi que no hace falta confirmar
+                      // antes de arrancar.
+                      if (!aiPanel.itemId && seccionTieneContenido(aiPanel.key) && !window.confirm(
+                        'Esta sección ya tiene contenido. Generarla con IA va a reemplazarlo por completo. ¿Continuar?'
+                      )) return
+                      const campo = 'campo' in op ? op.campo : undefined
+                      setAiChat({ seccionKey: aiPanel.key, itemId: aiPanel.itemId, campo, mensajes: [], cargando: true, error: null, listo: false })
+                      enviarTurnoAI(aiPanel.key, [], undefined, aiPanel.itemId, campo)
+                    }
+                  }}
+                  className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
+                  <span className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                    <op.icon size={15} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
+                    <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
+                  </span>
+                </button>
+              ))}
+              {!aiPanel?.itemId && (
+                <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
+              )}
+            </div>
+          </div>
+        )}
+          </div>
+        </>,
+        document.body
+      )}
+
 
       {/* Tabs — mismo tamaño/estilo que la barra de tabs del Hub de Lead
           (leads/[id]/hub/page.tsx) para que ambos hubs se vean consistentes */}
@@ -1871,175 +2206,157 @@ export default function SolucionDetailPage() {
                   ))}
                 </div>
 
-                {/* Panel lateral de IA por seccion, estilo "blade" de
-                    Azure/AWS (y de widgets tipo Intercom/soporte): panel
-                    angosto anclado a la derecha, con el fondo oscurecido
-                    cubriendo TODA la pagina detras. Renderizado con un
-                    portal a document.body a proposito: el tab de PRD vive
-                    adentro de la tarjeta "glass" (backdropFilter: blur(...))
-                    que envuelve todos los tabs de esta pagina, y un
-                    backdrop-filter en un ancestor crea su propio "containing
-                    block" para position:fixed — sin el portal, este panel
-                    quedaba atrapado dentro de esa tarjeta (empezaba debajo
-                    de la barra de tabs y no llegaba al fondo real de la
-                    pantalla) en vez de cubrir el viewport completo. Se
-                    mantiene siempre montado (no condicional) para que la
-                    transicion de entrada/salida se vea, alternando solo las
-                    clases de opacidad/traslacion segun aiPanel. */}
-                {typeof document !== 'undefined' && createPortal(
-                  <>
-                    <div onClick={() => setAiPanel(null)}
-                      className={`fixed inset-0 bg-black/60 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
-                    <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
-                  <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">
-                        Asistente IA · {aiPanel?.itemId ? 'Requisito' : `Sección ${aiPanel?.n ?? ''}`}
-                      </p>
-                      <h3 className="text-base font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
+              </div>
+            )
+          })()}
+
+          {/* Tab: Diseño Técnico — documento hermano del PRD (el "como" se
+              construye). Misma "hoja" clara, mismos componentes de módulo
+              (RichTextField/AutoTextarea) y mismo panel de IA por sección;
+              solo cambia el contenido de las secciones. */}
+          {activeTab === 'diseno' && (() => {
+            const ESTADO_DOC_COLOR: Record<EstadoDocumentoPrd, string> = {
+              BORRADOR: 'text-gray-400 border-gray-700 bg-gray-900',
+              EN_REVISION: 'text-yellow-400 border-yellow-700/50 bg-yellow-900/10',
+              APROBADO: 'text-green-400 border-green-700/50 bg-green-900/10',
+            }
+            const narrativeCls = "w-full bg-transparent border-0 border-b border-transparent hover:border-gray-200 focus:border-gray-300 text-gray-800 text-[14px] leading-relaxed resize-none focus:outline-none placeholder-gray-400 py-0.5 transition-colors"
+            const tableInputCls = "w-full bg-transparent border-0 text-gray-800 text-[13px] focus:outline-none placeholder-gray-400 px-2 py-1.5"
+
+            function TituloDT({ n, k, children }: { n: number; k: string; children: React.ReactNode }) {
+              return (
+                <div className="flex items-center gap-2 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200 group/titulo">
+                  <h2 className="text-[17px] font-bold text-gray-900 flex-1 min-w-0">{n}. {children}</h2>
+                  <button type="button"
+                    onClick={() => setAiPanel({ n, key: k, titulo: typeof children === 'string' ? children : `Sección ${n}` })}
+                    title="Asistente de IA para esta sección"
+                    className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-cyan-600/60 border border-cyan-200 hover:text-white hover:bg-cyan-600 hover:border-cyan-600 transition-colors print:hidden opacity-0 group-hover/titulo:opacity-100 focus:opacity-100">
+                    <Sparkles size={12} />
+                  </button>
+                </div>
+              )
+            }
+
+            return (
+              <div className="space-y-4">
+                {prd.estadoDocumento !== 'APROBADO' && (
+                  <div className="text-xs text-yellow-300/90 bg-yellow-900/10 border border-yellow-700/40 rounded-lg px-3 py-2 print:hidden">
+                    El PRD todavía no está en estado <b>Aprobado</b>. Conviene cerrarlo antes de fijar el diseño técnico — no se diseña la solución antes de saber qué hay que construir. (Aviso, no bloquea la edición.)
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 flex-wrap print:hidden">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-500">Estado del documento:</label>
+                      <select value={diseno.estadoDocumento} onChange={e => updateDisenoField('estadoDocumento', e.target.value as EstadoDocumentoPrd)}
+                        className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[diseno.estadoDocumento]}`}>
+                        <option value="BORRADOR">Borrador</option>
+                        <option value="EN_REVISION">En revisión</option>
+                        <option value="APROBADO">Aprobado</option>
+                      </select>
                     </div>
-                    <button type="button" onClick={() => setAiPanel(null)}
-                      className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                      <X size={18} />
+                    <span className={`text-[11px] flex items-center gap-1 ${disenoDirty ? 'text-orange-400' : 'text-gray-600'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${disenoDirty ? 'bg-orange-400' : 'bg-gray-600'}`} />
+                      {disenoDirty ? 'Cambios sin guardar' : 'Guardado'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RichToolbar />
+                    <button type="button" onClick={() => window.print()}
+                      title="Imprimir / Exportar a PDF"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
+                      <Printer size={12} /> Imprimir / PDF
+                    </button>
+                    <button type="button" onClick={handleSave} disabled={saving || deleting}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-xs font-semibold transition-colors">
+                      {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                      {saving ? 'Guardando...' : 'Guardar cambios'}
                     </button>
                   </div>
+                </div>
 
-                  {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key && aiChat.itemId === aiPanel.itemId ? (
-                    // Vista de entrevista: la IA puede preguntar (hasta 3
-                    // veces, segun el prompt del backend) antes de generar
-                    // el contenido final de esta sección y aplicarlo al PRD.
-                    <div className="flex-1 flex flex-col min-h-0">
-                      <div className="flex-1 overflow-y-auto px-6 py-4">
-                        <div className="max-w-2xl w-full mx-auto space-y-2.5">
-                        <button type="button" onClick={() => setAiChat(null)}
-                          className="text-[11px] text-gray-400 hover:text-cyan-600 flex items-center gap-0.5 mb-1 transition-colors">
-                          <ChevronLeft size={12} /> Volver a opciones
-                        </button>
-                        {aiChat.mensajes.length === 0 && aiChat.cargando && (
-                          <p className="text-xs text-gray-400 italic">Pensando en la primera pregunta...</p>
-                        )}
-                        {aiChat.mensajes.map((m, i) => (
-                          <div key={i}>
-                            <div className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[88%] ${m.role === 'assistant' ? 'bg-cyan-50 text-gray-800 mr-auto rounded-tl-sm' : 'bg-gray-900 text-white ml-auto rounded-tr-sm'}`}>
-                              {m.content}
-                            </div>
-                            {/* 5 respuestas sugeridas de un click + la opcion
-                                6 (el input de abajo, para escribir cualquier
-                                otra cosa) — solo en la pregunta mas reciente,
-                                mientras siga sin responderse. */}
-                            {m.role === 'assistant' && i === aiChat.mensajes.length - 1 && !aiChat.listo && !aiChat.cargando
-                              && m.opciones && m.opciones.length > 0 && (
-                              <div className="mt-2 flex flex-col items-start gap-1.5">
-                                {m.opciones.map((op, oi) => (
-                                  <button key={oi} type="button"
-                                    onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op, aiChat.itemId, aiChat.campo)}
-                                    className="text-left text-xs text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg px-3 py-1.5 max-w-[92%] transition-colors">
-                                    {op}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        {aiChat.cargando && aiChat.mensajes.length > 0 && (
-                          <p className="text-xs text-gray-400 italic">Escribiendo...</p>
-                        )}
-                        {aiChat.error && <p className="text-xs text-red-500">{aiChat.error}</p>}
-                        </div>
-                      </div>
-                      {!aiChat.listo ? (
-                        <div className="border-t border-gray-100">
-                          <div className="max-w-2xl w-full mx-auto">
-                            {aiChat.mensajes.length > 0 && !aiChat.cargando && (
-                              <div className="px-6 pt-3">
-                                <button type="button"
-                                  onClick={() => enviarTurnoAI(
-                                    aiChat.seccionKey, aiChat.mensajes,
-                                    aiChat.itemId ? 'Aplicá ya tu mejor versión, no sigas debatiendo.' : 'Generá la sección ya con la información disponible, no preguntes más.',
-                                    aiChat.itemId, aiChat.campo
-                                  )}
-                                  className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
-                                  {aiChat.itemId ? 'Aplicar ya la mejor versión' : 'Generar ya con lo que tengo'}
-                                </button>
-                              </div>
-                            )}
-                            {aiChat.mensajes.length > 0 && aiChat.mensajes[aiChat.mensajes.length - 1]?.opciones?.length ? (
-                              <p className="px-6 pt-2 text-[10px] text-gray-400">O escribí tu propia respuesta:</p>
-                            ) : null}
-                            <div className="px-6 py-3 flex items-center gap-2">
-                              <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
-                                    enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo)
-                                    setAiChatInput('')
-                                  }
-                                }}
-                                placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
-                                className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
-                              <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
-                                onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo); setAiChatInput('') }}
-                                className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
-                                <Send size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="px-6 py-3 border-t border-gray-100">
-                          <div className="max-w-2xl w-full mx-auto">
-                            <button type="button" onClick={() => setAiPanel(null)}
-                              className="w-full text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-2 transition-colors">
-                              Listo, cerrar
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                <div className="bg-white rounded-sm shadow-2xl mx-auto max-w-[840px] print:shadow-none print:rounded-none print:mx-0 print:max-w-none"
+                  style={{ fontFamily: 'var(--font-archivo)' }}>
+                  <div className="px-10 sm:px-16 py-12">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">{form.nombre || 'Sin nombre'} — Diseño Técnico</h1>
+                    <p className="text-gray-400 text-xs mb-8">Cómo se construye lo que define el PRD</p>
+
+                    <div className="mb-6">
+                      <TituloDT n={1} k="dt_arquitectura">Arquitectura general</TituloDT>
+                      <RichTextField value={diseno.arquitectura} onChange={v => updateDisenoField('arquitectura', v)}
+                        placeholder="Describí los componentes principales, cómo se comunican y por qué se estructuran así."
+                        className={narrativeCls} />
+                      <p className="text-[11px] text-gray-400 mt-2 print:hidden">
+                        {archNodes.length > 0
+                          ? `El diagrama tiene ${archNodes.length} componente(s) en el tab Arquitectura.`
+                          : 'Todavía no hay diagrama en el tab Arquitectura.'}{' '}
+                        <button type="button" onClick={() => setActiveTab('arquitectura')} className="text-cyan-600 hover:underline">Ir al diagrama</button>
+                      </p>
                     </div>
-                  ) : (
-                    <div className="flex-1 overflow-y-auto px-6 py-4">
-                      <div className="max-w-2xl w-full mx-auto space-y-2">
-                        <p className="text-xs text-gray-400 mb-2">
-                          {aiPanel?.itemId ? 'Elegí qué querés hacer con este requisito.' : 'Elegí qué querés que la IA haga con esta sección.'}
-                        </p>
-                        {(aiPanel?.itemId ? AI_OPCIONES_ITEM : AI_OPCIONES_SECCION).map(op => (
-                          <button key={op.id} type="button"
-                            onClick={() => {
-                              if ('accion' in op && op.accion && aiPanel) {
-                                // Reemplazo de toda la sección: si ya había
-                                // contenido (a mano o de una generación
-                                // anterior), se perdería sin este aviso. El
-                                // debate de un requisito puntual no reemplaza
-                                // nada sin que el usuario lo acuerde durante
-                                // la charla, asi que no hace falta confirmar
-                                // antes de arrancar.
-                                if (!aiPanel.itemId && seccionTieneContenido(aiPanel.key) && !window.confirm(
-                                  'Esta sección ya tiene contenido. Generarla con IA va a reemplazarlo por completo. ¿Continuar?'
-                                )) return
-                                const campo = 'campo' in op ? op.campo : undefined
-                                setAiChat({ seccionKey: aiPanel.key, itemId: aiPanel.itemId, campo, mensajes: [], cargando: true, error: null, listo: false })
-                                enviarTurnoAI(aiPanel.key, [], undefined, aiPanel.itemId, campo)
-                              }
-                            }}
-                            className="w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-xl border border-gray-100 hover:border-cyan-200 hover:bg-cyan-50/50 transition-colors">
-                            <span className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                              <op.icon size={15} />
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
-                              <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
-                            </span>
+
+                    {(Object.keys(DT_TABLAS) as DTListKey[]).map(key => {
+                      const cfg = DT_TABLAS[key]
+                      const lista = diseno[key] as unknown as Record<string, string>[]
+                      return (
+                        <div key={key} className="mb-6">
+                          <TituloDT n={cfg.n} k={cfg.aiKey}>{cfg.titulo}</TituloDT>
+                          {lista.length === 0 && <p className="text-gray-400 text-xs italic py-1">{cfg.vacio}</p>}
+                          {lista.length > 0 && (
+                            <div className="overflow-x-auto">
+                              <table className="w-full border-collapse mb-1">
+                                <thead>
+                                  <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                                    {cfg.cols.map(c => (
+                                      <th key={c.campo} className={`font-semibold pb-1 pr-2 ${c.ancho ?? ''}`}>{c.label}</th>
+                                    ))}
+                                    <th className="w-6"></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {lista.map(it => (
+                                    <tr key={it.id} className="border-t border-gray-100 group">
+                                      {cfg.cols.map(c => (
+                                        <td key={c.campo} className="align-top">
+                                          <AutoTextarea value={it[c.campo] ?? ''} onChange={v => updateDTItem(key, it.id, c.campo, v)}
+                                            placeholder={c.ph} className={tableInputCls} />
+                                        </td>
+                                      ))}
+                                      <td className="align-top">
+                                        <button type="button" onClick={() => removeDTItem(key, it.id)}
+                                          className="w-6 h-6 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                          <button type="button" onClick={() => addDTItem(key)}
+                            className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-600 transition-colors print:hidden">
+                            <Plus size={12} /> {cfg.addLabel}
                           </button>
-                        ))}
-                        {!aiPanel?.itemId && (
-                          <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
-                        )}
-                      </div>
+                        </div>
+                      )
+                    })}
+
+                    <div className="mb-6">
+                      <TituloDT n={6} k="dt_seguridad">Consideraciones de seguridad</TituloDT>
+                      <RichTextField value={diseno.seguridad} onChange={v => updateDisenoField('seguridad', v)}
+                        placeholder="Autenticación, autorización, manejo de datos sensibles, cifrado, cumplimiento."
+                        className={narrativeCls} />
                     </div>
-                  )}
+
+                    <div className="mb-6">
+                      <TituloDT n={7} k="dt_escalabilidad">Escalabilidad y rendimiento</TituloDT>
+                      <RichTextField value={diseno.escalabilidad} onChange={v => updateDisenoField('escalabilidad', v)}
+                        placeholder="Carga esperada, cuellos de botella previstos, cómo crece el sistema, monitoreo."
+                        className={narrativeCls} />
                     </div>
-                  </>,
-                  document.body
-                )}
+                  </div>
+                </div>
               </div>
             )
           })()}

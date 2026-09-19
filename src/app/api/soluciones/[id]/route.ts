@@ -17,7 +17,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   const body = await request.json();
-  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, arquitecturaHtml, planTrabajo, cronograma, prd } = body;
+  const { nombre, descripcion, tipo, estado, valorEstimado, leadId, repositorio, arquitectura, arquitecturaHtml, planTrabajo, cronograma, prd, disenoTecnico } = body;
 
   try {
     const solucion = await prisma.solucion.update({
@@ -31,6 +31,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         ...(planTrabajo !== undefined ? { planTrabajo: planTrabajo || null } : {}),
         ...(cronograma !== undefined ? { cronograma: cronograma || '[]' } : {}),
         ...(prd !== undefined ? { prd: prd || '{}' } : {}),
+        ...(disenoTecnico !== undefined ? { disenoTecnico: disenoTecnico || '{}' } : {}),
       },
       include: { lead: { select: { id: true, companyName: true, contactName: true, status: true } } },
     });

@@ -99,6 +99,14 @@ Las prioridades tienen que estar REALMENTE repartidas entre las 4 opciones: JAM�
   dependencias: { label: 'Dependencias', schema: 'un array de 3-5 strings' },
   supuestos: { label: 'Supuestos', schema: 'un array de 3-5 strings' },
   preguntasAbiertas: { label: 'Preguntas abiertas', schema: 'un array de 3-5 strings' },
+  // --- Documento de Diseño Técnico (tab hermano del PRD) ---
+  dt_arquitectura: { label: 'Arquitectura general', schema: 'un string de 2-4 párrafos: componentes principales, cómo se comunican entre sí y por qué se estructuran así (sin repetir el PRD: esto es el CÓMO, no el qué)' },
+  dt_modelo: { label: 'Modelo de datos (entidades clave)', schema: 'un array de 4-10 objetos {"nombre": string, "atributos": string (lista separada por comas de los atributos principales), "relaciones": string (con qué otras entidades se relaciona y cardinalidad)}, derivados de los requisitos funcionales del PRD — cada entidad tiene que existir porque algún requisito la necesita' },
+  dt_stack: { label: 'Stack tecnológico', schema: 'un array de 4-8 objetos {"capa": string (ej. Frontend, Backend, Base de datos, IA, Infraestructura, Observabilidad), "tecnologia": string, "justificacion": string (razón concreta ligada a un requisito o restricción del contexto, no marketing)}' },
+  dt_integraciones: { label: 'Integraciones externas', schema: 'un array de 1-8 objetos {"sistema": string, "proposito": string, "detalle": string (protocolo, autenticación, formato de datos), "siFalla": string (comportamiento definido si el sistema externo no responde o devuelve error)} — solo las que el PRD/contexto realmente implican, no inventes integraciones' },
+  dt_decisiones: { label: 'Decisiones técnicas clave', schema: 'un array de 3-8 objetos {"decision": string, "alternativas": string (qué otras opciones reales se evaluaron), "justificacion": string (por qué esta y no las otras, con el trade-off asumido)}' },
+  dt_seguridad: { label: 'Consideraciones de seguridad', schema: 'un string de 2-4 párrafos: autenticación y autorización, manejo de datos sensibles/personales, cifrado, cumplimiento normativo aplicable y amenazas relevantes para ESTA solución' },
+  dt_escalabilidad: { label: 'Escalabilidad y rendimiento', schema: 'un string de 2-4 párrafos: carga esperada, cuellos de botella previstos, cómo crece el sistema, y qué se monitorea' },
 }
 
 // Que forma de "valor" espera cada seccion — usado SOLO para validar lo que
@@ -109,13 +117,23 @@ Las prioridades tienen que estar REALMENTE repartidas entre las 4 opciones: JAM�
 // el DEBATE sobre UN requisito puntual ya existente (boton de IA dentro de
 // cada fila R1/R2/... de Requisitos funcionales). No pasa por SECCION_INFO
 // (su system prompt es otro, ver mas abajo).
-type SeccionKind = 'texto' | 'lista' | 'personas' | 'requisitos' | 'rnf' | 'metricas' | 'requisito_item'
+type SeccionKind = 'texto' | 'lista' | 'personas' | 'requisitos' | 'rnf' | 'metricas' | 'requisito_item' | 'dt_tabla'
 const SECCION_KIND: Record<string, SeccionKind> = {
   resumen: 'texto', problema: 'texto', objetivoGeneral: 'texto',
   objetivosEspecificos: 'lista', dentroDeAlcance: 'lista', fueraDeAlcance: 'lista',
   personas: 'personas', requisitos: 'requisitos', rnf: 'rnf', metricas: 'metricas',
   riesgos: 'lista', dependencias: 'lista', supuestos: 'lista', preguntasAbiertas: 'lista',
   requisito_item: 'requisito_item',
+  dt_arquitectura: 'texto', dt_seguridad: 'texto', dt_escalabilidad: 'texto',
+  dt_modelo: 'dt_tabla', dt_stack: 'dt_tabla', dt_integraciones: 'dt_tabla', dt_decisiones: 'dt_tabla',
+}
+
+// Campos obligatorios (no vacios) por seccion-tabla del Diseño Técnico.
+const DT_REQUERIDOS: Record<string, string[]> = {
+  dt_modelo: ['nombre', 'atributos'],
+  dt_stack: ['capa', 'tecnologia', 'justificacion'],
+  dt_integraciones: ['sistema', 'proposito', 'siFalla'],
+  dt_decisiones: ['decision', 'alternativas', 'justificacion'],
 }
 
 // El modelo a veces devuelve tipo:"contenido" con datos incompletos (ítems
@@ -175,6 +193,16 @@ function validarValorContenido(seccionKey: string, valor: unknown): string | nul
       return null
     }
 
+    case 'dt_tabla': {
+      if (!Array.isArray(valor) || valor.length === 0) return 'no devolvió ningún ítem para esta sección.'
+      const req = DT_REQUERIDOS[seccionKey] ?? []
+      for (const it of valor as Record<string, unknown>[]) {
+        const faltante = req.find(c => !esTextoNoVacio(it?.[c]))
+        if (faltante) return `devolvió algún ítem sin el campo "${faltante}".`
+      }
+      return null
+    }
+
     // El debate de un requisito puntual ahora edita UN SOLO campo por vez
     // (texto O criterioAceptacion, nunca los dos juntos — pedido explícito
     // del usuario), asi que "valor" es directamente el string revisado de
@@ -202,11 +230,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // ahora), para que el modelo entienda el requisito entero aunque solo
     // pueda tocar uno de los dos campos.
     contextoRequisito?: { texto?: unknown; criterioAceptacion?: unknown }
-    contextoPrd?: { dentroDeAlcance?: unknown; objetivosEspecificos?: unknown; personas?: unknown }
+    contextoPrd?: { dentroDeAlcance?: unknown; objetivosEspecificos?: unknown; personas?: unknown; requisitos?: unknown; requisitosNoFuncionales?: unknown }
   }
   const seccionKey = String(body.seccionKey || '')
   const esDebateItem = seccionKey === 'requisito_item'
   const campoDebate: 'texto' | 'criterioAceptacion' = body.campo === 'criterioAceptacion' ? 'criterioAceptacion' : 'texto'
+  const docLabel = seccionKey.startsWith('dt_')
+    ? 'un Documento de Diseño Técnico (el CÓMO se construye la solución; complementa al PRD, que define el qué)'
+    : 'un PRD (Product Requirements Document)'
   const campoLabel = campoDebate === 'texto' ? 'la historia de usuario / caso de uso' : 'el criterio de aceptación'
   const info = esDebateItem
     ? { label: `Requisito funcional (debate de ${campoLabel})`, schema: `un string: ${campoLabel} revisado` }
@@ -263,6 +294,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const alcanceLista = asStringArray(body.contextoPrd?.dentroDeAlcance)
   const objetivosLista = asStringArray(body.contextoPrd?.objetivosEspecificos)
   const personasLista = asStringArray(body.contextoPrd?.personas)
+  const requisitosLista = asStringArray(body.contextoPrd?.requisitos)
+  const rnfLista = asStringArray(body.contextoPrd?.requisitosNoFuncionales)
+  const esDiseno = seccionKey.startsWith('dt_')
 
   const contexto = [
     `Nombre: ${solucion.nombre}`,
@@ -282,6 +316,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       : null,
     seccionKey === 'requisitos' && personasLista.length > 0
       ? `Personas/usuarios ya definidos en este PRD (cada rol relevante tiene que tener al menos un requisito pensado para su necesidad):\n${personasLista.map(t => `- ${t}`).join('\n')}`
+      : null,
+    esDiseno && requisitosLista.length > 0
+      ? `Requisitos funcionales del PRD (el diseño técnico tiene que poder sostener CADA UNO; no inventes funcionalidad que no esté acá):\n${requisitosLista.map(t => `- ${t}`).join('\n')}`
+      : null,
+    esDiseno && rnfLista.length > 0
+      ? `Requisitos no funcionales del PRD (restricciones que el diseño tiene que cumplir):\n${rnfLista.map(t => `- ${t}`).join('\n')}`
+      : null,
+    esDiseno && alcanceLista.length > 0
+      ? `Dentro de alcance del PRD:\n${alcanceLista.map(t => `- ${t}`).join('\n')}`
       : null,
   ].filter(Boolean).join('\n\n')
 
@@ -305,7 +348,7 @@ Reglas del debate:
 4. Cada vez que uses tipo "pregunta" (tu turno de debate, sea objeción o pregunta), proponé también EXACTAMENTE 5 respuestas/posturas posibles para que el usuario elija con un clic, ademas de poder escribir la propia.
 5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
    - Para seguir debatiendo: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}
-   - Para la versión final: {"tipo": "contenido", "valor": "string"}  (SOLO ${campoLabel}, un string plano, no un objeto)` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de un PRD (Product Requirements Document) para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
+   - Para la versión final: {"tipo": "contenido", "valor": "string"}  (SOLO ${campoLabel}, un string plano, no un objeto)` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de ${docLabel} para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
 
 Sección a trabajar: "${info.label}"
 El valor final que vas a generar debe ser: ${info.schema}
