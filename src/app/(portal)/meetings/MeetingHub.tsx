@@ -272,8 +272,8 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
         style={{
           background: 'linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(14,10,28,0.52) 42%, rgba(14,10,28,0.50) 100%)',
           backdropFilter: 'blur(48px) saturate(200%)', WebkitBackdropFilter: 'blur(48px) saturate(200%)',
-          border: '1px solid rgba(251,146,60,0.28)',
-          boxShadow: '0 0 0 1px rgba(251,146,60,0.10) inset, 0 40px 80px rgba(0,0,0,0.65), 0 0 70px rgba(249,115,22,0.16)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 40px 80px rgba(0,0,0,0.65), 0 0 60px rgba(249,115,22,0.07)',
         }}>
         {/* brillo especular del borde superior */}
         <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(253,186,116,0.55) 50%, transparent)' }} />
