@@ -265,16 +265,22 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(20px) saturate(160%)', WebkitBackdropFilter: 'blur(20px) saturate(160%)' }}
       onClick={() => { void cerrar(); }}>
       <div onClick={e => e.stopPropagation()}
         className="w-full max-w-6xl h-[88vh] rounded-2xl flex flex-col overflow-hidden relative"
-        style={{ background: 'rgba(14,10,28,0.96)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 40px 80px rgba(0,0,0,0.65)' }}>
+        style={{
+          background: 'rgba(14,10,28,0.50)',
+          backdropFilter: 'blur(48px) saturate(200%)', WebkitBackdropFilter: 'blur(48px) saturate(200%)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 40px 80px rgba(0,0,0,0.65), 0 0 60px rgba(249,115,22,0.07)',
+        }}>
+        {/* brillo especular del borde superior */}
+        <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 50%, transparent)' }} />
 
         {/* Encabezado */}
-        <div className="px-6 pt-5 pb-3 border-b border-white/10 flex items-start justify-between gap-4">
+        <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-4" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)', borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-orange-400 font-semibold">Hub de la reunión</p>
             <h2 className="text-lg font-bold text-white truncate">{meeting.title}</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {fechaTexto} · {typeLabel}{meeting.location ? ` · ${meeting.location}` : ''}
@@ -282,7 +288,6 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                 {soloLectura ? 'Completada' : meeting.status === 'CANCELLED' ? 'Cancelada' : 'Programada'}
               </span>
             </p>
-            {asistentes.length > 0 && <p className="text-[11px] text-gray-500 mt-1 truncate">Asistentes: {asistentes.join(', ')}</p>}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {meeting.link && (
@@ -441,7 +446,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
           )}
         </div>
 
-        <aside className="hidden md:flex w-72 shrink-0 flex-col gap-5 border-l border-white/10 overflow-y-auto px-4 py-5" style={{ background: 'rgba(255,255,255,0.015)' }}>
+        <aside className="hidden md:flex w-72 shrink-0 flex-col gap-5 border-l border-white/10 overflow-y-auto px-4 py-5" style={{ background: 'rgba(255,255,255,0.035)' }}>
           {/* Información clave */}
           <section>
             <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Información clave</h4>
@@ -529,7 +534,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
         </div>
 
         {/* Pie */}
-        <div className="px-6 py-3 border-t border-white/10 flex items-center justify-between gap-3">
+        <div className="px-6 py-3 flex items-center justify-between gap-3" style={{ background: 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(255,255,255,0.10)' }}>
           <span className={`text-[11px] ${saveState === 'error' ? 'text-red-400' : saveState === 'saving' ? 'text-orange-400' : 'text-gray-500'}`}>{estadoGuardado}</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => { void cerrar(); }} className={`${btnBase} text-gray-300 border-white/10 hover:bg-white/[0.06]`}>Cerrar</button>
