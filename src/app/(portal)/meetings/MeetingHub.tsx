@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RichNotes from '../leads/[id]/hub/RichNotes';
-import { getDateStrUTC5, getTimeStrUTC5, getDateFullUTC5 } from '@/lib/timezone';
+import { getDateStrUTC5, getTimeStrUTC5 } from '@/lib/timezone';
 
 // Hub de la reunion: popup grande para PREPARAR (agenda), TOMAR NOTAS,
 // registrar DECISIONES y dar seguimiento a ACCIONES de una reunion. Es
@@ -225,6 +225,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
 
   // ── Datos del widget lateral (visible en todas las pestañas) ──
   const hoyStr = getDateStrUTC5(new Date());
+  const fechaCorta = (iso: string) => getDateStrUTC5(iso).split('-').reverse().join('/');
   const diaNum = (d: string) => Math.floor(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
   const relativo = (iso: string) => {
     const diff = diaNum(getDateStrUTC5(iso)) - diaNum(hoyStr);
@@ -234,26 +235,21 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
     return diff > 0 ? `En ${diff} días` : `Hace ${-diff} días`;
   };
   const corta = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' });
-  const durMin = meeting.endDate ? Math.round((new Date(meeting.endDate).getTime() - new Date(meeting.date).getTime()) / 60000) : 0;
-  const durTxt = durMin > 0 ? (durMin >= 60 ? `${Math.floor(durMin / 60)} h${durMin % 60 ? ` ${durMin % 60} min` : ''}` : `${durMin} min`) : null;
   const accPend = acciones.filter(a => a.estado !== 'HECHA');
   const vencida = (a: Accion) => !!a.fechaLimite && a.estado !== 'HECHA' && diaNum(getDateStrUTC5(a.fechaLimite)) < diaNum(hoyStr);
   const vencidas = accPend.filter(vencida).length;
   const hechas = acciones.length - accPend.length;
   const notasConContenido = hub.notas.replace(/<[^>]+>/g, '').trim().length > 0;
   const nPuntos = hub.puntos.filter(p => p.texto.trim()).length;
-  const nDecisiones = hub.decisiones.filter(d => d.texto.trim()).length;
   const checklist: { tab: TabKey; label: string; ok: boolean; detalle: string }[] = [
     { tab: 'agenda', label: 'Agenda', ok: nPuntos > 0, detalle: nPuntos > 0 ? `${nPuntos} punto${nPuntos === 1 ? '' : 's'}` : 'Sin definir' },
     { tab: 'notas', label: 'Notas', ok: notasConContenido, detalle: notasConContenido ? 'Con contenido' : 'Sin notas' },
-    { tab: 'decisiones', label: 'Decisiones', ok: nDecisiones > 0, detalle: nDecisiones > 0 ? `${nDecisiones} registrada${nDecisiones === 1 ? '' : 's'}` : 'Ninguna' },
     { tab: 'archivos', label: 'Acta', ok: !!meeting.actaFile, detalle: meeting.actaFile ? (meeting.actaFileName || 'Adjunta') : 'Sin adjuntar' },
   ];
   const TABS: { key: TabKey; label: string; badge?: number }[] = [
     { key: 'agenda', label: 'Agenda', badge: hub.puntos.length || undefined },
     { key: 'notas', label: 'Notas' },
-    { key: 'decisiones', label: 'Decisiones', badge: hub.decisiones.length || undefined },
-    { key: 'acciones', label: 'Acciones', badge: pendientes || undefined },
+    { key: 'acciones', label: 'Pendientes', badge: pendientes || undefined },
     { key: 'archivos', label: 'Archivos', badge: meeting.actaFile ? 1 : undefined },
   ];
 
@@ -310,9 +306,9 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
           ))}
         </div>
 
-        {soloLectura && (tab === 'agenda' || tab === 'notas' || tab === 'decisiones') && (
+        {soloLectura && (tab === 'agenda' || tab === 'notas') && (
           <div className="mx-6 mt-3 text-xs text-yellow-300/90 bg-yellow-900/10 border border-yellow-700/40 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
-            <span>Reunión completada: agenda, notas y decisiones están en solo lectura. Las acciones y los archivos siguen editables.</span>
+            <span>Reunión completada: la agenda y las notas están en solo lectura. Los pendientes y los archivos siguen editables.</span>
             <button type="button" onClick={() => { void completarOReabrir(); }} className="text-orange-300 hover:text-orange-200 font-semibold whitespace-nowrap">Reabrir para editar</button>
           </div>
         )}
@@ -356,30 +352,6 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
             <div className="max-w-3xl" {...(soloLectura ? { inert: true } : {})}>
               <RichNotes value={hub.notas} onChange={html => setHub(h => ({ ...h, notas: html }))}
                 placeholder="Notas de la reunión: lo que se discute, contexto, ideas…" />
-            </div>
-          )}
-
-          {tab === 'decisiones' && (
-            <div className="max-w-3xl">
-              <p className="text-xs text-gray-500 mb-3">Acuerdos tomados en la reunión, uno por línea. Lo que hay que HACER va en Acciones.</p>
-              <div className="space-y-2">
-                {hub.decisiones.length === 0 && <p className="text-xs text-gray-600 italic">Sin decisiones registradas.</p>}
-                {hub.decisiones.map((d, i) => (
-                  <div key={d.id} className="flex items-start gap-2">
-                    <span className="text-xs text-gray-500 font-mono mt-2.5 w-5 text-right">{i + 1}.</span>
-                    <AutoArea value={d.texto} disabled={soloLectura} placeholder="Decisión"
-                      onChange={v => setItems('decisiones', prev => prev.map(x => x.id === d.id ? { ...x, texto: v } : x))} />
-                    {!soloLectura && (
-                      <button type="button" onClick={() => setItems('decisiones', prev => prev.filter(x => x.id !== d.id))}
-                        className="mt-1.5 w-7 h-7 rounded text-gray-600 hover:text-red-400 hover:bg-red-900/20 flex-shrink-0">✕</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {!soloLectura && (
-                <button type="button" onClick={() => setItems('decisiones', prev => [...prev, { id: uid(), texto: '' }])}
-                  className="mt-2 text-xs text-gray-500 hover:text-orange-400">+ Agregar decisión</button>
-              )}
             </div>
           )}
 
@@ -460,24 +432,14 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                   )}
                 </dd></div>
               <div className="flex justify-between gap-3"><dt className="text-gray-500">Asistentes</dt><dd className="text-gray-200">{meeting.type === 'INTERNAL_DAILY' ? 'ArchitechIA' : asistentes.length}</dd></div>
+              <div className="flex justify-between gap-3 text-[11px]"><dt className="text-gray-500">Fecha</dt>
+                <dd className="text-gray-200 text-right">{fechaCorta(meeting.date)} {getTimeStrUTC5(meeting.date)}{meeting.endDate ? `-${getTimeStrUTC5(meeting.endDate)}` : ''}</dd></div>
             </dl>
             {meeting.type !== 'INTERNAL_DAILY' && asistentes.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {asistentes.map(a => <span key={a} className="text-[10px] text-gray-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">{a}</span>)}
               </div>
             )}
-          </section>
-
-          {/* Fechas */}
-          <section>
-            <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Fechas</h4>
-            <dl className="space-y-1.5 text-xs">
-              <div className="flex justify-between gap-3 items-center"><dt className="text-gray-500">Reunión</dt>
-                <dd className="text-gray-200 text-right">{getDateFullUTC5(meeting.date)} <span className="ml-1 text-[10px] text-orange-300 bg-orange-500/10 border border-orange-600/30 rounded-full px-1.5 py-0.5">{relativo(meeting.date)}</span></dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Horario</dt>
-                <dd className="text-gray-200 text-right">{getTimeStrUTC5(meeting.date)}{meeting.endDate ? ` — ${getTimeStrUTC5(meeting.endDate)}` : ''}{durTxt ? <span className="text-gray-500"> · {durTxt}</span> : null}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Creada</dt><dd className="text-gray-200">{getDateFullUTC5(meeting.createdAt)}</dd></div>
-            </dl>
           </section>
 
           {/* Pendientes */}
