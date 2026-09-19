@@ -520,6 +520,19 @@ function FaseStepper({ fases, onIr }: { fases: FaseProyecto[]; onIr: (t: TabKey)
   )
 }
 
+// Los campos narrativos del PRD se guardan como HTML (RichTextField): al
+// mandarlos al backlog hay que pasarlos a texto plano, si no el titulo de la
+// tarea (y el criterio que ve el agente) salen con etiquetas.
+function htmlAPlano(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 function makeId() {
   return Math.random().toString(36).slice(2, 10)
 }
@@ -1278,8 +1291,8 @@ export default function SolucionDetailPage() {
   // Solo se puede generar backlog desde un PRD ya Aprobado — evita crear
   // tareas reales de un documento a medio escribir que despues cambia.
   async function generarBacklogDesdePRD() {
-    if (prd.estadoDocumento !== 'APROBADO') {
-      setBacklogPrdError('El PRD debe estar en estado "Aprobado" antes de generar backlog.')
+    if (prd.estadoDocumento !== 'APROBADO' || diseno.estadoDocumento !== 'APROBADO') {
+      setBacklogPrdError('El PRD y el Diseño Técnico deben estar en estado "Aprobado" antes de generar backlog.')
       return
     }
     setGenerandoBacklogPrd(true)
@@ -1291,8 +1304,8 @@ export default function SolucionDetailPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: r.texto.slice(0, 120) || 'Requisito sin título',
-            description: `${r.tipo === 'historia' ? 'Historia de usuario' : 'Caso de uso'}: ${r.texto}\n\nCriterio de aceptación: ${r.criterioAceptacion}`,
+            title: htmlAPlano(r.texto).replace(/\s+/g, ' ').slice(0, 120) || 'Requisito sin título',
+            description: `${r.tipo === 'historia' ? 'Historia de usuario' : 'Caso de uso'}: ${htmlAPlano(r.texto)}\n\nCriterio de aceptación: ${htmlAPlano(r.criterioAceptacion)}`,
             type: 'TASK',
             priority: PRIORIDAD_A_BACKLOG[r.prioridad] ?? 'MEDIUM',
             solucionId: id,
@@ -2170,14 +2183,18 @@ export default function SolucionDetailPage() {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Titulo n={numeroDe('requisitos')} k="requisitos">Requisitos funcionales (historias de usuario / casos de uso)</Titulo>
                   </div>
-                  {/* Oculto a pedido del usuario ("quita este boton mientras
-                      tanto del lienzo de PRD") — la funcion sigue intacta
-                      (generarBacklogDesdePRD, etc.), solo se saco el botón
-                      de la vista. Volver a mostrar: restaurar este bloque. */}
-                  {false && prd.requisitos.length > 0 && (
-                    <div className="flex justify-end -mt-1 mb-2">
-                      <button type="button" onClick={generarBacklogDesdePRD} disabled={generandoBacklogPrd || prd.estadoDocumento !== 'APROBADO'}
-                        title={prd.estadoDocumento !== 'APROBADO' ? 'El documento debe estar Aprobado para generar backlog' : undefined}
+                  {/* Reactivado (estuvo oculto por pedido del usuario). Gate: PRD
+                      y Diseño Técnico Aprobados — el backlog nace sabiendo qué se
+                      construye Y cómo. Cada requisito sin tarea genera una real
+                      con prdRequisitoId, que es lo que le inyecta el criterio de
+                      aceptación al agente y al verificador. */}
+                  {prd.requisitos.length > 0 && (
+                    <div className="flex justify-end -mt-1 mb-2 print:hidden">
+                      <button type="button" onClick={generarBacklogDesdePRD}
+                        disabled={generandoBacklogPrd || prd.estadoDocumento !== 'APROBADO' || diseno.estadoDocumento !== 'APROBADO'}
+                        title={prd.estadoDocumento !== 'APROBADO' || diseno.estadoDocumento !== 'APROBADO'
+                          ? 'El PRD y el Diseño Técnico deben estar Aprobados para generar backlog'
+                          : 'Crea una tarea real por cada requisito que todavía no tenga una'}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 text-cyan-700 text-xs font-medium transition-colors disabled:opacity-40">
                         {generandoBacklogPrd ? <Loader2 size={12} className="animate-spin" /> : <ListPlus size={12} />}
                         {generandoBacklogPrd ? 'Generando...' : 'Generar backlog desde PRD'}

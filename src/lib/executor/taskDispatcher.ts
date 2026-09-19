@@ -112,6 +112,18 @@ export async function resolveAgent(task: {
 // busca ese requisito dentro de Solucion.prd.requisitos[] y devuelve su
 // criterio de aceptacion — la debilidad real detectada fue que los agentes
 // ejecutaban sin ver nunca el PRD ni sus criterios (MASD-0003-0007).
+// Los campos del PRD se guardan como HTML (editor de texto enriquecido): el agente
+// y el verificador tienen que ver texto plano, no etiquetas.
+function prdHtmlAPlano(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 async function resolvePrdCriterio(solucionId: string | null, prdRequisitoId: string | null): Promise<{ texto: string; criterioAceptacion: string } | null> {
   if (!solucionId || !prdRequisitoId) return null
   const solucion = await prisma.solucion.findUnique({ where: { id: solucionId }, select: { prd: true } })
@@ -119,7 +131,7 @@ async function resolvePrdCriterio(solucionId: string | null, prdRequisitoId: str
   try {
     const prd = JSON.parse(solucion.prd) as { requisitos?: { id: string; texto: string; criterioAceptacion: string }[] }
     const req = prd.requisitos?.find(r => r.id === prdRequisitoId)
-    return req ? { texto: req.texto, criterioAceptacion: req.criterioAceptacion } : null
+    return req ? { texto: prdHtmlAPlano(req.texto ?? ''), criterioAceptacion: prdHtmlAPlano(req.criterioAceptacion ?? '') } : null
   } catch {
     return null
   }
