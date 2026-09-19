@@ -8,7 +8,7 @@ import {
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
   Trash2, Save, Plus, ListPlus, AlertTriangle, Flag, ClipboardList, Play,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Printer,
-  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb, PenLine, Send, ChevronLeft, MessageSquare, Boxes,
+  Sparkles, X, Minimize2, Languages, CheckCircle2, Lightbulb, PenLine, Send, ChevronLeft, MessageSquare, Boxes, ClipboardCheck,
 } from 'lucide-react'
 import ArchitectureCanvas, { type ArchNode, type ArchConnection } from '@/components/ArchitectureCanvas'
 import PlanVisualView from '@/components/PlanVisualView'
@@ -245,7 +245,7 @@ const emptyForm: FormState = {
   nombre: '', descripcion: '', tipo: 'PROJECT', estado: 'ACTIVO', valorEstimado: '0', leadId: '', repositorio: '', planTrabajo: '',
 }
 
-type TabKey = 'general' | 'arquitectura' | 'plan' | 'prd' | 'diseno' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
+type TabKey = 'general' | 'arquitectura' | 'plan' | 'prd' | 'diseno' | 'plan-ejec' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
 
 const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'general', label: 'General', icon: Sliders },
@@ -253,6 +253,7 @@ const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
   { key: 'prd', label: 'PRD', icon: ClipboardList },
   { key: 'diseno', label: 'Diseño Técnico', icon: Boxes },
+  { key: 'plan-ejec', label: 'Plan de Ejecución', icon: ClipboardCheck },
   { key: 'cronograma', label: 'Cronograma', icon: Calendar },
   { key: 'riesgos', label: 'Riesgos', icon: AlertTriangle },
   { key: 'cumplimiento', label: 'Cumplimiento', icon: Flag },
@@ -362,6 +363,99 @@ function disenoTieneContenido(d: DisenoData): boolean {
     || d.entidades.length || d.stack.length || d.integraciones.length || d.decisiones.length)
 }
 
+// Plan de ejecución: tercer documento del flujo (PRD = qué, Diseño Técnico =
+// cómo se construye, Plan de Ejecución = cómo nos organizamos para
+// ejecutar). Mismo patrón que el Diseño Técnico. Se persiste en
+// Solucion.planEjecucion (JSON).
+interface Ambiente { id: string; ambiente: string; proposito: string; despliega: string; promocion: string }
+interface RaciFila { id: string; actividad: string; responsable: string; aprueba: string; consultado: string; informado: string }
+interface ComItem { id: string; que: string; audiencia: string; frecuencia: string; canal: string; responsable: string }
+type PEListKey = 'ambientes' | 'raci' | 'comunicacion'
+
+interface PlanEjecData {
+  estadoDocumento: EstadoDocumentoPrd
+  qa: string
+  ambientes: Ambiente[]
+  release: string
+  raci: RaciFila[]
+  cambios: string
+  comunicacion: ComItem[]
+}
+const emptyPlanEj: PlanEjecData = {
+  estadoDocumento: 'BORRADOR', qa: '', ambientes: [], release: '', raci: [], cambios: '', comunicacion: [],
+}
+
+const PE_TABLAS: Record<PEListKey, {
+  aiKey: string; n: number; titulo: string; addLabel: string; vacio: string
+  cols: { campo: string; label: string; ph: string; ancho?: string }[]
+}> = {
+  ambientes: {
+    aiKey: 'pe_ambientes', n: 2, titulo: 'Ambientes y despliegue', addLabel: 'Agregar ambiente',
+    vacio: 'Sin ambientes definidos todavía.',
+    cols: [
+      { campo: 'ambiente', label: 'Ambiente', ph: 'Ej: Staging', ancho: 'w-32' },
+      { campo: 'proposito', label: 'Propósito', ph: 'Para qué se usa' },
+      { campo: 'despliega', label: 'Quién / cómo despliega', ph: 'Ej: CI/CD automático al hacer merge' },
+      { campo: 'promocion', label: 'Condición para promover', ph: 'Qué debe cumplirse para pasar al siguiente' },
+    ],
+  },
+  raci: {
+    aiKey: 'pe_raci', n: 4, titulo: 'Equipo y roles (matriz RACI)', addLabel: 'Agregar actividad',
+    vacio: 'Sin actividades en la matriz todavía.',
+    cols: [
+      { campo: 'actividad', label: 'Actividad', ph: 'Ej: Aprobar el PRD', ancho: 'w-44' },
+      { campo: 'responsable', label: 'R · Responsable', ph: 'Quién lo hace' },
+      { campo: 'aprueba', label: 'A · Aprueba', ph: 'Quién responde por el resultado' },
+      { campo: 'consultado', label: 'C · Consultado', ph: 'A quién se consulta' },
+      { campo: 'informado', label: 'I · Informado', ph: 'A quién se avisa' },
+    ],
+  },
+  comunicacion: {
+    aiKey: 'pe_comunicacion', n: 6, titulo: 'Comunicación con el cliente', addLabel: 'Agregar comunicación',
+    vacio: 'Sin rituales de comunicación definidos todavía.',
+    cols: [
+      { campo: 'que', label: 'Qué se comunica', ph: 'Ej: Reporte de avance', ancho: 'w-40' },
+      { campo: 'audiencia', label: 'Audiencia', ph: 'Ej: Sponsor del cliente' },
+      { campo: 'frecuencia', label: 'Frecuencia', ph: 'Ej: Semanal', ancho: 'w-28' },
+      { campo: 'canal', label: 'Canal', ph: 'Ej: Email + reunión', ancho: 'w-32' },
+      { campo: 'responsable', label: 'Responsable', ph: 'Quién lo envía' },
+    ],
+  },
+}
+
+function itemVacioPE(key: PEListKey): Record<string, string> {
+  const o: Record<string, string> = { id: makeId() }
+  for (const c of PE_TABLAS[key].cols) o[c.campo] = ''
+  return o
+}
+
+function migrarPlanEj(raw: Record<string, unknown>): PlanEjecData {
+  const str = (v: unknown) => (typeof v === 'string' ? v : '')
+  const lista = <T extends { id: string }>(v: unknown, campos: string[]): T[] =>
+    Array.isArray(v)
+      ? v.map((x: Record<string, unknown>) => {
+          const o: Record<string, unknown> = { id: typeof x?.id === 'string' && x.id ? x.id : makeId() }
+          for (const c of campos) o[c] = str(x?.[c])
+          return o as unknown as T
+        })
+      : []
+  const estado = raw.estadoDocumento
+  return {
+    estadoDocumento: estado === 'EN_REVISION' || estado === 'APROBADO' ? estado : 'BORRADOR',
+    qa: escapeIfPlain(str(raw.qa)),
+    ambientes: lista<Ambiente>(raw.ambientes, ['ambiente', 'proposito', 'despliega', 'promocion']),
+    release: escapeIfPlain(str(raw.release)),
+    raci: lista<RaciFila>(raw.raci, ['actividad', 'responsable', 'aprueba', 'consultado', 'informado']),
+    cambios: escapeIfPlain(str(raw.cambios)),
+    comunicacion: lista<ComItem>(raw.comunicacion, ['que', 'audiencia', 'frecuencia', 'canal', 'responsable']),
+  }
+}
+
+function planEjecTieneContenido(p: PlanEjecData): boolean {
+  return !!(p.qa.trim() || p.release.trim() || p.cambios.trim()
+    || p.ambientes.length || p.raci.length || p.comunicacion.length)
+}
+
 // Stepper de "fase del proyecto" (venta confirmada → cierre). Todo derivado
 // de datos que ya existen en esta pagina — no hay un campo nuevo que
 // mantener a mano. Las fases cuyo documento/proceso todavia no existe en el
@@ -370,12 +464,14 @@ function disenoTieneContenido(d: DisenoData): boolean {
 type EstadoFase = 'hecho' | 'progreso' | 'pendiente' | 'proximamente'
 interface FaseProyecto { key: string; label: string; estado: EstadoFase; tab?: TabKey; hint: string }
 
-function calcularFases(prd: PrdData, diseno: DisenoData, archNodesCount: number, tareas: TareaBacklog[]): FaseProyecto[] {
+function calcularFases(prd: PrdData, diseno: DisenoData, plan: PlanEjecData, archNodesCount: number, tareas: TareaBacklog[]): FaseProyecto[] {
   const prdTieneContenido = !!(prd.resumenEjecutivo.trim() || prd.problema.trim() || prd.requisitos.length > 0)
   const estadoPrd: EstadoFase = prd.estadoDocumento === 'APROBADO' ? 'hecho' : prdTieneContenido ? 'progreso' : 'pendiente'
 
   const estadoDiseno: EstadoFase = diseno.estadoDocumento === 'APROBADO' ? 'hecho'
     : (disenoTieneContenido(diseno) || archNodesCount > 0) ? 'progreso' : 'pendiente'
+
+  const estadoPlan: EstadoFase = plan.estadoDocumento === 'APROBADO' ? 'hecho' : planEjecTieneContenido(plan) ? 'progreso' : 'pendiente'
 
   const reqs = prd.requisitos
   const conBacklog = reqs.filter(r => r.backlogItemId).length
@@ -388,7 +484,7 @@ function calcularFases(prd: PrdData, diseno: DisenoData, archNodesCount: number,
   return [
     { key: 'prd', label: 'PRD', estado: estadoPrd, tab: 'prd', hint: 'Hecho cuando el documento está en estado Aprobado.' },
     { key: 'diseno', label: 'Diseño técnico', estado: estadoDiseno, tab: 'diseno', hint: 'Hecho cuando el documento de Diseño Técnico está en estado Aprobado.' },
-    { key: 'plan-ejec', label: 'Plan de ejecución', estado: 'proximamente', hint: 'Próximamente: QA, despliegue, RACI, gestión de cambios, comunicación.' },
+    { key: 'plan-ejec', label: 'Plan de ejecución', estado: estadoPlan, tab: 'plan-ejec', hint: 'Hecho cuando el Plan de Ejecución (QA, ambientes, RACI, cambios, comunicación) está en estado Aprobado.' },
     { key: 'backlog', label: 'Backlog', estado: estadoBacklog, tab: 'prd', hint: 'Requisitos del PRD convertidos en tareas reales del backlog.' },
     { key: 'ejecucion', label: 'Ejecución', estado: estadoEjec, tab: 'prd', hint: 'Tareas del backlog generadas desde este PRD (en curso / terminadas).' },
     { key: 'qa', label: 'QA / Aceptación', estado: 'proximamente', hint: 'Próximamente: aceptación formal del cliente.' },
@@ -613,6 +709,13 @@ export default function SolucionDetailPage() {
   useEffect(() => {
     setDisenoDirty(JSON.stringify(diseno) !== disenoSavedSnapshot.current)
   }, [diseno])
+  // Plan de ejecución (tercer documento del flujo), mismo esquema de "cambios sin guardar".
+  const [planEj, setPlanEj] = useState<PlanEjecData>(emptyPlanEj)
+  const planEjSavedSnapshot = useRef<string>(JSON.stringify(emptyPlanEj))
+  const [planEjDirty, setPlanEjDirty] = useState(false)
+  useEffect(() => {
+    setPlanEjDirty(JSON.stringify(planEj) !== planEjSavedSnapshot.current)
+  }, [planEj])
   // Panel lateral de IA por sección del PRD (estilo blade de Azure/AWS). La
   // opción "Generar sección con IA" abre una mini-entrevista: el chat vive
   // en su propio estado, separado del panel, para que cerrar/reabrir el
@@ -720,6 +823,12 @@ export default function SolucionDetailPage() {
           setDiseno(cargadoDt)
           disenoSavedSnapshot.current = JSON.stringify(cargadoDt)
         } catch { setDiseno(emptyDiseno); disenoSavedSnapshot.current = JSON.stringify(emptyDiseno) }
+        try {
+          const parsedPe = s.planEjecucion ? JSON.parse(s.planEjecucion) : null
+          const cargadoPe = parsedPe && typeof parsedPe === 'object' ? migrarPlanEj(parsedPe) : emptyPlanEj
+          setPlanEj(cargadoPe)
+          planEjSavedSnapshot.current = JSON.stringify(cargadoPe)
+        } catch { setPlanEj(emptyPlanEj); planEjSavedSnapshot.current = JSON.stringify(emptyPlanEj) }
       } catch {
         setNotFound(true)
       } finally {
@@ -835,6 +944,26 @@ export default function SolucionDetailPage() {
     setPrd(prev => ({ ...prev, [key]: value }))
   }
 
+  // Plan de ejecución: handlers genericos para sus 3 secciones-tabla.
+  function updatePlanEjField<K extends keyof PlanEjecData>(key: K, value: PlanEjecData[K]) {
+    setPlanEj(prev => ({ ...prev, [key]: value }))
+  }
+  function addPEItem(key: PEListKey) {
+    setPlanEj(prev => ({ ...prev, [key]: [...(prev[key] as unknown as Record<string, string>[]), itemVacioPE(key)] }) as PlanEjecData)
+  }
+  function updatePEItem(key: PEListKey, itemId: string, campo: string, valor: string) {
+    setPlanEj(prev => ({
+      ...prev,
+      [key]: (prev[key] as unknown as Record<string, string>[]).map(it => it.id === itemId ? { ...it, [campo]: valor } : it),
+    }) as PlanEjecData)
+  }
+  function removePEItem(key: PEListKey, itemId: string) {
+    setPlanEj(prev => ({
+      ...prev,
+      [key]: (prev[key] as unknown as Record<string, string>[]).filter(it => it.id !== itemId),
+    }) as PlanEjecData)
+  }
+
   // Diseño técnico: handlers genericos para sus 4 secciones-tabla.
   function updateDisenoField<K extends keyof DisenoData>(key: K, value: DisenoData[K]) {
     setDiseno(prev => ({ ...prev, [key]: value }))
@@ -878,6 +1007,12 @@ export default function SolucionDetailPage() {
       case 'dt_stack': return diseno.stack.map(({ id: _i, ...r }) => r)
       case 'dt_integraciones': return diseno.integraciones.map(({ id: _i, ...r }) => r)
       case 'dt_decisiones': return diseno.decisiones.map(({ id: _i, ...r }) => r)
+      case 'pe_qa': return planEj.qa
+      case 'pe_release': return planEj.release
+      case 'pe_cambios': return planEj.cambios
+      case 'pe_ambientes': return planEj.ambientes.map(({ id: _i, ...r }) => r)
+      case 'pe_raci': return planEj.raci.map(({ id: _i, ...r }) => r)
+      case 'pe_comunicacion': return planEj.comunicacion.map(({ id: _i, ...r }) => r)
       default: return null
     }
   }
@@ -949,6 +1084,20 @@ export default function SolucionDetailPage() {
         setDiseno(prev => ({ ...prev, [key]: nuevos }) as DisenoData)
         break
       }
+      case 'pe_qa': updatePlanEjField('qa', escapeIfPlain(String(valor ?? ''))); break
+      case 'pe_release': updatePlanEjField('release', escapeIfPlain(String(valor ?? ''))); break
+      case 'pe_cambios': updatePlanEjField('cambios', escapeIfPlain(String(valor ?? ''))); break
+      case 'pe_ambientes': case 'pe_raci': case 'pe_comunicacion': {
+        const key = ({ pe_ambientes: 'ambientes', pe_raci: 'raci', pe_comunicacion: 'comunicacion' } as const)[seccionKey]
+        const items = Array.isArray(valor) ? valor : []
+        const nuevos = items.map((x: Record<string, unknown>) => {
+          const o: Record<string, string> = { id: makeId() }
+          for (const c of PE_TABLAS[key].cols) o[c.campo] = String(x?.[c.campo] ?? '')
+          return o
+        })
+        setPlanEj(prev => ({ ...prev, [key]: nuevos }) as PlanEjecData)
+        break
+      }
     }
   }
 
@@ -990,6 +1139,8 @@ export default function SolucionDetailPage() {
             personas: prd.personas.map(p => `${p.rol}: ${p.necesidad}`).filter(s => s.trim() !== ':'),
             requisitos: prd.requisitos.map(r => `[${r.prioridad}] ${r.texto.replace(/<[^>]+>/g, ' ')}`).filter(t => t.length > 12),
             requisitosNoFuncionales: prd.requisitosNoFuncionales.map(r => `${r.categoria}: ${r.texto}`).filter(t => t.length > 12),
+            stack: diseno.stack.map(x => `${x.capa}: ${x.tecnologia}`).filter(t => t.length > 3),
+            integraciones: diseno.integraciones.map(x => `${x.sistema}: ${x.proposito}`).filter(t => t.length > 3),
           },
         }),
       })
@@ -1264,6 +1415,7 @@ export default function SolucionDetailPage() {
           cronograma: JSON.stringify(fases),
           prd: JSON.stringify(prd),
           disenoTecnico: JSON.stringify(diseno),
+          planEjecucion: JSON.stringify(planEj),
         }),
       })
       if (!res.ok) {
@@ -1276,6 +1428,8 @@ export default function SolucionDetailPage() {
       setPrdDirty(false)
       disenoSavedSnapshot.current = JSON.stringify(diseno)
       setDisenoDirty(false)
+      planEjSavedSnapshot.current = JSON.stringify(planEj)
+      setPlanEjDirty(false)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error inesperado.')
     } finally {
@@ -1319,7 +1473,7 @@ export default function SolucionDetailPage() {
 
   return (
     <div>
-      <FaseStepper fases={calcularFases(prd, diseno, archNodes.length, tareasBacklog)} onIr={setActiveTab} />
+      <FaseStepper fases={calcularFases(prd, diseno, planEj, archNodes.length, tareasBacklog)} onIr={setActiveTab} />
 
       {/* Panel lateral de IA por seccion, estilo "blade" de
           Azure/AWS (y de widgets tipo Intercom/soporte): panel
@@ -2355,6 +2509,159 @@ export default function SolucionDetailPage() {
                         placeholder="Carga esperada, cuellos de botella previstos, cómo crece el sistema, monitoreo."
                         className={narrativeCls} />
                     </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Tab: Plan de Ejecución — como nos organizamos para ejecutar
+              (QA, ambientes y release, RACI, gestion de cambios,
+              comunicacion). Mismo patron y componentes que Diseño Técnico. */}
+          {activeTab === 'plan-ejec' && (() => {
+            const ESTADO_DOC_COLOR: Record<EstadoDocumentoPrd, string> = {
+              BORRADOR: 'text-gray-400 border-gray-700 bg-gray-900',
+              EN_REVISION: 'text-yellow-400 border-yellow-700/50 bg-yellow-900/10',
+              APROBADO: 'text-green-400 border-green-700/50 bg-green-900/10',
+            }
+            const narrativeCls = "w-full bg-transparent border-0 border-b border-transparent hover:border-gray-200 focus:border-gray-300 text-gray-800 text-[14px] leading-relaxed resize-none focus:outline-none placeholder-gray-400 py-0.5 transition-colors"
+            const tableInputCls = "w-full bg-transparent border-0 text-gray-800 text-[13px] focus:outline-none placeholder-gray-400 px-2 py-1.5"
+
+            function TituloPE({ n, k, children }: { n: number; k: string; children: React.ReactNode }) {
+              return (
+                <div className="flex items-center gap-2 mt-8 first:mt-0 mb-2 pb-1.5 border-b border-gray-200 group/titulo">
+                  <h2 className="text-[17px] font-bold text-gray-900 flex-1 min-w-0">{n}. {children}</h2>
+                  <button type="button"
+                    onClick={() => setAiPanel({ n, key: k, titulo: typeof children === 'string' ? children : `Sección ${n}` })}
+                    title="Asistente de IA para esta sección"
+                    className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-cyan-600/60 border border-cyan-200 hover:text-white hover:bg-cyan-600 hover:border-cyan-600 transition-colors print:hidden opacity-0 group-hover/titulo:opacity-100 focus:opacity-100">
+                    <Sparkles size={12} />
+                  </button>
+                </div>
+              )
+            }
+
+            function tabla(key: PEListKey) {
+              const cfg = PE_TABLAS[key]
+              const lista = planEj[key] as unknown as Record<string, string>[]
+              return (
+                <div key={key} className="mb-6">
+                  <TituloPE n={cfg.n} k={cfg.aiKey}>{cfg.titulo}</TituloPE>
+                  {lista.length === 0 && <p className="text-gray-400 text-xs italic py-1">{cfg.vacio}</p>}
+                  {lista.length > 0 && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse mb-1">
+                        <thead>
+                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                            {cfg.cols.map(c => (
+                              <th key={c.campo} className={`font-semibold pb-1 pr-2 ${c.ancho ?? ''}`}>{c.label}</th>
+                            ))}
+                            <th className="w-6"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lista.map(it => (
+                            <tr key={it.id} className="border-t border-gray-100 group">
+                              {cfg.cols.map(c => (
+                                <td key={c.campo} className="align-top">
+                                  <AutoTextarea value={it[c.campo] ?? ''} onChange={v => updatePEItem(key, it.id, c.campo, v)}
+                                    placeholder={c.ph} className={tableInputCls} />
+                                </td>
+                              ))}
+                              <td className="align-top">
+                                <button type="button" onClick={() => removePEItem(key, it.id)}
+                                  className="w-6 h-6 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <button type="button" onClick={() => addPEItem(key)}
+                    className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-600 transition-colors print:hidden">
+                    <Plus size={12} /> {cfg.addLabel}
+                  </button>
+                </div>
+              )
+            }
+
+            const previosAprobados = prd.estadoDocumento === 'APROBADO' && diseno.estadoDocumento === 'APROBADO'
+
+            return (
+              <div className="space-y-4">
+                {!previosAprobados && (
+                  <div className="text-xs text-yellow-300/90 bg-yellow-900/10 border border-yellow-700/40 rounded-lg px-3 py-2 print:hidden">
+                    Conviene tener el <b>PRD</b> y el <b>Diseño Técnico</b> en estado Aprobado antes de cerrar el plan de ejecución
+                    (QA, ambientes y responsables dependen de qué se construye y cómo). Aviso, no bloquea la edición.
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 flex-wrap print:hidden">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-500">Estado del documento:</label>
+                      <select value={planEj.estadoDocumento} onChange={e => updatePlanEjField('estadoDocumento', e.target.value as EstadoDocumentoPrd)}
+                        className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[planEj.estadoDocumento]}`}>
+                        <option value="BORRADOR">Borrador</option>
+                        <option value="EN_REVISION">En revisión</option>
+                        <option value="APROBADO">Aprobado</option>
+                      </select>
+                    </div>
+                    <span className={`text-[11px] flex items-center gap-1 ${planEjDirty ? 'text-orange-400' : 'text-gray-600'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${planEjDirty ? 'bg-orange-400' : 'bg-gray-600'}`} />
+                      {planEjDirty ? 'Cambios sin guardar' : 'Guardado'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RichToolbar />
+                    <button type="button" onClick={() => window.print()}
+                      title="Imprimir / Exportar a PDF"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
+                      <Printer size={12} /> Imprimir / PDF
+                    </button>
+                    <button type="button" onClick={handleSave} disabled={saving || deleting}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-xs font-semibold transition-colors">
+                      {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                      {saving ? 'Guardando...' : 'Guardar cambios'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-sm shadow-2xl mx-auto max-w-[840px] print:shadow-none print:rounded-none print:mx-0 print:max-w-none"
+                  style={{ fontFamily: 'var(--font-archivo)' }}>
+                  <div className="px-10 sm:px-16 py-12">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">{form.nombre || 'Sin nombre'} — Plan de Ejecución</h1>
+                    <p className="text-gray-400 text-xs mb-8">Cómo nos organizamos para ejecutar lo que definen el PRD y el Diseño Técnico</p>
+
+                    <div className="mb-6">
+                      <TituloPE n={1} k="pe_qa">Plan de pruebas / QA</TituloPE>
+                      <RichTextField value={planEj.qa} onChange={v => updatePlanEjField('qa', v)}
+                        placeholder="Niveles de prueba (unitarias, integración, extremo a extremo), qué se automatiza y qué es manual, cómo se verifican los criterios de aceptación, UAT con el cliente y criterio de salida a producción."
+                        className={narrativeCls} />
+                    </div>
+
+                    {tabla('ambientes')}
+
+                    <div className="mb-6">
+                      <TituloPE n={3} k="pe_release">Estrategia de release y rollback</TituloPE>
+                      <RichTextField value={planEj.release} onChange={v => updatePlanEjField('release', v)}
+                        placeholder="Cómo se libera (ventanas, feature flags, por etapas), qué se monitorea al liberar y cuándo y cómo se revierte."
+                        className={narrativeCls} />
+                    </div>
+
+                    {tabla('raci')}
+
+                    <div className="mb-6">
+                      <TituloPE n={5} k="pe_cambios">Gestión de cambios</TituloPE>
+                      <RichTextField value={planEj.cambios} onChange={v => updatePlanEjField('cambios', v)}
+                        placeholder="Cómo se solicita, evalúa (impacto en alcance, costo y plazo), aprueba y registra un cambio; quién decide y cómo se refleja en el PRD y el cronograma."
+                        className={narrativeCls} />
+                    </div>
+
+                    {tabla('comunicacion')}
                   </div>
                 </div>
               </div>

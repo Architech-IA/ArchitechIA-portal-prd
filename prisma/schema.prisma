@@ -88,6 +88,7 @@ model Solucion {
   cronograma    String?       @default("[]") // JSON: [{ fase, fechaInicio, fechaFin, estado }]
   prd           String?       @default("{}") // JSON: PRD (problema, objetivo, requisitos, etc — ver tab PRD)
   disenoTecnico String?       @default("{}") // JSON: Diseño técnico (arquitectura, modelo de datos, stack, integraciones, decisiones, seguridad, escalabilidad — ver tab Diseño Técnico)
+  planEjecucion String?       @default("{}") // JSON: Plan de ejecución (QA, ambientes, release, RACI, gestión de cambios, comunicación — ver tab Plan de Ejecución)
   leadId        String?       @unique
   lead          Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   backlogItems  BacklogItem[]

@@ -107,6 +107,13 @@ Las prioridades tienen que estar REALMENTE repartidas entre las 4 opciones: JAM�
   dt_decisiones: { label: 'Decisiones técnicas clave', schema: 'un array de 3-8 objetos {"decision": string, "alternativas": string (qué otras opciones reales se evaluaron), "justificacion": string (por qué esta y no las otras, con el trade-off asumido)}' },
   dt_seguridad: { label: 'Consideraciones de seguridad', schema: 'un string de 2-4 párrafos: autenticación y autorización, manejo de datos sensibles/personales, cifrado, cumplimiento normativo aplicable y amenazas relevantes para ESTA solución' },
   dt_escalabilidad: { label: 'Escalabilidad y rendimiento', schema: 'un string de 2-4 párrafos: carga esperada, cuellos de botella previstos, cómo crece el sistema, y qué se monitorea' },
+  // --- Plan de Ejecución (tercer documento del flujo) ---
+  pe_qa: { label: 'Plan de pruebas / QA', schema: 'un string de 3-5 párrafos: niveles de prueba (unitarias, integración, extremo a extremo), qué se automatiza y qué es manual, cómo se verifican los criterios de aceptación y los requisitos no funcionales del PRD, cómo es el UAT con el cliente (quién, cuándo) y el criterio de salida para considerar algo listo para producción' },
+  pe_ambientes: { label: 'Ambientes y despliegue', schema: 'un array de 2-4 objetos {"ambiente": string (ej. Desarrollo, Staging, Producción), "proposito": string, "despliega": string (quién y cómo despliega en ese ambiente), "promocion": string (condición concreta para promover al siguiente ambiente)}' },
+  pe_release: { label: 'Estrategia de release y rollback', schema: 'un string de 2-3 párrafos: cómo se libera a producción (ventanas, por etapas o feature flags), qué se monitorea al liberar, y cuándo y cómo se revierte (criterios de rollback)' },
+  pe_raci: { label: 'Equipo y roles (matriz RACI)', schema: 'un array de 6-12 objetos {"actividad": string, "responsable": string, "aprueba": string, "consultado": string, "informado": string} — usá ROLES (ej. Líder técnico, Product owner, Cliente sponsor, Agente ejecutor), no inventes nombres propios de personas; cubrí desde aprobar el PRD y el diseño hasta despliegue, QA y cierre' },
+  pe_cambios: { label: 'Gestión de cambios', schema: 'un string de 2-3 párrafos: cómo se solicita, evalúa (impacto en alcance, costo y plazo), aprueba y registra un cambio de alcance; quién decide; y cómo se refleja en el PRD, el diseño técnico y el cronograma' },
+  pe_comunicacion: { label: 'Comunicación con el cliente', schema: 'un array de 3-6 objetos {"que": string (qué se comunica), "audiencia": string, "frecuencia": string, "canal": string, "responsable": string}' },
 }
 
 // Que forma de "valor" espera cada seccion — usado SOLO para validar lo que
@@ -126,6 +133,8 @@ const SECCION_KIND: Record<string, SeccionKind> = {
   requisito_item: 'requisito_item',
   dt_arquitectura: 'texto', dt_seguridad: 'texto', dt_escalabilidad: 'texto',
   dt_modelo: 'dt_tabla', dt_stack: 'dt_tabla', dt_integraciones: 'dt_tabla', dt_decisiones: 'dt_tabla',
+  pe_qa: 'texto', pe_release: 'texto', pe_cambios: 'texto',
+  pe_ambientes: 'dt_tabla', pe_raci: 'dt_tabla', pe_comunicacion: 'dt_tabla',
 }
 
 // Campos obligatorios (no vacios) por seccion-tabla del Diseño Técnico.
@@ -134,6 +143,9 @@ const DT_REQUERIDOS: Record<string, string[]> = {
   dt_stack: ['capa', 'tecnologia', 'justificacion'],
   dt_integraciones: ['sistema', 'proposito', 'siFalla'],
   dt_decisiones: ['decision', 'alternativas', 'justificacion'],
+  pe_ambientes: ['ambiente', 'proposito', 'promocion'],
+  pe_raci: ['actividad', 'responsable', 'aprueba'],
+  pe_comunicacion: ['que', 'audiencia', 'frecuencia', 'responsable'],
 }
 
 // El modelo a veces devuelve tipo:"contenido" con datos incompletos (ítems
@@ -230,12 +242,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // ahora), para que el modelo entienda el requisito entero aunque solo
     // pueda tocar uno de los dos campos.
     contextoRequisito?: { texto?: unknown; criterioAceptacion?: unknown }
-    contextoPrd?: { dentroDeAlcance?: unknown; objetivosEspecificos?: unknown; personas?: unknown; requisitos?: unknown; requisitosNoFuncionales?: unknown }
+    contextoPrd?: { dentroDeAlcance?: unknown; objetivosEspecificos?: unknown; personas?: unknown; requisitos?: unknown; requisitosNoFuncionales?: unknown; stack?: unknown; integraciones?: unknown }
   }
   const seccionKey = String(body.seccionKey || '')
   const esDebateItem = seccionKey === 'requisito_item'
   const campoDebate: 'texto' | 'criterioAceptacion' = body.campo === 'criterioAceptacion' ? 'criterioAceptacion' : 'texto'
-  const docLabel = seccionKey.startsWith('dt_')
+  const docLabel = seccionKey.startsWith('pe_')
+    ? 'un Plan de Ejecución (cómo se organiza el equipo para ejecutar: pruebas, despliegue, roles, cambios y comunicación; complementa al PRD y al Diseño Técnico)'
+    : seccionKey.startsWith('dt_')
     ? 'un Documento de Diseño Técnico (el CÓMO se construye la solución; complementa al PRD, que define el qué)'
     : 'un PRD (Product Requirements Document)'
   const campoLabel = campoDebate === 'texto' ? 'la historia de usuario / caso de uso' : 'el criterio de aceptación'
@@ -297,6 +311,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const requisitosLista = asStringArray(body.contextoPrd?.requisitos)
   const rnfLista = asStringArray(body.contextoPrd?.requisitosNoFuncionales)
   const esDiseno = seccionKey.startsWith('dt_')
+  const esPlan = seccionKey.startsWith('pe_')
+  const stackLista = asStringArray(body.contextoPrd?.stack)
+  const integracionesLista = asStringArray(body.contextoPrd?.integraciones)
 
   const contexto = [
     `Nombre: ${solucion.nombre}`,
@@ -317,14 +334,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     seccionKey === 'requisitos' && personasLista.length > 0
       ? `Personas/usuarios ya definidos en este PRD (cada rol relevante tiene que tener al menos un requisito pensado para su necesidad):\n${personasLista.map(t => `- ${t}`).join('\n')}`
       : null,
-    esDiseno && requisitosLista.length > 0
+    (esDiseno || esPlan) && requisitosLista.length > 0
       ? `Requisitos funcionales del PRD (el diseño técnico tiene que poder sostener CADA UNO; no inventes funcionalidad que no esté acá):\n${requisitosLista.map(t => `- ${t}`).join('\n')}`
       : null,
-    esDiseno && rnfLista.length > 0
+    (esDiseno || esPlan) && rnfLista.length > 0
       ? `Requisitos no funcionales del PRD (restricciones que el diseño tiene que cumplir):\n${rnfLista.map(t => `- ${t}`).join('\n')}`
       : null,
-    esDiseno && alcanceLista.length > 0
+    (esDiseno || esPlan) && alcanceLista.length > 0
       ? `Dentro de alcance del PRD:\n${alcanceLista.map(t => `- ${t}`).join('\n')}`
+      : null,
+    esPlan && stackLista.length > 0
+      ? `Stack tecnológico definido en el Diseño Técnico:\n${stackLista.map(t => `- ${t}`).join('\n')}`
+      : null,
+    esPlan && integracionesLista.length > 0
+      ? `Integraciones externas definidas en el Diseño Técnico (el plan de pruebas y despliegue tiene que contemplarlas):\n${integracionesLista.map(t => `- ${t}`).join('\n')}`
       : null,
   ].filter(Boolean).join('\n\n')
 
