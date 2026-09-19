@@ -122,6 +122,11 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
   const [cargandoAcc, setCargandoAcc] = useState(true);
   const [nuevaAccion, setNuevaAccion] = useState('');
   const [errorAcc, setErrorAcc] = useState('');
+  // Borrador de acta con IA (null = panel cerrado)
+  const [actaBorrador, setActaBorrador] = useState<string | null>(null);
+  const [generandoActa, setGenerandoActa] = useState(false);
+  const [guardandoActa, setGuardandoActa] = useState(false);
+  const [errorActa, setErrorActa] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState(false);
 
   // Las reuniones completadas se ven en modo lectura (agenda, notas y
@@ -234,6 +239,86 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
       } finally { setSubiendo(false); }
     };
     reader.readAsDataURL(file);
+  }
+
+  async function generarActa() {
+    setGenerandoActa(true); setErrorActa(null);
+    try {
+      const res = await fetch(`/api/meetings/${meeting.id}/acta-generate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hub: JSON.stringify(hub), asistentes, typeLabel }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.texto) throw new Error(d.error || 'No se pudo generar el acta');
+      setActaBorrador(d.texto);
+    } catch (e) {
+      setErrorActa(e instanceof Error ? e.message : 'No se pudo generar el acta');
+    } finally { setGenerandoActa(false); }
+  }
+
+  // Convierte el borrador (# titulo, ## seccion, - item) en un PDF y lo adjunta como acta
+  async function guardarActaPdf() {
+    if (!actaBorrador?.trim()) return;
+    if (meeting.actaFile && !window.confirm('Ya hay un acta adjunta. ¿Reemplazarla por esta?')) return;
+    setGuardandoActa(true); setErrorActa(null);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+      const M = 56, ancho = W - M * 2;
+      let y = 64;
+      // Las fuentes estandar de jsPDF solo cubren Latin-1: se normalizan comillas, guiones, etc.
+      const limpiar = (t: string) => t
+        .replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-')
+        .replace(/\u2026/g, '...').replace(/[\u2022\u00B7]/g, '-').replace(/\u2192/g, '->')
+        .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u00FF]/g, '');
+      const escribir = (txt: string, x: number, w: number, size: number, bold: boolean, salto: number) => {
+        doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size);
+        for (const l of doc.splitTextToSize(limpiar(txt), w) as string[]) {
+          if (y > H - 64) { doc.addPage(); y = 64; }
+          doc.text(l, x, y); y += salto;
+        }
+      };
+      for (const raw of actaBorrador.split('\n')) {
+        const l = raw.trimEnd();
+        if (!l.trim()) { y += 6; continue; }
+        if (l.startsWith('## ')) {
+          y += 8; doc.setTextColor(194, 65, 12);
+          escribir(l.slice(3), M, ancho, 12.5, true, 17);
+          doc.setTextColor(0); y += 2;
+        } else if (l.startsWith('# ')) {
+          escribir(l.slice(2), M, ancho, 17, true, 22); y += 4;
+        } else if (/^\s*[-*] /.test(l)) {
+          if (y > H - 64) { doc.addPage(); y = 64; }
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
+          doc.text('-', M + 4, y);
+          escribir(l.replace(/^\s*[-*] /, ''), M + 16, ancho - 16, 10.5, false, 14.5);
+        } else {
+          escribir(l, M, ancho, 10.5, false, 14.5);
+        }
+      }
+      const n = doc.getNumberOfPages();
+      for (let i = 1; i <= n; i++) {
+        doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(120);
+        doc.text(`ArchiTechIA - Acta de reunion - Pagina ${i} de ${n}`, M, H - 32);
+      }
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = () => reject(new Error('No se pudo leer el PDF'));
+        r.readAsDataURL(doc.output('blob'));
+      });
+      const nombre = `Acta - ${meeting.title} - ${getDateStrUTC5(meeting.date)}.pdf`.replace(/[\\/:*?"<>|]/g, '-');
+      const res = await fetch(`/api/meetings/${meeting.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actaFile: dataUrl, actaFileName: nombre }),
+      });
+      if (!res.ok) throw new Error('No se pudo adjuntar el acta');
+      onActaChanged(await res.json());
+      setActaBorrador(null);
+    } catch (e) {
+      setErrorActa(e instanceof Error ? e.message : 'No se pudo guardar el acta');
+    } finally { setGuardandoActa(false); }
   }
 
   async function quitarActa() {
@@ -430,6 +515,26 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                 {subiendo ? 'Subiendo…' : meeting.actaFile ? 'Reemplazar acta' : 'Adjuntar acta'}
                 <input type="file" className="hidden" onChange={subirActa} />
               </label>
+              <button type="button" onClick={() => { void generarActa(); }} disabled={generandoActa || guardandoActa}
+                className="mt-3 ml-2 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-orange-500/40 bg-orange-500/10 text-xs text-orange-300 hover:bg-orange-500/20 disabled:opacity-50 disabled:cursor-wait">
+                {generandoActa ? 'Generando acta…' : actaBorrador !== null ? 'Regenerar con IA' : 'Generar acta con IA'}
+              </button>
+              {errorActa && <p className="mt-2 text-xs text-red-400">{errorActa}</p>}
+              {actaBorrador !== null && (
+                <div className="mt-4">
+                  <p className="text-[11px] text-gray-500 mb-1.5">Borrador generado con IA a partir de la agenda, el contenido y los pendientes. Revísalo y edítalo antes de guardar.</p>
+                  <textarea value={actaBorrador} onChange={e => setActaBorrador(e.target.value)} rows={20} spellCheck={false}
+                    className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-gray-100 leading-relaxed focus:outline-none focus:border-orange-500/50 resize-y" />
+                  <div className="mt-2 flex items-center gap-2 justify-end">
+                    <button type="button" onClick={() => setActaBorrador(null)} disabled={guardandoActa}
+                      className="px-3 py-2 rounded-lg border border-white/10 text-xs text-gray-400 hover:text-gray-200">Descartar</button>
+                    <button type="button" onClick={() => { void guardarActaPdf(); }} disabled={guardandoActa || !actaBorrador.trim()}
+                      className="px-3 py-2 rounded-lg bg-orange-500 hover:bg-orange-400 text-xs font-semibold text-black disabled:opacity-50">
+                      {guardandoActa ? 'Guardando…' : 'Guardar como acta (PDF)'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
