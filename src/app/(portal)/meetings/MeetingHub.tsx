@@ -358,7 +358,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
           {tab === 'notas' && (
             <div>
               <div className="flex items-center gap-1 mb-3 flex-wrap">
-                {[{ id: 'main', titulo: 'General' }, ...hub.paginas].map(p => {
+                {([{ id: 'main', titulo: 'General', html: '' }, ...hub.paginas] as Pagina[]).map(p => {
                   const activa = paginaSel === p.id;
                   const extra = p.id !== 'main';
                   return (
