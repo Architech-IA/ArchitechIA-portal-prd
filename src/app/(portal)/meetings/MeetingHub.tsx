@@ -465,7 +465,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                     </a>
                   )}
                 </dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Asistentes</dt><dd className="text-gray-200">{asistentes.length}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Asistentes</dt><dd className="text-gray-200">{meeting.type === 'INTERNAL_DAILY' ? 'ArchitechIA' : asistentes.length}</dd></div>
             </dl>
             {asistentes.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
