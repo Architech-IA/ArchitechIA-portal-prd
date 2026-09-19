@@ -1,13 +1,33 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Save, Loader2, Sparkles, X, ZoomIn, ZoomOut, Maximize2, Download, Info, Link2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Save, Loader2, Sparkles, X, ZoomIn, ZoomOut, Maximize2, Download, Info, Link2, MessageSquare, Send, Undo2 } from 'lucide-react'
 
 interface DiagNode {
   id: string; label: string; description?: string; type?: string; x: number; y: number
 }
 interface DiagEdge { id: string; from: string; to: string }
 interface DiagData { title: string; description: string; nodes: DiagNode[]; edges: DiagEdge[] }
+
+// Chat de debate: la IA responde y, opcionalmente, PROPONE cambios. La propuesta
+// se previsualiza en el lienzo y el usuario decide Aplicar o Descartar.
+interface Propuesta {
+  descripcion: string
+  agregarNodos: DiagNode[]
+  modificarNodos: { id: string; label?: string; description?: string; type?: string; x?: number; y?: number }[]
+  quitarNodos: string[]
+  agregarConexiones: { from: string; to: string }[]
+  quitarConexiones: { from: string; to: string }[]
+}
+interface ChatMsg { role: 'user' | 'assistant'; content: string; propuesta?: Propuesta; estado?: 'pendiente' | 'aplicada' | 'descartada' }
+const STARTERS = [
+  '¿Qué componentes o conexiones faltan?',
+  'Buscá puntos únicos de falla',
+  'Simplificá el diagrama a lo esencial',
+  '¿Cómo escala esta arquitectura?',
+  'Revisá seguridad y observabilidad',
+]
 
 const CELL = 130
 const W = 190
@@ -45,6 +65,57 @@ function svgToGrid(svgX: number, svgY: number) {
 const defaultData: DiagData = { title: '', description: '', nodes: [], edges: [] }
 let seq = 0
 
+function celdaLibre(nodes: DiagNode[], x: number, y: number, ignorarId?: string) {
+  let cx = x, cy = y, t = 0
+  const ocupada = (a: number, b: number) => nodes.some(n => n.id !== ignorarId && snap(n.x) === a && snap(n.y) === b)
+  while (ocupada(cx, cy) && t < 80) { cy++; if (cy >= GRID_ROWS) { cy = 0; cx = Math.min(GRID_COLS - 1, cx + 1) } t++ }
+  return { x: cx, y: cy }
+}
+const mismaArista = (a: { from: string; to: string }, b: { from: string; to: string }) =>
+  (a.from === b.from && a.to === b.to) || (a.from === b.to && a.to === b.from)
+
+// Aplica una propuesta sobre el diagrama ACTUAL (re-valida contra el estado de hoy,
+// por si el usuario cambio algo a mano entre la propuesta y el "Aplicar").
+function aplicarPropuesta(base: DiagData, p: Propuesta): DiagData {
+  const quitar = new Set(p.quitarNodos)
+  let nodes = base.nodes.filter(n => !quitar.has(n.id))
+  for (const m of p.modificarNodos) {
+    nodes = nodes.map(n => {
+      if (n.id !== m.id) return n
+      const o = { ...n }
+      if (m.label) o.label = m.label
+      if (m.description !== undefined) o.description = m.description || undefined
+      if (m.type) o.type = m.type
+      if (m.x !== undefined && m.y !== undefined) { const pos = celdaLibre(nodes, m.x, m.y, n.id); o.x = pos.x; o.y = pos.y }
+      return o
+    })
+  }
+  for (const nn of p.agregarNodos) {
+    if (nodes.length >= 12) break
+    const pos = celdaLibre(nodes, nn.x, nn.y)
+    nodes = [...nodes, { ...nn, x: pos.x, y: pos.y }]
+  }
+  const ids = new Set(nodes.map(n => n.id))
+  let edges = base.edges.filter(e => ids.has(e.from) && ids.has(e.to) && !p.quitarConexiones.some(c => mismaArista(c, e)))
+  for (const c of p.agregarConexiones) {
+    if (!ids.has(c.from) || !ids.has(c.to) || c.from === c.to) continue
+    if (edges.some(e => mismaArista(e, c))) continue
+    edges = [...edges, { id: `e${Date.now()}-${seq++}`, from: c.from, to: c.to }]
+  }
+  return { ...base, nodes, edges }
+}
+
+function resumenPropuesta(p: Propuesta, nodes: DiagNode[]): string[] {
+  const lbl = (id: string) => nodes.find(n => n.id === id)?.label ?? id
+  const out: string[] = []
+  if (p.agregarNodos.length) out.push(`+ Agregar: ${p.agregarNodos.map(n => n.label).join(', ')}`)
+  if (p.modificarNodos.length) out.push(`~ Modificar: ${p.modificarNodos.map(m => lbl(m.id)).join(', ')}`)
+  if (p.quitarNodos.length) out.push(`− Quitar: ${p.quitarNodos.map(lbl).join(', ')}`)
+  if (p.agregarConexiones.length) out.push(`+ ${p.agregarConexiones.length} conexión(es) nueva(s)`)
+  if (p.quitarConexiones.length) out.push(`− ${p.quitarConexiones.length} conexión(es) a quitar`)
+  return out
+}
+
 export default function DiagramTab({ leadId }: { leadId: string }) {
   const [diag, setDiag]         = useState<DiagData>(defaultData)
   const [loaded, setLoaded]     = useState(false)
@@ -64,6 +135,16 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
   // Conexion seleccionada (clic sobre la linea) — se elimina con el boton ✕ o con Supr.
   const [selectedEdge, setSelectedEdge]   = useState<string | null>(null)
   const [hoveredEdge, setHoveredEdge]     = useState<string | null>(null)
+  // Chat de debate con IA (panel lateral tipo popup, igual que el de IA del PRD)
+  const [chatOpen, setChatOpen]       = useState(false)
+  const [chatMsgs, setChatMsgs]       = useState<ChatMsg[]>([])
+  const [chatInput, setChatInput]     = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const [chatError, setChatError]     = useState<string | null>(null)
+  const [undoStack, setUndoStack]     = useState<DiagData[]>([])
+  const [exportando, setExportando]   = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chatMsgs, chatLoading, chatOpen])
 
   const svgRef    = useRef<SVGSVGElement>(null)
   const vpRef     = useRef(vp)
@@ -174,6 +255,47 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
     if (connectSource === nodeId) { setConnectSource(null); return }
     addEdge(connectSource, nodeId)
     setConnectSource(null)   // se queda en modo conectar para encadenar varias conexiones
+  }
+
+  // ── Chat de debate ────────────────────────────────────────────────────────
+  const enviarChat = async (texto: string) => {
+    const t = texto.trim()
+    if (!t || chatLoading) return
+    const previos = chatMsgs
+    setChatMsgs([...previos, { role: 'user', content: t }])
+    setChatInput(''); setChatError(null); setChatLoading(true)
+    try {
+      const res = await fetch('/api/leads/diagram/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId, mensaje: t, seleccionado: selected,
+          historial: previos.map(m => ({ role: m.role, content: m.content })),
+          diagram: { title: diag.title, nodes: diag.nodes, edges: diag.edges },
+        }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(j.error ?? 'Error al consultar a la IA')
+      const nueva: ChatMsg = { role: 'assistant', content: j.mensaje, ...(j.propuesta ? { propuesta: j.propuesta as Propuesta, estado: 'pendiente' as const } : {}) }
+      setChatMsgs(prev => [
+        ...prev.map((m): ChatMsg => (j.propuesta && m.estado === 'pendiente' ? { ...m, estado: 'descartada' } : m)),
+        nueva,
+      ])
+    } catch (e: unknown) {
+      setChatError(e instanceof Error ? e.message : 'Error desconocido')
+    } finally { setChatLoading(false) }
+  }
+  const aplicarMsg = (idx: number) => {
+    const p = chatMsgs[idx]?.propuesta; if (!p) return
+    setUndoStack(st => [...st.slice(-9), diag])
+    setDiag(prev => aplicarPropuesta(prev, p))
+    setChatMsgs(prev => prev.map((m, i) => (i === idx ? { ...m, estado: 'aplicada' } : m)))
+    setSelected(null); setSelectedEdge(null)
+  }
+  const descartarMsg = (idx: number) =>
+    setChatMsgs(prev => prev.map((m, i) => (i === idx ? { ...m, estado: 'descartada' } : m)))
+  const deshacerIA = () => {
+    const anterior = undoStack[undoStack.length - 1]; if (!anterior) return
+    setDiag(anterior); setUndoStack(st => st.slice(0, -1))
   }
 
   // Linea punteada del origen al cursor mientras se elige el destino.
@@ -323,6 +445,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const selNode = diag.nodes.find(n => n.id === selected)
+  const propuestaActiva = [...chatMsgs].reverse().find(m => m.propuesta && m.estado === 'pendiente')?.propuesta ?? null
   const targetOccupied = dragTarget
     ? diag.nodes.some(n => n.id !== draggingNodeId && snap(n.x) === dragTarget.gx && snap(n.y) === dragTarget.gy)
     : false
@@ -377,6 +500,12 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all active:scale-95 ${connectMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}`}>
             <Link2 size={14} /> {connectMode ? 'Conectando…' : 'Conectar'}
           </button>
+          <button onClick={() => setChatOpen(true)}
+            aria-label="Debatir el diagrama con IA"
+            title="Conversar con la IA sobre este diagrama y recibir propuestas de cambio"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-300 transition-all active:scale-95">
+            <MessageSquare size={14} /> Debatir con IA
+          </button>
           {/* Primary action */}
           <button onClick={generate} disabled={generating || saving}
             aria-label="Generar diagrama con IA"
@@ -384,7 +513,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             {generating ? 'Generando...' : 'Generar'}
           </button>
-          <button onClick={() => { setSelectedEdge(null); setConnectSource(null); setTimeout(exportPng, 60) }}
+          <button onClick={() => { setSelectedEdge(null); setConnectSource(null); setExportando(true); setTimeout(() => { exportPng(); setExportando(false) }, 80) }}
             aria-label="Exportar como PNG"
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-300 transition-all active:scale-95">
             <Download size={14} /> PNG
@@ -587,6 +716,45 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                   </g>
                 )
               })}
+
+              {/* Previsualizacion de la propuesta de la IA: verde = nuevo, rojo = se quita, ambar = se modifica */}
+              {propuestaActiva && !exportando && (() => {
+                const p = propuestaActiva
+                const buscar = (id: string) => diag.nodes.find(n => n.id === id) ?? p.agregarNodos.find(n => n.id === id)
+                const linea = (from: string, to: string, color: string, key: string) => {
+                  const a = buscar(from), b = buscar(to); if (!a || !b) return null
+                  const pa = svgPos(a), pb = svgPos(b)
+                  return <line key={key} x1={pa.cx} y1={pa.cy} x2={pb.cx} y2={pb.cy} stroke={color} strokeWidth={3} strokeDasharray="7 5" />
+                }
+                return (
+                  <g style={{ pointerEvents: 'none' }}>
+                    {p.quitarConexiones.map((c, i) => linea(c.from, c.to, '#ef4444', `qc${i}`))}
+                    {p.agregarConexiones.map((c, i) => linea(c.from, c.to, '#22c55e', `ac${i}`))}
+                    {p.quitarNodos.map(id => {
+                      const n = diag.nodes.find(x => x.id === id); if (!n) return null
+                      const { x, y } = nodeRect(n)
+                      return <rect key={`qn${id}`} x={x - 4} y={y - 4} width={W + 8} height={H + 8} rx="12" fill="#ef444422" stroke="#ef4444" strokeWidth="2.5" strokeDasharray="6 4" />
+                    })}
+                    {p.modificarNodos.map(m => {
+                      const n = diag.nodes.find(x => x.id === m.id); if (!n) return null
+                      const { x, y } = nodeRect(n)
+                      return <rect key={`mn${m.id}`} x={x - 4} y={y - 4} width={W + 8} height={H + 8} rx="12" fill="#f59e0b18" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="6 4" />
+                    })}
+                    {p.agregarNodos.map(n => {
+                      const { x, y } = nodeRect(n)
+                      return (
+                        <g key={`an${n.id}`}>
+                          <rect x={x} y={y} width={W} height={H} rx="8" fill="#22c55e22" stroke="#22c55e" strokeWidth="2" strokeDasharray="6 4" />
+                          <text x={x + W / 2} y={y + (n.description ? H / 2 - 1 : H / 2 + 6)} textAnchor="middle" fontSize="15" fontWeight={700} fill="#86efac">
+                            {n.label.length > 20 ? n.label.slice(0, 19) + '…' : n.label}
+                          </text>
+                          {n.description && <text x={x + W / 2} y={y + H / 2 + 15} textAnchor="middle" fontSize="12" fill="#4ade80">{n.description}</text>}
+                        </g>
+                      )
+                    })}
+                  </g>
+                )
+              })()}
             </g>
           </svg>
         </div>
@@ -676,6 +844,98 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           </div>
         ))}
       </div>
+
+      {/* Panel de debate con IA — mismo formato que el panel de IA del PRD (lateral derecho con fondo
+          oscurecido, via portal a document.body), en tema oscuro para combinar con el Hub. */}
+      {typeof document !== 'undefined' && createPortal(
+        <>
+          <div onClick={() => setChatOpen(false)}
+            className={`fixed inset-0 z-[60] bg-black/40 transition-opacity duration-200 ${chatOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
+          <div className={`fixed top-0 right-0 z-[61] h-full w-full sm:w-[420px] bg-gray-950 border-l border-gray-800 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${chatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-800">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-orange-400 font-semibold">Asistente IA · Diagrama</p>
+                <h3 className="text-base font-bold text-white truncate">{diag.title || 'Debatir el diagrama'}</h3>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={deshacerIA} disabled={undoStack.length === 0} title="Deshacer el último cambio aplicado desde el chat"
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] text-gray-400 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent">
+                  <Undo2 size={13} /> Deshacer
+                </button>
+                <button onClick={() => setChatOpen(false)} aria-label="Cerrar chat" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-gray-800"><X size={16} /></button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+              {chatMsgs.length === 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-400">
+                    Conversá con la IA sobre este diagrama. Cuando proponga cambios los vas a ver en el lienzo y vos decidís si aplicarlos.
+                    {selNode && <> Componente seleccionado: <span className="text-orange-400 font-semibold">{selNode.label}</span>.</>}
+                  </p>
+                  {STARTERS.map(t => (
+                    <button key={t} onClick={() => { void enviarChat(t) }}
+                      className="w-full text-left text-xs text-orange-300 bg-orange-500/5 hover:bg-orange-500/10 border border-orange-600/30 rounded-lg px-3 py-2 transition-colors">
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {chatMsgs.map((m, i) => (
+                <div key={i} className={m.role === 'user' ? 'flex justify-end' : ''}>
+                  <div className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[92%] whitespace-pre-wrap ${m.role === 'user' ? 'bg-gray-800 text-gray-100 rounded-tr-sm' : 'bg-gray-900 border border-gray-800 text-gray-200 rounded-tl-sm'}`}>
+                    {m.content}
+                  </div>
+                  {m.propuesta && (
+                    <div className="mt-2 max-w-[92%] rounded-xl border border-gray-700 bg-gray-900/60 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold mb-1">Propuesta de cambio</p>
+                      <p className="text-xs text-gray-200 mb-1.5">{m.propuesta.descripcion}</p>
+                      <ul className="text-[11px] text-gray-400 space-y-0.5 mb-2">
+                        {resumenPropuesta(m.propuesta, diag.nodes).map((l, k) => (
+                          <li key={k} className={l.startsWith('+') ? 'text-green-400' : l.startsWith('−') ? 'text-red-400' : 'text-amber-400'}>{l}</li>
+                        ))}
+                      </ul>
+                      {m.estado === 'pendiente' ? (
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => aplicarMsg(i)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-green-600 hover:bg-green-500 text-white">Aplicar</button>
+                          <button onClick={() => descartarMsg(i)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-gray-700 text-gray-300 hover:bg-gray-800">Descartar</button>
+                          <span className="text-[10px] text-gray-500">Previsualizada en el lienzo</span>
+                        </div>
+                      ) : (
+                        <span className={`text-[11px] font-medium ${m.estado === 'aplicada' ? 'text-green-400' : 'text-gray-500'}`}>
+                          {m.estado === 'aplicada' ? '✓ Aplicada al diagrama (recordá Guardar)' : 'Descartada'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {chatLoading && (
+                <div className="flex items-center gap-2 text-xs text-gray-500"><Loader2 size={13} className="animate-spin" /> Pensando…</div>
+              )}
+              {chatError && (
+                <div className="flex items-start gap-2 bg-red-950/40 border border-red-900/50 text-red-400 text-xs px-3 py-2 rounded-lg">
+                  <span className="flex-1">{chatError}</span>
+                  <button onClick={() => setChatError(null)} aria-label="Cerrar error"><X size={12} /></button>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <div className="border-t border-gray-800 px-5 py-3 flex items-center gap-2">
+              <input value={chatInput} onChange={e => setChatInput(e.target.value)} disabled={chatLoading}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviarChat(chatInput) } }}
+                placeholder="Preguntá o pedí un cambio…"
+                className="flex-1 bg-gray-900 text-white text-xs px-3 py-2.5 rounded-lg border border-gray-800 focus:outline-none focus:border-orange-500/60 disabled:opacity-50" />
+              <button onClick={() => { void enviarChat(chatInput) }} disabled={chatLoading || !chatInput.trim()} aria-label="Enviar"
+                className="w-9 h-9 flex items-center justify-center rounded-lg bg-orange-600 hover:bg-orange-500 disabled:opacity-40 text-white"><Send size={14} /></button>
+            </div>
+          </div>
+        </>,
+        document.body,
+      )}
     </div>
   )
 }
