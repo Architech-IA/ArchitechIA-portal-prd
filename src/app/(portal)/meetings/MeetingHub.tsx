@@ -239,7 +239,6 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
   const accPend = acciones.filter(a => a.estado !== 'HECHA');
   const vencida = (a: Accion) => !!a.fechaLimite && a.estado !== 'HECHA' && diaNum(getDateStrUTC5(a.fechaLimite)) < diaNum(hoyStr);
   const vencidas = accPend.filter(vencida).length;
-  const proxVenc = [...accPend].filter(a => a.fechaLimite).sort((a, b) => (a.fechaLimite! < b.fechaLimite! ? -1 : 1))[0];
   const hechas = acciones.length - accPend.length;
   const notasConContenido = hub.notas.replace(/<[^>]+>/g, '').trim().length > 0;
   const nPuntos = hub.puntos.filter(p => p.texto.trim()).length;
@@ -483,9 +482,6 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
               <div className="flex justify-between gap-3"><dt className="text-gray-500">Horario</dt>
                 <dd className="text-gray-200 text-right">{getTimeStrUTC5(meeting.date)}{meeting.endDate ? ` — ${getTimeStrUTC5(meeting.endDate)}` : ''}{durTxt ? <span className="text-gray-500"> · {durTxt}</span> : null}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-gray-500">Creada</dt><dd className="text-gray-200">{getDateFullUTC5(meeting.createdAt)}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Próx. vencimiento</dt>
-                <dd className={proxVenc && vencida(proxVenc) ? 'text-red-400 font-semibold' : 'text-gray-200'}>
-                  {proxVenc?.fechaLimite ? `${corta(proxVenc.fechaLimite)} · ${relativo(proxVenc.fechaLimite)}` : '—'}</dd></div>
             </dl>
           </section>
 
