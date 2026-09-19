@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import RichNotes from '../leads/[id]/hub/RichNotes';
-import { getDateStrUTC5 } from '@/lib/timezone';
+import { getDateStrUTC5, getTimeStrUTC5, getDateFullUTC5 } from '@/lib/timezone';
 
 // Hub de la reunion: popup grande para PREPARAR (agenda), TOMAR NOTAS,
 // registrar DECISIONES y dar seguimiento a ACCIONES de una reunion. Es
@@ -20,6 +20,10 @@ export interface HubMeeting {
   hub: string | null;
   actaFile: string | null;
   actaFileName: string | null;
+  date: string;
+  endDate: string | null;
+  createdAt: string;
+  user?: { name: string } | null;
 }
 
 interface Item { id: string; texto: string }
@@ -218,6 +222,34 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
   }
 
   const pendientes = acciones.filter(a => a.estado !== 'HECHA').length;
+
+  // ── Datos del widget lateral (visible en todas las pestañas) ──
+  const hoyStr = getDateStrUTC5(new Date());
+  const diaNum = (d: string) => Math.floor(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
+  const relativo = (iso: string) => {
+    const diff = diaNum(getDateStrUTC5(iso)) - diaNum(hoyStr);
+    if (diff === 0) return 'Hoy';
+    if (diff === 1) return 'Mañana';
+    if (diff === -1) return 'Ayer';
+    return diff > 0 ? `En ${diff} días` : `Hace ${-diff} días`;
+  };
+  const corta = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' });
+  const durMin = meeting.endDate ? Math.round((new Date(meeting.endDate).getTime() - new Date(meeting.date).getTime()) / 60000) : 0;
+  const durTxt = durMin > 0 ? (durMin >= 60 ? `${Math.floor(durMin / 60)} h${durMin % 60 ? ` ${durMin % 60} min` : ''}` : `${durMin} min`) : null;
+  const accPend = acciones.filter(a => a.estado !== 'HECHA');
+  const vencida = (a: Accion) => !!a.fechaLimite && a.estado !== 'HECHA' && diaNum(getDateStrUTC5(a.fechaLimite)) < diaNum(hoyStr);
+  const vencidas = accPend.filter(vencida).length;
+  const proxVenc = [...accPend].filter(a => a.fechaLimite).sort((a, b) => (a.fechaLimite! < b.fechaLimite! ? -1 : 1))[0];
+  const hechas = acciones.length - accPend.length;
+  const notasConContenido = hub.notas.replace(/<[^>]+>/g, '').trim().length > 0;
+  const nPuntos = hub.puntos.filter(p => p.texto.trim()).length;
+  const nDecisiones = hub.decisiones.filter(d => d.texto.trim()).length;
+  const checklist: { tab: TabKey; label: string; ok: boolean; detalle: string }[] = [
+    { tab: 'agenda', label: 'Agenda', ok: nPuntos > 0, detalle: nPuntos > 0 ? `${nPuntos} punto${nPuntos === 1 ? '' : 's'}` : 'Sin definir' },
+    { tab: 'notas', label: 'Notas', ok: notasConContenido, detalle: notasConContenido ? 'Con contenido' : 'Sin notas' },
+    { tab: 'decisiones', label: 'Decisiones', ok: nDecisiones > 0, detalle: nDecisiones > 0 ? `${nDecisiones} registrada${nDecisiones === 1 ? '' : 's'}` : 'Ninguna' },
+    { tab: 'archivos', label: 'Acta', ok: !!meeting.actaFile, detalle: meeting.actaFile ? (meeting.actaFileName || 'Adjunta') : 'Sin adjuntar' },
+  ];
   const TABS: { key: TabKey; label: string; badge?: number }[] = [
     { key: 'agenda', label: 'Agenda', badge: hub.puntos.length || undefined },
     { key: 'notas', label: 'Notas' },
@@ -236,7 +268,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
       style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
       onClick={() => { void cerrar(); }}>
       <div onClick={e => e.stopPropagation()}
-        className="w-full max-w-5xl h-[88vh] rounded-2xl flex flex-col overflow-hidden relative"
+        className="w-full max-w-6xl h-[88vh] rounded-2xl flex flex-col overflow-hidden relative"
         style={{ background: 'rgba(14,10,28,0.96)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 40px 80px rgba(0,0,0,0.65)' }}>
 
         {/* Encabezado */}
@@ -281,8 +313,9 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
           </div>
         )}
 
-        {/* Contenido */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        {/* Contenido + widget lateral (el widget es transversal: se ve en todas las pestañas) */}
+        <div className="flex-1 min-h-0 flex">
+        <div className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
           {tab === 'agenda' && (
             <div className="space-y-5 max-w-3xl">
               <div>
@@ -406,6 +439,93 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
               </label>
             </div>
           )}
+        </div>
+
+        <aside className="hidden md:flex w-72 shrink-0 flex-col gap-5 border-l border-white/10 overflow-y-auto px-4 py-5" style={{ background: 'rgba(255,255,255,0.015)' }}>
+          {/* Información clave */}
+          <section>
+            <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Información clave</h4>
+            <dl className="space-y-1.5 text-xs">
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Tipo</dt><dd className="text-gray-200 text-right">{typeLabel}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Estado</dt>
+                <dd><span className={`px-1.5 py-0.5 rounded-full text-[10px] ${soloLectura ? 'bg-green-500/20 text-green-400' : meeting.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                  {soloLectura ? 'Completada' : meeting.status === 'CANCELLED' ? 'Cancelada' : 'Programada'}</span></dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Lugar</dt><dd className="text-gray-200 text-right truncate">{meeting.location || '—'}</dd></div>
+              {meeting.user?.name && <div className="flex justify-between gap-3"><dt className="text-gray-500">Organiza</dt><dd className="text-gray-200 text-right truncate">{meeting.user.name}</dd></div>}
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Asistentes</dt><dd className="text-gray-200">{asistentes.length}</dd></div>
+            </dl>
+            {asistentes.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {asistentes.map(a => <span key={a} className="text-[10px] text-gray-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">{a}</span>)}
+              </div>
+            )}
+            {meeting.link && (
+              <a href={meeting.link} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[11px] text-orange-300 hover:text-orange-200 underline underline-offset-2">Abrir enlace de la reunión</a>
+            )}
+          </section>
+
+          {/* Fechas */}
+          <section>
+            <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Fechas</h4>
+            <dl className="space-y-1.5 text-xs">
+              <div className="flex justify-between gap-3 items-center"><dt className="text-gray-500">Reunión</dt>
+                <dd className="text-gray-200 text-right">{getDateFullUTC5(meeting.date)} <span className="ml-1 text-[10px] text-orange-300 bg-orange-500/10 border border-orange-600/30 rounded-full px-1.5 py-0.5">{relativo(meeting.date)}</span></dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Horario</dt>
+                <dd className="text-gray-200 text-right">{getTimeStrUTC5(meeting.date)}{meeting.endDate ? ` — ${getTimeStrUTC5(meeting.endDate)}` : ''}{durTxt ? <span className="text-gray-500"> · {durTxt}</span> : null}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Creada</dt><dd className="text-gray-200">{getDateFullUTC5(meeting.createdAt)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Próx. vencimiento</dt>
+                <dd className={proxVenc && vencida(proxVenc) ? 'text-red-400 font-semibold' : 'text-gray-200'}>
+                  {proxVenc?.fechaLimite ? `${corta(proxVenc.fechaLimite)} · ${relativo(proxVenc.fechaLimite)}` : '—'}</dd></div>
+            </dl>
+          </section>
+
+          {/* Pendientes */}
+          <section>
+            <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2 flex items-center gap-2">
+              Pendientes
+              {vencidas > 0 && <span className="text-[10px] normal-case tracking-normal text-red-400 bg-red-500/10 border border-red-600/30 rounded-full px-1.5 py-0.5">{vencidas} vencida{vencidas === 1 ? '' : 's'}</span>}
+            </h4>
+            <ul className="space-y-1 mb-3">
+              {checklist.map(c => (
+                <li key={c.tab}>
+                  <button type="button" onClick={() => setTab(c.tab)} className="w-full flex items-center gap-2 text-left text-xs rounded-md px-1.5 py-1 hover:bg-white/[0.05]">
+                    <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[9px] flex-shrink-0 ${c.ok ? 'bg-green-600/30 border-green-500/60 text-green-300' : 'border-gray-600 text-transparent'}`}>✓</span>
+                    <span className={c.ok ? 'text-gray-400' : 'text-gray-200'}>{c.label}</span>
+                    <span className="ml-auto text-[10px] text-gray-500 truncate max-w-[110px]">{c.detalle}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+              <button type="button" onClick={() => setTab('acciones')} className="hover:text-orange-300">Acciones</button>
+              <span>{hechas}/{acciones.length} hechas</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/[0.08] overflow-hidden mb-2">
+              <div className="h-full bg-green-500/70 transition-all" style={{ width: acciones.length ? `${Math.round((hechas / acciones.length) * 100)}%` : '0%' }} />
+            </div>
+            {cargandoAcc && <p className="text-[11px] text-gray-500">Cargando…</p>}
+            {!cargandoAcc && accPend.length === 0 && <p className="text-[11px] text-gray-500 italic">{acciones.length ? 'Sin acciones pendientes 🎉' : 'Sin acciones todavía.'}</p>}
+            <ul className="space-y-1">
+              {accPend.slice(0, 5).map(a => (
+                <li key={a.id} className="flex items-start gap-2 text-xs rounded-md px-1.5 py-1 hover:bg-white/[0.05]">
+                  <button type="button" onClick={() => { void actualizarAccion(a.id, { estado: 'HECHA' }); }} title="Marcar como hecha"
+                    className="mt-0.5 w-4 h-4 rounded border border-gray-600 hover:border-green-400 hover:bg-green-500/20 flex-shrink-0" />
+                  <button type="button" onClick={() => setTab('acciones')} className="flex-1 min-w-0 text-left">
+                    <span className="block text-gray-200 truncate">{a.texto}</span>
+                    <span className="block text-[10px] text-gray-500 truncate">
+                      {a.responsable || 'Sin responsable'}
+                      {a.fechaLimite && <span className={vencida(a) ? 'text-red-400' : ''}> · {corta(a.fechaLimite)}{vencida(a) ? ' (vencida)' : ''}</span>}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {accPend.length > 5 && (
+              <button type="button" onClick={() => setTab('acciones')} className="mt-1.5 text-[11px] text-orange-300 hover:text-orange-200">Ver las {accPend.length} pendientes →</button>
+            )}
+          </section>
+        </aside>
         </div>
 
         {/* Pie */}
