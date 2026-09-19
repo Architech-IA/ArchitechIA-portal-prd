@@ -323,11 +323,6 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
           {tab === 'agenda' && (
             <div className="space-y-5 max-w-3xl">
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Objetivo de la reunión</label>
-                <AutoArea value={hub.objetivo} disabled={soloLectura} onChange={v => setHub(h => ({ ...h, objetivo: v }))}
-                  placeholder="¿Qué tiene que quedar resuelto al terminar?" />
-              </div>
-              <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold text-gray-400">Puntos a tratar</label>
                   {!soloLectura && meeting.type === 'INTERNAL_DAILY' && hub.puntos.length === 0 && (
