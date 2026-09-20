@@ -784,6 +784,7 @@ export default function SolucionDetailPage() {
   const [generandoBacklogPrd, setGenerandoBacklogPrd] = useState(false)
   const [backlogPrdError, setBacklogPrdError] = useState('')
   const [tareasBacklog, setTareasBacklog] = useState<TareaBacklog[]>([])
+  const [creadaEn, setCreadaEn] = useState<string | null>(null)
   const [loadingTareasBacklog, setLoadingTareasBacklog] = useState(true)
   const [dispatchingTareaId, setDispatchingTareaId] = useState<string | null>(null)
   const [dispatchTareaError, setDispatchTareaError] = useState('')
@@ -809,6 +810,7 @@ export default function SolucionDetailPage() {
           planTrabajo: s.planTrabajo || '',
         })
         setCurrentLeadId(s.leadId || null)
+        setCreadaEn(typeof s.createdAt === 'string' ? s.createdAt : null)
         setArquitecturaHtml(s.arquitecturaHtml || null)
         try {
           const parsedArch = s.arquitectura ? JSON.parse(s.arquitectura) : null
@@ -1484,6 +1486,27 @@ export default function SolucionDetailPage() {
     )
   }
 
+  // Panel izquierdo persistente (mismo esquema que el Hub de Lead): info de la
+  // solucion + mapa de fases. Todo derivado de datos ya cargados en la pagina.
+  const leadSel = leads.find(l => l.id === (form.leadId || currentLeadId))
+  const fasesPanel = calcularFases(prd, diseno, planEj, archNodes.length, tareasBacklog)
+  const valorTxt = '$' + (Number(form.valorEstimado) || 0).toLocaleString('es-CO')
+  const repoTxt = form.repositorio.replace(/^https?:\/\//, '').replace(/\/$/, '')
+  const glassCard: React.CSSProperties = {
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+    backdropFilter: 'blur(40px) saturate(200%)',
+    WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+    border: '1px solid rgba(255,255,255,0.11)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.18), 0 24px 56px rgba(0,0,0,0.35)',
+  }
+  const faseColor: Record<EstadoFase, string> = {
+    hecho: 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300',
+    progreso: 'border-orange-500/60 bg-orange-500/15 text-orange-300',
+    pendiente: 'border-white/15 bg-white/[0.03] text-gray-500',
+    proximamente: 'border-dashed border-white/10 bg-transparent text-gray-700',
+  }
+  const faseTxt: Record<EstadoFase, string> = { hecho: 'Hecho', progreso: 'En curso', pendiente: 'Pendiente', proximamente: 'Próximamente' }
+
   return (
     <div>
 
@@ -1658,6 +1681,55 @@ export default function SolucionDetailPage() {
       )}
 
 
+      <div className="flex items-start">
+      <aside className="hidden md:flex flex-col gap-3 w-64 shrink-0 p-3 sticky top-0 self-start max-h-screen overflow-y-auto print:hidden">
+        <div className="rounded-2xl p-4" style={glassCard}>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Info solución</p>
+          <dl className="space-y-2 text-xs">
+            <div className="flex justify-between gap-3"><dt className="text-gray-500">Cliente</dt>
+              <dd className="text-right font-semibold truncate">
+                {leadSel ? <a href={`/leads/${leadSel.id}/hub`} className="text-gray-200 underline decoration-white/30 hover:text-orange-300">{leadSel.companyName}</a> : <span className="text-gray-600">—</span>}
+              </dd></div>
+            {leadSel?.contactName && <div className="flex justify-between gap-3"><dt className="text-gray-500">Contacto</dt><dd className="text-gray-200 font-semibold text-right">{leadSel.contactName}</dd></div>}
+            <div className="flex justify-between gap-3"><dt className="text-gray-500">Estado</dt><dd className="text-gray-200 font-semibold">{form.estado}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-gray-500">Valor</dt><dd className="text-gray-200 font-semibold">{valorTxt}</dd></div>
+            {form.repositorio && <div className="flex justify-between gap-3"><dt className="text-gray-500">Repositorio</dt>
+              <dd className="text-right truncate min-w-0"><a href={form.repositorio} target="_blank" rel="noreferrer" className="text-orange-300 hover:text-orange-200" title={form.repositorio}>{repoTxt}</a></dd></div>}
+            {creadaEn && <div className="flex justify-between gap-3"><dt className="text-gray-500">Creada</dt>
+              <dd className="text-gray-200 font-semibold">{new Date(creadaEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</dd></div>}
+          </dl>
+          <button type="button" onClick={() => setActiveTab('general')}
+            className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
+            <PenLine size={12} /> Editar información
+          </button>
+        </div>
+
+        <div className="rounded-2xl p-4" style={glassCard}>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Fases</p>
+          <ol className="relative">
+            {fasesPanel.map((f, i) => {
+              const clickable = !!f.tab && f.estado !== 'proximamente'
+              return (
+                <li key={f.key} className="relative">
+                  {i < fasesPanel.length - 1 && <span className="absolute left-[13px] top-7 bottom-0 w-px bg-white/10" aria-hidden />}
+                  <button type="button" disabled={!clickable} onClick={() => f.tab && setActiveTab(f.tab)} title={f.hint}
+                    className={'w-full flex items-center gap-3 py-1.5 text-left ' + (clickable ? 'cursor-pointer group' : 'cursor-default')}>
+                    <span className={'relative z-10 w-[27px] h-[27px] rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-semibold ' + faseColor[f.estado]}>
+                      {f.estado === 'hecho' ? <CheckCircle2 size={13} /> : i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={'block text-[13px] font-semibold truncate ' + (f.estado === 'proximamente' ? 'text-gray-600' : 'text-gray-200 group-hover:text-orange-300')}>{f.label}</span>
+                      <span className={'block text-[10px] ' + (f.estado === 'hecho' ? 'text-emerald-400/80' : f.estado === 'progreso' ? 'text-orange-300/80' : 'text-gray-600')}>{faseTxt[f.estado]}</span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      </aside>
+
+      <div className="flex-1 min-w-0">
       {/* Tabs — mismo tamaño/estilo que la barra de tabs del Hub de Lead
           (leads/[id]/hub/page.tsx) para que ambos hubs se vean consistentes */}
       <div style={{ display: 'flex', gap: '2px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)', overflowX: 'auto' }}>
@@ -2915,6 +2987,8 @@ export default function SolucionDetailPage() {
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
         </div>
+      </div>
+      </div>
       </div>
     </div>
   )
