@@ -138,8 +138,8 @@ export default function LeadAiPanel({
     { modo: 'mejorar', titulo: 'Mejorar contenido', desc: `Dile qué está mal, qué no se entiende o qué omitir, y ajusto el texto de «${tabNombre}».`, icon: PenLine, requiereEditar: true },
     { modo: 'asesor', titulo: 'Asesor del lead', desc: 'Conversa sobre todo el proceso: próximos pasos, riesgos, objeciones, reuniones y mensajes al cliente.', icon: MessageSquare },
     {
-      modo: 'asesor', titulo: `Revisar la fase «${fase.label}»`, desc: 'Qué falta, qué riesgos hay y cuál es el siguiente paso, con todo el contexto del lead.', icon: ClipboardCheck,
-      auto: `Revisa la fase «${fase.label}» con todo el contexto del lead y dime: 1) qué información falta o está floja, 2) qué riesgos u objeciones ves, 3) cuál es el siguiente paso concreto que recomiendas.`,
+      modo: 'asesor', titulo: `Revisar «${tabNombre}»`, desc: `Qué falta, qué riesgos hay y cuál es el siguiente paso a partir de esta pestaña (fase ${fase.label}) y todo el contexto del lead.`, icon: ClipboardCheck,
+      auto: `Revisa el contenido de la pestaña «${tabNombre}» (fase ${fase.label}) con todo el contexto del lead y dime: 1) qué información falta o está floja en esa pestaña, 2) qué riesgos u objeciones ves, 3) cuál es el siguiente paso concreto que recomiendas.`,
     },
   ]
 
