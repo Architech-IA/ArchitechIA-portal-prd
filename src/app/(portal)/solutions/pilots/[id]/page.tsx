@@ -245,10 +245,9 @@ const emptyForm: FormState = {
   nombre: '', descripcion: '', tipo: 'PROJECT', estado: 'ACTIVO', valorEstimado: '0', leadId: '', repositorio: '', planTrabajo: '',
 }
 
-type TabKey = 'general' | 'arquitectura' | 'plan' | 'prd' | 'diseno' | 'plan-ejec' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
+type TabKey = 'arquitectura' | 'plan' | 'prd' | 'diseno' | 'plan-ejec' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
 
 const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
-  { key: 'general', label: 'General', icon: Sliders },
   { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
   { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
   { key: 'prd', label: 'PRD', icon: ClipboardList },
@@ -701,7 +700,9 @@ export default function SolucionDetailPage() {
 
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [activeTab, setActiveTab] = useState<TabKey>('general')
+  // Popup de edicion de la informacion de la solucion (antes era el tab General)
+  const [editOpen, setEditOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabKey>('arquitectura')
   const [form, setForm] = useState<FormState>(emptyForm)
   const [archNodes, setArchNodes] = useState<ArchNode[]>([])
   const [archConnections, setArchConnections] = useState<ArchConnection[]>([])
@@ -1408,8 +1409,8 @@ export default function SolucionDetailPage() {
   }
 
   async function handleSave() {
-    if (!form.leadId) { setError('Selecciona un lead asociado.'); setActiveTab('general'); return }
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); setActiveTab('general'); return }
+    if (!form.leadId) { setError('Selecciona un lead asociado.'); setEditOpen(true); return }
+    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); setEditOpen(true); return }
     setSaving(true)
     setError('')
     try {
@@ -1681,95 +1682,16 @@ export default function SolucionDetailPage() {
       )}
 
 
-      <div className="flex items-start">
-      <aside className="hidden md:flex flex-col gap-3 w-64 shrink-0 p-3 sticky top-0 self-start max-h-screen overflow-y-auto print:hidden">
-        <div className="rounded-2xl p-4" style={glassCard}>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Info solución</p>
-          <dl className="space-y-2 text-xs">
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">Cliente</dt>
-              <dd className="text-right font-semibold truncate">
-                {leadSel ? <a href={`/leads/${leadSel.id}/hub`} className="text-gray-200 underline decoration-white/30 hover:text-orange-300">{leadSel.companyName}</a> : <span className="text-gray-600">—</span>}
-              </dd></div>
-            {leadSel?.contactName && <div className="flex justify-between gap-3"><dt className="text-gray-500">Contacto</dt><dd className="text-gray-200 font-semibold text-right">{leadSel.contactName}</dd></div>}
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">Estado</dt><dd className="text-gray-200 font-semibold">{form.estado}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">Valor</dt><dd className="text-gray-200 font-semibold">{valorTxt}</dd></div>
-            {form.repositorio && <div className="flex justify-between gap-3"><dt className="text-gray-500">Repositorio</dt>
-              <dd className="text-right truncate min-w-0"><a href={form.repositorio} target="_blank" rel="noreferrer" className="text-orange-300 hover:text-orange-200" title={form.repositorio}>{repoTxt}</a></dd></div>}
-            {creadaEn && <div className="flex justify-between gap-3"><dt className="text-gray-500">Creada</dt>
-              <dd className="text-gray-200 font-semibold">{new Date(creadaEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</dd></div>}
-          </dl>
-          <button type="button" onClick={() => setActiveTab('general')}
-            className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-xs font-semibold text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
-            <PenLine size={12} /> Editar información
-          </button>
-        </div>
 
-        <div className="rounded-2xl p-4" style={glassCard}>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Fases</p>
-          <ol className="relative">
-            {fasesPanel.map((f, i) => {
-              const clickable = !!f.tab && f.estado !== 'proximamente'
-              return (
-                <li key={f.key} className="relative">
-                  {i < fasesPanel.length - 1 && <span className="absolute left-[13px] top-7 bottom-0 w-px bg-white/10" aria-hidden />}
-                  <button type="button" disabled={!clickable} onClick={() => f.tab && setActiveTab(f.tab)} title={f.hint}
-                    className={'w-full flex items-center gap-3 py-1.5 text-left ' + (clickable ? 'cursor-pointer group' : 'cursor-default')}>
-                    <span className={'relative z-10 w-[27px] h-[27px] rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-semibold ' + faseColor[f.estado]}>
-                      {f.estado === 'hecho' ? <CheckCircle2 size={13} /> : i + 1}
-                    </span>
-                    <span className="min-w-0">
-                      <span className={'block text-[13px] font-semibold truncate ' + (f.estado === 'proximamente' ? 'text-gray-600' : 'text-gray-200 group-hover:text-orange-300')}>{f.label}</span>
-                      <span className={'block text-[10px] ' + (f.estado === 'hecho' ? 'text-emerald-400/80' : f.estado === 'progreso' ? 'text-orange-300/80' : 'text-gray-600')}>{faseTxt[f.estado]}</span>
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ol>
-        </div>
-      </aside>
-
-      <div className="flex-1 min-w-0">
-      {/* Tabs — mismo tamaño/estilo que la barra de tabs del Hub de Lead
-          (leads/[id]/hub/page.tsx) para que ambos hubs se vean consistentes */}
-      <div style={{ display: 'flex', gap: '2px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)', overflowX: 'auto' }}>
-        {TABS.map(t => {
-          const active = activeTab === t.key
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 flex-shrink-0 ${
-                active
-                  ? 'border-b-orange-500 bg-orange-500/[0.07] text-orange-400'
-                  : 'border-b-transparent bg-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
-              }`}
-            >
-              {t.label}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="p-4 space-y-4">
-        {/* Mismo tratamiento "premium" de liquid glass que TabbedNotes.tsx
-            (Hub de Lead) — antes esta pagina usaba la clase .card estandar
-            del portal (blur 20px, sin gradiente ni brillo especular). */}
-        <div className="relative overflow-hidden p-4 space-y-5" style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
-          backdropFilter: 'blur(40px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-          border: '1px solid rgba(255,255,255,0.11)',
-          borderRadius: 'var(--radius, 12px)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.18), 0 24px 56px rgba(0,0,0,0.45)',
-        }}>
-          {/* Specular highlight strip */}
-          <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18) 40%, rgba(255,255,255,0.08) 60%, transparent)' }} />
-
-          {/* Tab: General */}
-          {activeTab === 'general' && (
-            <>
+      {editOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setEditOpen(false)}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-5" onClick={e => e.stopPropagation()}
+            style={{ ...glassCard, background: 'linear-gradient(135deg, rgba(30,26,52,0.96) 0%, rgba(14,10,28,0.97) 100%)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-100">Editar información</h3>
+              <button type="button" onClick={() => setEditOpen(false)} aria-label="Cerrar" className="text-gray-500 hover:text-gray-200"><X size={16} /></button>
+            </div>
+            <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1.5">
@@ -1875,8 +1797,107 @@ export default function SolucionDetailPage() {
                   Eliminar Solución
                 </button>
               </div>
-            </>
-          )}
+
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-3">
+              {savedAt && !saving && <p className="text-emerald-400 text-xs">Guardado {new Date(savedAt).toLocaleTimeString('es-CO')}</p>}
+              <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:text-white">Cerrar</button>
+              <button type="button" onClick={handleSave} disabled={saving || deleting}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-sm font-semibold transition-colors">
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                {saving ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      <div className="flex items-start">
+      <aside className="hidden md:flex flex-col gap-3 w-64 shrink-0 p-3 sticky top-0 self-start max-h-screen overflow-y-auto print:hidden">
+        <div className="rounded-2xl p-4" style={glassCard}>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Info solución</p>
+          <dl className="space-y-2 text-xs">
+            <div className="flex justify-between gap-3"><dt className="text-gray-500">Cliente</dt>
+              <dd className="text-right font-normal truncate">
+                {leadSel ? <a href={`/leads/${leadSel.id}/hub`} className="text-gray-200 underline decoration-white/30 hover:text-orange-300">{leadSel.companyName}</a> : <span className="text-gray-600">—</span>}
+              </dd></div>
+            {leadSel?.contactName && <div className="flex justify-between gap-3"><dt className="text-gray-500">Contacto</dt><dd className="text-gray-200 font-normal text-right">{leadSel.contactName}</dd></div>}
+            <div className="flex justify-between gap-3"><dt className="text-gray-500">Estado</dt><dd className="text-gray-200 font-normal">{form.estado}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-gray-500">Valor</dt><dd className="text-gray-200 font-normal">{valorTxt}</dd></div>
+            {form.repositorio && <div className="flex justify-between gap-3"><dt className="text-gray-500">Repositorio</dt>
+              <dd className="text-right truncate min-w-0"><a href={form.repositorio} target="_blank" rel="noreferrer" className="text-orange-300 hover:text-orange-200" title={form.repositorio}>{repoTxt}</a></dd></div>}
+            {creadaEn && <div className="flex justify-between gap-3"><dt className="text-gray-500">Creada</dt>
+              <dd className="text-gray-200 font-normal">{new Date(creadaEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</dd></div>}
+          </dl>
+          <button type="button" onClick={() => setEditOpen(true)}
+            className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-xs font-normal text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
+            <PenLine size={12} /> Editar información
+          </button>
+        </div>
+
+        <div className="rounded-2xl p-4" style={glassCard}>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Fases</p>
+          <ol className="relative">
+            {fasesPanel.map((f, i) => {
+              const clickable = !!f.tab && f.estado !== 'proximamente'
+              return (
+                <li key={f.key} className="relative">
+                  {i < fasesPanel.length - 1 && <span className="absolute left-[13px] top-7 bottom-0 w-px bg-white/10" aria-hidden />}
+                  <button type="button" disabled={!clickable} onClick={() => f.tab && setActiveTab(f.tab)} title={f.hint}
+                    className={'w-full flex items-center gap-3 py-1.5 text-left ' + (clickable ? 'cursor-pointer group' : 'cursor-default')}>
+                    <span className={'relative z-10 w-[27px] h-[27px] rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-semibold ' + faseColor[f.estado]}>
+                      {f.estado === 'hecho' ? <CheckCircle2 size={13} /> : i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={'block text-[13px] font-semibold truncate ' + (f.estado === 'proximamente' ? 'text-gray-600' : 'text-gray-200 group-hover:text-orange-300')}>{f.label}</span>
+                      <span className={'block text-[10px] ' + (f.estado === 'hecho' ? 'text-emerald-400/80' : f.estado === 'progreso' ? 'text-orange-300/80' : 'text-gray-600')}>{faseTxt[f.estado]}</span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      </aside>
+
+      <div className="flex-1 min-w-0">
+      {/* Tabs — mismo tamaño/estilo que la barra de tabs del Hub de Lead
+          (leads/[id]/hub/page.tsx) para que ambos hubs se vean consistentes */}
+      <div style={{ display: 'flex', gap: '2px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)', overflowX: 'auto' }}>
+        {TABS.map(t => {
+          const active = activeTab === t.key
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setActiveTab(t.key)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 flex-shrink-0 ${
+                active
+                  ? 'border-b-orange-500 bg-orange-500/[0.07] text-orange-400'
+                  : 'border-b-transparent bg-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+              }`}
+            >
+              {t.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Mismo tratamiento "premium" de liquid glass que TabbedNotes.tsx
+            (Hub de Lead) — antes esta pagina usaba la clase .card estandar
+            del portal (blur 20px, sin gradiente ni brillo especular). */}
+        <div className="relative overflow-hidden p-4 space-y-5" style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+          backdropFilter: 'blur(40px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+          border: '1px solid rgba(255,255,255,0.11)',
+          borderRadius: 'var(--radius, 12px)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.18), 0 24px 56px rgba(0,0,0,0.45)',
+        }}>
+          {/* Specular highlight strip */}
+          <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18) 40%, rgba(255,255,255,0.08) 60%, transparent)' }} />
 
           {/* Tab: Arquitectura */}
           {activeTab === 'arquitectura' && (
@@ -2957,7 +2978,7 @@ export default function SolucionDetailPage() {
                 <div className="text-center py-8">
                   <FolderGit2 size={28} className="text-gray-700 mx-auto mb-2" />
                   <p className="text-gray-500 text-sm">Todavía no registraste un repositorio.</p>
-                  <button type="button" onClick={() => setActiveTab('general')} className="text-cyan-400 hover:text-cyan-300 text-xs mt-1.5 transition-colors">
+                  <button type="button" onClick={() => setEditOpen(true)} className="text-cyan-400 hover:text-cyan-300 text-xs mt-1.5 transition-colors">
                     Agregarlo en la pestaña General →
                   </button>
                 </div>
