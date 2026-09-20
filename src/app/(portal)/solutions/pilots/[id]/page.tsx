@@ -1831,7 +1831,7 @@ export default function SolucionDetailPage() {
               <dd className="text-slate-400 font-normal">{new Date(creadaEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</dd></div>}
           </dl>
           <button type="button" onClick={() => setEditOpen(true)}
-            className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-xs font-normal text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
+            className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-[11px] font-normal text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
             <PenLine size={12} /> Editar información
           </button>
         </div>
