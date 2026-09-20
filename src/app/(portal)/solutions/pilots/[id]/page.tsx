@@ -1816,19 +1816,19 @@ export default function SolucionDetailPage() {
       <div className="flex items-start">
       <aside className="hidden md:flex flex-col gap-3 w-64 shrink-0 p-3 sticky top-0 self-start max-h-screen overflow-y-auto print:hidden">
         <div className="rounded-2xl p-4" style={glassCard}>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Info solución</p>
-          <dl className="space-y-2 text-xs">
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">Cliente</dt>
+          <p className="text-[10px] uppercase tracking-wider text-slate-600 font-bold mb-3">Info solución</p>
+          <dl className="space-y-2 text-[11px]">
+            <div className="flex justify-between gap-3"><dt className="text-slate-600">Cliente</dt>
               <dd className="text-right font-normal truncate">
-                {leadSel ? <a href={`/leads/${leadSel.id}/hub`} className="text-gray-200 underline decoration-white/30 hover:text-orange-300">{leadSel.companyName}</a> : <span className="text-gray-600">—</span>}
+                {leadSel ? <a href={`/leads/${leadSel.id}/hub`} className="text-slate-400 underline decoration-white/30 hover:text-orange-400">{leadSel.companyName}</a> : <span className="text-gray-600">—</span>}
               </dd></div>
-            {leadSel?.contactName && <div className="flex justify-between gap-3"><dt className="text-gray-500">Contacto</dt><dd className="text-gray-200 font-normal text-right">{leadSel.contactName}</dd></div>}
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">Estado</dt><dd className="text-gray-200 font-normal">{form.estado}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">Valor</dt><dd className="text-gray-200 font-normal">{valorTxt}</dd></div>
-            {form.repositorio && <div className="flex justify-between gap-3"><dt className="text-gray-500">Repositorio</dt>
+            {leadSel?.contactName && <div className="flex justify-between gap-3"><dt className="text-slate-600">Contacto</dt><dd className="text-slate-400 font-normal text-right">{leadSel.contactName}</dd></div>}
+            <div className="flex justify-between gap-3"><dt className="text-slate-600">Estado</dt><dd className="text-slate-400 font-normal">{form.estado}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-600">Valor</dt><dd className="text-slate-400 font-normal">{valorTxt}</dd></div>
+            {form.repositorio && <div className="flex justify-between gap-3"><dt className="text-slate-600">Repositorio</dt>
               <dd className="text-right truncate min-w-0"><a href={form.repositorio} target="_blank" rel="noreferrer" className="text-orange-300 hover:text-orange-200" title={form.repositorio}>{repoTxt}</a></dd></div>}
-            {creadaEn && <div className="flex justify-between gap-3"><dt className="text-gray-500">Creada</dt>
-              <dd className="text-gray-200 font-normal">{new Date(creadaEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</dd></div>}
+            {creadaEn && <div className="flex justify-between gap-3"><dt className="text-slate-600">Creada</dt>
+              <dd className="text-slate-400 font-normal">{new Date(creadaEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</dd></div>}
           </dl>
           <button type="button" onClick={() => setEditOpen(true)}
             className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-xs font-normal text-gray-300 hover:text-white hover:bg-white/5 transition-colors">
