@@ -1051,7 +1051,7 @@ export default function LeadHubPage() {
   const [phases, setPhases]   = useState<PhaseData[]>([])
   const [loading, setLoading] = useState(true)
   const [active, setActive]   = useState<string | null>(null)
-  const [tab, setTab]         = useState<'fases' | 'interacciones' | 'tareas' | 'propuesta' | 'diagrama'>('fases')
+  const [tab, setTab]         = useState<'fases' | 'interacciones' | 'propuesta' | 'diagrama'>('fases')
   const [interactions, setInteractions] = useState<Interaction[]>([])
   const [backlogItems, setBacklogItems] = useState<BacklogItem[]>([])
   const [proposal, setProposal]         = useState<Proposal | null>(null)
@@ -1348,7 +1348,7 @@ export default function LeadHubPage() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: '2px', padding: '0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)' }}>
-          {([ { key: 'fases' as const, label: 'Fases' }, { key: 'interacciones' as const, label: 'Interacciones' }, { key: 'tareas' as const, label: 'Tareas' }, { key: 'propuesta' as const, label: 'Propuesta' }, { key: 'diagrama' as const, label: 'Diagrama' } ]).map(({ key, label }) => (
+          {([ { key: 'fases' as const, label: 'Fases' }, { key: 'interacciones' as const, label: 'Interacciones' }, { key: 'propuesta' as const, label: 'Propuesta' }, { key: 'diagrama' as const, label: 'Diagrama' } ]).map(({ key, label }) => (
             <button key={key} onClick={() => { setTab(key); if (key === 'fases') setActive(null) }}
               className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 ${
                 tab === key
@@ -1455,10 +1455,6 @@ export default function LeadHubPage() {
           )}
 
           {/* TAREAS */}
-          {tab === 'tareas' && (
-            <HubTareas leadId={id} items={backlogItems} onToggle={updated => setBacklogItems(prev => prev.map(x => x.id === updated.id ? updated : x))} />
-          )}
-
           {/* PROPUESTA */}
           {tab === 'propuesta' && (
             <HubPropuesta leadId={id} proposal={proposal} onSave={setProposal} />
