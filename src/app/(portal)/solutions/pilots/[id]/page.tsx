@@ -1486,7 +1486,6 @@ export default function SolucionDetailPage() {
 
   return (
     <div>
-      <FaseStepper fases={calcularFases(prd, diseno, planEj, archNodes.length, tareasBacklog)} onIr={setActiveTab} />
 
       {/* Panel lateral de IA por seccion, estilo "blade" de
           Azure/AWS (y de widgets tipo Intercom/soporte): panel
