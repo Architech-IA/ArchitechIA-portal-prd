@@ -765,6 +765,10 @@ export default function SolucionDetailPage() {
     previo?: unknown
   } | null>(null)
   const [aiChatInput, setAiChatInput] = useState('')
+  // "Ocultar" es distinto de cerrar: el panel sale de la vista pero aiPanel y aiChat
+  // (conversación y contexto) siguen intactos hasta que se vuelve a mostrar.
+  const [aiOculto, setAiOculto] = useState(false)
+  useEffect(() => { setAiOculto(false) }, [aiPanel?.key, aiPanel?.itemId])
   useEffect(() => { setAiChat(null); setAiChatInput('') }, [aiPanel?.key, aiPanel?.itemId])
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(true)
@@ -1577,8 +1581,8 @@ export default function SolucionDetailPage() {
       {typeof document !== 'undefined' && createPortal(
         <>
           <div onClick={() => setAiPanel(null)}
-            className={`fixed inset-0 bg-black/60 z-40 print:hidden transition-opacity duration-200 ${aiPanel ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
-          <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+            className={`fixed inset-0 bg-black/60 z-40 print:hidden transition-opacity duration-200 ${aiPanel && !aiOculto ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} />
+          <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel && !aiOculto ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">
@@ -1586,10 +1590,16 @@ export default function SolucionDetailPage() {
             </p>
             <h3 className="text-base font-bold text-[#111827] truncate">{aiPanel?.titulo}</h3>
           </div>
-          <button type="button" onClick={() => setAiPanel(null)}
-            className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#374151] hover:bg-gray-100 transition-colors">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button type="button" onClick={() => setAiOculto(true)} title="Ocultar (la conversación se conserva)" aria-label="Ocultar panel"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#374151] hover:bg-gray-100 transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 17 5-5-5-5" /><path d="m13 17 5-5-5-5" /></svg>
+            </button>
+            <button type="button" onClick={() => setAiPanel(null)} title="Cerrar (termina la conversación)" aria-label="Cerrar panel"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#374151] hover:bg-gray-100 transition-colors">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {aiPanel && aiChat && aiChat.seccionKey === aiPanel.key && aiChat.itemId === aiPanel.itemId ? (
@@ -1764,6 +1774,14 @@ export default function SolucionDetailPage() {
           </div>
         )}
           </div>
+          {aiPanel && aiOculto && (
+            <button type="button" onClick={() => setAiOculto(false)} title="Mostrar el asistente de IA"
+              className="fixed right-4 bottom-4 z-50 inline-flex items-center gap-2 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold pl-3 pr-4 py-2.5 shadow-lg print:hidden transition-colors">
+              {aiChat?.cargando ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              Asistente IA · {aiPanel.itemId ? 'Requisito' : `Sección ${aiPanel.n}`}
+              <span className="opacity-80 font-normal">— Mostrar</span>
+            </button>
+          )}
         </>,
         document.body
       )}
