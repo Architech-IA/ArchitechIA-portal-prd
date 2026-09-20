@@ -107,8 +107,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     sol.descripcion ? `Descripción: ${limpiarHtml(sol.descripcion)}` : '',
   ].filter(Boolean).join('\n'), fuentes, 2000))
 
-  partes.push(seccion('PRD', jsonATexto(sol.prd, 14000), fuentes, 14000))
-  partes.push(seccion('Diseño técnico', jsonATexto(sol.disenoTecnico, 9000), fuentes, 9000))
+  partes.push(seccion('PRD', jsonATexto(sol.prd, 9000), fuentes, 9000))
+  partes.push(seccion('Diseño técnico', jsonATexto(sol.disenoTecnico, 6000), fuentes, 6000))
   partes.push(seccion('Plan de ejecución', jsonATexto(sol.planEjecucion, 5000), fuentes, 5000))
   partes.push(seccion('Plan de trabajo', limpiarHtml(sol.planTrabajo || ''), fuentes, 4000))
   partes.push(seccion('Cronograma', jsonATexto(sol.cronograma, 2000), fuentes, 2000))
@@ -157,7 +157,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         select: { phase: true, content: true, files: { select: { name: true } } },
       })
       partes.push(seccion('Notas de las fases del lead', fases.filter(f => f.phase !== 'COMPONENT_DIAGRAM')
-        .map(f => `${f.phase}: ${notasFase(f.content)}`).filter(t => t.length > 12).join('\n'), fuentes, 9000))
+        .map(f => `${f.phase}: ${notasFase(f.content)}`).filter(t => t.length > 12).join('\n'), fuentes, 6000))
       const archivos = fases.flatMap(f => f.files.map(x => `${f.phase}: ${x.name}`))
       partes.push(seccion('Archivos adjuntos del lead (solo nombres)', archivos.join('\n'), fuentes, 1200))
 
@@ -198,7 +198,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
-  const contexto = partes.filter(Boolean).join('\n').slice(0, 60000)
+  const contexto = partes.filter(Boolean).join('\n').slice(0, 32000)
   if (fuentes.length <= 1) {
     return NextResponse.json({ error: 'Hay muy poco contexto para generar la arquitectura. Completa el PRD, el Diseño Técnico o las notas del lead primero.' }, { status: 422 })
   }
@@ -206,7 +206,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   try {
     const salida = await callOpenCode(SYSTEM,
       `Contexto completo del proyecto:\n\n${contexto}\n\nGenera el diagrama de arquitectura de componentes.`,
-      `arq-${id}`, { maxTokens: 4500, timeoutMs: 150_000 })
+      `arq-${id}`, { maxTokens: 3000, timeoutMs: 150_000 })
     const limpio = salida.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
     const ini = limpio.indexOf('{'), fin = limpio.lastIndexOf('}')
     const data = JSON.parse(ini >= 0 && fin > ini ? limpio.slice(ini, fin + 1) : limpio)
@@ -245,6 +245,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[soluciones/arquitectura-generate]', msg.slice(0, 400))
-    return NextResponse.json({ error: msg.includes('JSON') ? 'El modelo devolvió un formato inválido. Intenta de nuevo.' : msg }, { status: 502 })
+    const amable = /timeout|aborted/i.test(msg) ? 'El modelo tardó demasiado en responder. Vuelve a intentarlo en un momento.'
+      : /\b50[0-9]\b/.test(msg) ? 'El proveedor de IA no está disponible ahora mismo (error temporal). Vuelve a intentarlo en un momento.'
+      : msg.includes('JSON') ? 'El modelo devolvió un formato inválido. Intenta de nuevo.' : msg
+    return NextResponse.json({ error: amable }, { status: 502 })
   }
 }
