@@ -87,15 +87,18 @@ export default function LeadAiPanel({
           const r = aplicar(String(d.valor), 'reemplazar')
           const cambios = typeof d.cambios === 'string' && d.cambios.trim() ? d.cambios.trim() + ' ' : ''
           setChat(prev => prev && prev.modo === modo
-            ? { ...prev, cargando: false, previo: r, mensajes: [...historial, { role: 'assistant', content: `Listo, apliqué los cambios en «${tabNombre}». ${cambios}Recuerda pulsar Guardar para conservarlos. ¿Algo más que ajustar?` }] }
+            ? { ...prev, cargando: false, previo: r, mensajes: [...historial, { role: 'assistant', content: `Listo, apliqué los cambios en «${tabNombre}». ${cambios}Recuerda pulsar Guardar para conservarlos. ¿Algo más que ajustar?`, opciones: SUGERENCIAS_MEJORA }] }
             : prev)
         } else {
           // Generar: si la pestaña visible está vacía se llena; si ya tiene texto se crea una nueva
           // para no pisar lo que escribió la persona.
           const como = tab && vacio(tab.content) ? 'reemplazar' : 'nueva'
           const r = aplicar(String(d.valor), como, `Borrador IA · ${fase.label}`.slice(0, 40))
+          // La conversación NO se cierra: pasa a modo "mejorar" para que la persona pueda
+          // retroalimentar o pedir ajustes sobre lo recién generado (la pestaña generada queda activa).
+          const donde = como === 'reemplazar' ? `escribí el contenido en «${tabNombre}»` : 'dejé el contenido en una pestaña nueva («Borrador IA») para no pisar tu texto'
           setChat(prev => prev && prev.modo === modo
-            ? { ...prev, cargando: false, listo: true, previo: r, mensajes: [...historial, { role: 'assistant', content: como === 'reemplazar' ? `Listo: escribí el contenido en «${tabNombre}». Recuerda pulsar Guardar.` : 'Listo: dejé el contenido en una pestaña nueva («Borrador IA») para no pisar tu texto. Recuerda pulsar Guardar.' }] }
+            ? { ...prev, modo: 'mejorar', cargando: false, listo: false, previo: r, mensajes: [...historial, { role: 'assistant', content: `Listo: ${donde}. Recuerda pulsar Guardar. ¿Quieres que ajuste algo? Dime qué cambiar (más corto, más detalle, otro enfoque, corregir un dato…) o elige un atajo.`, opciones: SUGERENCIAS_MEJORA }] }
             : prev)
         }
       } else {
@@ -254,11 +257,15 @@ export default function LeadAiPanel({
             {!chat.listo ? (
               <div className="border-t border-gray-100">
                 {chat.previo && !chat.cargando && (
-                  <div className="px-6 pt-3">
+                  <div className="px-6 pt-3 flex items-center gap-2">
                     <button type="button"
                       onClick={() => { deshacer(chat.previo!); setChat(prev => prev ? { ...prev, previo: undefined, mensajes: [...prev.mensajes, { role: 'assistant', content: 'Deshice el último cambio.' }] } : prev) }}
-                      className="w-full text-[11px] text-[#6b7280] hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
-                      Deshacer último cambio en la nota
+                      className="flex-1 text-[11px] text-[#6b7280] hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
+                      Deshacer último cambio
+                    </button>
+                    <button type="button" onClick={onCerrar}
+                      className="flex-1 text-[11px] text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-1.5 transition-colors">
+                      Listo, cerrar
                     </button>
                   </div>
                 )}
