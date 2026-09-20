@@ -154,7 +154,9 @@ const DT_REQUERIDOS: Record<string, string[]> = {
 // frontend solo chequeaba que `tipo` fuera un valor válido, nunca la forma
 // real de `valor`. Devuelve `null` si esta OK, o un mensaje describiendo
 // que esta mal (se lo mostramos al usuario en vez de aplicar algo roto).
-function validarValorContenido(seccionKey: string, valor: unknown): string | null {
+// `laxo` (modo Mejorar sección): el usuario puede pedir OMITIR partes, así que no se exige
+// el mínimo de 8 requisitos ni la variedad MoSCoW — solo que la forma sea válida.
+function validarValorContenido(seccionKey: string, valor: unknown, laxo = false): string | null {
   const kind = SECCION_KIND[seccionKey]
   const esTextoNoVacio = (v: unknown) => typeof v === 'string' && v.trim().length > 0
 
@@ -179,7 +181,8 @@ function validarValorContenido(seccionKey: string, valor: unknown): string | nul
 
     case 'requisitos': {
       if (!Array.isArray(valor)) return 'no devolvió una lista de requisitos.'
-      if (valor.length < 8) return `devolvió solo ${valor.length} requisito(s); se esperaban al menos 8.`
+      if (!laxo && valor.length < 8) return `devolvió solo ${valor.length} requisito(s); se esperaban al menos 8.`
+      if (laxo && valor.length === 0) return 'no devolvió ningún requisito.'
       const prioridadesValidas = new Set(['MUST', 'SHOULD', 'COULD', 'WONT'])
       const items = valor as Record<string, unknown>[]
       for (const r of items) {
@@ -189,7 +192,7 @@ function validarValorContenido(seccionKey: string, valor: unknown): string | nul
         if (!prioridadesValidas.has(String(r?.prioridad))) return 'devolvió algún requisito con una prioridad inválida.'
       }
       const prioridadesUsadas = new Set(items.map(r => r.prioridad))
-      if (prioridadesUsadas.size < 2) return 'devolvió todos los requisitos con la misma prioridad (sin variedad MoSCoW).'
+      if (!laxo && prioridadesUsadas.size < 2) return 'devolvió todos los requisitos con la misma prioridad (sin variedad MoSCoW).'
       return null
     }
 
@@ -234,6 +237,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params
   const body = await request.json().catch(() => ({})) as {
     seccionKey?: string; valorActual?: unknown; historial?: ChatMsg[]; itemId?: string
+    // 'mejorar': la persona le dice a la IA qué está mal de la sección y esta la corrige
+    // (a diferencia de la entrevista de 'generar', que arranca preguntando).
+    modo?: 'mejorar'
     // Solo aplica al debate de un requisito puntual: cuál de los dos campos
     // se está debatiendo. Nunca los dos a la vez (pedido explícito del
     // usuario — antes se editaban juntos).
@@ -246,6 +252,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
   const seccionKey = String(body.seccionKey || '')
   const esDebateItem = seccionKey === 'requisito_item'
+  const esMejora = body.modo === 'mejorar' && !esDebateItem
   const campoDebate: 'texto' | 'criterioAceptacion' = body.campo === 'criterioAceptacion' ? 'criterioAceptacion' : 'texto'
   const docLabel = seccionKey.startsWith('pe_')
     ? 'un Plan de Ejecución (cómo se organiza el equipo para ejecutar: pruebas, despliegue, roles, cambios y comunicación; complementa al PRD y al Diseño Técnico)'
@@ -371,7 +378,28 @@ Reglas del debate:
 4. Cada vez que uses tipo "pregunta" (tu turno de debate, sea objeción o pregunta), proponé también EXACTAMENTE 5 respuestas/posturas posibles para que el usuario elija con un clic, ademas de poder escribir la propia.
 5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
    - Para seguir debatiendo: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}
-   - Para la versión final: {"tipo": "contenido", "valor": "string"}  (SOLO ${campoLabel}, un string plano, no un objeto)` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de ${docLabel} para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
+   - Para la versión final: {"tipo": "contenido", "valor": "string"}  (SOLO ${campoLabel}, un string plano, no un objeto)` : esMejora ? `Sos un editor senior que MEJORA una sola sección de ${docLabel} para ArchiTechIA, siguiendo lo que la persona te diga.
+
+Sección: "${info.label}"
+Forma del valor (respetá la estructura; IGNORÁ los rangos de cantidad de ítems o de extensión que aparezcan acá, porque la cantidad la define el pedido de la persona): ${seccionKey === 'requisitos' ? 'un array de objetos {"tipo": "historia" | "caso_uso", "texto": string, "criterioAceptacion": string, "prioridad": "MUST" | "SHOULD" | "COULD" | "WONT"}' : info.schema}
+
+Contexto conocido de la Solución:
+${contexto || '(sin contexto adicional — solo el nombre y tipo de Solución)'}
+
+Contenido ACTUAL de la sección (es lo que hay que corregir):
+${JSON.stringify(body.valorActual ?? null)}
+
+La persona te va a decir qué está mal: que no se entiende, que algo se puede omitir, que falta detalle, que el tono no sirve, que es muy largo, etc.
+
+Reglas:
+1. Aplicá EXACTAMENTE lo que pide sobre el contenido actual. Conservá todo lo que no critica: no reescribas la sección entera si solo pidió tocar una parte.
+2. No inventes datos, cifras ni nombres que no estén en el contenido actual o en el contexto. Si para aplicar el pedido hace falta un dato que no tenés, hacé UNA pregunta concreta en vez de inventarlo.
+3. Si el pedido es claro, devolvé directamente el contenido corregido (sin preguntar). Preguntá solo si el pedido es ambiguo o necesitás un dato que falta, y nunca más de una pregunta seguida.
+4. Si pide omitir algo, sacalo de verdad. Si pide más detalle, agregalo solo con lo que se desprende del contexto.
+5. El campo "cambios" describe en 1 o 2 frases cortas qué modificaste, para que la persona lo verifique.
+6. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
+   - Contenido corregido: {"tipo": "contenido", "valor": <el valor con la misma forma indicada arriba>, "cambios": "string"}
+   - Solo si hace falta aclarar: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}  (exactamente 5 opciones)` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de ${docLabel} para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
 
 Sección a trabajar: "${info.label}"
 El valor final que vas a generar debe ser: ${info.schema}
@@ -409,7 +437,7 @@ Reglas de la entrevista:
         // Estable por Solucion+seccion (o por requisito puntual, si aplica)
         // — evita cruzar sesiones entre distintas secciones/entrevistas, o
         // entre el debate de un requisito y el de otro, de un mismo PRD.
-        'x-opencode-session': `prd-seccion-${id}-${seccionKey}${body.itemId ? `-${body.itemId}` : ''}${esDebateItem ? `-${campoDebate}` : ''}`,
+        'x-opencode-session': `prd-seccion-${id}-${seccionKey}${body.itemId ? `-${body.itemId}` : ''}${esDebateItem ? `-${campoDebate}` : ''}${esMejora ? '-mejorar' : ''}`,
       },
       body: JSON.stringify({
         model: MODEL,
@@ -437,7 +465,7 @@ Reglas de la entrevista:
     // prioridad, quedaba aplicado en silencio. Ahora se valida la forma real
     // de "valor" antes de aceptarlo.
     if (parsed.tipo === 'contenido') {
-      const problema = validarValorContenido(seccionKey, parsed.valor)
+      const problema = validarValorContenido(seccionKey, parsed.valor, esMejora)
       if (problema) {
         console.error('prd-seccion-chat: contenido invalido', seccionKey, problema)
         return NextResponse.json({ error: `La IA generó contenido incompleto (${problema}). Probá de nuevo.` }, { status: 502 })

@@ -662,13 +662,13 @@ function RichToolbar() {
   )
 }
 
-// Opciones del panel lateral de IA por sección del PRD. Solo la primera
-// ("generar") esta conectada de verdad — abre una mini-entrevista (preguntas
+// Opciones del panel lateral de IA por sección del PRD. Solo "generar" y
+// "mejorar" están conectadas de verdad — abre una mini-entrevista (preguntas
 // del modelo si hace falta info, hasta generar el contenido final). El resto
 // sigue siendo solo visual por ahora, sin acción real conectada todavía.
 const AI_OPCIONES_SECCION = [
   { id: 'generar', label: 'Generar sección con IA', desc: 'Te hace preguntas si hace falta info, y genera el contenido final de esta sección.', icon: Wand2, accion: true },
-  { id: 'mejorar', label: 'Mejorar redacción', desc: 'Reescribe el texto con un tono más claro y profesional.', icon: PenLine },
+  { id: 'mejorar', label: 'Mejorar sección', desc: 'Dile a la IA qué está mal, qué no se entiende o qué se puede omitir, y ajusta el texto de esta sección.', icon: PenLine, accion: true, modo: 'mejorar' as const },
   { id: 'expandir', label: 'Expandir / detallar', desc: 'Agrega más profundidad, contexto y ejemplos concretos.', icon: Sparkles },
   { id: 'resumir', label: 'Resumir', desc: 'Condensa el contenido de esta sección a lo esencial.', icon: Minimize2 },
   { id: 'traducir', label: 'Traducir a inglés', desc: 'Genera una versión en inglés de esta sección.', icon: Languages },
@@ -691,6 +691,16 @@ const AI_OPCIONES_ITEM = [
 // SECCION_INFO del backend (prd-seccion-chat/route.ts).
 // `opciones` solo aplica a preguntas del asistente: 5 respuestas sugeridas
 // de un click, ademas de poder escribir cualquier otra cosa en el input.
+// Atajos del modo "Mejorar sección": frases que la persona puede mandar con un clic
+// en vez de escribirlas (siempre puede escribir lo suyo).
+const AI_SUGERENCIAS_MEJORA = [
+  'No se entiende bien: hazlo más claro y directo',
+  'Hay partes que sobran: omite lo que no aporta',
+  'Le falta detalle y ejemplos concretos',
+  'El tono no es profesional: mejora la redacción',
+  'Es demasiado largo: resúmelo a lo esencial',
+] as const
+
 type AiChatMsg = { role: 'user' | 'assistant'; content: string; opciones?: string[] }
 
 export default function SolucionDetailPage() {
@@ -749,6 +759,10 @@ export default function SolucionDetailPage() {
     cargando: boolean
     error: string | null
     listo: boolean
+    // 'mejorar': la persona dice qué está mal y la IA corrige la sección (sin entrevista previa)
+    modo?: 'mejorar'
+    // Valor de la sección justo antes del último cambio aplicado (para deshacer)
+    previo?: unknown
   } | null>(null)
   const [aiChatInput, setAiChatInput] = useState('')
   useEffect(() => { setAiChat(null); setAiChatInput('') }, [aiPanel?.key, aiPanel?.itemId])
@@ -1145,7 +1159,7 @@ export default function SolucionDetailPage() {
   // (opcionalmente) la nueva respuesta del usuario, y segun el "tipo" que
   // devuelve el backend, o agrega la pregunta siguiente al chat, o aplica el
   // contenido final directamente al PRD.
-  async function enviarTurnoAI(seccionKey: string, historialPrevio: AiChatMsg[], mensajeUsuario?: string, itemId?: string, campo?: 'texto' | 'criterioAceptacion') {
+  async function enviarTurnoAI(seccionKey: string, historialPrevio: AiChatMsg[], mensajeUsuario?: string, itemId?: string, campo?: 'texto' | 'criterioAceptacion', modo?: 'mejorar') {
     const historial = mensajeUsuario ? [...historialPrevio, { role: 'user' as const, content: mensajeUsuario }] : historialPrevio
     const coincide = (c: typeof aiChat) => !!c && c.seccionKey === seccionKey && c.itemId === itemId && c.campo === campo
     setAiChat(prev => coincide(prev) ? { ...prev!, mensajes: historial, cargando: true, error: null } : prev)
@@ -1165,6 +1179,7 @@ export default function SolucionDetailPage() {
           seccionKey,
           itemId,
           campo,
+          modo,
           valorActual,
           contextoRequisito: requisitoDebate ? { texto: requisitoDebate.texto, criterioAceptacion: requisitoDebate.criterioAceptacion } : undefined,
           historial,
@@ -1197,9 +1212,18 @@ export default function SolucionDetailPage() {
         } else {
           aplicarContenidoIA(seccionKey, data.valor)
         }
-        setAiChat(prev => coincide(prev)
-          ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: itemId ? 'Versión revisada aplicada.' : 'Contenido generado y aplicado a la sección.' }], cargando: false, listo: true }
-          : prev)
+        if (modo === 'mejorar' && !itemId) {
+          // Se queda abierto para seguir afinando; guarda el valor previo para poder deshacer
+          const previo = JSON.parse(JSON.stringify(valorActual ?? null))
+          const cambios = typeof data.cambios === 'string' && data.cambios.trim() ? data.cambios.trim() : 'Sección actualizada.'
+          setAiChat(prev => coincide(prev)
+            ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: 'Listo, apliqué los cambios. ' + cambios + ' ¿Algo más que ajustar?' }], cargando: false, previo }
+            : prev)
+        } else {
+          setAiChat(prev => coincide(prev)
+            ? { ...prev!, mensajes: [...historial, { role: 'assistant', content: itemId ? 'Versión revisada aplicada.' : 'Contenido generado y aplicado a la sección.' }], cargando: false, listo: true }
+            : prev)
+        }
       } else {
         throw new Error('Respuesta inesperada del asistente.')
       }
@@ -1579,8 +1603,24 @@ export default function SolucionDetailPage() {
                 className="text-[11px] text-gray-400 hover:text-cyan-600 flex items-center gap-0.5 mb-1 transition-colors">
                 <ChevronLeft size={12} /> Volver a opciones
               </button>
+              {aiChat.modo === 'mejorar' && aiChat.mensajes.length === 0 && !aiChat.cargando && !aiChat.listo && (
+                <div className="space-y-2">
+                  <div className="text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[92%] bg-cyan-50 text-gray-800 rounded-tl-sm">
+                    Cuéntame qué está mal en esta sección: que no se entiende, que algo se puede omitir, que falta detalle, que el tono no sirve… Escribe lo que necesites o elige un atajo, y ajusto el texto.
+                  </div>
+                  <div className="flex flex-col items-start gap-1.5">
+                    {AI_SUGERENCIAS_MEJORA.map(t => (
+                      <button key={t} type="button"
+                        onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, t, aiChat.itemId, aiChat.campo, aiChat.modo)}
+                        className="text-left text-xs text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg px-3 py-1.5 max-w-[92%] transition-colors">
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {aiChat.mensajes.length === 0 && aiChat.cargando && (
-                <p className="text-xs text-gray-400 italic">Pensando en la primera pregunta...</p>
+                <p className="text-xs text-gray-400 italic">{aiChat.modo === 'mejorar' ? 'Revisando la sección…' : 'Pensando en la primera pregunta...'}</p>
               )}
               {aiChat.mensajes.map((m, i) => (
                 <div key={i}>
@@ -1596,7 +1636,7 @@ export default function SolucionDetailPage() {
                     <div className="mt-2 flex flex-col items-start gap-1.5">
                       {m.opciones.map((op, oi) => (
                         <button key={oi} type="button"
-                          onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op, aiChat.itemId, aiChat.campo)}
+                          onClick={() => enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, op, aiChat.itemId, aiChat.campo, aiChat.modo)}
                           className="text-left text-xs text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg px-3 py-1.5 max-w-[92%] transition-colors">
                           {op}
                         </button>
@@ -1614,13 +1654,26 @@ export default function SolucionDetailPage() {
             {!aiChat.listo ? (
               <div className="border-t border-gray-100">
                 <div className="max-w-2xl w-full mx-auto">
-                  {aiChat.mensajes.length > 0 && !aiChat.cargando && (
+                  {aiChat.modo === 'mejorar' && aiChat.previo !== undefined && !aiChat.cargando && (
+                    <div className="px-6 pt-3 flex items-center gap-2">
+                      <button type="button"
+                        onClick={() => { aplicarContenidoIA(aiChat.seccionKey, aiChat.previo); setAiChat(prev => prev ? { ...prev, previo: undefined, mensajes: [...prev.mensajes, { role: 'assistant', content: 'Deshice el último cambio: la sección volvió a como estaba.' }] } : prev) }}
+                        className="flex-1 text-[11px] text-gray-500 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
+                        Deshacer último cambio
+                      </button>
+                      <button type="button" onClick={() => setAiPanel(null)}
+                        className="flex-1 text-[11px] text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg py-1.5 transition-colors">
+                        Listo, cerrar
+                      </button>
+                    </div>
+                  )}
+                  {aiChat.modo !== 'mejorar' && aiChat.mensajes.length > 0 && !aiChat.cargando && (
                     <div className="px-6 pt-3">
                       <button type="button"
                         onClick={() => enviarTurnoAI(
                           aiChat.seccionKey, aiChat.mensajes,
                           aiChat.itemId ? 'Aplicá ya tu mejor versión, no sigas debatiendo.' : 'Generá la sección ya con la información disponible, no preguntes más.',
-                          aiChat.itemId, aiChat.campo
+                          aiChat.itemId, aiChat.campo, aiChat.modo
                         )}
                         className="w-full text-[11px] text-gray-400 hover:text-cyan-600 border border-dashed border-gray-200 hover:border-cyan-300 rounded-lg py-1.5 transition-colors">
                         {aiChat.itemId ? 'Aplicar ya la mejor versión' : 'Generar ya con lo que tengo'}
@@ -1634,14 +1687,14 @@ export default function SolucionDetailPage() {
                     <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
                       onKeyDown={e => {
                         if (e.key === 'Enter' && aiChatInput.trim() && !aiChat.cargando) {
-                          enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo)
+                          enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo, aiChat.modo)
                           setAiChatInput('')
                         }
                       }}
-                      placeholder="Escribí tu respuesta..." disabled={aiChat.cargando}
+                      placeholder={aiChat.modo === 'mejorar' ? 'Dile a la IA qué está mal o qué cambiar…' : 'Escribí tu respuesta...'} disabled={aiChat.cargando}
                       className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
                     <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
-                      onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo); setAiChatInput('') }}
+                      onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo, aiChat.modo); setAiChatInput('') }}
                       className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
                       <Send size={14} />
                     </button>
@@ -1676,6 +1729,16 @@ export default function SolucionDetailPage() {
                       // nada sin que el usuario lo acuerde durante
                       // la charla, asi que no hace falta confirmar
                       // antes de arrancar.
+                      if ('modo' in op && op.modo === 'mejorar') {
+                        // Mejorar necesita algo que mejorar: sin contenido no hay nada que corregir
+                        if (!seccionTieneContenido(aiPanel.key)) {
+                          setAiChat({ seccionKey: aiPanel.key, mensajes: [], cargando: false, listo: true, modo: 'mejorar',
+                            error: 'Esta sección todavía está vacía. Primero escribe algo o genérala con IA, y después puedo mejorarla.' })
+                        } else {
+                          setAiChat({ seccionKey: aiPanel.key, mensajes: [], cargando: false, error: null, listo: false, modo: 'mejorar' })
+                        }
+                        return
+                      }
                       if (!aiPanel.itemId && seccionTieneContenido(aiPanel.key) && !window.confirm(
                         'Esta sección ya tiene contenido. Generarla con IA va a reemplazarlo por completo. ¿Continuar?'
                       )) return
