@@ -764,6 +764,10 @@ export default function SolucionDetailPage() {
 
   const [arquitecturaHtml, setArquitecturaHtml] = useState<string | null>(null)
   const [archView, setArchView] = useState<'canvas' | 'html'>('canvas')
+  // Generacion del diagrama con IA a partir de todo el contexto de la solucion
+  const [archGenerando, setArchGenerando] = useState(false)
+  const [archError, setArchError] = useState<string | null>(null)
+  const [archInfo, setArchInfo] = useState<{ resumen: string; supuestos: string[]; fuentes: string[] } | null>(null)
 
   const [draggiingPlan, setDraggingPlan] = useState(false)
   const [planFileError, setPlanFileError] = useState('')
@@ -937,6 +941,26 @@ export default function SolucionDetailPage() {
     reader.onload = () => setForm(f => ({ ...f, planTrabajo: String(reader.result || '') }))
     reader.onerror = () => setPlanFileError('No se pudo leer el archivo.')
     reader.readAsText(file)
+  }
+
+  async function generarArquitecturaIA() {
+    if (archNodes.length > 0 && !window.confirm(
+      `El lienzo ya tiene ${archNodes.length} componente(s). La IA los toma como base y va a reemplazar el diagrama actual por una versión completa. ¿Continuar?`
+    )) return
+    setArchGenerando(true); setArchError(null)
+    try {
+      // La IA lee lo GUARDADO en base de datos: si hay cambios recientes en el PRD,
+      // el diseño técnico o el lienzo, hay que guardarlos antes para que cuenten.
+      const res = await fetch(`/api/soluciones/${id}/arquitectura-generate`, { method: 'POST' })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.error || 'No se pudo generar la arquitectura')
+      setArchNodes(d.nodes)
+      setArchConnections(d.connections)
+      setArchInfo({ resumen: d.resumen || '', supuestos: d.supuestos || [], fuentes: d.fuentes || [] })
+      setArchView('canvas')
+    } catch (e) {
+      setArchError(e instanceof Error ? e.message : 'No se pudo generar la arquitectura')
+    } finally { setArchGenerando(false) }
   }
 
   function importHtmlFile(file: File | undefined) {
@@ -1913,6 +1937,14 @@ export default function SolucionDetailPage() {
                     <Code size={12} /> HTML
                   </button>
                 </div>
+                {archView === 'canvas' && (
+                  <button type="button" onClick={() => { void generarArquitecturaIA() }} disabled={archGenerando || saving}
+                    title="Genera el diagrama con IA usando todo el contexto guardado de la solución y su lead"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-wait">
+                    {archGenerando ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    {archGenerando ? 'Generando arquitectura…' : 'Generar con IA'}
+                  </button>
+                )}
                 {archView === 'html' && (
                   <button type="button" onClick={() => htmlFileInputRef.current?.click()} disabled={saving}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium transition-colors disabled:opacity-50">
@@ -1922,6 +1954,28 @@ export default function SolucionDetailPage() {
                 <input ref={htmlFileInputRef} type="file" accept=".html" className="hidden"
                   onChange={e => { importHtmlFile(e.target.files?.[0]); e.target.value = '' }} />
               </div>
+              {archError && <p className="text-xs text-red-400">{archError}</p>}
+              {archInfo && archView === 'canvas' && (
+                <div className="rounded-xl border border-orange-500/25 bg-orange-500/[0.06] px-4 py-3 text-xs text-gray-300 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-orange-300 font-semibold">Arquitectura generada con IA — revisa el lienzo y pulsa "Guardar cambios" para conservarla.</p>
+                    <button type="button" onClick={() => setArchInfo(null)} aria-label="Cerrar aviso" className="text-gray-500 hover:text-gray-200 flex-shrink-0"><X size={13} /></button>
+                  </div>
+                  {archInfo.resumen && <p className="leading-relaxed">{archInfo.resumen}</p>}
+                  {archInfo.supuestos.length > 0 && (
+                    <div>
+                      <p className="text-gray-500 mb-0.5">Supuestos (por falta de información):</p>
+                      <ul className="list-disc pl-4 space-y-0.5">{archInfo.supuestos.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                    </div>
+                  )}
+                  {archInfo.fuentes.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-gray-500">Contexto usado:</span>
+                      {archInfo.fuentes.map(f => <span key={f} className="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-[10px] text-gray-300">{f}</span>)}
+                    </div>
+                  )}
+                </div>
+              )}
               {archView === 'canvas' ? (
                 <ArchitectureCanvas
                   nodes={archNodes}
