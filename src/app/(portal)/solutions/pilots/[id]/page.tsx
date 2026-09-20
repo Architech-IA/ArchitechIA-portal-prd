@@ -249,9 +249,9 @@ type TabKey = 'arquitectura' | 'plan' | 'prd' | 'diseno' | 'plan-ejec' | 'cronog
 
 const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
-  { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
   { key: 'prd', label: 'PRD', icon: ClipboardList },
   { key: 'diseno', label: 'Diseño Técnico', icon: Boxes },
+  { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
   { key: 'plan-ejec', label: 'Plan de Ejecución', icon: ClipboardCheck },
   { key: 'cronograma', label: 'Cronograma', icon: Calendar },
   { key: 'riesgos', label: 'Riesgos', icon: AlertTriangle },
