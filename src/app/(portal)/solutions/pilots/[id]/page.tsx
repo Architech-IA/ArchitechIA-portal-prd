@@ -1584,10 +1584,10 @@ export default function SolucionDetailPage() {
             <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">
               Asistente IA · {aiPanel?.itemId ? 'Requisito' : `Sección ${aiPanel?.n ?? ''}`}
             </p>
-            <h3 className="text-base font-bold text-gray-900 truncate">{aiPanel?.titulo}</h3>
+            <h3 className="text-base font-bold text-[#111827] truncate">{aiPanel?.titulo}</h3>
           </div>
           <button type="button" onClick={() => setAiPanel(null)}
-            className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+            className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#374151] hover:bg-gray-100 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -1605,7 +1605,7 @@ export default function SolucionDetailPage() {
               </button>
               {aiChat.modo === 'mejorar' && aiChat.mensajes.length === 0 && !aiChat.cargando && !aiChat.listo && (
                 <div className="space-y-2">
-                  <div className="text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[92%] bg-cyan-50 text-gray-800 rounded-tl-sm">
+                  <div className="text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[92%] bg-cyan-50 text-[#1f2937] rounded-tl-sm">
                     Cuéntame qué está mal en esta sección: que no se entiende, que algo se puede omitir, que falta detalle, que el tono no sirve… Escribe lo que necesites o elige un atajo, y ajusto el texto.
                   </div>
                   <div className="flex flex-col items-start gap-1.5">
@@ -1624,7 +1624,7 @@ export default function SolucionDetailPage() {
               )}
               {aiChat.mensajes.map((m, i) => (
                 <div key={i}>
-                  <div className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[88%] ${m.role === 'assistant' ? 'bg-cyan-50 text-gray-800 mr-auto rounded-tl-sm' : 'bg-gray-900 text-white ml-auto rounded-tr-sm'}`}>
+                  <div className={`text-xs leading-relaxed rounded-xl px-3 py-2 max-w-[88%] ${m.role === 'assistant' ? 'bg-cyan-50 text-[#1f2937] mr-auto rounded-tl-sm' : 'bg-[#111827] text-white ml-auto rounded-tr-sm'}`}>
                     {m.content}
                   </div>
                   {/* 5 respuestas sugeridas de un click + la opcion
@@ -1692,7 +1692,7 @@ export default function SolucionDetailPage() {
                         }
                       }}
                       placeholder={aiChat.modo === 'mejorar' ? 'Dile a la IA qué está mal o qué cambiar…' : 'Escribí tu respuesta...'} disabled={aiChat.cargando}
-                      className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
+                      className="flex-1 text-xs text-[#111827] bg-white placeholder:text-[#9ca3af] border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-400 disabled:opacity-50 disabled:bg-gray-50" />
                     <button type="button" disabled={aiChat.cargando || !aiChatInput.trim()}
                       onClick={() => { enviarTurnoAI(aiChat.seccionKey, aiChat.mensajes, aiChatInput.trim(), aiChat.itemId, aiChat.campo, aiChat.modo); setAiChatInput('') }}
                       className="w-8 h-8 flex-shrink-0 rounded-lg bg-cyan-600 hover:bg-cyan-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors">
@@ -1752,7 +1752,7 @@ export default function SolucionDetailPage() {
                     <op.icon size={15} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-xs font-semibold text-gray-800">{op.label}</span>
+                    <span className="block text-xs font-semibold text-[#1f2937]">{op.label}</span>
                     <span className="block text-[11px] text-gray-400 mt-0.5">{op.desc}</span>
                   </span>
                 </button>
