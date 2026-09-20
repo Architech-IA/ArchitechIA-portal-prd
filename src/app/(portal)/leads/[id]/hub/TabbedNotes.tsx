@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -193,11 +193,22 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface TabbedNotesProps { value: string; onChange: (s: string) => void }
+interface TabbedNotesProps {
+  value: string
+  onChange: (s: string) => void
+  // Avisa al padre de cual es la pestaña visible (y su contenido) — lo usa el asistente
+  // de IA del Hub de Lead para saber sobre que texto trabajar.
+  onActiveChange?: (tab: { id: string; name: string; content: string }) => void
+  // Pestaña a mostrar al montar (el padre remonta el componente al aplicar cambios de la IA)
+  initialActiveId?: string
+}
 
-export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
+export default function TabbedNotes({ value, onChange, onActiveChange, initialActiveId }: TabbedNotesProps) {
   const [tabs, setTabs] = useState<NoteTab[]>(() => parse(value))
-  const [activeId, setActiveId] = useState<string>(() => parse(value)[0]?.id ?? '')
+  const [activeId, setActiveId] = useState<string>(() => {
+    const t = parse(value)
+    return t.find(x => x.id === initialActiveId)?.id ?? t[0]?.id ?? ''
+  })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const renameRef = useRef<HTMLInputElement>(null)
@@ -245,6 +256,12 @@ export default function TabbedNotes({ value, onChange }: TabbedNotesProps) {
   }
 
   const activeTab = tabs.find(t => t.id === activeId) ?? tabs[0]
+
+  const onActiveChangeRef = useRef(onActiveChange)
+  onActiveChangeRef.current = onActiveChange
+  useEffect(() => {
+    if (activeTab) onActiveChangeRef.current?.({ id: activeTab.id, name: activeTab.name, content: activeTab.content })
+  }, [activeTab?.id, activeTab?.name, activeTab?.content]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative rounded-2xl overflow-hidden flex flex-col flex-1 min-h-0" style={{

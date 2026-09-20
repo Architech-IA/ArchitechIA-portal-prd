@@ -43,3 +43,35 @@ export async function callOpenCode(
   if (typeof content !== 'string' || !content.trim()) throw new Error('El modelo devolvió una respuesta vacía.')
   return content
 }
+
+// Igual que callOpenCode pero con historial de conversacion (turnos user/assistant),
+// para chats de varios turnos (asistente de IA del Hub de Lead).
+export async function callOpenCodeMessages(
+  system: string,
+  mensajes: { role: 'user' | 'assistant'; content: string }[],
+  sessionId: string,
+  opts: { maxTokens?: number; timeoutMs?: number } = {},
+): Promise<string> {
+  const res = await fetch(OPENCODE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENCODE_API_KEY ?? ''}`,
+      'x-opencode-session': sessionId,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [{ role: 'system', content: system }, ...mensajes],
+      max_tokens: opts.maxTokens ?? 4096,
+    }),
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 150_000),
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`El modelo respondió ${res.status}: ${detail.slice(0, 200)}`)
+  }
+  const data = await res.json()
+  const content = data?.choices?.[0]?.message?.content
+  if (typeof content !== 'string' || !content.trim()) throw new Error('El modelo devolvió una respuesta vacía.')
+  return content
+}

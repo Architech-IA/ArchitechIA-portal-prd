@@ -5,13 +5,15 @@ import dynamic from 'next/dynamic'
 
 const TabbedNotes = dynamic(() => import('./TabbedNotes'), { ssr: false })
 const DiagramTab = dynamic(() => import('./DiagramTab'), { ssr: false })
+const LeadAiPanel = dynamic(() => import('./LeadAiPanel'), { ssr: false })
+import type { TabInfo, ResultadoAplicar } from './LeadAiPanel'
 import { useParams } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import {
   CheckCircle2, Circle, Clock, Loader2,
   Save, Paperclip, X, Download, Trash2, FileText,
   ChevronRight, Phone, Mail, Users, Briefcase, CheckSquare, Square, Plus,
-  Search, Link2, ExternalLink, Calendar, Eye, History, Pencil,
+  Search, Link2, ExternalLink, Calendar, Eye, History, Pencil, Sparkles,
 } from 'lucide-react'
 
 interface Lead {
@@ -197,6 +199,55 @@ function PhasePanel({
   const fileRef = useRef<HTMLInputElement>(null)
   const c = COLOR_MAP[phase.color]
 
+  // ── Asistente de IA (popup lateral, mismo formato que el del PRD) ──────────
+  const [iaAbierta, setIaAbierta] = useState(false)
+  const [iaOculta, setIaOculta] = useState(false)
+  // Pestaña de notas visible (la reporta TabbedNotes) y clave para remontarlo
+  // cuando la IA cambia el contenido desde afuera (TabbedNotes guarda su propio estado).
+  const [tabActiva, setTabActiva] = useState<TabInfo | null>(null)
+  const tabActivaRef = useRef<TabInfo | null>(null)
+  const [notasKey, setNotasKey] = useState(0)
+  const [notasActivaId, setNotasActivaId] = useState<string | undefined>(undefined)
+  const uidTab = () => Math.random().toString(36).slice(2, 10)
+
+  const leerTabs = (): { id: string; name: string; content: string }[] => {
+    try {
+      const v = JSON.parse(content)
+      if (v && Array.isArray(v.tabs) && v.tabs.length > 0) return v.tabs
+    } catch {}
+    const a = tabActivaRef.current
+    return [{ id: a?.id ?? uidTab(), name: a?.name ?? 'General', content: content || a?.content || '' }]
+  }
+  const escribirTabs = (tabs: { id: string; name: string; content: string }[], activaId: string) => {
+    setContent(JSON.stringify({ tabs }))
+    setNotasActivaId(activaId)
+    setNotasKey(k => k + 1)
+  }
+  const aplicarIA = (html: string, como: 'reemplazar' | 'nueva' | 'agregar', nombre?: string): ResultadoAplicar => {
+    const tabs = leerTabs()
+    const act = tabActivaRef.current
+    const destino = (act && tabs.find(t => t.id === act.id)) ?? tabs[0]
+    if (como === 'nueva') {
+      const nt = { id: uidTab(), name: nombre || 'Borrador IA', content: html }
+      escribirTabs([...tabs, nt], nt.id)
+      return { tabId: nt.id, previo: '', nueva: true }
+    }
+    const previo = destino.content
+    const nuevo = como === 'agregar' ? previo + html : html
+    escribirTabs(tabs.map(t => t.id === destino.id ? { ...t, content: nuevo } : t), destino.id)
+    return { tabId: destino.id, previo, nueva: false }
+  }
+  const deshacerIA = (r: ResultadoAplicar) => {
+    const tabs = leerTabs()
+    if (r.nueva) {
+      const resto = tabs.filter(t => t.id !== r.tabId)
+      const base = resto.length > 0 ? resto : [{ id: uidTab(), name: 'General', content: '' }]
+      escribirTabs(base, base[0].id)
+    } else {
+      escribirTabs(tabs.map(t => t.id === r.tabId ? { ...t, content: r.previo } : t), r.tabId)
+    }
+  }
+
   // DONE secuencial: solo la fase que coincide con el status REAL del lead
   // (currentIdx) se puede completar — ni una futura (bloqueada, hay que
   // llegar en orden) ni saltarla desde una pasada (ya esta hecha).
@@ -299,6 +350,13 @@ function PhasePanel({
       <div className="flex items-center justify-between px-8 py-4 border-b border-white/[0.05] shrink-0">
         <h2 className="text-xl font-bold text-white">{phase.desc}</h2>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setIaAbierta(true); setIaOculta(false) }}
+            title="Asistente de IA con el contexto completo del lead"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-orange-500/40 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 transition-colors"
+          >
+            <Sparkles size={12} /> IA
+          </button>
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading || !canEdit}
@@ -431,7 +489,27 @@ function PhasePanel({
         )}
 
         {/* Text editor */}
-        <TabbedNotes value={content} onChange={setContent} />
+        <TabbedNotes
+          key={notasKey}
+          value={content}
+          onChange={setContent}
+          initialActiveId={notasActivaId}
+          onActiveChange={t => { tabActivaRef.current = t; setTabActiva(prev => (prev && prev.id === t.id && prev.name === t.name && prev.content === t.content) ? prev : t) }}
+        />
+
+        <LeadAiPanel
+          abierto={iaAbierta}
+          oculto={iaOculta}
+          onOcultar={() => setIaOculta(true)}
+          onMostrar={() => setIaOculta(false)}
+          onCerrar={() => { setIaAbierta(false); setIaOculta(false) }}
+          leadId={leadId}
+          fase={{ key: phase.key, label: phase.label }}
+          tab={tabActiva}
+          canEdit={canEdit}
+          aplicar={aplicarIA}
+          deshacer={deshacerIA}
+        />
 
         <input
             ref={fileRef}
