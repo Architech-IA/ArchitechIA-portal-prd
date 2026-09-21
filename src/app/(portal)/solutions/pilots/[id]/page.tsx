@@ -1939,6 +1939,10 @@ export default function SolucionDetailPage() {
             className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-[11px] font-normal text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
             <PenLine size={12} /> Editar información
           </button>
+          <a href={`/oficina?view=proyectos&p=${id}`}
+            className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-indigo-500/30 text-[11px] text-indigo-300 hover:text-indigo-200 hover:bg-indigo-500/10 transition-colors">
+            <MessageSquare size={12} /> Sesiones con IA del proyecto
+          </a>
         </div>
 
         <div className="rounded-2xl p-4" style={glassCard}>

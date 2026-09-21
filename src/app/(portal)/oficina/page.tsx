@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid, Package } from 'lucide-react'
+import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid, Package, FolderKanban } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import CouncilView from './CouncilView'
+import ProyectosView from './proyectos/ProyectosView'
 // Migrado desde /backlog (antes item propio del sidebar principal) a
 // subpage de Oficina — se reusa el componente real tal cual, sin duplicar
 // logica ni perder ninguna funcion.
@@ -96,7 +97,7 @@ function OficinaPageInner() {
   const [councilMode, setCouncilMode] = useState<'proposals' | 'chat' | 'document'>('chat')
 
   // Config / Agentes view
-  const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions'>('rooms')
+  const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos'>(() => (searchParams.get('view') === 'proyectos' ? 'proyectos' : 'rooms'))
   const [councilBadge, setCouncilBadge] = useState<{ debating: number; escalated: number; total: number }>({ debating: 0, escalated: 0, total: 0 })
   const [agents, setAgents]     = useState<Agent[]>([])
   const [selAgent, setSelAgent] = useState<Agent | null>(null)
@@ -309,6 +310,13 @@ function OficinaPageInner() {
             style={sideView === 'solutions' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
             <Package size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Solutions</span>
+          </button>}
+          {configOpen && <button
+            onClick={() => setSideView('proyectos')}
+            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
+            style={sideView === 'proyectos' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            <FolderKanban size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
+            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Proyectos</span>
           </button>}
         </div>
       </div>
@@ -736,6 +744,12 @@ function OficinaPageInner() {
           */
           <div className="flex-1 min-h-0 overflow-hidden">
             <BacklogPage />
+          </div>
+
+        ) : sideView === 'proyectos' ? (
+          /* ── PROYECTOS VIEW ── sesiones persistentes por proyecto (= Solución) */
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ProyectosView initialProyectoId={searchParams.get('p')} />
           </div>
 
         ) : sideView === 'solutions' ? (
