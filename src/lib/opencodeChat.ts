@@ -10,8 +10,20 @@
 const OPENCODE_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
 const MODEL = 'qwen3.7-max'
 
-type Opts = { maxTokens?: number; timeoutMs?: number }
-type Turno = { role: 'user' | 'assistant'; content: string }
+type Opts = { maxTokens?: number; timeoutMs?: number; tools?: unknown[] }
+
+export interface ToolCall { id: string; type?: string; function: { name: string; arguments: string } }
+
+// Mensaje de la conversacion. Ademas de user/assistant admite los turnos de herramientas:
+// un assistant con tool_calls y la respuesta de cada herramienta (role 'tool').
+export type MensajeChat = {
+  role: 'user' | 'assistant' | 'tool'
+  content: string | null
+  tool_calls?: ToolCall[]
+  tool_call_id?: string
+  [k: string]: unknown
+}
+type Turno = MensajeChat
 
 // El proveedor del modelo aplica un filtro de contenido a la SALIDA y a veces da falsos
 // positivos: responde 400 con "data_inspection_failed ... Output data may contain
@@ -35,7 +47,17 @@ function leerUso(u: unknown): UsoModelo | null {
   }
 }
 
-async function pedirAlModeloDetalle(system: string, mensajes: Turno[], sessionId: string, opts: Opts): Promise<{ content: string; usage: UsoModelo | null }> {
+// Respuesta completa de una llamada: texto, uso, motivo de fin y el mensaje crudo (con tool_calls si los hay).
+// finish === 'length' significa que el modelo se quedó sin presupuesto de tokens ANTES de terminar
+// (puede llegar vacío si todo se fue en razonamiento, o cortado a mitad de frase).
+export interface RespuestaModelo {
+  content: string
+  usage: UsoModelo | null
+  finish: string | null
+  message: MensajeChat
+}
+
+async function pedirAlModeloDetalle(system: string, mensajes: Turno[], sessionId: string, opts: Opts): Promise<RespuestaModelo> {
   const MAX_INTENTOS = 2
   for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
     const res = await fetch(OPENCODE_URL, {
@@ -49,6 +71,7 @@ async function pedirAlModeloDetalle(system: string, mensajes: Turno[], sessionId
         model: MODEL,
         messages: [{ role: 'system', content: system }, ...mensajes],
         max_tokens: opts.maxTokens ?? 4096,
+        ...(opts.tools && opts.tools.length > 0 ? { tools: opts.tools } : {}),
       }),
       // nginx corta a los 180s (proxy_read_timeout), quedar por debajo.
       signal: AbortSignal.timeout(opts.timeoutMs ?? 150_000),
@@ -63,24 +86,36 @@ async function pedirAlModeloDetalle(system: string, mensajes: Turno[], sessionId
       throw new Error(`El modelo respondió ${res.status}: ${detail.slice(0, 200)}`)
     }
     const data = await res.json()
-    const content = data?.choices?.[0]?.message?.content
-    if (typeof content !== 'string' || !content.trim()) throw new Error('El modelo devolvió una respuesta vacía.')
-    return { content, usage: leerUso(data?.usage) }
+    const choice = data?.choices?.[0]
+    const message = (choice?.message ?? { role: 'assistant', content: '' }) as MensajeChat
+    const content = typeof message.content === 'string' ? message.content : ''
+    const finish: string | null = choice?.finish_reason ?? null
+    return { content, usage: leerUso(data?.usage), finish, message }
   }
   throw new Error('No se pudo obtener respuesta del modelo.')
 }
 
 async function pedirAlModelo(system: string, mensajes: Turno[], sessionId: string, opts: Opts): Promise<string> {
-  return (await pedirAlModeloDetalle(system, mensajes, sessionId, opts)).content
+  const r = await pedirAlModeloDetalle(system, mensajes, sessionId, opts)
+  if (!r.content.trim()) throw new Error('El modelo devolvió una respuesta vacía.')
+  return r.content
 }
 
 export async function callOpenCode(system: string, user: string, sessionId: string, opts: Opts = {}): Promise<string> {
   return pedirAlModelo(system, [{ role: 'user', content: user }], sessionId, opts)
 }
 
+// Llamada completa (con herramientas opcionales): devuelve texto, uso, finish_reason y el mensaje crudo.
+// No lanza error si la respuesta llega vacía: eso lo decide quien llama (puede ser tool_calls o corte por length).
+export async function callOpenCodeChat(system: string, mensajes: Turno[], sessionId: string, opts: Opts = {}): Promise<RespuestaModelo> {
+  return pedirAlModeloDetalle(system, mensajes, sessionId, opts)
+}
+
 // Igual que callOpenCodeMessages pero devuelve tambien el uso de tokens y de caché (para medir costo y velocidad).
 export async function callOpenCodeMessagesConUso(system: string, mensajes: Turno[], sessionId: string, opts: Opts = {}): Promise<{ content: string; usage: UsoModelo | null }> {
-  return pedirAlModeloDetalle(system, mensajes, sessionId, opts)
+  const r = await pedirAlModeloDetalle(system, mensajes, sessionId, opts)
+  if (!r.content.trim()) throw new Error('El modelo devolvió una respuesta vacía.')
+  return { content: r.content, usage: r.usage }
 }
 
 // Igual que callOpenCode pero con historial de conversacion (turnos user/assistant),

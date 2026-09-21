@@ -31,12 +31,14 @@ export interface SesionFull {
 // Uso real de tokens que reporta el proveedor en cada respuesta
 export interface UsoTokens { promptTokens: number; cachedTokens: number; completionTokens: number; reasoningTokens: number }
 
+export interface LlamadaHerramienta { nombre: string; args: string; chars: number }
+
 export interface FuenteMeta { clave: string; etiqueta: string; estado: string; chars: number; actualizado: string | null; nota: string | null }
 
 export interface Mensaje {
   id: string; sesionId: string; orden: number; rol: 'user' | 'assistant'; contenido: string
   estado: 'GENERANDO' | 'LISTO' | 'ERROR'; error: string | null
-  metadata: { contexto?: FuenteMeta[]; totalChars?: number; ms?: number; adjuntos?: { id: string; nombre: string }[]; origen?: string; uso?: UsoTokens | null } | null
+  metadata: { contexto?: FuenteMeta[]; totalChars?: number; ms?: number; adjuntos?: { id: string; nombre: string }[]; origen?: string; uso?: UsoTokens | null; cortada?: boolean; herramientas?: LlamadaHerramienta[]; progreso?: LlamadaHerramienta[] } | null
   autorId: string | null; autorNombre: string | null; createdAt: string; updatedAt: string
 }
 

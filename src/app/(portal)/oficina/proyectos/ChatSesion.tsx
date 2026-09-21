@@ -224,7 +224,8 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                 <div className="rounded-xl px-3 py-2" style={m.rol === 'assistant'
                   ? { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }
                   : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {m.estado === 'GENERANDO' && <div className="flex items-center gap-2 text-[11px] text-indigo-300"><Loader2 size={12} className="animate-spin" /> Pensando con el contexto del proyecto…</div>}
+                  {m.estado === 'GENERANDO' && <div className="flex items-center gap-2 text-[11px] text-indigo-300"><Loader2 size={12} className="animate-spin" /> {(m.metadata?.progreso?.length ?? 0) > 0 ? `Consultando el proyecto (${m.metadata!.progreso!.length} lectura${m.metadata!.progreso!.length === 1 ? '' : 's'}: ${m.metadata!.progreso![m.metadata!.progreso!.length - 1].nombre.replace(/_/g, ' ')})…` : 'Pensando con el contexto del proyecto…'}</div>}
+                  {m.estado === 'LISTO' && m.rol === 'assistant' && m.metadata?.cortada && <div className="mb-1.5 text-[10px] text-amber-400 flex items-center gap-1"><AlertTriangle size={10} /> Respuesta cortada por límite de longitud. Pide que continúe o haz una pregunta más concreta.</div>}
                   {m.estado === 'ERROR' && (
                     <div className="text-[11px] text-red-400 flex items-start gap-1.5"><AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
                       <span className="flex-1">{m.error || 'No se pudo generar la respuesta.'}</span>
@@ -275,6 +276,8 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                         <span className="flex-1 truncate">{f.etiqueta}{f.nota ? <span className="text-gray-600"> · {f.nota}</span> : null}</span>
                         <span className="text-gray-600">{f.estado === 'incluida' || f.estado === 'recortada' ? `${f.chars.toLocaleString('es-CO')} car.` : f.estado}</span>
                       </div>))}
+                    {(m.metadata?.herramientas?.length ?? 0) > 0 && (
+                      <div className="pt-1 text-gray-500">Lecturas extra: {m.metadata!.herramientas!.map((h, i) => <span key={i} className="mr-2" title={h.args}>{h.nombre.replace(/_/g, ' ')} ({h.chars.toLocaleString('es-CO')} car.)</span>)}</div>)}
                     <p className="pt-1 text-gray-600">Total {(m.metadata?.totalChars ?? 0).toLocaleString('es-CO')} caracteres · {Math.round((m.metadata?.ms ?? 0) / 1000)} s</p>
                     {m.metadata?.uso && (
                       <p className="text-gray-600">

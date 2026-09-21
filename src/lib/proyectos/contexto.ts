@@ -49,7 +49,7 @@ function aTexto(v: unknown, depth = 0): string {
   }
   return ''
 }
-function jsonATexto(raw: string | null | undefined): string {
+export function jsonATexto(raw: string | null | undefined): string {
   if (!raw) return ''
   try { return aTexto(JSON.parse(raw)) } catch { return htmlATextoPlano(raw) }
 }
@@ -209,7 +209,7 @@ export async function construirContexto(
     const f: FuenteCtx = { ...base, nota: r.nota, actualizado: r.actualizado ? r.actualizado.toISOString() : null }
     if (!texto) { fuentes.push({ ...f, estado: 'vacia' }); continue }
     let t = texto
-    if (t.length > def.max) { t = corta(t, def.max); f.estado = 'recortada'; f.nota = [f.nota, `tope de ${def.max} caracteres`].filter(Boolean).join(' · ') }
+    if (t.length > def.max) { t = corta(t, def.max) + '\n[RECORTADO por tope: hay más contenido; léelo completo con las herramientas]'; f.estado = 'recortada'; f.nota = [f.nota, `tope de ${def.max} caracteres`].filter(Boolean).join(' · ') }
     f.chars = t.length
     fuentes.push(f)
     cand.push({ def, texto: t, f })
