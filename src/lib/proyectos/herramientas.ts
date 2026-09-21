@@ -11,7 +11,7 @@ import { sesionVisible } from './auth'
 
 export const MAX_RESULTADO = 6000 // caracteres por llamada; para leer más se pide con «desde»
 
-export const HERRAMIENTAS = [
+export const HERRAMIENTAS: unknown[] = [
   {
     type: 'function',
     function: {
@@ -69,6 +69,37 @@ export const HERRAMIENTAS = [
   },
 ]
 
+HERRAMIENTAS.push(
+  {
+    type: 'function',
+    function: {
+      name: 'buscar_en_documentos',
+      description: 'Busca palabras clave DENTRO del PRD, diseño técnico, plan de ejecución, cronograma, plan de trabajo y memoria, y devuelve fragmentos con su posición para leerlos con leer_documento.',
+      parameters: { type: 'object', properties: { consulta: { type: 'string', description: 'Una o varias palabras clave' } }, required: ['consulta'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'consultar_backlog',
+      description: 'Consulta el backlog y la gestión del proyecto: tareas (con filtros), sprints, riesgos o hitos.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tipo: { type: 'string', enum: ['tareas', 'sprints', 'riesgos', 'hitos'] },
+          estado: { type: 'string', description: 'Solo tareas: BACKLOG, TODO, IN_PROGRESS, DONE, etc.' },
+          texto: { type: 'string', description: 'Solo tareas: texto a buscar en título/código/descripción' },
+          sprint: { type: 'string', description: 'Solo tareas: código del sprint (p. ej. XX-0001-0002)' },
+          pagina: { type: 'number', description: 'Página de 20 resultados; 1 por defecto' },
+        },
+        required: ['tipo'],
+      },
+    },
+  },
+)
+
+const corto = (t: string | null | undefined, n: number) => { const x = htmlATextoPlano(t ?? '').replace(/\s+/g, ' ').trim(); return x.length > n ? x.slice(0, n) + '…' : x }
+
 export interface CtxHerramienta { solucionId: string; sesionId: string; usuarioId: string }
 
 function trozo(texto: string, desde: number): string {
@@ -106,6 +137,60 @@ export async function ejecutarHerramienta(nombre: string, argsJson: string, c: C
         }
         if (!texto.trim()) return 'Ese documento está vacío.'
         return trozo(texto, Number(a.desde))
+      }
+      case 'buscar_en_documentos': {
+        const q = String(a.consulta ?? '').trim().toLowerCase()
+        const palabras = q.split(/\s+/).filter(w => w.length >= 3)
+        if (palabras.length === 0) return 'Error: falta «consulta» (palabras de 3 o más letras).'
+        const sol = await cargarSolucion(c.solucionId)
+        if (!sol) return 'Error: el proyecto ya no existe.'
+        const mem = (await prisma.proyectoMemoria.findUnique({ where: { solucionId: c.solucionId } }))?.contenido ?? ''
+        const docs: [string, string][] = [['prd', jsonATexto(sol.prd)], ['diseno_tecnico', jsonATexto(sol.disenoTecnico)], ['plan_ejecucion', jsonATexto(sol.planEjecucion)],
+          ['cronograma', jsonATexto(sol.cronograma)], ['plan_trabajo', htmlATextoPlano(sol.planTrabajo || '')], ['memoria', mem]]
+        const out: string[] = []
+        for (const [nom, texto] of docs) {
+          const bajo = texto.toLowerCase()
+          const usados: number[] = []
+          for (const w of palabras) {
+            let i = bajo.indexOf(w)
+            while (i >= 0 && usados.length < 4) {
+              if (!usados.some(u => Math.abs(u - i) < 200)) { usados.push(i); out.push(`- [${nom}] pos ${i}: …${texto.slice(Math.max(0, i - 120), i + 200).replace(/\s+/g, ' ')}…`) }
+              i = bajo.indexOf(w, i + w.length)
+            }
+          }
+        }
+        return out.length ? out.join('\n').slice(0, MAX_RESULTADO) : 'Sin coincidencias en los documentos.'
+      }
+      case 'consultar_backlog': {
+        const pag = Math.max(1, Math.floor(Number(a.pagina) || 1))
+        const skip = (pag - 1) * 20
+        switch (String(a.tipo)) {
+          case 'tareas': {
+            const where: Record<string, unknown> = { solucionId: c.solucionId }
+            if (a.estado) where.status = String(a.estado).toUpperCase()
+            if (a.sprint) { const sp = await prisma.sprint.findFirst({ where: { solucionId: c.solucionId, sprintCode: String(a.sprint) }, select: { id: true } }); if (!sp) return 'Sprint no encontrado.'; where.sprintId = sp.id }
+            if (a.texto) { const t = String(a.texto); where.OR = [{ title: { contains: t, mode: 'insensitive' } }, { taskCode: { contains: t, mode: 'insensitive' } }, { description: { contains: t, mode: 'insensitive' } }] }
+            const [total, items] = await Promise.all([
+              prisma.backlogItem.count({ where }),
+              prisma.backlogItem.findMany({ where, orderBy: { updatedAt: 'desc' }, skip, take: 20, select: { taskCode: true, title: true, status: true, priority: true, description: true, resultado: true, assigneeName: true } }),
+            ])
+            if (items.length === 0) return `Sin tareas (total ${total}).`
+            return `Tareas ${skip + 1}–${skip + items.length} de ${total}:\n` + items.map(i => `- [${i.status}/${i.priority}] ${i.taskCode ?? ''} ${i.title}${i.assigneeName ? ` (${i.assigneeName})` : ''}${i.description ? ` — ${corto(i.description, 200)}` : ''}${i.resultado ? ` | Resultado: ${corto(i.resultado, 150)}` : ''}`).join('\n').slice(0, MAX_RESULTADO)
+          }
+          case 'sprints': {
+            const sp = await prisma.sprint.findMany({ where: { solucionId: c.solucionId }, orderBy: { startDate: 'desc' }, skip, take: 20, select: { sprintCode: true, name: true, status: true, goal: true, startDate: true, endDate: true } })
+            return sp.length ? sp.map(x => `- ${x.sprintCode} «${x.name}» [${x.status}] ${x.startDate ? x.startDate.toISOString().slice(0, 10) : ''}→${x.endDate ? x.endDate.toISOString().slice(0, 10) : ''}${x.goal ? ` — ${corto(x.goal, 200)}` : ''}`).join('\n').slice(0, MAX_RESULTADO) : 'Sin sprints.'
+          }
+          case 'riesgos': {
+            const r = await prisma.riesgo.findMany({ where: { solucionId: c.solucionId }, orderBy: { createdAt: 'desc' }, skip, take: 20 })
+            return r.length ? r.map(x => `- [${x.severidad}/${x.estado}] ${x.titulo}${x.descripcion ? `: ${corto(x.descripcion, 250)}` : ''}${x.mitigacion ? ` (mitigación: ${corto(x.mitigacion, 200)})` : ''}`).join('\n').slice(0, MAX_RESULTADO) : 'Sin riesgos.'
+          }
+          case 'hitos': {
+            const h = await prisma.hito.findMany({ where: { solucionId: c.solucionId }, orderBy: { createdAt: 'asc' }, skip, take: 20 })
+            return h.length ? h.map(x => `- [${x.estado}] ${x.titulo}${x.fechaComprometida ? ` (comprometido ${x.fechaComprometida.toISOString().slice(0, 10)})` : ''}`).join('\n').slice(0, MAX_RESULTADO) : 'Sin hitos.'
+          }
+          default: return 'Error: tipo debe ser tareas, sprints, riesgos o hitos.'
+        }
       }
       case 'listar_adjuntos_y_sesiones': {
         const [adj, ses] = await Promise.all([
