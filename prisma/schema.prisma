@@ -1042,3 +1042,116 @@ model MeetingAction {
 
   @@index([meetingId])
 }
+
+// ── Oficina Virtual > Proyectos: sesiones de chat persistentes por Solucion ──
+// Tablas creadas con SQL directo (nunca prisma db push). Sin @relation a Solucion a proposito:
+// el FK con ON DELETE CASCADE vive en la base; asi no se toca el modelo Solucion.
+// Las columnas tsv (busqueda de texto completo) existen solo en la base.
+
+model ProyectoSesion {
+  id                String   @id @default(cuid())
+  solucionId        String
+  titulo            String   @default("Nueva sesión")
+  tipo              String   @default("LIBRE") // KICKOFF | PLANIFICACION | REVISION | LIBRE | BITACORA
+  agenteSlug        String   @default("orion")
+  estado            String   @default("ACTIVA") // ACTIVA | CERRADA | ARCHIVADA
+  privada           Boolean  @default(false)
+  creadaPorId       String
+  creadaPorNombre   String   @default("")
+  resumen           String   @default("")
+  resumenHastaOrden Int      @default(0)
+  fuentesExcluidas  Json     @default("[]")
+  cierreEstado      String?  // PROCESANDO | LISTO | ERROR
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  @@index([solucionId, updatedAt])
+}
+
+model ProyectoMensaje {
+  id         String   @id @default(cuid())
+  sesionId   String
+  orden      Int
+  rol        String   // user | assistant
+  contenido  String   @default("")
+  estado     String   @default("LISTO") // GENERANDO | LISTO | ERROR
+  error      String?
+  metadata   Json     @default("{}")
+  autorId    String?
+  autorNombre String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@unique([sesionId, orden])
+}
+
+model ProyectoMemoria {
+  solucionId     String   @id
+  contenido      String   @default("")
+  version        Int      @default(0)
+  actualizadoPor String?
+  updatedAt      DateTime @default(now()) @updatedAt
+}
+
+model ProyectoMemoriaVersion {
+  id         String   @id @default(cuid())
+  solucionId String
+  version    Int
+  contenido  String
+  origen     String   @default("MANUAL") // MANUAL | IA
+  autor      String?
+  nota       String?
+  createdAt  DateTime @default(now())
+
+  @@unique([solucionId, version])
+}
+
+model ProyectoMemoriaPropuesta {
+  id                 String    @id @default(cuid())
+  solucionId         String
+  sesionId           String?
+  contenidoPropuesto String
+  resumenCambios     String    @default("")
+  baseVersion        Int       @default(0)
+  estado             String    @default("PENDIENTE") // PENDIENTE | APROBADA | RECHAZADA
+  createdAt          DateTime  @default(now())
+  resueltaEn         DateTime?
+  resueltaPor        String?
+
+  @@index([solucionId, estado])
+}
+
+model ProyectoAdjunto {
+  id              String   @id @default(cuid())
+  solucionId      String
+  sesionId        String?
+  nombre          String
+  mime            String?
+  size            Int      @default(0)
+  texto           String   @default("")
+  textoLen        Int      @default(0)
+  legible         Boolean  @default(true)
+  creadoPorId     String
+  creadoPorNombre String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([solucionId, createdAt])
+}
+
+model ProyectoSuscripcion {
+  id              String    @id @default(cuid())
+  solucionId      String
+  tipo            String    // BACKLOG_CAMBIOS | DOCUMENTOS_CAMBIOS | RESUMEN_PERIODICO
+  nombre          String    @default("")
+  activa          Boolean   @default(true)
+  config          Json      @default("{}")
+  intervaloMin    Int       @default(30)
+  sesionId        String?
+  ultimaEjecucion DateTime?
+  ultimoResultado String?
+  creadaPorId     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([solucionId, activa])
+}

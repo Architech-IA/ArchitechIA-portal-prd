@@ -96,3 +96,20 @@ export async function textoDeArchivo(a: { clave: string; nombre: string; base64:
     return null
   }
 }
+
+// Igual que textoDeArchivo pero directo desde un Buffer (subidas al proyecto), sin caché.
+export async function textoDeBuffer(buffer: Buffer, nombre: string): Promise<string | null> {
+  const ext = path.extname(nombre).toLowerCase()
+  if (!EXT_SOPORTADAS.has(ext) || buffer.length > MAX_BYTES) return null
+  try {
+    const texto = await Promise.race([
+      extraer(buffer, ext),
+      new Promise<string>((_, rej) => setTimeout(() => rej(new Error('tiempo agotado leyendo el archivo')), TIEMPO_MAX_MS)),
+    ])
+    const limpio = texto.replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+    return limpio || null
+  } catch (e) {
+    console.error('[extraerTexto]', nombre, e instanceof Error ? e.message : e)
+    return null
+  }
+}
