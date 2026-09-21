@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getDateStrUTC5 } from '@/lib/timezone'
 import { htmlATextoPlano } from '@/lib/textoAHtml'
+import { textoDeArchivo, textoEnCache, esLegible } from '@/lib/extraerTexto'
 
 // Contexto completo de un lead para el asistente de IA del Hub de Lead: datos
 // comerciales, notas de TODAS las fases (la activa con mas detalle), archivos,
@@ -36,7 +37,7 @@ function corta(t: string, max: number): string {
   return t.length > max ? t.slice(0, max) + '…' : t
 }
 
-export async function contextoLead(leadId: string, faseActiva: string): Promise<{ texto: string; empresa: string } | null> {
+export async function contextoLead(leadId: string, faseActiva: string): Promise<{ texto: string; empresa: string; archivos: { leidos: number; total: number } } | null> {
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
     include: {
@@ -51,7 +52,7 @@ export async function contextoLead(leadId: string, faseActiva: string): Promise<
 
   const fases = await prisma.leadHub.findMany({
     where: { leadId }, orderBy: { createdAt: 'asc' },
-    select: { phase: true, content: true, files: { select: { name: true } } },
+    select: { phase: true, content: true, files: { select: { id: true, name: true, size: true } } },
   })
   const porFase = new Map(fases.map(f => [f.phase, f]))
 
@@ -79,7 +80,61 @@ export async function contextoLead(leadId: string, faseActiva: string): Promise<
   if (notas) partes.push(`## Notas de las fases\n${notas}`)
 
   const archivos = fases.flatMap(f => f.files.map(x => `${FASES_LEAD.find(p => p.key === f.phase)?.label ?? f.phase}: ${x.name}`))
-  if (archivos.length) partes.push(`## Archivos adjuntos (solo nombres)\n${corta(archivos.join('\n'), 800)}`)
+  if (archivos.length) partes.push(`## Archivos adjuntos (lista)\n${corta(archivos.join('\n'), 800)}`)
+
+  // Contenido de los adjuntos: archivos de las fases + documentos de las propuestas del lead.
+  // Primero los de la fase que se está viendo; presupuesto total acotado para no inflar el prompt.
+  type Cand = { clave: string; etiqueta: string; nombre: string; prioridad: number; cargar: () => Promise<string | null> }
+  const cand: Cand[] = []
+  for (const f of fases) {
+    const idx = FASES_LEAD.findIndex(p => p.key === f.phase)
+    for (const x of f.files) {
+      cand.push({
+        clave: `hub:${x.id}:${x.size}`, nombre: x.name,
+        etiqueta: `${FASES_LEAD.find(p => p.key === f.phase)?.label ?? f.phase} · ${x.name}`,
+        prioridad: f.phase === faseActiva ? 0 : 1 + (idx < 0 ? 9 : idx),
+        cargar: async () => (await prisma.leadHubFile.findUnique({ where: { id: x.id }, select: { base64: true } }))?.base64 ?? null,
+      })
+    }
+  }
+  const docsProp = await prisma.proposalDocument.findMany({
+    where: { archived: false, replacedBy: { none: {} }, proposal: { leadId } },
+    select: { id: true, name: true, version: true },
+  })
+  for (const d of docsProp) {
+    cand.push({
+      clave: `prop:${d.id}:${d.version}`, nombre: d.name, etiqueta: `Propuesta · ${d.name}`, prioridad: 2,
+      cargar: async () => {
+        // Los documentos de propuestas guardan el archivo como data URL en `url` (base64 suele venir vacío)
+        const r = await prisma.proposalDocument.findUnique({ where: { id: d.id }, select: { base64: true, url: true } })
+        return r?.base64 || (r?.url?.startsWith('data:') ? r.url : null)
+      },
+    })
+  }
+  cand.sort((a, b) => a.prioridad - b.prioridad)
+
+  const PRESUPUESTO = 9000, POR_ARCHIVO = 3500, MAX_ARCHIVOS = 8
+  let usado = 0, leidos = 0
+  const extractos: string[] = []
+  const noLeidos: string[] = []
+  for (const c of cand) {
+    if (!esLegible(c.nombre)) { noLeidos.push(c.nombre); continue }
+    if (leidos >= MAX_ARCHIVOS || usado >= PRESUPUESTO) { noLeidos.push(c.nombre); continue }
+    // Primero la caché: evita traer de la base de datos un archivo de varios MB en cada mensaje
+    let texto = textoEnCache(c.clave)
+    if (texto === undefined) {
+      const b64 = await c.cargar()
+      texto = b64 ? await textoDeArchivo({ clave: c.clave, nombre: c.nombre, base64: b64 }) : null
+    }
+    if (!texto) { noLeidos.push(c.nombre); continue }
+    const trozo = corta(texto.replace(/\n+/g, ' '), Math.min(POR_ARCHIVO, PRESUPUESTO - usado))
+    usado += trozo.length; leidos++
+    extractos.push(`- [${c.etiqueta}] ${trozo}`)
+  }
+  if (extractos.length) {
+    partes.push(`## Contenido de archivos adjuntos (extractos: son fragmentos, no el documento completo)\n${extractos.join('\n')}`)
+  }
+  if (noLeidos.length) partes.push(`## Adjuntos sin leer (formato no soportado, muy grandes o fuera de presupuesto)\n${corta(noLeidos.join(', '), 600)}`)
 
   if (lead.activities.length) {
     partes.push(`## Interacciones con el cliente (recientes primero)\n${lead.activities
@@ -120,5 +175,5 @@ export async function contextoLead(leadId: string, faseActiva: string): Promise<
     }).join('\n')}`)
   }
 
-  return { texto: partes.join('\n\n').slice(0, 26000), empresa: lead.companyName }
+  return { texto: partes.join('\n\n').slice(0, 34000), empresa: lead.companyName, archivos: { leidos, total: cand.length } }
 }

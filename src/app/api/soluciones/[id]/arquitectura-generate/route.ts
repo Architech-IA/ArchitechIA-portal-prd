@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { callOpenCode } from '@/lib/opencodeChat'
+import { isAuthed } from '@/lib/apiAuth'
 
 // "Generar con IA" del tab Arquitectura de la solucion. Junta TODO lo que el
 // portal sabe del proyecto (solucion, PRD, diseno tecnico, plan de ejecucion,
@@ -86,6 +87,7 @@ function seccion(titulo: string, cuerpo: string, fuentes: string[], max: number)
 }
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthed(_req))) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   const { id } = await params
   const sol = await prisma.solucion.findUnique({
     where: { id },

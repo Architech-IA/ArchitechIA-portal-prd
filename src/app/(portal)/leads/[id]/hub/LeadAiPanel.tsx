@@ -18,7 +18,7 @@ export interface ResultadoAplicar { tabId: string; previo: string; nueva: boolea
 
 type Modo = 'generar' | 'mejorar' | 'asesor'
 type Msg = { role: 'user' | 'assistant'; content: string; opciones?: string[]; insertable?: boolean }
-type Chat = { modo: Modo; titulo: string; mensajes: Msg[]; cargando: boolean; error: string | null; listo: boolean; previo?: ResultadoAplicar }
+type Chat = { modo: Modo; titulo: string; mensajes: Msg[]; cargando: boolean; error: string | null; listo: boolean; previo?: ResultadoAplicar; ctx?: { archivosLeidos: number; archivosTotal: number } }
 
 const SUGERENCIAS_MEJORA = [
   'No se entiende bien: hazlo más claro y directo',
@@ -73,6 +73,8 @@ export default function LeadAiPanel({
       })
       const d = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(d.error || 'No se pudo continuar la conversación.')
+
+      if (d.contexto) setChat(prev => prev && prev.modo === modo ? { ...prev, ctx: d.contexto } : prev)
 
       if (d.tipo === 'pregunta') {
         setChat(prev => prev && prev.modo === modo
@@ -173,7 +175,7 @@ export default function LeadAiPanel({
         {!chat ? (
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <div className="w-full space-y-2">
-              <p className="text-xs text-[#6b7280] mb-2">Elige cómo quieres que la IA te ayude. Usa todo el contexto del lead: notas de las fases, interacciones, propuestas y reuniones.</p>
+              <p className="text-xs text-[#6b7280] mb-2">Elige cómo quieres que la IA te ayude. Usa todo el contexto del lead: notas de las fases, archivos adjuntos (PDF, Word, PowerPoint, texto), interacciones, propuestas y reuniones.</p>
               {OPCIONES.map(op => {
                 const bloqueada = !!op.requiereEditar && !canEdit
                 return (
@@ -198,6 +200,9 @@ export default function LeadAiPanel({
                 <button type="button" onClick={() => setChat(null)} className="text-[11px] text-[#6b7280] hover:text-cyan-600 flex items-center gap-0.5 mb-1 transition-colors">
                   <ChevronLeft size={12} /> Volver a opciones
                 </button>
+                {chat.ctx && chat.ctx.archivosTotal > 0 && (
+                  <p className="text-[10px] text-[#9ca3af]">Contexto: {chat.ctx.archivosLeidos} de {chat.ctx.archivosTotal} archivo{chat.ctx.archivosTotal === 1 ? '' : 's'} adjunto{chat.ctx.archivosTotal === 1 ? '' : 's'} leído{chat.ctx.archivosLeidos === 1 ? '' : 's'}{chat.ctx.archivosLeidos < chat.ctx.archivosTotal ? ' (el resto no es legible o excede el límite)' : ''}</p>
+                )}
 
                 {chat.mensajes.length === 0 && !chat.cargando && !chat.listo && chat.modo === 'mejorar' && (
                   <div className="space-y-2">

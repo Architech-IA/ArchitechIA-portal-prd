@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { callOpenCode } from '@/lib/opencodeChat';
+import { isAuthed } from '@/lib/apiAuth';
 import { getDateFullUTC5, getTimeStrUTC5, getDateStrUTC5 } from '@/lib/timezone';
 
 // Borrador de acta con IA a partir de lo que hay en el hub (agenda, contenido,
@@ -45,6 +46,7 @@ Reglas:
 - Responde solo con el acta, sin comentarios previos ni posteriores.`;
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthed(request))) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const meeting = await prisma.meeting.findUnique({
