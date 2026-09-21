@@ -19,7 +19,23 @@ type Turno = { role: 'user' | 'assistant'; content: string }
 // una vez (la respuesta cambia entre intentos) y, si vuelve a fallar, se explica con claridad.
 const esFiltroDeContenido = (detalle: string) => /data_inspection_failed|inappropriate content/i.test(detalle)
 
-async function pedirAlModelo(system: string, mensajes: Turno[], sessionId: string, opts: Opts): Promise<string> {
+// Uso real que reporta el proveedor. cachedTokens = parte del prompt que se reutilizó de la caché
+// de prefijo (más barata y rápida); reasoningTokens = tokens que el modelo gastó pensando antes de responder.
+export interface UsoModelo { promptTokens: number; cachedTokens: number; completionTokens: number; reasoningTokens: number }
+
+function leerUso(u: unknown): UsoModelo | null {
+  if (!u || typeof u !== 'object') return null
+  const x = u as { prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number }; completion_tokens_details?: { reasoning_tokens?: number } }
+  if (typeof x.prompt_tokens !== 'number') return null
+  return {
+    promptTokens: x.prompt_tokens,
+    cachedTokens: x.prompt_tokens_details?.cached_tokens ?? 0,
+    completionTokens: x.completion_tokens ?? 0,
+    reasoningTokens: x.completion_tokens_details?.reasoning_tokens ?? 0,
+  }
+}
+
+async function pedirAlModeloDetalle(system: string, mensajes: Turno[], sessionId: string, opts: Opts): Promise<{ content: string; usage: UsoModelo | null }> {
   const MAX_INTENTOS = 2
   for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
     const res = await fetch(OPENCODE_URL, {
@@ -49,13 +65,22 @@ async function pedirAlModelo(system: string, mensajes: Turno[], sessionId: strin
     const data = await res.json()
     const content = data?.choices?.[0]?.message?.content
     if (typeof content !== 'string' || !content.trim()) throw new Error('El modelo devolvió una respuesta vacía.')
-    return content
+    return { content, usage: leerUso(data?.usage) }
   }
   throw new Error('No se pudo obtener respuesta del modelo.')
 }
 
+async function pedirAlModelo(system: string, mensajes: Turno[], sessionId: string, opts: Opts): Promise<string> {
+  return (await pedirAlModeloDetalle(system, mensajes, sessionId, opts)).content
+}
+
 export async function callOpenCode(system: string, user: string, sessionId: string, opts: Opts = {}): Promise<string> {
   return pedirAlModelo(system, [{ role: 'user', content: user }], sessionId, opts)
+}
+
+// Igual que callOpenCodeMessages pero devuelve tambien el uso de tokens y de caché (para medir costo y velocidad).
+export async function callOpenCodeMessagesConUso(system: string, mensajes: Turno[], sessionId: string, opts: Opts = {}): Promise<{ content: string; usage: UsoModelo | null }> {
+  return pedirAlModeloDetalle(system, mensajes, sessionId, opts)
 }
 
 // Igual que callOpenCode pero con historial de conversacion (turnos user/assistant),

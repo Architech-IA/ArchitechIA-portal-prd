@@ -28,12 +28,15 @@ export interface SesionFull {
   cierreEstado: string | null; createdAt: string; updatedAt: string
 }
 
+// Uso real de tokens que reporta el proveedor en cada respuesta
+export interface UsoTokens { promptTokens: number; cachedTokens: number; completionTokens: number; reasoningTokens: number }
+
 export interface FuenteMeta { clave: string; etiqueta: string; estado: string; chars: number; actualizado: string | null; nota: string | null }
 
 export interface Mensaje {
   id: string; sesionId: string; orden: number; rol: 'user' | 'assistant'; contenido: string
   estado: 'GENERANDO' | 'LISTO' | 'ERROR'; error: string | null
-  metadata: { contexto?: FuenteMeta[]; totalChars?: number; ms?: number; adjuntos?: { id: string; nombre: string }[]; origen?: string } | null
+  metadata: { contexto?: FuenteMeta[]; totalChars?: number; ms?: number; adjuntos?: { id: string; nombre: string }[]; origen?: string; uso?: UsoTokens | null } | null
   autorId: string | null; autorNombre: string | null; createdAt: string; updatedAt: string
 }
 
@@ -83,5 +86,7 @@ export function hace(iso: string | null | undefined): string {
 
 export const fechaHora = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' })
+
+export const pctCache = (u: UsoTokens) => (u.promptTokens > 0 ? Math.round((u.cachedTokens / u.promptTokens) * 100) : 0)
 
 export const kb = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`)

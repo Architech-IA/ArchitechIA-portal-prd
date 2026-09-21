@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { callOpenCode, callOpenCodeMessages } from '@/lib/opencodeChat'
+import { callOpenCode, callOpenCodeMessagesConUso } from '@/lib/opencodeChat'
 import { getDateStrUTC5 } from '@/lib/timezone'
 import { construirContexto } from './contexto'
 import type { FuenteCtx } from './tipos'
@@ -125,13 +125,13 @@ export async function generarRespuesta(sesionId: string, mensajeAsistenteId: str
     const system = await sistemaPara(s.tipo, ctx.sol.nombre, ctx.texto)
     const historial = enVentana.map(m => ({ role: m.rol as 'user' | 'assistant', content: m.contenido }))
 
-    const salida = await callOpenCodeMessages(system, historial, `proyecto-${sesionId}`, { maxTokens: 3500, timeoutMs: 150_000 })
+    const { content: salida, usage } = await callOpenCodeMessagesConUso(system, historial, `proyecto-${sesionId}`, { maxTokens: 3500, timeoutMs: 150_000 })
     const contenido = quitarPensamiento(salida)
     if (!contenido) throw new Error('La IA devolvió una respuesta vacía.')
 
     const metadata = {
       contexto: ctx.fuentes.map(f => ({ clave: f.clave, etiqueta: f.etiqueta, estado: f.estado, chars: f.chars, actualizado: f.actualizado ?? null, nota: f.nota ?? null })),
-      totalChars: ctx.totalChars, modelo: MODELO, ms: Date.now() - t0,
+      totalChars: ctx.totalChars, modelo: MODELO, ms: Date.now() - t0, uso: usage ? { ...usage } : null,
       ventana: { desdeOrden: ini, mensajes: enVentana.length, conResumen: !!s.resumen },
     }
     await prisma.proyectoMensaje.update({ where: { id: mensajeAsistenteId }, data: { contenido, estado: 'LISTO', error: null, metadata } })

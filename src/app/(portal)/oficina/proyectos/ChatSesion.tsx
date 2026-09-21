@@ -6,7 +6,7 @@ import {
   AlertTriangle, Archive, Trash2, X, Brain, User, Sparkles,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
-import { api, post, patch, del, fechaHora, kb, type Mensaje, type SesionFull, type SesionRes, type Adjunto } from './api'
+import { api, post, patch, del, fechaHora, kb, pctCache, type Mensaje, type SesionFull, type SesionRes, type Adjunto } from './api'
 import { Md, opcionesNumeradas } from './Md'
 import PlanTareas from './PlanTareas'
 
@@ -252,6 +252,10 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                 {/* Pie del mensaje */}
                 <div className={`mt-1 flex items-center gap-2 text-[10px] text-gray-600 ${m.rol === 'user' ? 'justify-end' : ''}`}>
                   <span>{fechaHora(m.createdAt)}</span>
+                  {m.rol === 'assistant' && m.estado === 'LISTO' && m.metadata?.uso && (
+                    <span title={`Entrada: ${m.metadata.uso.promptTokens.toLocaleString('es-CO')} tokens (${m.metadata.uso.cachedTokens.toLocaleString('es-CO')} reutilizados de la caché) · Salida: ${m.metadata.uso.completionTokens.toLocaleString('es-CO')} (${m.metadata.uso.reasoningTokens.toLocaleString('es-CO')} razonando)`}
+                      className={pctCache(m.metadata.uso) >= 50 ? 'text-emerald-500/80' : ''}>caché {pctCache(m.metadata.uso)} %</span>
+                  )}
                   {m.rol === 'assistant' && m.estado === 'LISTO' && (
                     <>
                       {fuentes.length > 0 && (
@@ -272,6 +276,10 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                         <span className="text-gray-600">{f.estado === 'incluida' || f.estado === 'recortada' ? `${f.chars.toLocaleString('es-CO')} car.` : f.estado}</span>
                       </div>))}
                     <p className="pt-1 text-gray-600">Total {(m.metadata?.totalChars ?? 0).toLocaleString('es-CO')} caracteres · {Math.round((m.metadata?.ms ?? 0) / 1000)} s</p>
+                    {m.metadata?.uso && (
+                      <p className="text-gray-600">
+                        Tokens: entrada {m.metadata.uso.promptTokens.toLocaleString('es-CO')} ({m.metadata.uso.cachedTokens.toLocaleString('es-CO')} de caché, {pctCache(m.metadata.uso)} %) · salida {m.metadata.uso.completionTokens.toLocaleString('es-CO')} ({m.metadata.uso.reasoningTokens.toLocaleString('es-CO')} razonando)
+                      </p>)}
                   </div>)}
               </div>
             </div>
