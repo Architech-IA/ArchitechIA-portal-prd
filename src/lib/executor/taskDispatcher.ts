@@ -176,6 +176,16 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
 
   if (!task) throw new Error(`Task ${taskId} not found`)
   if (task.status === 'DONE') throw new Error(`Task ${taskId} ya está DONE`)
+  // MASD-0015-0001-006: un reintento manual (resetear a BACKLOG y volver a llamar dispatch) o
+  // un doble click en "Aprobar" podia despachar la MISMA tarea dos veces — nada chequeaba si ya
+  // estaba IN_PROGRESS, y aunque lo hubiera chequeado ACA arriba, dos requests casi simultaneos
+  // pasarian la validacion los dos ANTES de que cualquiera escribiera (ventana de carrera real:
+  // se vio en vivo, dos workers procesando el mismo taskId). Se corrige mas abajo con un UPDATE
+  // atomico (compare-and-swap en la propia fila) en vez de una validacion previa + un UPDATE
+  // incondicional separado.
+  if (task.status === 'IN_PROGRESS') {
+    throw new Error(`Task ${taskId} ya está IN_PROGRESS — no se puede volver a disparar mientras corre.`)
+  }
   // BUG REAL identificado (retry manual desde la Sala de Control): ni el
   // boton "Disparar" manual ni "Ejecutar plan" chequeaban si la tarea de la
   // que depende ya llego a DONE — solo el grafo automatico (taskGraph.ts)
@@ -196,10 +206,21 @@ export async function dispatchTask(taskId: string, extraGuidance?: string): Prom
   const { agentId, agentName, strategy } = await resolveAgent(task)
   const agentProfile = await loadAgentProfile(agentId)
 
-  await prisma.$executeRawUnsafe(
-    `UPDATE "BacklogItem" SET status='IN_PROGRESS', "fechaInicio"=NOW(), "fechaEjecucion"=NOW() WHERE id=$1`,
+  // Compare-and-swap atomico: solo pasa a IN_PROGRESS si TODAVIA esta en un estado disparable
+  // en este mismo instante — no lo que leyo el SELECT de arriba, que para este momento puede
+  // estar desactualizado. Si otro dispatch (un doble click, o el automatico y uno manual casi
+  // en simultaneo) ya la tomo, esta UPDATE afecta 0 filas y se aborta ACA, antes de crear un
+  // TaskExecution o encolar nada en el Harness — asi nunca se llega a tener dos ejecuciones
+  // reales para la misma tarea.
+  const [claimed] = await prisma.$queryRawUnsafe(
+    `UPDATE "BacklogItem" SET status='IN_PROGRESS', "fechaInicio"=NOW(), "fechaEjecucion"=NOW()
+     WHERE id=$1 AND status NOT IN ('IN_PROGRESS','DONE')
+     RETURNING id`,
     taskId
-  )
+  ) as { id: string }[]
+  if (!claimed) {
+    throw new Error(`Task ${taskId} ya fue tomada por otro dispatch simultáneo (doble click o reintento en paralelo) — no se disparó de nuevo.`)
+  }
 
   const [exec_] = await prisma.$queryRawUnsafe(
     `INSERT INTO "TaskExecution" (id,"backlogItemId","agentId","agentName",status,"startedAt")
