@@ -89,7 +89,7 @@ Sin markdown extra.`
   try {
     const res = await fetch(OPENCODE_GO_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENCODE_KEY}`, 'x-opencode-session': `masd-sprintsummary-${sprintId}` },
       body: JSON.stringify({
         model: OPENCODE_MODEL,
         messages: [

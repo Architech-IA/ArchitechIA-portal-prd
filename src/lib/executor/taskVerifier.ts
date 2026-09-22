@@ -23,6 +23,11 @@ export type VerifierResult = {
  * modelo verificador que juzgue eso, en vez de saltarse la verificacion real.
  */
 export async function runVerifier(opts: {
+  // Id estable de la tarea que se está verificando. La API GO de OpenCode exige un header
+  // x-opencode-session (sin él responde 400 MissingSessionID — bug real encontrado en evals,
+  // MASD-0023-0006-014: el verificador fallaba SIEMPRE, en las 3 tareas de la corrida, y su
+  // propio catch lo disfrazaba de "no se pudo verificar" en vez de mostrar el error real).
+  taskId?: string
   taskTitle: string
   taskDescription: string | null
   acceptanceCriteria: string[]
@@ -78,6 +83,7 @@ Sin markdown, sin explicación adicional. Solo el JSON.`
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENCODE_KEY}`,
+        'x-opencode-session': opts.taskId ? `masd-verify-${opts.taskId}` : `masd-verify-${Date.now()}`,
       },
       body: JSON.stringify({
         model: OPENCODE_MODEL,

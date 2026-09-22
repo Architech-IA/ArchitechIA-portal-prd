@@ -427,6 +427,7 @@ export async function finalizeExecution(opts: {
         // en vez de aprobar solo por "compila y el resumen suena bien".
         const prdCriterio = await resolvePrdCriterio(task.solucionId, task.prdRequisitoId)
         const verifierResult = await runVerifier({
+          taskId: task.id,
           taskTitle: task.title,
           taskDescription: task.description,
           acceptanceCriteria: prdCriterio ? [prdCriterio.criterioAceptacion] : [],
