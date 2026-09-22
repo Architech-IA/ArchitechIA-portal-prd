@@ -47,10 +47,7 @@ async function puertoLibre(): Promise<number> {
 function asegurarDockerfileGenerico() {
   fs.mkdirSync(DEPLOYS_DIR, { recursive: true })
   if (fs.existsSync(DOCKERFILE_GENERICO)) return
-  // Multi-stage, deliberadamente simple y tolerante: no asume next.config con output:"standalone"
-  // (el scaffolding del Motor no lo configura), así que copia node_modules completo en vez de
-  // depender del build standalone de Next — más pesado, pero funciona con cualquier proyecto
-  // que el Motor haya armado con create-next-app tal cual, sin retocar la config.
+  // Multi-stage, deliberadamente tolerante con lo que el proyecto traiga configurado.
   // "COPY prisma ./prisma" antes de "npm install": un proyecto con Prisma corre `prisma
   // generate` en su postinstall, que necesita prisma/schema.prisma YA presente en ese paso —
   // sin esto, cualquier proyecto con base de datos (MASD-0023-0006-028) fallaba el build.
@@ -60,6 +57,19 @@ function asegurarDockerfileGenerico() {
   // Prisma detecte su versión, así que el motor de Prisma quedaba corriendo con el binario
   // equivocado y fallaba en runtime con "Could not parse schema engine response" — problema
   // conocido de Prisma + Alpine, no específico de este proyecto.
+  //
+  // MASD-0023-0006-030: si el proyecto tiene "output: 'standalone'" en next.config, Next arma
+  // en .next/standalone un build reducido (solo las dependencias de producción que realmente
+  // usa, resueltas por trazado) — imagen final mucho más liviana que copiar node_modules
+  // completo. El scaffolding del Motor no configura eso por default, y no todos los proyectos
+  // desplegados los arma el Motor, así que el Dockerfile no puede asumirlo: la normalización de
+  // abajo detecta .next/standalone EN TIEMPO DE BUILD (adentro del contenedor, no en el Node
+  // del portal) y arma /salida desde ahí si existe, o cae al modo anterior (node_modules
+  // completo) si no — la etapa runner siempre copia desde el mismo /salida sin necesitar saber
+  // de antemano qué generó el proyecto. Gotcha conocido de Prisma + standalone: el trazador de
+  // Next no siempre detecta el binario del motor de Prisma (se carga dinámicamente, no via
+  // require rastreable), así que node_modules/.prisma y @prisma se copian aparte a mano si
+  // existen, sin importar el modo.
   const contenido = `FROM node:20-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache openssl
@@ -73,20 +83,34 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
 RUN npm run build
+RUN mkdir -p /salida && \\
+    if [ -d .next/standalone ]; then \\
+      cp -r .next/standalone/. /salida/ && \\
+      mkdir -p /salida/.next && \\
+      cp -r .next/static /salida/.next/static && \\
+      cp -r public /salida/public && \\
+      echo 'node server.js' > /salida/iniciar.sh; \\
+    else \\
+      cp -r node_modules /salida/node_modules && \\
+      cp -r .next /salida/.next && \\
+      cp -r public /salida/public && \\
+      cp package.json /salida/package.json && \\
+      echo 'npm start' > /salida/iniciar.sh; \\
+    fi && \\
+    cp -r prisma /salida/prisma && \\
+    if [ -d node_modules/.prisma ]; then mkdir -p /salida/node_modules/.prisma && cp -r node_modules/.prisma/. /salida/node_modules/.prisma/; fi && \\
+    if [ -d node_modules/@prisma ]; then mkdir -p /salida/node_modules/@prisma && cp -r node_modules/@prisma/. /salida/node_modules/@prisma/; fi
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 RUN apk add --no-cache openssl
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /salida ./
 USER nextjs
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["sh", "iniciar.sh"]
 `
   fs.writeFileSync(DOCKERFILE_GENERICO, contenido)
 }
@@ -213,9 +237,20 @@ export async function desplegarSolucion(solucionId: string): Promise<ResultadoDe
     }
 
     // Recién acá Nginx pasa a apuntar al nuevo — "reload" no corta conexiones ya abiertas.
-    fs.writeFileSync(nginxConfPath(slug), nginxConfHttps(slug, puertoNuevo))
-    await sh('nginx', ['-t'])
-    await sh('systemctl', ['reload', 'nginx'])
+    try {
+      fs.writeFileSync(nginxConfPath(slug), nginxConfHttps(slug, puertoNuevo))
+      await sh('nginx', ['-t'])
+      await sh('systemctl', ['reload', 'nginx'])
+    } catch (err) {
+      // Bug real encontrado probando esto: si "nginx -t" falla (ej. un problema de la config
+      // global de nginx, no de este proyecto) DESPUÉS de que el contenedor nuevo ya estaba
+      // sano, antes esto lo dejaba huérfano — corriendo, con el puerto ocupado para siempre,
+      // sin que Nginx jamás llegara a apuntarle. Mismo criterio que el catch de arriba: si
+      // Nginx nunca llegó a cambiar, el contenedor nuevo no sirve para nada.
+      await sh('docker', ['rm', '-f', contenedorNuevo]).catch(() => '')
+      await fs.promises.unlink(nginxConfPath(slug)).catch(() => {})
+      throw err
+    }
 
     // El viejo se baja al final, cuando el nuevo ya está confirmado y Nginx ya cambió.
     if (contenedorViejo) await sh('docker', ['rm', '-f', contenedorViejo]).catch(() => '')
