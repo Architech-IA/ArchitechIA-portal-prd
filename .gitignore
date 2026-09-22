@@ -40,3 +40,6 @@ prisma/dev.db
 prisma/dev.db-journal
 graphify-out/
 .masd_code_index.json
+
+# resultados de evals (la linea base va en evals/baseline-proyectos.json)
+/evals/resultados/
