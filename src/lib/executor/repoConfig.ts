@@ -118,14 +118,31 @@ async function ensureExternalRepo(repositorio: string): Promise<string> {
  * crea/clona ese repo aparte y todo el ciclo de worktrees + PR de esa
  * Solución opera ahí, nunca contra el portal.
  */
+// El campo Solucion.repositorio lo carga una persona a mano desde el Hub de la Solución
+// (pestaña Código/General), que pide la URL completa de GitHub (placeholder
+// "https://github.com/Architech-IA/..." y lo usa como link "abrir repositorio"). Este módulo,
+// en cambio, necesita solo el NOMBRE del repo (lo usa como nombre de carpeta local y como
+// segmento de la API de GitHub) — antes de este fix, pegar la URL tal como pide la UI rompía
+// el Motor la primera vez que corría una tarea CODE de esa Solución (intentaba clonar
+// ".../Architech-IA/https://github.com/...", 404 real). Ahora acepta cualquiera de las dos
+// formas: si detecta una URL de github.com, se queda solo con el "owner/repo" del final.
+function nombreDeRepo(valor: string): string {
+  const m = valor.match(/github\.com[:/]+([^/]+)\/([^/.]+?)(?:\.git)?\/?$/i)
+  return m ? m[2] : valor
+}
+
 export async function resolveRepoConfig(solucionId: string | null): Promise<RepoConfig> {
   if (!solucionId) return { repoPath: PORTAL_REPO_PATH, repoSlug: 'portal' }
 
   const rows = await prisma.$queryRawUnsafe<{ repositorio: string | null }[]>(
     `SELECT repositorio FROM "Solucion" WHERE id = $1`, solucionId
   )
-  const repositorio = rows[0]?.repositorio?.trim()
-  if (!repositorio || repositorio === 'portal-architechia') {
+  const crudo = rows[0]?.repositorio?.trim()
+  if (!crudo || crudo === 'portal-architechia') {
+    return { repoPath: PORTAL_REPO_PATH, repoSlug: 'portal' }
+  }
+  const repositorio = nombreDeRepo(crudo)
+  if (repositorio === 'portal-architechia') {
     return { repoPath: PORTAL_REPO_PATH, repoSlug: 'portal' }
   }
 

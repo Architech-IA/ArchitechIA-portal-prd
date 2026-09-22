@@ -80,7 +80,14 @@ const POR_TIPO: Record<string, string> = {
   LIBRE: `Tipo de sesión: LIBRE. Conversación abierta sobre el proyecto.`,
 }
 
-async function sistemaPara(tipo: string, nombre: string, contexto: string): Promise<string> {
+// Si el proyecto todavía no tiene un repositorio de código asociado, es lo PRIMERO que el
+// asistente debe pedir en el primer mensaje de cada sesión (mientras siga faltando) — sin
+// repositorio, el Motor Agéntico no tiene dónde ejecutar una tarea de código real. Por ahora
+// se agrega a mano desde el Hub de la Solución (pestaña Código/General): pedirlo acá en el
+// primer mensaje evita que alguien arme todo un plan de desarrollo sin ese paso hecho.
+const AVISO_SIN_REPO = `ATENCIÓN — PRIORIDAD ANTES QUE NADA MÁS: este proyecto todavía no tiene un repositorio de código asociado (revisá la Ficha del proyecto en el contexto). Sin eso, ninguna tarea de código real se puede ejecutar. Este es el primer mensaje de esta sesión: antes de avanzar con cualquier otra cosa, pedile a la persona el nombre o la URL del repositorio de GitHub de este proyecto, y explicále que por ahora tiene que cargarlo a mano en el Hub de la Solución (pestaña Código o General). Si en este mismo mensaje la persona ya te lo dio como texto, o te dice explícitamente que por ahora no hace falta / que ya lo va a agregar, no insistas — seguí normalmente. Si el proyecto es puramente de gestión/consultoría sin desarrollo de software, tampoco insistas.`
+
+async function sistemaPara(tipo: string, nombre: string, contexto: string, avisoRepo: boolean): Promise<string> {
   let cabecera: string
   if (tipo === 'KICKOFF') {
     // Kickoff: usa la entrevista guiada de Orión (prompt del agente en la base) sobre el proyecto ya existente
@@ -89,6 +96,7 @@ async function sistemaPara(tipo: string, nombre: string, contexto: string): Prom
   } else {
     cabecera = `${BASE(nombre)}\n\n${POR_TIPO[tipo] ?? POR_TIPO.LIBRE}`
   }
+  if (avisoRepo && tipo !== 'BITACORA') cabecera = `${cabecera}\n\n${AVISO_SIN_REPO}`
   return `${cabecera}\n\n===== CONTEXTO DEL PROYECTO =====\n${contexto}\n===== FIN DEL CONTEXTO =====`
 }
 
@@ -141,7 +149,9 @@ export async function generarRespuesta(sesionId: string, mensajeAsistenteId: str
 
     const ctx = await construirContexto(s.solucionId, s, usuarioId, ultimoUsuario?.contenido)
     if (!ctx) throw new Error('El proyecto ya no existe.')
-    let system = await sistemaPara(s.tipo, ctx.sol.nombre, ctx.texto)
+    const esPrimerMensaje = msgs.length === 1
+    const avisoRepo = esPrimerMensaje && !ctx.sol.repositorio
+    let system = await sistemaPara(s.tipo, ctx.sol.nombre, ctx.texto, avisoRepo)
     const recortadas = ctx.fuentes.filter(f => f.estado === 'recortada' || f.estado === 'omitida').map(f => f.etiqueta)
     if (recortadas.length > 0) system += `\n\nATENCIÓN: estas fuentes del contexto están recortadas u omitidas: ${recortadas.join(', ')}. Si la pregunta puede depender de ellas, léelas con las herramientas ANTES de responder; no afirmes que un dato no existe sin haberlas revisado.`
     const historial = enVentana.map(m => ({ role: m.rol as 'user' | 'assistant', content: m.contenido }))
