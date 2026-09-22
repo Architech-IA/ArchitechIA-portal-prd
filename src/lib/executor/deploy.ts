@@ -140,11 +140,19 @@ async function esperarContenedorListo(contenedor: string, puerto: number, intent
 
 export interface ResultadoDeploy { url: string; puerto: number; contenedor: string; slug: string }
 
+// Redeploy sin downtime (MASD-0023-0006-029): el contenedor NUEVO se levanta en un puerto
+// aparte y se confirma sano ANTES de que Nginx deje de apuntar al viejo — el "reload" de Nginx
+// no corta conexiones en curso, así que el corte real es cero. El contenedor viejo recién se
+// baja al final, cuando el nuevo ya está confirmado y sirviendo. Beneficio extra sobre el
+// esquema anterior (que hacía "docker rm -f" del viejo ANTES de levantar el nuevo): si el
+// build o el arranque del nuevo fallan, el viejo sigue funcionando en vez de quedar todo caído.
 export async function desplegarSolucion(solucionId: string): Promise<ResultadoDeploy> {
-  const [sol] = await prisma.$queryRawUnsafe<{ nombre: string; repositorio: string | null; deployPort: number | null; deployContainerName: string | null }[]>(
-    `SELECT nombre, repositorio, "deployPort", "deployContainerName" FROM "Solucion" WHERE id = $1`, solucionId)
+  const [sol] = await prisma.$queryRawUnsafe<{ nombre: string; repositorio: string | null; deployContainerName: string | null }[]>(
+    `SELECT nombre, repositorio, "deployContainerName" FROM "Solucion" WHERE id = $1`, solucionId)
   if (!sol) throw new Error('La Solución no existe.')
   if (!sol.repositorio) throw new Error('Esta Solución no tiene repositorio asociado — no hay nada que desplegar.')
+
+  const contenedorViejo = sol.deployContainerName // null si es el primer despliegue
 
   await prisma.$executeRawUnsafe(`UPDATE "Solucion" SET "deployStatus"='DEPLOYING', "updatedAt"=NOW() WHERE id=$1`, solucionId)
   try {
@@ -157,25 +165,44 @@ export async function desplegarSolucion(solucionId: string): Promise<ResultadoDe
 
     asegurarDockerfileGenerico()
     const slug = slugDeploy(sol.nombre)
-    const contenedor = sol.deployContainerName || `demo-${slug}`
-    const puerto = sol.deployPort || await puertoLibre()
+    // Tag de imagen ESTABLE por proyecto (habilita la caché de capas de Docker entre deploys
+    // sucesivos del mismo proyecto) — el nombre de CONTENEDOR sí es único por intento, para que
+    // el nuevo y el viejo puedan convivir mientras se confirma que el nuevo está sano.
+    const imagen = `demo-image-${slug}`
+    const contenedorNuevo = `demo-${slug}-${Date.now()}`
+    const puertoNuevo = await puertoLibre() // ya excluye el puerto que esté usando el contenedor viejo
 
-    await sh('docker', ['build', '-f', DOCKERFILE_GENERICO, '-t', contenedor, repoPath], { timeout: 600_000 })
-    await sh('docker', ['rm', '-f', contenedor]).catch(() => '')
-    await sh('docker', ['run', '-d', '--name', contenedor, '-p', `${puerto}:3000`, '--restart', 'unless-stopped', contenedor])
-    await esperarContenedorListo(contenedor, puerto)
+    await sh('docker', ['build', '-f', DOCKERFILE_GENERICO, '-t', imagen, repoPath], { timeout: 600_000 })
+    await sh('docker', ['run', '-d', '--name', contenedorNuevo, '-p', `${puertoNuevo}:3000`, '--restart', 'unless-stopped', imagen])
+    try {
+      await esperarContenedorListo(contenedorNuevo, puertoNuevo)
+    } catch (err) {
+      // El nuevo nunca llegó a estar sano — se descarta, y el viejo (si había uno) sigue
+      // sirviendo tal cual estaba, sin ningún corte.
+      await sh('docker', ['rm', '-f', contenedorNuevo]).catch(() => '')
+      throw err
+    }
 
-    fs.writeFileSync(nginxConfPath(slug), nginxConfHttps(slug, puerto))
+    // Recién acá Nginx pasa a apuntar al nuevo — "reload" no corta conexiones ya abiertas.
+    fs.writeFileSync(nginxConfPath(slug), nginxConfHttps(slug, puertoNuevo))
     await sh('nginx', ['-t'])
     await sh('systemctl', ['reload', 'nginx'])
+
+    // El viejo se baja al final, cuando el nuevo ya está confirmado y Nginx ya cambió.
+    if (contenedorViejo) await sh('docker', ['rm', '-f', contenedorViejo]).catch(() => '')
 
     const url = `https://${slug}.${DOMAIN_SUFFIX}`
     await prisma.$executeRawUnsafe(
       `UPDATE "Solucion" SET "deployUrl"=$1, "deployPort"=$2, "deployContainerName"=$3, "deployStatus"='LIVE', "deployedAt"=NOW(), "updatedAt"=NOW() WHERE id=$4`,
-      url, puerto, contenedor, solucionId)
-    return { url, puerto, contenedor, slug }
+      url, puertoNuevo, contenedorNuevo, solucionId)
+    return { url, puerto: puertoNuevo, contenedor: contenedorNuevo, slug }
   } catch (err) {
-    await prisma.$executeRawUnsafe(`UPDATE "Solucion" SET "deployStatus"='FAILED', "updatedAt"=NOW() WHERE id=$1`, solucionId)
+    // Si había un despliegue previo sano y este intento falló, el estado real sigue siendo
+    // "LIVE" (el viejo sigue corriendo) — FAILED acá sería mentir sobre el estado real. Solo se
+    // marca FAILED si este era el primer despliegue (no había nada corriendo antes).
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Solucion" SET "deployStatus"=$1, "updatedAt"=NOW() WHERE id=$2`,
+      contenedorViejo ? 'LIVE' : 'FAILED', solucionId)
     throw err
   }
 }
