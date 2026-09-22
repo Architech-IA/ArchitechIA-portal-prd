@@ -35,6 +35,34 @@ async function githubApi(urlPath: string, opts: RequestInit = {}): Promise<Respo
   })
 }
 
+// GITHUB_ORG puede ser una Organización real de GitHub o, como es el caso hoy (Architech-IA es
+// una cuenta de tipo User, no Org), la cuenta del propio usuario dueño del token. Los dos casos
+// crean un repo por endpoints DISTINTOS (POST /orgs/{org}/repos vs POST /user/repos) — usar el
+// de Organización contra una cuenta de tipo User siempre da 404, sin importar el nombre ni el
+// token. Bug real encontrado end-to-end probando la herramienta crear_repositorio del asistente
+// de Proyectos: la creación automática de repos nunca había funcionado. Se resuelve una sola vez
+// y se cachea en memoria del proceso (no cambia mientras el server esté arriba).
+let cuentaEsUser: boolean | null = null
+async function esCuentaDeUsuario(): Promise<boolean> {
+  if (cuentaEsUser !== null) return cuentaEsUser
+  const res = await githubApi('/user')
+  if (!res.ok) { cuentaEsUser = false; return false } // si no se puede resolver, se asume Org (comportamiento previo)
+  const data = await res.json()
+  cuentaEsUser = data.type === 'User' && String(data.login).toLowerCase() === GITHUB_ORG.toLowerCase()
+  return cuentaEsUser
+}
+
+/**
+ * Convierte cualquier texto (ej. el nombre de la Solución) en un nombre válido de repo de
+ * GitHub: minúsculas, solo [a-z0-9-], sin guiones repetidos ni en las puntas, acotado a 60
+ * caracteres (el límite real de GitHub es 100, pero un nombre así de largo ya sería un error).
+ */
+export function slugRepo(texto: string): string {
+  const s = texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+  return s.slice(0, 60) || 'proyecto'
+}
+
 /**
  * Crea el repo en GitHub bajo GITHUB_ORG si todavía no existe, y lo clona
  * localmente en EXTERNAL_REPOS_DIR/<repositorio>. Se usa auto_init:true al
@@ -43,13 +71,12 @@ async function githubApi(urlPath: string, opts: RequestInit = {}): Promise<Respo
  * completamente vacío no tiene ninguna rama todavía).
  *
  * Idempotente: si el repo ya está clonado localmente, no vuelve a tocar
- * GitHub. Solo se llama para Soluciones cuyo `repositorio` es distinto de
- * "portal-architechia" (ver resolveRepoConfig) — el dimensionamiento
- * "portal vs. producto independiente" lo pregunta Orión en el Kickoff.
+ * GitHub. Devuelve si lo tuvo que crear de cero en GitHub (creado=true) o si
+ * ya existía (por acá o porque alguien lo creó a mano antes).
  */
-async function ensureExternalRepo(repositorio: string): Promise<string> {
+export async function ensureExternalRepo(repositorio: string, privado = true): Promise<{ repoPath: string; creado: boolean }> {
   const localPath = path.join(EXTERNAL_REPOS_DIR, repositorio)
-  if (fs.existsSync(localPath)) return localPath
+  if (fs.existsSync(localPath)) return { repoPath: localPath, creado: false }
 
   fs.mkdirSync(EXTERNAL_REPOS_DIR, { recursive: true })
 
@@ -61,21 +88,24 @@ async function ensureExternalRepo(repositorio: string): Promise<string> {
   }
 
   const checkRes = await githubApi(`/repos/${GITHUB_ORG}/${repositorio}`)
+  let creado = false
   if (checkRes.status === 404) {
-    const createRes = await githubApi(`/orgs/${GITHUB_ORG}/repos`, {
+    const paraUsuario = await esCuentaDeUsuario()
+    const createRes = await githubApi(paraUsuario ? '/user/repos' : `/orgs/${GITHUB_ORG}/repos`, {
       method: 'POST',
       body: JSON.stringify({
         name: repositorio,
-        private: true,
+        private: privado,
         auto_init: true,
         description: 'Producto/demo independiente generado por el Motor Agéntico SDD de ArchiTechIA',
       }),
     })
     if (!createRes.ok) {
       throw new Error(
-        `No se pudo crear el repositorio ${GITHUB_ORG}/${repositorio} en GitHub: ${createRes.status} ${await createRes.text()}`
+        `No se pudo crear el repositorio ${GITHUB_ORG}/${repositorio} en GitHub (${paraUsuario ? 'como cuenta de usuario' : 'como organización'}): ${createRes.status} ${await createRes.text()}`
       )
     }
+    creado = true
   } else if (!checkRes.ok) {
     throw new Error(`Error consultando el repositorio ${GITHUB_ORG}/${repositorio} en GitHub: ${checkRes.status}`)
   }
@@ -105,7 +135,31 @@ async function ensureExternalRepo(repositorio: string): Promise<string> {
     }
   }
 
-  return localPath
+  return { repoPath: localPath, creado }
+}
+
+/**
+ * Crea (o reutiliza si ya existe) un repositorio de GitHub para una Solución y lo asocia —
+ * usado por la herramienta crear_repositorio del asistente de Proyectos (lib/proyectos/
+ * herramientas.ts), así como por cualquier otro flujo que quiera dar de alta un repo nuevo sin
+ * pasar por el Hub de la Solución. Si la Solución YA tiene un repositorio asociado, no lo
+ * pisa — hay que sacarlo primero a mano si de verdad se quiere reemplazar (evita perder la
+ * asociación con un repo real por un error de tipeo o una confirmación ambigua del modelo).
+ */
+export async function crearRepositorioParaSolucion(
+  solucionId: string, nombreSolicitado: string, privado = true
+): Promise<{ repoName: string; url: string; creado: boolean }> {
+  const [sol] = await prisma.$queryRawUnsafe<{ repositorio: string | null }[]>(
+    `SELECT repositorio FROM "Solucion" WHERE id = $1`, solucionId)
+  if (!sol) throw new Error('La Solución no existe.')
+  if (sol.repositorio?.trim()) {
+    throw new Error(`Esta Solución ya tiene un repositorio asociado (${sol.repositorio}). Si hay que cambiarlo, se saca primero a mano desde el Hub de la Solución.`)
+  }
+
+  const repoName = slugRepo(nombreSolicitado)
+  const { creado } = await ensureExternalRepo(repoName, privado)
+  await prisma.$executeRawUnsafe(`UPDATE "Solucion" SET repositorio = $1, "updatedAt" = NOW() WHERE id = $2`, repoName, solucionId)
+  return { repoName, url: `https://github.com/${GITHUB_ORG}/${repoName}`, creado }
 }
 
 /**
@@ -146,6 +200,6 @@ export async function resolveRepoConfig(solucionId: string | null): Promise<Repo
     return { repoPath: PORTAL_REPO_PATH, repoSlug: 'portal' }
   }
 
-  const repoPath = await ensureExternalRepo(repositorio)
+  const { repoPath } = await ensureExternalRepo(repositorio)
   return { repoPath, repoSlug: repositorio }
 }

@@ -3,6 +3,7 @@ import { htmlATextoPlano } from '@/lib/textoAHtml'
 import { buscarProyecto } from './busqueda'
 import { cargarSolucion, jsonATexto } from './contexto'
 import { sesionVisible } from './auth'
+import { crearRepositorioParaSolucion } from '@/lib/executor/repoConfig'
 
 // Herramientas de SOLO LECTURA que el modelo puede pedir durante una respuesta para traer
 // lo que el contexto fijo no alcanzó a incluir (documentos completos, adjuntos enteros,
@@ -10,6 +11,29 @@ import { sesionVisible } from './auth'
 // Formato OpenAI de tool-calling, el mismo que ya usa el worker del Motor.
 
 export const MAX_RESULTADO = 6000 // caracteres por llamada; para leer más se pide con «desde»
+
+// Herramienta de ESCRITURA (a diferencia de todas las de arriba): crea un repositorio real en
+// GitHub y lo asocia a la Solución. Solo se agrega a la lista de herramientas disponibles
+// cuando la Solución todavía no tiene repositorio (ver modelo.ts) — así no aparece como opción
+// en proyectos que ya tienen uno. No hay una confirmación forzada por código: el system prompt
+// (AVISO_SIN_REPO en modelo.ts) le exige al modelo proponer el nombre y esperar una confirmación
+// explícita de la persona en un mensaje aparte antes de llamarla — es disciplina de prompt, no
+// una traba técnica, igual que el resto del tool-calling de Proyectos.
+export const HERRAMIENTA_CREAR_REPO = {
+  type: 'function',
+  function: {
+    name: 'crear_repositorio',
+    description: 'Crea un repositorio nuevo en GitHub (privado por defecto) y lo asocia a este proyecto. SOLO llamar después de que la persona confirmó explícitamente el nombre propuesto en un mensaje separado — nunca en el mismo turno en que se lo proponés por primera vez.',
+    parameters: {
+      type: 'object',
+      properties: {
+        nombre: { type: 'string', description: 'Nombre propuesto para el repo (se normaliza: minúsculas, guiones, sin espacios ni acentos)' },
+        privado: { type: 'boolean', description: 'true (repo privado) por defecto; false solo si la persona pidió explícitamente que sea público' },
+      },
+      required: ['nombre'],
+    },
+  },
+}
 
 export const HERRAMIENTAS: unknown[] = [
   {
@@ -190,6 +214,17 @@ export async function ejecutarHerramienta(nombre: string, argsJson: string, c: C
             return h.length ? h.map(x => `- [${x.estado}] ${x.titulo}${x.fechaComprometida ? ` (comprometido ${x.fechaComprometida.toISOString().slice(0, 10)})` : ''}`).join('\n').slice(0, MAX_RESULTADO) : 'Sin hitos.'
           }
           default: return 'Error: tipo debe ser tareas, sprints, riesgos o hitos.'
+        }
+      }
+      case 'crear_repositorio': {
+        const nombre = String(a.nombre ?? '').trim()
+        if (!nombre) return 'Error: falta «nombre».'
+        const privado = a.privado === false ? false : true
+        try {
+          const r = await crearRepositorioParaSolucion(c.solucionId, nombre, privado)
+          return `${r.creado ? 'Repositorio creado' : 'Repositorio ya existía en GitHub, se asoció igual'}: ${r.url} (${privado ? 'privado' : 'público'}). Ya quedó guardado en el proyecto — contáselo a la persona con el link.`
+        } catch (e) {
+          return `Error al crear el repositorio: ${e instanceof Error ? e.message.slice(0, 300) : String(e)}`
         }
       }
       case 'listar_adjuntos_y_sesiones': {

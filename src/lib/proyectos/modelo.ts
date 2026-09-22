@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { callOpenCode, callOpenCodeChat, type MensajeChat, type UsoModelo } from '@/lib/opencodeChat'
-import { HERRAMIENTAS, ejecutarHerramienta } from './herramientas'
+import { HERRAMIENTAS, HERRAMIENTA_CREAR_REPO, ejecutarHerramienta } from './herramientas'
 import { getDateStrUTC5 } from '@/lib/timezone'
 import { construirContexto } from './contexto'
 import type { FuenteCtx } from './tipos'
@@ -85,9 +85,18 @@ const POR_TIPO: Record<string, string> = {
 // repositorio, el Motor Agéntico no tiene dónde ejecutar una tarea de código real. Por ahora
 // se agrega a mano desde el Hub de la Solución (pestaña Código/General): pedirlo acá en el
 // primer mensaje evita que alguien arme todo un plan de desarrollo sin ese paso hecho.
-const AVISO_SIN_REPO = `ATENCIÓN — PRIORIDAD ANTES QUE NADA MÁS: este proyecto todavía no tiene un repositorio de código asociado (revisá la Ficha del proyecto en el contexto). Sin eso, ninguna tarea de código real se puede ejecutar. Este es el primer mensaje de esta sesión: antes de avanzar con cualquier otra cosa, pedile a la persona el nombre o la URL del repositorio de GitHub de este proyecto, y explicále que por ahora tiene que cargarlo a mano en el Hub de la Solución (pestaña Código o General). Si en este mismo mensaje la persona ya te lo dio como texto, o te dice explícitamente que por ahora no hace falta / que ya lo va a agregar, no insistas — seguí normalmente. Si el proyecto es puramente de gestión/consultoría sin desarrollo de software, tampoco insistas.`
+// Recordatorio persistente (cada turno) mientras falte el repositorio: le da al modelo el
+// protocolo de confirmación de la herramienta crear_repositorio. No es una traba técnica — es
+// disciplina de prompt, igual que el resto del tool-calling de Proyectos — pero es explícito
+// sobre NUNCA crear sin una confirmación humana en un mensaje aparte.
+const RECORDATORIO_SIN_REPO = `Este proyecto todavía no tiene repositorio de código asociado. Tenés la herramienta crear_repositorio para darlo de alta vos mismo en GitHub (privado por defecto). Protocolo obligatorio, nunca te lo saltees: (1) proponé un nombre concreto (a partir del nombre del proyecto) EN TEXTO, sin llamar a la herramienta todavía; (2) esperá a que la persona confirme explícitamente ese nombre en un mensaje aparte (sí, dale, confirmo, adelante, etc.) — si pide cambiar el nombre o dice que prefiere cargarlo a mano en el Hub de la Solución, respetalo; (3) recién ahí, en el turno donde ya confirmó, llamá a crear_repositorio con el nombre acordado. Nunca la llames en el mismo turno en que proponés el nombre por primera vez, ni si la persona no confirmó nada todavía.`
 
-async function sistemaPara(tipo: string, nombre: string, contexto: string, avisoRepo: boolean): Promise<string> {
+// Primer mensaje de la sesión con el repo todavía faltante: además del recordatorio de arriba,
+// es la PRIORIDAD antes que cualquier otra cosa — no seguir de largo planificando o respondiendo
+// sin haber preguntado primero.
+const AVISO_SIN_REPO_INICIAL = `ATENCIÓN — PRIORIDAD ANTES QUE NADA MÁS, es el primer mensaje de esta sesión: ${RECORDATORIO_SIN_REPO} Antes de avanzar con cualquier otra cosa, proponele el nombre y preguntale si querés que lo crees vos (o si prefiere cargarlo a mano en el Hub de la Solución, pestaña Código o General). Si en este mismo mensaje la persona ya confirmó un nombre, ya te dio uno propio, o te dice explícitamente que por ahora no hace falta, no insistas más allá de una vez — seguí normalmente. Si el proyecto es puramente de gestión/consultoría sin desarrollo de software, tampoco insistas.`
+
+async function sistemaPara(tipo: string, nombre: string, contexto: string, sinRepo: boolean, primerMensaje: boolean): Promise<string> {
   let cabecera: string
   if (tipo === 'KICKOFF') {
     // Kickoff: usa la entrevista guiada de Orión (prompt del agente en la base) sobre el proyecto ya existente
@@ -96,7 +105,7 @@ async function sistemaPara(tipo: string, nombre: string, contexto: string, aviso
   } else {
     cabecera = `${BASE(nombre)}\n\n${POR_TIPO[tipo] ?? POR_TIPO.LIBRE}`
   }
-  if (avisoRepo && tipo !== 'BITACORA') cabecera = `${cabecera}\n\n${AVISO_SIN_REPO}`
+  if (sinRepo && tipo !== 'BITACORA') cabecera = `${cabecera}\n\n${primerMensaje ? AVISO_SIN_REPO_INICIAL : RECORDATORIO_SIN_REPO}`
   return `${cabecera}\n\n===== CONTEXTO DEL PROYECTO =====\n${contexto}\n===== FIN DEL CONTEXTO =====`
 }
 
@@ -150,8 +159,8 @@ export async function generarRespuesta(sesionId: string, mensajeAsistenteId: str
     const ctx = await construirContexto(s.solucionId, s, usuarioId, ultimoUsuario?.contenido)
     if (!ctx) throw new Error('El proyecto ya no existe.')
     const esPrimerMensaje = msgs.length === 1
-    const avisoRepo = esPrimerMensaje && !ctx.sol.repositorio
-    let system = await sistemaPara(s.tipo, ctx.sol.nombre, ctx.texto, avisoRepo)
+    const sinRepo = !ctx.sol.repositorio
+    let system = await sistemaPara(s.tipo, ctx.sol.nombre, ctx.texto, sinRepo, esPrimerMensaje)
     const recortadas = ctx.fuentes.filter(f => f.estado === 'recortada' || f.estado === 'omitida').map(f => f.etiqueta)
     if (recortadas.length > 0) system += `\n\nATENCIÓN: estas fuentes del contexto están recortadas u omitidas: ${recortadas.join(', ')}. Si la pregunta puede depender de ellas, léelas con las herramientas ANTES de responder; no afirmes que un dato no existe sin haberlas revisado.`
     const historial = enVentana.map(m => ({ role: m.rol as 'user' | 'assistant', content: m.contenido }))
@@ -174,7 +183,7 @@ export async function generarRespuesta(sesionId: string, mensajeAsistenteId: str
       const r = await callOpenCodeChat(system, conversacion, sid, {
         maxTokens: reintentoLength ? maxTokens * 2 : maxTokens,
         timeoutMs: Math.max(20_000, Math.min(150_000, restante())),
-        tools: sinHerramientas ? undefined : HERRAMIENTAS,
+        tools: sinHerramientas ? undefined : (sinRepo ? [...HERRAMIENTAS, HERRAMIENTA_CREAR_REPO] : HERRAMIENTAS),
       })
       sumar(r.usage)
       const llamadas = r.message.tool_calls ?? []
