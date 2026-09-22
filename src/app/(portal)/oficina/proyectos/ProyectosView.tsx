@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Paperclip, Radio, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -12,8 +12,9 @@ import PanelMemoria from './PanelMemoria'
 import PanelAdjuntos from './PanelAdjuntos'
 import PanelBuscar from './PanelBuscar'
 import PanelAuto from './PanelAuto'
+import PanelEjecucion from './PanelEjecucion'
 
-type Panel = 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto'
+type Panel = 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
 const TIPOS_NUEVOS: TipoSesion[] = ['KICKOFF', 'PLANIFICACION', 'REVISION', 'LIBRE']
 const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: '#6366f1', REVISION: '#10b981', LIBRE: '#94a3b8', BITACORA: '#06b6d4' }
 
@@ -92,6 +93,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
     { k: 'adjuntos', icono: Paperclip, txt: 'Adjuntos', badge: det?.adjuntos },
     { k: 'buscar', icono: Search, txt: 'Buscar' },
     { k: 'auto', icono: Radio, txt: 'Auto' },
+    { k: 'ejecucion', icono: Rocket, txt: 'Ejecución' },
   ]
 
   return (
@@ -208,6 +210,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
             {panel === 'adjuntos' && <PanelAdjuntos proyectoId={pid} onCambio={refrescar} />}
             {panel === 'buscar' && <PanelBuscar proyectoId={pid} onAbrirSesion={id => setSid(id)} onAbrirPanel={p => setPanel(p)} />}
             {panel === 'auto' && <PanelAuto proyectoId={pid} onCambio={refrescar} onAbrirBitacora={() => bitacora && setSid(bitacora.id)} />}
+            {panel === 'ejecucion' && <PanelEjecucion proyectoId={pid} />}
           </div>
         </div>)}
     </div>
