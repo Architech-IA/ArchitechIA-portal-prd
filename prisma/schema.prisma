@@ -82,6 +82,11 @@ model Solucion {
   valorEstimado Float         @default(0)
   empresa       String?
   repositorio   String?
+  deployUrl     String?       // URL real del último despliegue (https://<slug>.demos.architechia.co)
+  deployPort    Int?          // Puerto del host donde escucha el contenedor Docker del despliegue
+  deployContainerName String? // Nombre del contenedor Docker (para logs/parar/reiniciar)
+  deployStatus  String?       // DEPLOYING | LIVE | FAILED | null (nunca desplegado)
+  deployedAt    DateTime?
   arquitectura  String?       @default("[]") // JSON: nodos del lienzo de arquitectura
   arquitecturaHtml String?    // HTML del diagrama de arquitectura importado
   planTrabajo   String?       // Markdown/texto libre del plan de trabajo

@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, Rocket } from 'lucide-react'
+import { useEffect as useEffectPublicar } from 'react'
+import { ChevronDown, Rocket, Globe, ExternalLink } from 'lucide-react'
 
 // Panel «Ejecución» de Oficina > Proyectos — la Sala de Control (antes en /backlog/control/
 // [sprintId], una vista aparte) embebida como una pestaña más del proyecto, acotada a los
@@ -85,6 +86,56 @@ function computeLayout(tasks: Task[]) {
   return { pos, width: STAGE_PAD * 2 + (maxLevel + 1) * COL_WIDTH, height: STAGE_PAD * 2 + (maxRow + 1) * ROW_HEIGHT }
 }
 
+interface EstadoDeploy { deployUrl: string | null; deployStatus: string | null; deployedAt: string | null; deployPort: number | null }
+
+// Publicar: siempre manual, después de que la persona ya revisó y mergeó el PR del sprint a
+// main — nunca automático. El botón vive arriba del selector de sprint porque aplica al
+// PROYECTO entero (su rama main real), no a un sprint puntual.
+function PanelPublicar({ proyectoId }: { proyectoId: string }) {
+  const [estado, setEstado] = useState<EstadoDeploy | null>(null)
+  const [publicando, setPublicando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const cargar = () => { fetch(`/api/proyectos/${proyectoId}/deploy`).then(r => r.json()).then(setEstado).catch(() => {}) }
+  useEffectPublicar(() => { cargar() }, [proyectoId])
+
+  async function publicar() {
+    setPublicando(true); setError(null)
+    try {
+      const r = await fetch(`/api/proyectos/${proyectoId}/deploy`, { method: 'POST' })
+      const data = await r.json()
+      if (!r.ok) { setError(data.error || 'No se pudo publicar.'); cargar(); return }
+      setEstado(prev => ({ ...prev, deployUrl: data.url, deployStatus: 'LIVE', deployedAt: new Date().toISOString(), deployPort: data.puerto } as EstadoDeploy))
+    } catch { setError('No se pudo publicar (error de red).') } finally { setPublicando(false) }
+  }
+
+  return (
+    <div className="flex-shrink-0 border-b border-white/5 px-3 py-2.5 flex items-center gap-2.5">
+      <Globe size={13} className="text-cyan-400 flex-shrink-0" />
+      <div className="flex-1 min-w-0 text-[11px]">
+        {estado?.deployStatus === 'LIVE' && estado.deployUrl ? (
+          <a href={estado.deployUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:text-cyan-200 flex items-center gap-1 truncate">
+            {estado.deployUrl} <ExternalLink size={10} className="flex-shrink-0" />
+          </a>
+        ) : estado?.deployStatus === 'DEPLOYING' ? (
+          <span className="text-amber-400">Publicando…</span>
+        ) : estado?.deployStatus === 'FAILED' ? (
+          <span className="text-red-400">Falló la última publicación</span>
+        ) : (
+          <span className="text-gray-500">Todavía no se publicó este proyecto</span>
+        )}
+        {error && <div className="text-red-400 mt-0.5">{error}</div>}
+      </div>
+      <button onClick={publicar} disabled={publicando}
+        className="flex-shrink-0 px-2.5 py-1 rounded-md text-[10.5px] font-semibold text-white disabled:opacity-50 transition-colors"
+        style={{ background: 'rgba(6,182,212,0.85)' }}
+        title="Publica la última versión de main a una URL real. Asegurate de haber revisado y mergeado el PR del sprint antes.">
+        {publicando ? '…' : estado?.deployStatus === 'LIVE' ? 'Volver a publicar' : 'Publicar'}
+      </button>
+    </div>
+  )
+}
+
 export default function PanelEjecucion({ proyectoId }: { proyectoId: string }) {
   const [sprints, setSprints] = useState<SprintResumen[] | null>(null)
   const [sprintId, setSprintId] = useState<string | null>(null)
@@ -113,6 +164,7 @@ export default function PanelEjecucion({ proyectoId }: { proyectoId: string }) {
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      <PanelPublicar proyectoId={proyectoId} />
       {sprints.length > 1 && (
         <div className="relative flex-shrink-0 border-b border-white/5 px-3 py-2">
           <button onClick={() => setAbierto(o => !o)} className="w-full flex items-center justify-between gap-2 text-[11px] text-gray-300 hover:text-white transition-colors">
