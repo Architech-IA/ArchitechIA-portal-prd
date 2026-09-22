@@ -37,10 +37,24 @@ export function inicioVentana(msgs: { orden: number; contenido: string }[]): num
   return ini
 }
 
+// Quita el razonamiento del modelo, envuelto en <think>...</think>. Investigado en evals
+// (MASD-0023-0006-017): una vez el modelo envolvió por error una PARTE de la respuesta real
+// en <think> a mitad de frase («el que<think>este proyecto reemplaza) atend</think>ía hasta»),
+// y quitarlo a ciegas dejó «el queía hasta»: corrompió la respuesta en vez de limpiarla. Ahora,
+// si el texto pegado a ambos lados del bloque es letra (sin espacio ni puntuación de por medio,
+// la señal de que el bloque partió una palabra o frase real), se CONSERVA el bloque tal cual
+// —se prefiere un <think> visible a perder contenido real en silencio— y queda un aviso en el log.
 const quitarPensamiento = (t: string) => {
-  const s = t.replace(/<think>[\s\S]*?<\/think>/gi, '')
-  const i = s.toLowerCase().indexOf('<think>')
-  return (i !== -1 ? s.slice(0, i) : s).trim()
+  const sinPares = t.replace(/<think>([\s\S]*?)<\/think>/gi, (m, _inner, offset: number, full: string) => {
+    const antes = full[offset - 1]
+    const despues = full[offset + m.length]
+    const partePalabra = !!antes && !!despues && /[a-záéíóúñ]/i.test(antes) && /[a-záéíóúñ]/i.test(despues)
+    if (partePalabra) { console.error('[proyectos/modelo] quitarPensamiento: <think> partía una palabra/frase; se conserva sin quitar'); return m }
+    return ''
+  })
+  // <think> sin cerrar (se quedó pensando y no llegó a responder, típico de un corte por longitud)
+  const i = sinPares.toLowerCase().indexOf('<think>')
+  return (i !== -1 ? sinPares.slice(0, i) : sinPares).trim()
 }
 
 // ─────────────────────────── Prompts ───────────────────────────
