@@ -20,8 +20,16 @@ export type RealCheckResult = {
  * ni se verificó que compilara.
  *
  * Si la tarea no escribió ningún .ts/.tsx (ej. un .html suelto, o es una
- * tarea LLM sin herramientas), no aplica — se devuelve passed:true sin
- * correr nada, para no bloquear tareas que no son de código TypeScript.
+ * tarea LLM sin herramientas) NI corrió run_command (instalar/scaffolding),
+ * no aplica — se devuelve passed:true sin correr nada, para no bloquear
+ * tareas que no tocan código TypeScript.
+ *
+ * run_command (MASD-0023, herramientas 1 y 2: shell restringido + scaffolding) escribe
+ * archivos directo por su cuenta (ej. npx create-next-app), sin pasar por write_file — así que
+ * writtenFiles no los ve. Si se usó run_command, se corre tsc igual, y como no hay una lista de
+ * "archivos que esta tarea tocó" para filtrar, se trata CUALQUIER error de tsc como relevante
+ * (no hay forma de distinguir "esto ya estaba roto" de "esto lo rompió el scaffolding" sin esa
+ * lista — más estricto es más seguro que dejar pasar un scaffold que no compila).
  */
 export async function runRealCodeChecks(
   toolLog: { tool: string; args: Record<string, unknown> }[] | undefined,
@@ -31,8 +39,9 @@ export async function runRealCodeChecks(
     .filter((t) => t.tool === 'write_file' && typeof t.args?.rel_path === 'string')
     .map((t) => t.args.rel_path as string)
     .filter((f) => /\.(ts|tsx)$/.test(f))
+  const usoComando = (toolLog ?? []).some((t) => t.tool === 'run_command')
 
-  if (writtenFiles.length === 0) {
+  if (writtenFiles.length === 0 && !usoComando) {
     return { ran: false, passed: true, errors: [] }
   }
 
@@ -46,6 +55,11 @@ export async function runRealCodeChecks(
   } catch (err: unknown) {
     const e = err as { stdout?: string; stderr?: string; message?: string }
     const output = e.stdout || e.stderr || e.message || String(err)
+    if (writtenFiles.length === 0) {
+      // Solo hubo run_command: sin lista de archivos propios para filtrar, se reporta la salida
+      // completa de tsc (acotada) como el error real.
+      return { ran: true, passed: false, errors: [output.substring(0, 3000)] }
+    }
     const relevantLines = output
       .split('\n')
       .filter((line) => writtenFiles.some((f) => line.includes(f)))
