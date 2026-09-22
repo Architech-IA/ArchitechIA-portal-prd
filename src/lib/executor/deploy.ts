@@ -1,9 +1,11 @@
 import { execFile } from 'child_process'
 import { promisify } from 'util'
+import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import { prisma } from '@/lib/prisma'
 import { resolveRepoConfig } from './repoConfig'
+import { envFileSiExiste, guardarVariableInterna } from './secrets'
 
 const execFileAsync = promisify(execFile)
 
@@ -49,9 +51,20 @@ function asegurarDockerfileGenerico() {
   // (el scaffolding del Motor no lo configura), así que copia node_modules completo en vez de
   // depender del build standalone de Next — más pesado, pero funciona con cualquier proyecto
   // que el Motor haya armado con create-next-app tal cual, sin retocar la config.
+  // "COPY prisma ./prisma" antes de "npm install": un proyecto con Prisma corre `prisma
+  // generate` en su postinstall, que necesita prisma/schema.prisma YA presente en ese paso —
+  // sin esto, cualquier proyecto con base de datos (MASD-0023-0006-028) fallaba el build.
+  // asegurarCarpetaPrisma() garantiza que la carpeta exista (aunque sea vacía) para que este
+  // COPY nunca falle en proyectos sin Prisma.
+  // "apk add openssl" en ambas etapas (deps y runner): Alpine no trae libssl visible para que
+  // Prisma detecte su versión, así que el motor de Prisma quedaba corriendo con el binario
+  // equivocado y fallaba en runtime con "Could not parse schema engine response" — problema
+  // conocido de Prisma + Alpine, no específico de este proyecto.
   const contenido = `FROM node:20-alpine AS deps
 WORKDIR /app
+RUN apk add --no-cache openssl
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN npm ci || npm install
 
 FROM node:20-alpine AS builder
@@ -64,16 +77,22 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache openssl
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
 USER nextjs
 EXPOSE 3000
 CMD ["npm", "start"]
 `
   fs.writeFileSync(DOCKERFILE_GENERICO, contenido)
+}
+
+function asegurarCarpetaPrisma(repoPath: string) {
+  fs.mkdirSync(path.join(repoPath, 'prisma'), { recursive: true })
 }
 
 function nginxConfPath(slug: string) { return `/etc/nginx/sites-enabled/demo-${slug}` }
@@ -147,8 +166,8 @@ export interface ResultadoDeploy { url: string; puerto: number; contenedor: stri
 // esquema anterior (que hacía "docker rm -f" del viejo ANTES de levantar el nuevo): si el
 // build o el arranque del nuevo fallan, el viejo sigue funcionando en vez de quedar todo caído.
 export async function desplegarSolucion(solucionId: string): Promise<ResultadoDeploy> {
-  const [sol] = await prisma.$queryRawUnsafe<{ nombre: string; repositorio: string | null; deployContainerName: string | null }[]>(
-    `SELECT nombre, repositorio, "deployContainerName" FROM "Solucion" WHERE id = $1`, solucionId)
+  const [sol] = await prisma.$queryRawUnsafe<{ nombre: string; repositorio: string | null; deployContainerName: string | null; dbNetworkName: string | null }[]>(
+    `SELECT nombre, repositorio, "deployContainerName", "dbNetworkName" FROM "Solucion" WHERE id = $1`, solucionId)
   if (!sol) throw new Error('La Solución no existe.')
   if (!sol.repositorio) throw new Error('Esta Solución no tiene repositorio asociado — no hay nada que desplegar.')
 
@@ -164,6 +183,7 @@ export async function desplegarSolucion(solucionId: string): Promise<ResultadoDe
     await sh('git', ['reset', '--hard', 'origin/main'], { cwd: repoPath })
 
     asegurarDockerfileGenerico()
+    asegurarCarpetaPrisma(repoPath)
     const slug = slugDeploy(sol.nombre)
     // Tag de imagen ESTABLE por proyecto (habilita la caché de capas de Docker entre deploys
     // sucesivos del mismo proyecto) — el nombre de CONTENEDOR sí es único por intento, para que
@@ -173,7 +193,16 @@ export async function desplegarSolucion(solucionId: string): Promise<ResultadoDe
     const puertoNuevo = await puertoLibre() // ya excluye el puerto que esté usando el contenedor viejo
 
     await sh('docker', ['build', '-f', DOCKERFILE_GENERICO, '-t', imagen, repoPath], { timeout: 600_000 })
-    await sh('docker', ['run', '-d', '--name', contenedorNuevo, '-p', `${puertoNuevo}:3000`, '--restart', 'unless-stopped', imagen])
+    // Si el proyecto tiene base de datos aprovisionada, el contenedor se une a esa red privada
+    // (para resolver el contenedor de Postgres por nombre) además de publicar su puerto para
+    // Nginx. Si hay variables de entorno cargadas (incluida DATABASE_URL, que aprovisionarBase-
+    // DeDatos ya dejó ahí), se las pasa con --env-file.
+    const runArgs = ['run', '-d', '--name', contenedorNuevo, '-p', `${puertoNuevo}:3000`, '--restart', 'unless-stopped']
+    if (sol.dbNetworkName) runArgs.push('--network', sol.dbNetworkName)
+    const envFile = envFileSiExiste(sol.nombre)
+    if (envFile) runArgs.push('--env-file', envFile)
+    runArgs.push(imagen)
+    await sh('docker', runArgs)
     try {
       await esperarContenedorListo(contenedorNuevo, puertoNuevo)
     } catch (err) {
@@ -204,5 +233,134 @@ export async function desplegarSolucion(solucionId: string): Promise<ResultadoDe
       `UPDATE "Solucion" SET "deployStatus"=$1, "updatedAt"=NOW() WHERE id=$2`,
       contenedorViejo ? 'LIVE' : 'FAILED', solucionId)
     throw err
+  }
+}
+
+// ─────────────────────────── Base de datos por proyecto ───────────────────────────
+// MASD-0023-0006 (base de datos + variables de entorno). Un Postgres dedicado por proyecto —
+// mismo patrón que ya usa este VPS para otros clientes (portal-seg-postgres, smartlex-db):
+// contenedor propio, volumen propio (sobrevive a cada redeploy de la app, que solo reemplaza el
+// contenedor de la app), y SIN puerto publicado al host — solo alcanzable desde el contenedor
+// de la app, por una red de Docker privada creada para este proyecto. Ni internet ni otro
+// proyecto desplegado pueden llegar a esta base de datos directamente.
+//
+// Disparo: botón «Agregar base de datos» aparte de «Publicar» — no todos los proyectos la
+// necesitan, y aprovisionar de más gastaría recursos del VPS sin necesidad.
+
+export interface ResultadoDB { contenedor: string; red: string; volumen: string }
+
+async function dockerNetworkAsegurar(nombre: string): Promise<void> {
+  const existe = await sh('docker', ['network', 'ls', '--filter', `name=^${nombre}$`, '--format', '{{.Name}}']).catch(() => '')
+  if (!existe.trim()) await sh('docker', ['network', 'create', nombre])
+}
+
+async function esperarPostgresListo(contenedor: string, usuario: string, intentos = 20): Promise<void> {
+  for (let i = 0; i < intentos; i++) {
+    try {
+      await sh('docker', ['exec', contenedor, 'pg_isready', '-U', usuario])
+      return
+    } catch {
+      const estado = await sh('docker', ['inspect', '-f', '{{.State.Status}}', contenedor]).catch(() => '?')
+      if (estado.trim() === 'exited') {
+        const logs = await sh('docker', ['logs', '--tail', '30', contenedor]).catch(() => '')
+        throw new Error(`El contenedor de la base de datos se cerró solo antes de estar listo.\n${logs.slice(-1500)}`)
+      }
+      await new Promise(r => setTimeout(r, 1500))
+    }
+  }
+  throw new Error(`La base de datos no respondió después de ${intentos * 1.5}s.`)
+}
+
+export async function aprovisionarBaseDeDatos(solucionId: string): Promise<ResultadoDB> {
+  const [sol] = await prisma.$queryRawUnsafe<{ nombre: string; dbContainerName: string | null }[]>(
+    `SELECT nombre, "dbContainerName" FROM "Solucion" WHERE id = $1`, solucionId)
+  if (!sol) throw new Error('La Solución no existe.')
+  if (sol.dbContainerName) throw new Error('Este proyecto ya tiene una base de datos aprovisionada.')
+
+  const slug = slugDeploy(sol.nombre)
+  const red = `demo-net-${slug}`
+  const volumen = `demo-db-${slug}`
+  const contenedor = `demo-db-${slug}`
+  const dbNombre = slug.replace(/-/g, '_')
+  const usuario = 'app'
+  const clave = crypto.randomBytes(24).toString('base64url')
+
+  await prisma.$executeRawUnsafe(`UPDATE "Solucion" SET "dbStatus"='PROVISIONING', "updatedAt"=NOW() WHERE id=$1`, solucionId)
+  try {
+    await dockerNetworkAsegurar(red)
+    await sh('docker', ['volume', 'create', volumen]).catch(() => '')
+    await sh('docker', [
+      'run', '-d', '--name', contenedor, '--network', red,
+      '-e', `POSTGRES_PASSWORD=${clave}`, '-e', `POSTGRES_DB=${dbNombre}`, '-e', `POSTGRES_USER=${usuario}`,
+      '-v', `${volumen}:/var/lib/postgresql/data`, '--restart', 'unless-stopped', 'postgres:16-alpine',
+    ])
+    await esperarPostgresListo(contenedor, usuario)
+
+    // DATABASE_URL queda en el archivo de variables del proyecto, nunca en la base de datos del
+    // portal — mismo criterio de MASD-0023-0006-028. El host es el NOMBRE del contenedor: Docker
+    // lo resuelve solo dentro de esta red, no hace falta IP fija.
+    guardarVariableInterna(sol.nombre, 'DATABASE_URL', `postgresql://${usuario}:${clave}@${contenedor}:5432/${dbNombre}`)
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Solucion" SET "dbContainerName"=$1, "dbNetworkName"=$2, "dbVolumeName"=$3, "dbStatus"='READY', "dbProvisionedAt"=NOW(), "updatedAt"=NOW() WHERE id=$4`,
+      contenedor, red, volumen, solucionId)
+    return { contenedor, red, volumen }
+  } catch (err) {
+    await prisma.$executeRawUnsafe(`UPDATE "Solucion" SET "dbStatus"='FAILED', "updatedAt"=NOW() WHERE id=$1`, solucionId)
+    throw err
+  }
+}
+
+// ─────────────────────────── Migraciones ───────────────────────────
+// Manual, aparte de «Publicar» — a propósito (decisión explícita del usuario): una migración
+// mal escrita podría alterar o borrar datos reales sin revisión si corriera sola en cada
+// despliegue. Corre "prisma migrate deploy" DENTRO de un contenedor descartable, en la misma
+// red privada que la base de datos, usando la imagen ya construida del proyecto (o construye
+// una si todavía no existe ninguna).
+
+export interface ResultadoMigracion { ok: boolean; salida: string }
+
+export async function aplicarMigraciones(solucionId: string): Promise<ResultadoMigracion> {
+  const [sol] = await prisma.$queryRawUnsafe<{ nombre: string; repositorio: string | null; dbNetworkName: string | null }[]>(
+    `SELECT nombre, repositorio, "dbNetworkName" FROM "Solucion" WHERE id = $1`, solucionId)
+  if (!sol) throw new Error('La Solución no existe.')
+  if (!sol.repositorio) throw new Error('Esta Solución no tiene repositorio asociado.')
+  if (!sol.dbNetworkName) throw new Error('Este proyecto todavía no tiene una base de datos aprovisionada — agregala primero.')
+
+  const { repoPath } = await resolveRepoConfig(solucionId)
+  await sh('git', ['fetch', 'origin', 'main'], { cwd: repoPath })
+  await sh('git', ['checkout', 'main'], { cwd: repoPath })
+  await sh('git', ['reset', '--hard', 'origin/main'], { cwd: repoPath })
+
+  if (!fs.existsSync(path.join(repoPath, 'prisma', 'schema.prisma'))) {
+    throw new Error('Este proyecto no tiene prisma/schema.prisma — no hay migraciones de Prisma que aplicar.')
+  }
+
+  const slug = slugDeploy(sol.nombre)
+  const imagen = `demo-image-${slug}`
+  const yaHayImagen = await sh('docker', ['image', 'inspect', imagen]).then(() => true).catch(() => false)
+  if (!yaHayImagen) {
+    asegurarDockerfileGenerico()
+    asegurarCarpetaPrisma(repoPath)
+    await sh('docker', ['build', '-f', DOCKERFILE_GENERICO, '-t', imagen, repoPath], { timeout: 600_000 })
+  }
+
+  // "--user root": la imagen de runtime corre como el usuario no-root "nextjs" (node_modules
+  // quedó root-owned al copiarse en el build), pero prisma CLI necesita escribir binarios de
+  // motor en node_modules/@prisma/engines — sin esto, migrate deploy fallaba siempre con
+  // "Can't write to ... please make sure you install prisma with the right permissions".
+  // Seguro acá porque este contenedor es efímero (--rm), sin puerto publicado y en una red
+  // privada — no es el proceso de la app que queda corriendo.
+  const envFile = envFileSiExiste(sol.nombre)
+  const args = ['run', '--rm', '--user', 'root', '--network', sol.dbNetworkName]
+  if (envFile) args.push('--env-file', envFile)
+  args.push(imagen, 'npx', 'prisma', 'migrate', 'deploy')
+
+  try {
+    const salida = await sh('docker', args, { timeout: 180_000 })
+    return { ok: true, salida: salida.slice(-4000) }
+  } catch (err) {
+    const e = err as { stdout?: string; stderr?: string; message?: string }
+    return { ok: false, salida: ((e.stdout ?? '') + '\n' + (e.stderr ?? e.message ?? '')).slice(-4000) }
   }
 }

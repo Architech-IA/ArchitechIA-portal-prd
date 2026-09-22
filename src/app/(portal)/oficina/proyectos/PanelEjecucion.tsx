@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEffect as useEffectPublicar } from 'react'
-import { ChevronDown, Rocket, Globe, ExternalLink } from 'lucide-react'
+import { ChevronDown, Rocket, Globe, ExternalLink, Database, Play, Plus, Trash2, KeyRound } from 'lucide-react'
 
 // Panel «Ejecución» de Oficina > Proyectos — la Sala de Control (antes en /backlog/control/
 // [sprintId], una vista aparte) embebida como una pestaña más del proyecto, acotada a los
@@ -136,6 +136,162 @@ function PanelPublicar({ proyectoId }: { proyectoId: string }) {
   )
 }
 
+interface EstadoDB { dbStatus: string | null; dbProvisionedAt: string | null }
+
+// Base de datos + variables de entorno del proyecto (MASD-0023-0006-028/029). Separado de
+// «Publicar» a propósito: no todos los proyectos necesitan DB, y aplicar migraciones puede
+// tocar datos reales — nunca corre automático, siempre un botón aparte que la persona toca
+// después de revisar. Colapsado por defecto para no saturar el panel de Ejecución.
+function PanelBaseDatos({ proyectoId }: { proyectoId: string }) {
+  const [abierto, setAbierto] = useState(false)
+  const [estado, setEstado] = useState<EstadoDB | null>(null)
+  const [aprovisionando, setAprovisionando] = useState(false)
+  const [migrando, setMigrando] = useState(false)
+  const [salidaMigracion, setSalidaMigracion] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const [variables, setVariables] = useState<string[] | null>(null)
+  const [nuevoNombre, setNuevoNombre] = useState('')
+  const [nuevoValor, setNuevoValor] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [errorVar, setErrorVar] = useState<string | null>(null)
+
+  const cargarDB = () => { fetch(`/api/proyectos/${proyectoId}/db`).then(r => r.json()).then(setEstado).catch(() => {}) }
+  const cargarVars = () => { fetch(`/api/proyectos/${proyectoId}/env`).then(r => r.json()).then(d => setVariables(d.variables ?? [])).catch(() => {}) }
+
+  useEffect(() => { cargarDB(); cargarVars() }, [proyectoId])
+  useEffect(() => {
+    if (estado?.dbStatus !== 'PROVISIONING') return
+    const t = setInterval(cargarDB, 3000)
+    return () => clearInterval(t)
+  }, [estado?.dbStatus, proyectoId])
+
+  async function agregarDB() {
+    setAprovisionando(true); setError(null)
+    try {
+      const r = await fetch(`/api/proyectos/${proyectoId}/db`, { method: 'POST' })
+      const data = await r.json()
+      if (!r.ok) { setError(data.error || 'No se pudo aprovisionar la base de datos.'); cargarDB(); return }
+      setEstado({ dbStatus: 'READY', dbProvisionedAt: new Date().toISOString() })
+    } catch { setError('No se pudo aprovisionar (error de red).') } finally { setAprovisionando(false) }
+  }
+
+  async function migrar() {
+    setMigrando(true); setError(null); setSalidaMigracion(null)
+    try {
+      const r = await fetch(`/api/proyectos/${proyectoId}/db/migrar`, { method: 'POST' })
+      const data = await r.json()
+      setSalidaMigracion(data.salida || data.error || '(sin salida)')
+      if (!r.ok && !data.salida) setError(data.error || 'Fallaron las migraciones.')
+    } catch { setError('No se pudo aplicar migraciones (error de red).') } finally { setMigrando(false) }
+  }
+
+  async function agregarVariable() {
+    if (!nuevoNombre.trim() || !nuevoValor) return
+    setGuardando(true); setErrorVar(null)
+    try {
+      const r = await fetch(`/api/proyectos/${proyectoId}/env`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nuevoNombre.trim().toUpperCase(), valor: nuevoValor }),
+      })
+      const data = await r.json()
+      if (!r.ok) { setErrorVar(data.error || 'No se pudo guardar la variable.'); return }
+      setVariables(data.variables); setNuevoNombre(''); setNuevoValor('')
+    } catch { setErrorVar('No se pudo guardar (error de red).') } finally { setGuardando(false) }
+  }
+
+  async function borrarVariable(nombre: string) {
+    try {
+      const r = await fetch(`/api/proyectos/${proyectoId}/env?variable=${encodeURIComponent(nombre)}`, { method: 'DELETE' })
+      const data = await r.json()
+      if (r.ok) setVariables(data.variables)
+    } catch { /* silencioso */ }
+  }
+
+  return (
+    <div className="flex-shrink-0 border-b border-white/5">
+      <button onClick={() => setAbierto(o => !o)} className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-gray-300 hover:text-white transition-colors">
+        <Database size={13} className="text-emerald-400 flex-shrink-0" />
+        <span className="flex-1 text-left truncate">
+          Base de datos y variables de entorno
+          {estado?.dbStatus === 'READY' && <span className="ml-1.5 text-emerald-400">· activa</span>}
+          {estado?.dbStatus === 'PROVISIONING' && <span className="ml-1.5 text-amber-400">· creando…</span>}
+          {estado?.dbStatus === 'FAILED' && <span className="ml-1.5 text-red-400">· falló</span>}
+        </span>
+        <ChevronDown size={12} className={`flex-shrink-0 transition-transform ${abierto ? 'rotate-180' : ''}`} />
+      </button>
+      {abierto && (
+        <div className="px-3 pb-3 space-y-3">
+          <div className="rounded-lg p-2.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-2 text-[10.5px] text-gray-400 mb-2">
+              <Database size={11} className="flex-shrink-0" />
+              {!estado?.dbStatus && 'Este proyecto todavía no tiene una base de datos propia.'}
+              {estado?.dbStatus === 'PROVISIONING' && 'Creando el contenedor de Postgres…'}
+              {estado?.dbStatus === 'READY' && `Activa desde ${estado.dbProvisionedAt ? new Date(estado.dbProvisionedAt).toLocaleString('es-AR') : '—'}.`}
+              {estado?.dbStatus === 'FAILED' && 'El último intento de aprovisionar falló — podés reintentar.'}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {(!estado?.dbStatus || estado.dbStatus === 'FAILED') && (
+                <button onClick={agregarDB} disabled={aprovisionando}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-semibold text-white disabled:opacity-50 transition-colors"
+                  style={{ background: 'rgba(16,185,129,0.85)' }}>
+                  <Plus size={11} /> {aprovisionando ? 'Creando…' : 'Agregar base de datos'}
+                </button>
+              )}
+              {estado?.dbStatus === 'READY' && (
+                <button onClick={migrar} disabled={migrando}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-semibold text-white disabled:opacity-50 transition-colors"
+                  style={{ background: 'rgba(99,102,241,0.85)' }}
+                  title="Corre `prisma migrate deploy` contra la base de datos real de este proyecto. Manual siempre.">
+                  <Play size={11} /> {migrando ? 'Aplicando…' : 'Aplicar migraciones'}
+                </button>
+              )}
+            </div>
+            {salidaMigracion && (
+              <pre className="mt-2 text-[9.5px] text-gray-400 whitespace-pre-wrap max-h-32 overflow-y-auto rounded p-2" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                {salidaMigracion}
+              </pre>
+            )}
+            {error && <div className="text-[10.5px] text-red-400 mt-1.5">{error}</div>}
+          </div>
+
+          <div className="rounded-lg p-2.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-2 text-[10.5px] text-gray-400 mb-2">
+              <KeyRound size={11} className="flex-shrink-0" />
+              Variables de entorno — solo se muestran los nombres, nunca los valores.
+            </div>
+            <div className="space-y-1 mb-2">
+              {(variables ?? []).length === 0 && <div className="text-[10.5px] text-gray-600">Sin variables cargadas.</div>}
+              {(variables ?? []).map(nombre => (
+                <div key={nombre} className="flex items-center gap-2 text-[10.5px] text-gray-300 px-2 py-1 rounded" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <span className="flex-1 font-mono truncate">{nombre}</span>
+                  <button onClick={() => borrarVariable(nombre)} className="text-gray-500 hover:text-red-400 transition-colors flex-shrink-0">
+                    <Trash2 size={11} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)} placeholder="NOMBRE_VARIABLE"
+                className="flex-1 min-w-0 px-2 py-1 rounded text-[10.5px] font-mono text-gray-200 placeholder-gray-600"
+                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }} />
+              <input value={nuevoValor} onChange={e => setNuevoValor(e.target.value)} placeholder="valor" type="password"
+                className="flex-1 min-w-0 px-2 py-1 rounded text-[10.5px] text-gray-200 placeholder-gray-600"
+                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }} />
+              <button onClick={agregarVariable} disabled={guardando || !nuevoNombre.trim() || !nuevoValor}
+                className="flex-shrink-0 px-2 py-1 rounded text-[10.5px] font-semibold text-white disabled:opacity-40 transition-colors"
+                style={{ background: 'rgba(99,102,241,0.85)' }}>
+                <Plus size={11} />
+              </button>
+            </div>
+            {errorVar && <div className="text-[10.5px] text-red-400 mt-1.5">{errorVar}</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function PanelEjecucion({ proyectoId }: { proyectoId: string }) {
   const [sprints, setSprints] = useState<SprintResumen[] | null>(null)
   const [sprintId, setSprintId] = useState<string | null>(null)
@@ -165,6 +321,7 @@ export default function PanelEjecucion({ proyectoId }: { proyectoId: string }) {
   return (
     <div className="flex flex-col h-full min-h-0">
       <PanelPublicar proyectoId={proyectoId} />
+      <PanelBaseDatos proyectoId={proyectoId} />
       {sprints.length > 1 && (
         <div className="relative flex-shrink-0 border-b border-white/5 px-3 py-2">
           <button onClick={() => setAbierto(o => !o)} className="w-full flex items-center justify-between gap-2 text-[11px] text-gray-300 hover:text-white transition-colors">
