@@ -43,3 +43,8 @@ graphify-out/
 
 # resultados de evals (la linea base va en evals/baseline-proyectos.json)
 /evals/resultados/
+
+# compilaciones de scripts/deploy-prod.sh
+/.next-build
+/.next-old
+/.next-fallido
