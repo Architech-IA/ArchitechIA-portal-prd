@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import NextLink from 'next/link'
-import { Loader2, RefreshCw, Check, AlertTriangle, Bot, UserCheck, Gauge, Cpu, Server } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { Loader2, RefreshCw, Check, AlertTriangle, Bot, UserCheck, Gauge, Cpu, Server, Plus, X, UserPlus } from 'lucide-react'
 import Link from '@/lib/BacklogLink'
 import { api, post, hace } from '../proyectos/api'
 
@@ -12,8 +13,9 @@ import { api, post, hace } from '../proyectos/api'
 
 interface Puerta { ok: number; total: number; lista: boolean; aprobador: string; tipo: 'NORMAL' | 'RESULTADO' }
 interface Tareas { total: number; hechas: number; enCurso: number; fallidas: number; bloqueadas: number }
+interface LeadSinMotor { leadId: string; empresa: string; status: string; outcome: string | null; solucionId: string | null }
 interface FilaCartera {
-  id: string; nombre: string; cliente: string | null; codigo: string | null; estadoMotor: 'EN_CURSO' | 'CERRADO_PERDIDO' | 'COMPLETADO'
+  id: string; leadId: string | null; nombre: string; cliente: string | null; codigo: string | null; estadoMotor: 'EN_CURSO' | 'CERRADO_PERDIDO' | 'COMPLETADO'
   faseNumero: number; faseNombre: string; bloque: 'PREVENTA' | 'EJECUCION'; totalFases: number; puerta: Puerta; enFaseDesde: string | null; tareas: Tareas | null
 }
 interface Aprobacion { id: string; nombre: string; faseNombre: string; faseNumero: number; aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; ok: number; total: number; lista: boolean; enFaseDesde: string | null }
@@ -22,7 +24,7 @@ interface Atascada { id: string; backlogItemId: string; taskCode: string | null;
 interface Resumen {
   puedeAprobar: boolean
   totales: { proyectos: number; enCurso: number; porAprobar: number; sinMotor: number; corriendo: number; problemas: number }
-  cartera: FilaCartera[]; aprobaciones: Aprobacion[]
+  cartera: FilaCartera[]; aprobaciones: Aprobacion[]; leadsSinMotor: LeadSinMotor[]
   ejecucion: { corriendo: Tarea[]; problemas: Tarea[]; atascadas: Atascada[]; atascadaHoras: number; harness: { ok: boolean; colas: Record<string, number> | null } }
   costo: { ejecuciones: number; conUso: number; tokens: number; entrada: number; salida: number; porProyecto: { id: string; nombre: string; tareas: number; tokens: number }[] }
 }
@@ -30,6 +32,11 @@ interface Resumen {
 const APROBADOR: Record<string, string> = {
   COMERCIAL: 'Comercial', LIDER_PREVENTA: 'Líder de preventa', LIDER_TECNICO: 'Líder técnico', DIRECCION: 'Dirección', LIDER_PROYECTO: 'Líder de proyecto', CLIENTE: 'Cliente',
 }
+const ETAPA: Record<string, string> = {
+  NEW: 'Identificación', CONTACTED: 'Contacto', DIAGNOSIS: 'Diagnóstico', DEMO_VALIDATION: 'Demo', PROPOSAL_SENT: 'Propuesta', NEGOTIATION: 'Negociación', RESULT: 'Con resultado',
+}
+const FORM_VACIO = { companyName: '', contactName: '', email: '', phone: '', source: 'Directo', userId: '', estimatedValue: '', scope: '', solucionAsociada: '' }
+const inputCls = 'w-full rounded-md px-2.5 py-1.5 text-[12px] text-gray-100 bg-black/30 border border-white/10 outline-none focus:border-indigo-400/50'
 const n = (x: number) => x.toLocaleString('es-CO')
 const miles = (x: number) => (x >= 1_000_000 ? `${(x / 1_000_000).toFixed(1)} M` : x >= 1000 ? `${Math.round(x / 1000)} k` : String(x))
 const urlProyecto = (id: string) => `/oficina?view=proyectos&p=${id}`
@@ -58,6 +65,14 @@ export default function MotorView() {
   const [error, setError] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
   const [aprobando, setAprobando] = useState<string | null>(null)
+  const { data: sesion } = useSession()
+  const [formAbierto, setFormAbierto] = useState(false)
+  const [form, setForm] = useState(FORM_VACIO)
+  const [usuarios, setUsuarios] = useState<{ id: string; name: string }[]>([])
+  const [guardando, setGuardando] = useState(false)
+  const [errorForm, setErrorForm] = useState<string | null>(null)
+  const [creado, setCreado] = useState<{ empresa: string; solucionId: string | null } | null>(null)
+  const [iniciando, setIniciando] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -69,6 +84,31 @@ export default function MotorView() {
     const t = setInterval(() => { if (document.visibilityState === 'visible') void cargar() }, 20_000)
     return () => clearInterval(t)
   }, [cargar])
+
+  const abrirForm = async () => {
+    setErrorForm(null); setFormAbierto(true)
+    const yo = (sesion?.user as { id?: string } | undefined)?.id ?? ''
+    setForm({ ...FORM_VACIO, userId: yo })
+    if (usuarios.length === 0) { try { setUsuarios(await api<{ id: string; name: string }[]>('/api/users')) } catch { /* el selector queda vacío */ } }
+  }
+
+  const crearLead = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setGuardando(true); setErrorForm(null)
+    try {
+      const l = await post<{ id: string; companyName: string; solucionId?: string }>('/api/leads', {
+        companyName: form.companyName.trim(), contactName: form.contactName.trim(), email: form.email.trim(), phone: form.phone.trim() || undefined,
+        source: form.source, userId: form.userId, estimatedValue: form.estimatedValue || 0, scope: form.scope.trim() || undefined,
+        solucionAsociada: form.solucionAsociada || undefined, tipo: undefined, status: 'NEW',
+      })
+      setFormAbierto(false); setCreado({ empresa: l.companyName, solucionId: l.solucionId ?? null }); await cargar()
+    } catch (er) { setErrorForm(er instanceof Error ? er.message : 'No se pudo crear el lead') } finally { setGuardando(false) }
+  }
+
+  const iniciarLead = async (leadId: string | null) => {
+    setIniciando(leadId ?? 'todos'); setError(null)
+    try { await post(leadId ? `/api/motor/leads/${leadId}/iniciar` : '/api/motor/leads/iniciar-todos', {}); await cargar() } catch (er) { setError(er instanceof Error ? er.message : 'No se pudo iniciar el motor') } finally { setIniciando(null) }
+  }
 
   const aprobar = async (a: Aprobacion) => {
     if (!window.confirm(`¿Aprobar la fase «${a.faseNombre}» de ${a.nombre} y pasar a la siguiente?`)) return
@@ -92,10 +132,18 @@ export default function MotorView() {
           <p className="text-[11px] text-[#7f8a9c]">Proyectos, aprobaciones, agentes y costo en un solo lugar. Se actualiza solo cada 20 s.</p>
         </div>
         <span className="flex-1" />
+        {d.puedeAprobar && <button onClick={() => void abrirForm()} className="flex items-center gap-1.5 text-[11px] font-medium text-white px-3 py-1.5 rounded-lg" style={{ background: '#6366f1' }}><Plus size={12} /> Nuevo lead</button>}
         <button onClick={() => void cargar()} className="flex items-center gap-1.5 text-[11px] text-[#9ca3af] hover:text-gray-100 px-2.5 py-1.5 rounded-lg border border-white/10">
           <RefreshCw size={12} className={cargando ? 'animate-spin' : ''} /> Actualizar</button>
       </div>
       {error && <p className="text-[11px] text-red-300">{error}</p>}
+      {creado && (
+        <div className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-[12px]" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
+          <Check size={14} className="text-emerald-300" />
+          <span className="text-gray-200 flex-1">Lead «{creado.empresa}» creado. Ya tiene su proyecto y el motor arrancó en Identificación, con sus dos primeras tareas en el Backlog.</span>
+          {creado.solucionId && <NextLink href={urlProyecto(creado.solucionId)} className="text-indigo-300 hover:text-indigo-200 flex-shrink-0">Abrir el proyecto</NextLink>}
+          <button onClick={() => setCreado(null)} className="text-[#7f8a9c] hover:text-gray-200"><X size={13} /></button>
+        </div>)}
 
       <div className="flex flex-wrap gap-2.5">
         <Cifra valor={t.enCurso} etiqueta="proyectos en curso" />
@@ -154,16 +202,33 @@ export default function MotorView() {
         </Tarjeta>
       </div>
 
+      {d.leadsSinMotor.length > 0 && (
+        <Tarjeta titulo="Leads sin motor de fases" icono={UserPlus}
+          derecha={d.puedeAprobar && <button disabled={iniciando !== null} onClick={() => void iniciarLead(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-white disabled:opacity-50" style={{ background: '#6366f1' }}>
+            {iniciando === 'todos' ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Iniciar todos los abiertos</button>}>
+          <p className="px-4 pt-2 text-[10px] text-[#7f8a9c]">Son anteriores a que todo lead naciera con motor. Iniciarlo crea su proyecto y las tareas de la fase en que está.</p>
+          <div className="divide-y divide-white/5">
+            {d.leadsSinMotor.map(l => (
+              <div key={l.leadId} className="flex items-center gap-3 px-4 py-2">
+                <div className="min-w-0 flex-1"><p className="text-[12px] text-gray-100 truncate">{l.empresa}</p>
+                  <p className="text-[10px] text-[#7f8a9c]">{ETAPA[l.status] ?? l.status}{l.outcome ? ` · ${l.outcome === 'WON' ? 'ganado' : 'perdido'}` : ''}</p></div>
+                <NextLink href={`/leads/${l.leadId}/hub`} className="text-[11px] text-[#9ca3af] hover:text-gray-100">Lead Hub</NextLink>
+                {d.puedeAprobar && <button disabled={iniciando !== null} onClick={() => void iniciarLead(l.leadId)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] text-indigo-200 border border-indigo-400/30 hover:bg-indigo-500/10 disabled:opacity-50">
+                  {iniciando === l.leadId ? <Loader2 size={11} className="animate-spin" /> : null} Iniciar</button>}
+              </div>))}
+          </div>
+        </Tarjeta>)}
+
       <Tarjeta titulo="Cartera de proyectos" icono={Gauge} derecha={<span className="text-[10px] text-[#7f8a9c]">{d.cartera.length} con motor de fases</span>}>
         {d.cartera.length === 0 && <p className="px-4 py-3 text-[11px] text-[#7f8a9c]">Aún no hay proyectos con el motor de fases iniciado. Se inicia desde Proyectos › Fases.</p>}
         <div className="divide-y divide-white/5">
           {d.cartera.map(p => {
             const tr = p.tareas
             return (
-              <NextLink key={p.id} href={urlProyecto(p.id)} className="flex items-center gap-4 px-4 py-2.5 hover:bg-white/[0.03]">
+              <div key={p.id} className="flex items-center gap-4 px-4 py-2.5 hover:bg-white/[0.03]">
                 <div className="w-[210px] flex-shrink-0 min-w-0">
-                  <p className="text-[12px] text-gray-100 truncate">{p.nombre}</p>
-                  <p className="text-[10px] text-[#7f8a9c] truncate">{p.cliente ?? p.codigo ?? ''}</p>
+                  <NextLink href={urlProyecto(p.id)} className="text-[12px] text-gray-100 hover:text-indigo-200 truncate block">{p.nombre}</NextLink>
+                  <p className="text-[10px] text-[#7f8a9c] truncate">{p.cliente ?? p.codigo ?? ''}{p.leadId ? <> · <NextLink href={`/leads/${p.leadId}/hub`} className="hover:text-gray-200">Lead Hub</NextLink></> : null}</p>
                 </div>
                 <div className="flex-1 min-w-[150px]">
                   <div className="flex gap-0.5">{Array.from({ length: p.totalFases }, (_, i) => {
@@ -180,7 +245,7 @@ export default function MotorView() {
                 <div className="w-[170px] flex-shrink-0 text-right text-[10px] text-[#9ca3af]">
                   {tr && tr.total > 0 ? <>{tr.hechas}/{tr.total} tareas{tr.enCurso ? <span className="text-emerald-300"> · {tr.enCurso} corriendo</span> : null}{tr.fallidas ? <span className="text-red-300"> · {tr.fallidas} fallidas</span> : null}{tr.bloqueadas ? <span className="text-amber-300"> · {tr.bloqueadas} bloq.</span> : null}</> : 'Sin tareas'}
                 </div>
-              </NextLink>)
+              </div>)
           })}
         </div>
       </Tarjeta>
@@ -198,6 +263,37 @@ export default function MotorView() {
               </div>))}
           </div>)}
       </Tarjeta>
+
+      {formAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.65)' }} onClick={() => !guardando && setFormAbierto(false)}>
+          <form onSubmit={e => void crearLead(e)} onClick={e => e.stopPropagation()} className="w-full max-w-[560px] rounded-xl p-5 space-y-3" style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex items-center"><h3 className="text-[14px] font-bold text-gray-100">Nuevo lead</h3><span className="flex-1" />
+              <button type="button" onClick={() => setFormAbierto(false)} className="text-[#7f8a9c] hover:text-gray-200"><X size={15} /></button></div>
+            <p className="text-[11px] text-[#7f8a9c]">Al guardar se crea el lead, su proyecto y se inicia el motor de fases en Identificación.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-[11px] text-[#9ca3af] col-span-2">Empresa *<input required value={form.companyName} onChange={e => setForm({ ...form, companyName: e.target.value })} className={inputCls} /></label>
+              <label className="text-[11px] text-[#9ca3af]">Contacto *<input required value={form.contactName} onChange={e => setForm({ ...form, contactName: e.target.value })} className={inputCls} /></label>
+              <label className="text-[11px] text-[#9ca3af]">Email *<input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className={inputCls} /></label>
+              <label className="text-[11px] text-[#9ca3af]">Teléfono<input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={inputCls} /></label>
+              <label className="text-[11px] text-[#9ca3af]">Fuente *
+                <select required value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} className={inputCls}>{['Directo', 'Referido', 'Partnership'].map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+              <label className="text-[11px] text-[#9ca3af]">Responsable *
+                <select required value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })} className={inputCls}>
+                  <option value="">Seleccionar…</option>{usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
+              <label className="text-[11px] text-[#9ca3af]">Valor estimado<input type="number" min="0" value={form.estimatedValue} onChange={e => setForm({ ...form, estimatedValue: e.target.value })} className={inputCls} /></label>
+              <label className="text-[11px] text-[#9ca3af]">Tipo de solución
+                <select value={form.solucionAsociada} onChange={e => setForm({ ...form, solucionAsociada: e.target.value })} className={inputCls}>
+                  <option value="">Por definir</option>{['Project', 'Demo', 'Partnership', 'Products', 'Intern'].map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+              <label className="text-[11px] text-[#9ca3af] col-span-2">Alcance<textarea rows={3} value={form.scope} onChange={e => setForm({ ...form, scope: e.target.value })} className={inputCls} /></label>
+            </div>
+            {errorForm && <p className="text-[11px] text-red-300">{errorForm}</p>}
+            <div className="flex justify-end gap-2 pt-1">
+              <button type="button" disabled={guardando} onClick={() => setFormAbierto(false)} className="px-3 py-1.5 rounded-lg text-[12px] text-gray-400 border border-white/10">Cancelar</button>
+              <button type="submit" disabled={guardando} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium text-white disabled:opacity-50" style={{ background: '#6366f1' }}>
+                {guardando ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Crear lead y arrancar el motor</button>
+            </div>
+          </form>
+        </div>)}
     </div>
   )
 }

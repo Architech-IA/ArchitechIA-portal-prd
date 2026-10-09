@@ -175,6 +175,7 @@ export default function PanelFases({ proyectoId, onCambio }: { proyectoId: strin
         <Flag size={13} className="text-indigo-300" />
         <span className="text-[12px] font-semibold text-gray-100">{d.plantilla?.nombre}</span>
         <span className="flex-1" />
+        {d.lead && <Link href={`/leads/${d.lead.id}/hub`} className="text-[10px] text-indigo-300 hover:text-indigo-200">Lead Hub</Link>}
         <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={d.estado === 'EN_CURSO' ? { background: 'rgba(99,102,241,0.2)', color: '#c7d2fe' } : d.estado === 'COMPLETADO' ? { background: 'rgba(16,185,129,0.2)', color: '#6ee7b7' } : { background: 'rgba(239,68,68,0.2)', color: '#fca5a5' }}>
           {d.estado === 'EN_CURSO' ? 'En curso' : d.estado === 'COMPLETADO' ? 'Completado' : 'Perdido'}</span>
       </div>
