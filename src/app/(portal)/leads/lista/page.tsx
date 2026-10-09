@@ -61,6 +61,10 @@ function translateStatus(status: string) { return STATUS_META[status]?.label ?? 
 const PAGE_SIZES = [10, 20, 50];
 type SortKey = 'companyName' | 'scope' | 'contactName' | 'email' | 'status' | 'estimatedValue' | 'source' | 'user' | 'createdAt';
 
+/** Correos y nombres de relleno que se cargaron para poder crear el lead (unknow@unknow.com, POR DEFINIR...). */
+const esRelleno = (v?: string | null) => !v || /^unknow(n)?@/i.test(v.trim()) || /^por definir$/i.test(v.trim())
+const sinDato = (titulo: string) => <span title={titulo} style={{ color: '#334155', fontWeight: 400 }}>—</span>
+
 export default function LeadsPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -321,7 +325,7 @@ export default function LeadsPage() {
                   { key: 'user'           as SortKey, label: 'Responsable' },
                   { key: 'createdAt'      as SortKey, label: 'Creado'       },
                 ]).map(col => (
-                  <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                  <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
                     {col.label}{sortIcon(col.key)}
                   </th>
                 ))}
@@ -358,7 +362,7 @@ export default function LeadsPage() {
                           </div>
                         </td>
                       )}
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>
                         {lead.cliente ? (
                           <button onClick={e => { e.stopPropagation(); router.push(`/leads/clientes/${lead.cliente!.id}`); }}
                             title="Ver cliente"
@@ -369,14 +373,14 @@ export default function LeadsPage() {
                           <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.companyName}</p>
                         )}
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.scope || '—'}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#94a3b8' }}>{lead.contactName}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.email}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>{lead.solucionAsociada ? <span style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}>{lead.solucionAsociada}</span> : <span style={{ color: '#334155', fontSize: '12px' }}>—</span>}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>${lead.estimatedValue.toLocaleString()}</td>
+                      <td style={{ padding: '12px 12px', fontSize: '12px', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.scope || '—'}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#94a3b8', maxWidth: '170px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={esRelleno(lead.contactName) ? undefined : lead.contactName}>{esRelleno(lead.contactName) ? sinDato('Contacto pendiente de completar') : lead.contactName}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b', maxWidth: '190px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={esRelleno(lead.email) ? undefined : lead.email}>{esRelleno(lead.email) ? sinDato('Sin correo real registrado') : lead.email}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>{lead.solucionAsociada ? <span style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}>{lead.solucionAsociada}</span> : <span style={{ color: '#334155', fontSize: '12px' }}>—</span>}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.estimatedValue ? `${lead.estimatedValue.toLocaleString()}` : sinDato('Sin valor estimado')}</td>
                 
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.user.name}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '11px', color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.user.name}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '11px', color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                     </tr>
                   );
                 })

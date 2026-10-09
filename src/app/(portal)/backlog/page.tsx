@@ -198,6 +198,9 @@ function TypeBadge({ type }: { type: string }) {
   )
 }
 
+/** Cuántas tarjetas de "Done" se dibujan de entrada (el resto se pide con "ver anteriores"). */
+const LIMITE_DONE = 50
+
 function PriorityDot({ priority }: { priority: string }) {
   const p = PRIORITIES.find(x => x.key === priority) ?? PRIORITIES[2]
   return <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.dot}`} title={p.label} />
@@ -400,6 +403,7 @@ export default function BacklogPage() {
   const [loading, setLoading] = useState(true)
   const [view, setView]         = useState<'kanban' | 'lista'>('kanban')
   const [kanbanExpanded, setKanbanExpanded] = useState(false)
+  const [verTodoDone, setVerTodoDone] = useState(false)
   const [viewItem, setViewItem] = useState<BacklogItem | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [editItem, setEditItem]   = useState<BacklogItem | null>(null)
@@ -466,15 +470,16 @@ export default function BacklogPage() {
 
   const load = async () => {
     try {
-      const [i, s, u, sp, ep, ag] = await Promise.all([
-        safeFetch('/api/backlog?ligero=1'),
+      // El kanban se pinta apenas llega la lista; soluciones, usuarios, sprints y épicas (filtros y formularios) llegan después.
+      const itemsListos = safeFetch('/api/backlog?ligero=1').then(i => { setItems(Array.isArray(i) ? i : []); setLoading(false) })
+      const [s, u, sp, ep, ag] = await Promise.all([
         safeFetch('/api/soluciones'),
         safeFetch('/api/users'),
         safeFetch('/api/backlog/sprints'),
         safeFetch('/api/backlog/epics'),
         safeFetch('/api/agents'),
       ])
-      setItems(Array.isArray(i) ? i : [])
+      await itemsListos
       setSoluciones(Array.isArray(s) ? s.map((x: any) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo })) : [])
       const humans = Array.isArray(u) ? u.filter((x: any) => x.role !== 'SUPERADMIN') : []
       const agentUsers = Array.isArray(ag) ? ag.filter((x: any) => x.status === 'ACTIVE' && x.slug === 'orion').map((x: any) => ({ id: x.id, name: 'AGENT - Orion', role: 'AGENT' })) : []
@@ -788,7 +793,13 @@ export default function BacklogPage() {
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             <div className="flex gap-3 flex-1 min-h-0 overflow-x-auto">
             {STATUSES.map(col => {
-              const colItems = byStatus(col.key)
+              // "Done" crece sin parar (673 de 842): se dibujan las 50 más recientes y el resto bajo demanda.
+              const todasCol = byStatus(col.key)
+              const colItems = col.key === 'DONE'
+                ? [...todasCol].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                : todasCol
+              const recortada = col.key === 'DONE' && !verTodoDone && colItems.length > LIMITE_DONE
+              const mostradas = recortada ? colItems.slice(0, LIMITE_DONE) : colItems
               return (
                 <div key={col.key} className="flex flex-col flex-1 min-w-[200px] min-h-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   {/* Column header */}
@@ -805,24 +816,26 @@ export default function BacklogPage() {
 
                   {/* Cards */}
                   <div className="flex-1 overflow-y-auto space-y-1.5 p-2">
-                    {colItems.map(item => (
+                    {mostradas.map(item => (
                       <div key={item.id} className="rounded-xl transition-all group cursor-default" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }} onMouseEnter={e => (e.currentTarget.style.borderColor='rgba(255,255,255,0.13)')} onMouseLeave={e => (e.currentTarget.style.borderColor='rgba(255,255,255,0.07)')}>
 
                         {/* Compact view (default) */}
                         {!kanbanExpanded ? (
-                          <div className="flex items-center gap-2 px-3 py-2.5 cursor-pointer" onClick={() => verItem(item)}>
-                            <PriorityDot priority={item.priority} />
-                            <p className="flex-1 text-[11px] text-white leading-snug truncate">{item.title}</p>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              {item.taskCode && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>
-                              )}
+                          <div className="px-3 py-2.5 cursor-pointer" onClick={() => verItem(item)}>
+                            <div className="flex items-start gap-2">
+                              <span className="mt-[5px] flex-shrink-0"><PriorityDot priority={item.priority} /></span>
+                              <p className="flex-1 min-w-0 text-xs text-white leading-snug line-clamp-2 break-words" title={item.title}>{item.title}</p>
                               {item.assigneeName && (
-                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[9px] font-bold text-black" title={item.assigneeName}>
+                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0" title={item.assigneeName}>
                                   {item.assigneeName.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
                                 </div>
                               )}
                             </div>
+                            {item.taskCode && (
+                              <div className="mt-1.5 pl-4">
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>
+                              </div>
+                            )}
                           </div>
                         ) : (
                         /* Expanded view */
@@ -871,6 +884,17 @@ export default function BacklogPage() {
                         )}
                       </div>
                     ))}
+
+                    {recortada && (
+                      <button onClick={() => setVerTodoDone(true)} className="w-full py-2 rounded-xl text-[11px] text-gray-400 hover:text-white transition-colors" style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
+                        Ver las {colItems.length - LIMITE_DONE} anteriores
+                      </button>
+                    )}
+                    {col.key === 'DONE' && verTodoDone && colItems.length > LIMITE_DONE && (
+                      <button onClick={() => setVerTodoDone(false)} className="w-full py-2 rounded-xl text-[11px] text-gray-500 hover:text-white transition-colors">
+                        Mostrar solo las {LIMITE_DONE} más recientes
+                      </button>
+                    )}
 
                     {colItems.length === 0 && (
                       <button onClick={() => openNew(col.key)} className="w-full py-6 border-2 border-dashed border-gray-800 rounded-xl text-xs text-gray-700 hover:border-gray-700 hover:text-gray-500 transition-colors">
