@@ -18,6 +18,8 @@ interface BacklogItem {
   id: string
   title: string
   description: string | null
+  /** Solo en la lista ligera: primeros 160 caracteres de la descripción (la completa se pide al abrir la ficha). */
+  descripcionResumen?: string | null
   type: string
   priority: string
   status: string
@@ -465,7 +467,7 @@ export default function BacklogPage() {
   const load = async () => {
     try {
       const [i, s, u, sp, ep, ag] = await Promise.all([
-        safeFetch('/api/backlog'),
+        safeFetch('/api/backlog?ligero=1'),
         safeFetch('/api/soluciones'),
         safeFetch('/api/users'),
         safeFetch('/api/backlog/sprints'),
@@ -493,6 +495,19 @@ export default function BacklogPage() {
     setForm({ ...EMPTY_FORM, status, assigneeName: userName })
     setShowModal(true)
   }
+
+  // La lista llega sin description/resultado (pesan la mitad): al abrir la ficha o editar se pide el ítem completo.
+  // Si falla (p. ej. el respaldo en Next no tiene este endpoint) se usa el de la lista.
+  const completo = async (item: BacklogItem): Promise<BacklogItem> => {
+    if (item.description !== undefined) return item
+    try {
+      const r = await fetch(`/api/backlog/${item.id}`)
+      if (r.ok) return await r.json()
+    } catch { /* se usa el de la lista */ }
+    return item
+  }
+  const verItem = async (item: BacklogItem) => setViewItem(await completo(item))
+  const editarItem = async (item: BacklogItem) => openEdit(await completo(item))
 
   const openEdit = (item: BacklogItem) => {
     setEditItem(item)
@@ -795,7 +810,7 @@ export default function BacklogPage() {
 
                         {/* Compact view (default) */}
                         {!kanbanExpanded ? (
-                          <div className="flex items-center gap-2 px-3 py-2.5 cursor-pointer" onClick={() => setViewItem(item)}>
+                          <div className="flex items-center gap-2 px-3 py-2.5 cursor-pointer" onClick={() => verItem(item)}>
                             <PriorityDot priority={item.priority} />
                             <p className="flex-1 text-[11px] text-white leading-snug truncate">{item.title}</p>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -831,11 +846,11 @@ export default function BacklogPage() {
                                   {dispatching === item.id ? <Loader2 size={11} className="animate-spin" /> : <Play size={11} />}
                                 </button>
                               )}
-                              <button onClick={() => setViewItem(item)} className="text-gray-500 hover:text-blue-400 transition-colors"><Eye size={11} /></button>
+                              <button onClick={() => verItem(item)} className="text-gray-500 hover:text-blue-400 transition-colors"><Eye size={11} /></button>
                             </div>
                           </div>
                           <p className="text-[11px] text-white font-medium leading-snug mb-2.5">{item.title}</p>
-                          {item.description && <p className="text-xs text-gray-500 line-clamp-2 mb-2.5">{item.description}</p>}
+                          {(item.descripcionResumen ?? item.description) && <p className="text-xs text-gray-500 line-clamp-2 mb-2.5">{item.descripcionResumen ?? item.description}</p>}
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <SolutionBadge solucion={item.solucion} />
@@ -901,7 +916,7 @@ export default function BacklogPage() {
                           <p className="text-sm text-white font-medium">{item.title}</p>
                           {item.taskCode && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
                         </div>
-                        {item.description && <p className="text-xs text-gray-500 truncate max-w-xs">{item.description}</p>}
+                        {(item.descripcionResumen ?? item.description) && <p className="text-xs text-gray-500 truncate max-w-xs">{item.descripcionResumen ?? item.description}</p>}
                       </td>
                       <td className="px-4 py-3"><TypeBadge type={item.type} /></td>
                       <td className="px-4 py-3">
@@ -933,8 +948,8 @@ export default function BacklogPage() {
                               {dispatching === item.id ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
                             </button>
                           )}
-                          <button onClick={() => setViewItem(item)} className="text-gray-500 hover:text-blue-400 transition-colors"><Eye size={13} /></button>
-                          <button onClick={() => openEdit(item)} className="text-gray-500 hover:text-white transition-colors"><Pencil size={13} /></button>
+                          <button onClick={() => verItem(item)} className="text-gray-500 hover:text-blue-400 transition-colors"><Eye size={13} /></button>
+                          <button onClick={() => editarItem(item)} className="text-gray-500 hover:text-white transition-colors"><Pencil size={13} /></button>
                           <button onClick={() => setConfirmDel(item)} className="text-gray-600 hover:text-red-400 transition-colors"><Trash2 size={13} /></button>
                         </div>
                       </td>
