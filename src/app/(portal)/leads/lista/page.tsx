@@ -376,7 +376,7 @@ export default function LeadsPage() {
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>${lead.estimatedValue.toLocaleString()}</td>
                 
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.user.name}</td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '11px', color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', fontSize: '11px', color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                     </tr>
                   );
                 })
