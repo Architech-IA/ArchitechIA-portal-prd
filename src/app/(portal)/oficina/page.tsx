@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense, type ComponentType } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid, Package, FolderKanban } from 'lucide-react'
 import DirectoryView from './DirectoryView'
+import { usePageTitleOverride } from '@/lib/pageTitleContext'
 import CouncilView from './CouncilView'
 import ProyectosView from './proyectos/ProyectosView'
 // Migrado desde /backlog (antes item propio del sidebar principal) a
@@ -76,6 +77,12 @@ function renderMsg(text: string) {
   return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 }
 
+type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos'
+const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos'] as const
+const ETIQUETA_VISTA: Record<(typeof VISTAS)[number], string> = { agentes: 'Agents', directory: 'Directory', backlog: 'Backlog', solutions: 'Solutions', proyectos: 'Proyectos' }
+/** La vista elegida vive en la URL (?view=backlog…): se puede recargar, compartir el enlace y volver con "Atrás". */
+const vistaDeUrl = (v: string | null): Vista => ((VISTAS as readonly string[]).includes(v ?? '') ? (v as Vista) : 'rooms')
+
 function OficinaPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -93,11 +100,12 @@ function OficinaPageInner() {
   const [roomSearch, setRoomSearch] = useState("")
   const [roomsOpen, setRoomsOpen] = useState(true)
   const [configOpen, setConfigOpen] = useState(true)
+  const [workOpen, setWorkOpen] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [councilMode, setCouncilMode] = useState<'proposals' | 'chat' | 'document'>('chat')
 
   // Config / Agentes view
-  const [sideView, setSideView] = useState<'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos'>(() => (searchParams.get('view') === 'proyectos' ? 'proyectos' : 'rooms'))
+  const [sideView, setSideView] = useState<Vista>(() => vistaDeUrl(searchParams.get('view')))
   const [councilBadge, setCouncilBadge] = useState<{ debating: number; escalated: number; total: number }>({ debating: 0, escalated: 0, total: 0 })
   const [agents, setAgents]     = useState<Agent[]>([])
   const [selAgent, setSelAgent] = useState<Agent | null>(null)
@@ -143,6 +151,41 @@ function OficinaPageInner() {
 
   const selected = areas.find(a => a.id === selectedId)
     ?? areas.flatMap(a => a.subAreas).find(s => s.id === selectedId) as Area | undefined
+
+  // Cambiar de vista o de sala actualiza la URL (push: "Atrás" vuelve a la anterior).
+  const irAVista = (v: Vista) => {
+    setSideView(v)
+    router.push(v === 'rooms' ? (selected ? '/oficina?room=' + selected.slug : '/oficina') : '/oficina?view=' + v, { scroll: false })
+  }
+  const irASala = (a: { id: string; slug: string }) => {
+    setSelectedId(a.id)
+    setSideView('rooms')
+    router.push('/oficina?room=' + a.slug, { scroll: false })
+  }
+  // "Atrás"/"Adelante" y los enlaces directos: manda la URL.
+  useEffect(() => {
+    setSideView(vistaDeUrl(searchParams.get('view')))
+    const slug = searchParams.get('room')
+    if (slug && areas.length) {
+      const m = [...areas, ...areas.flatMap(a => a.subAreas)].find(a => a.slug === slug)
+      if (m) setSelectedId(m.id)
+    }
+  }, [searchParams, areas])
+  // El encabezado dice dónde estás ("Oficina Virtual · Backlog").
+  const { setTitle } = usePageTitleOverride()
+  const etiquetaVista = sideView === 'rooms' ? selected?.name : ETIQUETA_VISTA[sideView]
+  useEffect(() => {
+    setTitle(etiquetaVista ? `Oficina Virtual · ${etiquetaVista}` : null)
+    return () => setTitle(null)
+  }, [etiquetaVista, setTitle])
+  const itemVista = (v: (typeof VISTAS)[number], Icono: ComponentType<{ size?: number; className?: string }>) => (
+    <button key={v} onClick={() => irAVista(v)} aria-current={sideView === v ? 'page' : undefined}
+      className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
+      style={sideView === v ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
+      <Icono size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
+      <span className="text-[11px] group-hover:text-gray-400 transition-colors">{ETIQUETA_VISTA[v]}</span>
+    </button>
+  )
 
   const isBacklogHub = selected?.slug === 'backlog-hub'
   const isConsejo = selected?.slug === 'consejo'
@@ -239,7 +282,7 @@ function OficinaPageInner() {
           {roomsOpen && areas.map(area => (
             <div key={area.id}>
               <button
-                onClick={() => { setSelectedId(area.id); setSideView('rooms'); router.replace('/oficina?room=' + area.slug, { scroll: false }) }}
+                onClick={() => irASala(area)}
                 className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-left group hover:bg-white/5"
                 style={sideView === 'rooms' && selectedId === area.id
                   ? { background: area.color+'22', color: area.color }
@@ -259,7 +302,7 @@ function OficinaPageInner() {
               </button>
               {area.subAreas.map(sub => (
                 <button key={sub.id}
-                  onClick={() => { setSelectedId(sub.id); setSideView('rooms'); router.replace('/oficina?room=' + sub.slug, { scroll: false }) }}
+                  onClick={() => irASala(sub)}
                   className="w-full flex items-center gap-2 pl-7 pr-3 py-1 rounded-lg transition-all text-left group hover:bg-white/5"
                   style={sideView === 'rooms' && selectedId === sub.id
                     ? { background: sub.color+'18', color: sub.color }
@@ -275,49 +318,29 @@ function OficinaPageInner() {
           ))}
         </div>
 
-        {/* Config section */}
+        {/* Trabajo: herramientas de uso diario */}
+        <div className="flex-shrink-0 border-t border-white/5 pt-1 pb-1">
+          <button onClick={() => setWorkOpen(o => !o)}
+            className="w-full flex items-center justify-between px-3 pt-2 pb-1 group hover:bg-white/5 transition-colors rounded-lg">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#7f8a9c] group-hover:text-gray-400 transition-colors">Trabajo</span>
+            <ChevronRight size={11} className="transition-transform flex-shrink-0"
+              style={{ color: workOpen ? '#6366f1' : '#7f8a9c', transform: workOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+          </button>
+          {workOpen && itemVista('backlog', LayoutGrid)}
+          {workOpen && itemVista('solutions', Package)}
+          {workOpen && itemVista('proyectos', FolderKanban)}
+        </div>
+
+        {/* Config: agentes y organigrama */}
         <div className="flex-shrink-0 border-t border-white/5 pt-1 pb-2">
           <button onClick={() => setConfigOpen(o => !o)}
             className="w-full flex items-center justify-between px-3 pt-2 pb-1 group hover:bg-white/5 transition-colors rounded-lg">
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#7f8a9c] group-hover:text-gray-400 transition-colors">Config</span>
             <ChevronRight size={11} className="transition-transform flex-shrink-0"
-              style={{ color: configOpen ? '#6366f1' : '#4b5563', transform: configOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+              style={{ color: configOpen ? '#6366f1' : '#7f8a9c', transform: configOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
-          {configOpen && <button
-            onClick={() => setSideView('agentes')}
-            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'agentes' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
-            <Bot size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
-            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Agents</span>
-          </button>}
-          {configOpen && <button
-            onClick={() => setSideView('directory')}
-            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'directory' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
-            <Network size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
-            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Directory</span>
-          </button>}
-          {configOpen && <button
-            onClick={() => setSideView('backlog')}
-            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'backlog' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
-            <LayoutGrid size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
-            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Backlog</span>
-          </button>}
-          {configOpen && <button
-            onClick={() => setSideView('solutions')}
-            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'solutions' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
-            <Package size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
-            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Solutions</span>
-          </button>}
-          {configOpen && <button
-            onClick={() => setSideView('proyectos')}
-            className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'proyectos' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
-            <FolderKanban size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
-            <span className="text-[11px] group-hover:text-gray-400 transition-colors">Proyectos</span>
-          </button>}
+          {configOpen && itemVista('agentes', Bot)}
+          {configOpen && itemVista('directory', Network)}
         </div>
       </div>
       </div>
