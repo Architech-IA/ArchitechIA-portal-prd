@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePageActions } from '@/lib/pageActionsContext'
 import { Layers, ExternalLink, Loader2, Rocket, Map as MapIcon, FolderKanban, FlaskConical, Handshake, Building2, Package, ChevronDown, Calendar, Check, X as XIcon, Play } from 'lucide-react'
-import Link from 'next/link'
+import Link from '@/lib/BacklogLink'
 
 interface Sprint {
   id: string

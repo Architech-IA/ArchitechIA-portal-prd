@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense, type ComponentType } from 'react'
+import { useState, useEffect, useRef, useMemo, Suspense, type ComponentType } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid, Package, FolderKanban } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import { usePageTitleOverride } from '@/lib/pageTitleContext'
@@ -76,6 +77,19 @@ function formatDate(ts: string) {
 function renderMsg(text: string) {
   return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 }
+
+/** Páginas del backlog que se abren dentro de la Oficina (se cargan solo al entrar a su pestaña). */
+function CargandoVista() {
+  return <div className="flex items-center justify-center h-full py-20"><Loader2 className="animate-spin text-orange-500" size={24} /></div>
+}
+const SprintPage = dynamic(() => import('../backlog/sprint/page'), { loading: CargandoVista })
+const EpicsPage = dynamic(() => import('../backlog/epics/page'), { loading: CargandoVista })
+const SolutionPage = dynamic(() => import('../backlog/solution/page'), { loading: CargandoVista })
+const ControlIndexPage = dynamic(() => import('../backlog/control/page'), { loading: CargandoVista })
+const ControlSprintPage = dynamic(() => import('../backlog/control/[sprintId]/page'), { loading: CargandoVista })
+const ControlMultiPage = dynamic(() => import('../backlog/control/multi/page'), { loading: CargandoVista })
+const TABS_BACKLOG = ['sprint', 'epics', 'solution', 'control'] as const
+const ETIQUETA_TAB: Record<(typeof TABS_BACKLOG)[number], string> = { sprint: 'Sprint', epics: 'Épicas', solution: 'Solution', control: 'Sala de Control' }
 
 type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos'
 const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos'] as const
@@ -173,7 +187,14 @@ function OficinaPageInner() {
   }, [searchParams, areas])
   // El encabezado dice dónde estás ("Oficina Virtual · Backlog").
   const { setTitle } = usePageTitleOverride()
-  const etiquetaVista = sideView === 'rooms' ? selected?.name : ETIQUETA_VISTA[sideView]
+  // Pestaña del backlog (?view=backlog&tab=sprint…). Sprint, Épicas, Solution y Sala de Control se abren aquí dentro.
+  const tabParam = searchParams.get('tab')
+  const tabBacklog = (TABS_BACKLOG as readonly string[]).includes(tabParam ?? '') ? (tabParam as (typeof TABS_BACKLOG)[number]) : null
+  const sprintSel = searchParams.get('sprint') ?? ''
+  const paramsSprint = useMemo(() => Promise.resolve({ sprintId: sprintSel }), [sprintSel])
+  const etiquetaVista = sideView === 'rooms'
+    ? selected?.name
+    : sideView === 'backlog' && tabBacklog ? `Backlog · ${ETIQUETA_TAB[tabBacklog]}` : ETIQUETA_VISTA[sideView]
   useEffect(() => {
     setTitle(etiquetaVista ? `Oficina Virtual · ${etiquetaVista}` : null)
     return () => setTitle(null)
@@ -765,9 +786,18 @@ function OficinaPageInner() {
              componente maneja su propio scroll interno (h-full), por eso
              el wrapper solo necesita darle una altura definida.
           */
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <BacklogPage />
-          </div>
+          tabBacklog === null ? (
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <BacklogPage />
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {tabBacklog === 'sprint' && <SprintPage />}
+              {tabBacklog === 'epics' && <EpicsPage />}
+              {tabBacklog === 'solution' && <SolutionPage />}
+              {tabBacklog === 'control' && (searchParams.get('multi') ? <ControlMultiPage /> : sprintSel ? <ControlSprintPage params={paramsSprint} /> : <ControlIndexPage />)}
+            </div>
+          )
 
         ) : sideView === 'proyectos' ? (
           /* ── PROYECTOS VIEW ── sesiones persistentes por proyecto (= Solución) */

@@ -3,7 +3,7 @@ import React from 'react'
 
 import { useState, useEffect } from 'react'
 import { Plus, Layers, X, Loader2, Pencil, Trash2, ChevronDown, Rocket, Target, Map as MapIcon, Calendar, Play } from 'lucide-react'
-import Link from 'next/link'
+import Link from '@/lib/BacklogLink'
 import { usePageActions } from '@/lib/pageActionsContext'
 
 interface Sprint {

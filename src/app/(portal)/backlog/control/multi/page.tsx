@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/lib/BacklogLink'
 import { useSearchParams } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import { Rocket, Layers, Map as MapIcon, Play } from 'lucide-react'

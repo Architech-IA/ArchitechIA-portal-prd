@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
+import Link, { useDestinoBacklog } from '@/lib/BacklogLink'
 import { useRouter } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import { useSession } from 'next-auth/react'
@@ -398,6 +398,7 @@ function CustomSelect({ value, onChange, options, placeholder }: {
 export default function BacklogPage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const destinoBacklog = useDestinoBacklog()
   const [items, setItems]   = useState<BacklogItem[]>([])
   const [soluciones, setSoluciones] = useState<Solucion[]>([])
   const [loading, setLoading] = useState(true)
@@ -1553,7 +1554,7 @@ export default function BacklogPage() {
                       }
                       setItems(prev => prev.map(i => { const a = assigned.find(x => x.id === i.id); return a ?? i }))
                       setSprints(prev => [newSprint, ...prev])
-                      router.push('/backlog/sprint')
+                      router.push(destinoBacklog('/backlog/sprint'))
                     }
                   } finally {
                     setSavingSprint(false)

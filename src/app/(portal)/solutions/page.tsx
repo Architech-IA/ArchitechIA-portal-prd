@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { usePageActions } from '@/lib/pageActionsContext'
-import Link from 'next/link'
+import Link from '@/lib/BacklogLink'
 import { useRouter } from 'next/navigation'
 import { Package, Pencil, FolderKanban, FlaskConical, Handshake, Building2, Lightbulb, ArrowRight, Loader2, Plus, X, ExternalLink, DollarSign, Tag, Calendar, User, Search, Play, Box, Users, Layout, Globe, BarChart3, Bot, FileText, UserCircle, Headphones, Shield, Plug, Kanban, Layers, Rocket, Map as MapIcon } from 'lucide-react'
 import { APP_CATEGORIES } from '@/lib/app-types'
@@ -208,26 +208,26 @@ export default function SolutionsHome() {
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <a href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
+        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           Backlog
-        </a>
+        </Link>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <a href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
+        <Link href="/backlog/sprint" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#93c5fd' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Rocket size={10}/> Sprints
-        </a>
-        <a href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
+        </Link>
+        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,147,117,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1D9375' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Layers size={10}/> Epicas
-        </a>
-        <a href="/solutions" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
+        </Link>
+        <Link href="/solutions" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1"
           style={{ background: 'rgba(127,119,221,0.2)', color: '#7F77DD', border: '1px solid rgba(127,119,221,0.3)' }}>
           <MapIcon size={10}/> Solution
-        </a>
+        </Link>
       </div>
     )
     return () => setActions(null)

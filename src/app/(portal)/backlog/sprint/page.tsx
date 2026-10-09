@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
+import Link from '@/lib/BacklogLink'
 import { useRouter } from 'next/navigation'
 import { usePageActions } from '@/lib/pageActionsContext'
 import { useSession } from 'next-auth/react'
@@ -243,10 +243,10 @@ export default function SprintPage() {
 
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : null
 
-  if (loading) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin text-emerald-500" size={28}/></div>
+  if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-emerald-500" size={28}/></div>
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#080c12' }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: '#080c12' }}>
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div/>
