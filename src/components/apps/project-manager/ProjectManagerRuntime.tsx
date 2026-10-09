@@ -61,7 +61,7 @@ export default function ProjectManagerRuntime({ app }: { app: AppInstance }) {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-2 text-xs text-gray-500 md:flex">
+          <div className="hidden items-center gap-2 text-xs text-[#7f8a9c] md:flex">
             <UserCircle className="h-3.5 w-3.5" />
             {teamRoles.join(', ')}
           </div>
@@ -94,11 +94,11 @@ export default function ProjectManagerRuntime({ app }: { app: AppInstance }) {
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <p className="text-sm font-medium text-white">{task.title}</p>
-                        <span className={`rounded-full border px-1.5 py-0.5 text-[10px] ${PRIORITY_STYLES[task.priority]}`}>
+                        <span className={`rounded-full border px-1.5 py-0.5 text-[11px] ${PRIORITY_STYLES[task.priority]}`}>
                           {task.priority}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center justify-between text-xs text-[#7f8a9c]">
                         <span className="flex items-center gap-1">
                           <UserCircle className="h-3 w-3" />
                           {task.assignee}
@@ -138,7 +138,7 @@ export default function ProjectManagerRuntime({ app }: { app: AppInstance }) {
                       <div className="h-2 w-2 rounded-full bg-indigo-500" />
                     </div>
                     <p className="mt-2 text-xs font-medium text-white">{milestone.label}</p>
-                    <p className="text-[10px] text-gray-500">{milestone.date}</p>
+                    <p className="text-[11px] text-[#7f8a9c]">{milestone.date}</p>
                   </div>
                 ))}
               </div>

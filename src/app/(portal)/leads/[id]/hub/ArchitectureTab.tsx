@@ -232,7 +232,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
   const sorted = [...arch.nodes].sort((a, b) => (a.gridX + a.gridY) - (b.gridX + b.gridY))
 
   if (!loaded) return (
-    <div className="flex items-center justify-center h-64 text-gray-600 gap-2">
+    <div className="flex items-center justify-center h-64 text-[#7f8a9c] gap-2">
       <Loader2 size={18} className="animate-spin" /> Cargando arquitectura
     </div>
   )
@@ -252,7 +252,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
             value={arch.description}
             onChange={e => setArch(p => ({ ...p, description: e.target.value }))}
             placeholder="Descripcion del sistema y su proposito..."
-            className="bg-transparent text-gray-500 text-xs px-3 py-1.5 rounded-xl border border-transparent hover:border-gray-800 focus:border-gray-700 focus:outline-none focus:bg-gray-900/50 placeholder-gray-700 w-full transition-all"
+            className="bg-transparent text-[#7f8a9c] text-xs px-3 py-1.5 rounded-xl border border-transparent hover:border-gray-800 focus:border-gray-700 focus:outline-none focus:bg-gray-900/50 placeholder-gray-700 w-full transition-all"
           />
         </div>
         <div className="flex items-center gap-2 shrink-0 pt-1">
@@ -284,17 +284,17 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 gap-0.5 shrink-0">
           <button onClick={cancelMode}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === 'view' ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/60'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === 'view' ? 'bg-gray-700 text-white shadow-sm' : 'text-[#7f8a9c] hover:text-gray-300 hover:bg-gray-800/60'}`}
           >
             <MousePointer2 size={12} /> Seleccionar
           </button>
           <button onClick={() => setMode(m => m === 'add' ? 'view' : 'add')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === 'add' ? 'bg-orange-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/60'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === 'add' ? 'bg-orange-600 text-white shadow-sm' : 'text-[#7f8a9c] hover:text-gray-300 hover:bg-gray-800/60'}`}
           >
             <Plus size={12} /> Nodo
           </button>
           <button onClick={() => { setMode(m => m === 'connect' ? 'view' : 'connect'); setConnectFrom(null) }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === 'connect' ? 'bg-sky-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/60'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${mode === 'connect' ? 'bg-sky-600 text-white shadow-sm' : 'text-[#7f8a9c] hover:text-gray-300 hover:bg-gray-800/60'}`}
           >
             <Link2 size={12} />
             {mode === 'connect' ? (connectFrom ? 'Click destino...' : 'Click origen...') : 'Conectar'}
@@ -305,7 +305,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
           <div className="flex gap-1.5 flex-wrap">
             {(Object.entries(NODE_CFG) as [NodeType, typeof NODE_CFG[NodeType]][]).map(([k, v]) => (
               <button key={k} onClick={() => setAddType(k)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${addType === k ? 'shadow-sm border-transparent' : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700'}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${addType === k ? 'shadow-sm border-transparent' : 'border-gray-800 text-[#7f8a9c] hover:text-gray-300 hover:border-gray-700'}`}
                 style={addType === k ? { background: v.top, borderColor: v.accent + '55', color: v.accent } : {}}
               >
                 <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: v.accent }} />
@@ -326,7 +326,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
         )}
 
         {mode !== 'view' && (
-          <button onClick={cancelMode} className="ml-auto flex items-center gap-1 text-xs text-gray-600 hover:text-gray-400 transition-colors">
+          <button onClick={cancelMode} className="ml-auto flex items-center gap-1 text-xs text-[#7f8a9c] hover:text-gray-400 transition-colors">
             <X size={11} /> Cancelar
           </button>
         )}
@@ -341,7 +341,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               </div>
               <div className="text-center">
                 <p className="text-sm text-violet-300 font-medium">Analizando contexto del lead...</p>
-                <p className="text-xs text-gray-600 mt-1">Claude esta disenando la arquitectura del sistema</p>
+                <p className="text-xs text-[#7f8a9c] mt-1">Claude esta disenando la arquitectura del sistema</p>
               </div>
             </div>
           )}
@@ -350,7 +350,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
               <Layers size={36} className="text-gray-800" />
               <div className="text-center">
-                <p className="text-sm font-medium text-gray-700">Sin arquitectura definida</p>
+                <p className="text-sm font-medium text-[#7f8a9c]">Sin arquitectura definida</p>
                 <p className="text-xs text-gray-800 mt-1 max-w-xs leading-relaxed">
                   Usa Generar para crear automaticamente, o activa + Nodo para disenar manualmente
                 </p>
@@ -517,28 +517,28 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
                   {NODE_CFG[selNode.type].label}
                 </span>
                 <button onClick={() => setSelected(null)}
-                  className="w-6 h-6 flex items-center justify-center rounded-lg text-gray-600 hover:text-gray-300 hover:bg-gray-800 transition-all">
+                  className="w-6 h-6 flex items-center justify-center rounded-lg text-[#7f8a9c] hover:text-gray-300 hover:bg-gray-800 transition-all">
                   <X size={11} />
                 </button>
               </div>
 
               <div className="flex flex-col gap-2.5">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium px-0.5">Nombre</label>
+                  <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium px-0.5">Nombre</label>
                   <input value={selNode.label} placeholder="Nombre del componente"
                     onChange={e => patchNode(selNode.id, { label: e.target.value })}
                     className="bg-gray-800 text-white text-sm px-2.5 py-2 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/10 w-full transition-all"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium px-0.5">Descripcion</label>
+                  <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium px-0.5">Descripcion</label>
                   <textarea value={selNode.description} placeholder="Rol y responsabilidades..." rows={3}
                     onChange={e => patchNode(selNode.id, { description: e.target.value })}
                     className="bg-gray-800 text-white text-xs px-2.5 py-2 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/10 w-full resize-none transition-all leading-relaxed"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium px-0.5">Payload</label>
+                  <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium px-0.5">Payload</label>
                   <input value={selNode.payload} placeholder="Datos que maneja..."
                     onChange={e => patchNode(selNode.id, { payload: e.target.value })}
                     className="bg-gray-800 text-white text-xs px-2.5 py-2 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/10 w-full transition-all"
@@ -551,7 +551,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
                 if (!edges.length) return null
                 return (
                   <div className="flex flex-col gap-2 pt-2 border-t border-gray-800">
-                    <p className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Conexiones ({edges.length})</p>
+                    <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium">Conexiones ({edges.length})</p>
                     <div className="flex flex-col gap-1.5">
                       {edges.map(edge => {
                         const other = arch.nodes.find(n => n.id === (edge.from === selNode.id ? edge.to : edge.from))
@@ -563,12 +563,12 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
                             <div className="flex-1 min-w-0">
                               <p className="text-[11px] text-gray-300 truncate leading-tight font-medium">{other?.label ?? '?'}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: c.stroke + '20', color: c.stroke }}>{c.label}</span>
-                                {edge.label && <span className="text-[9px] text-gray-600 truncate">{edge.label}</span>}
+                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: c.stroke + '20', color: c.stroke }}>{c.label}</span>
+                                {edge.label && <span className="text-[10px] text-[#7f8a9c] truncate">{edge.label}</span>}
                               </div>
                             </div>
                             <button onClick={() => delEdge(edge.id)}
-                              className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 text-gray-700 hover:text-red-400 transition-all shrink-0">
+                              className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/10 text-[#7f8a9c] hover:text-red-400 transition-all shrink-0">
                               <X size={10} />
                             </button>
                           </div>
@@ -587,12 +587,12 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
           ) : (
             <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 flex flex-col items-center gap-2 text-center">
               <MousePointer2 size={22} className="text-gray-800" />
-              <p className="text-xs text-gray-600 leading-relaxed">Selecciona un nodo para editar sus propiedades</p>
+              <p className="text-xs text-[#7f8a9c] leading-relaxed">Selecciona un nodo para editar sus propiedades</p>
             </div>
           )}
 
           <div className="bg-gray-900 rounded-2xl border border-gray-800 p-4">
-            <p className="text-[10px] text-gray-600 uppercase tracking-wider font-medium mb-2.5">Leyenda</p>
+            <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium mb-2.5">Leyenda</p>
             <div className="flex flex-col gap-0.5 mb-3">
               {(Object.entries(NODE_CFG) as [NodeType, typeof NODE_CFG[NodeType]][]).map(([k, v]) => (
                 <button key={k}
@@ -608,14 +608,14 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               ))}
             </div>
             <div className="pt-3 border-t border-gray-800 flex flex-col gap-2">
-              <p className="text-[10px] text-gray-700 uppercase tracking-wider font-medium mb-0.5">Conexiones</p>
+              <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium mb-0.5">Conexiones</p>
               {Object.entries(EDGE_CFG).map(([type, c]) => (
                 <div key={type} className="flex items-center gap-2.5">
                   <svg width="28" height="8" className="shrink-0">
                     <line x1="1" y1="4" x2="22" y2="4" stroke={c.stroke} strokeWidth="1.5" strokeDasharray={c.dash} />
                     <polygon points="18,1.5 24,4 18,6.5" fill={c.stroke} />
                   </svg>
-                  <span className="text-[11px] text-gray-500">{c.label}</span>
+                  <span className="text-[11px] text-[#7f8a9c]">{c.label}</span>
                 </div>
               ))}
             </div>
@@ -628,12 +628,12 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
           <div className="bg-gray-900 border border-gray-700/80 rounded-2xl p-6 w-80 flex flex-col gap-4 shadow-2xl shadow-black/60" onClick={e => e.stopPropagation()}>
             <div>
               <h3 className="text-sm font-semibold text-white">Nuevo nodo</h3>
-              <p className="text-xs text-gray-600 mt-0.5">Posicion ({pendingCell.gx}, {pendingCell.gy}) en el mapa</p>
+              <p className="text-xs text-[#7f8a9c] mt-0.5">Posicion ({pendingCell.gx}, {pendingCell.gy}) en el mapa</p>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {(Object.entries(NODE_CFG) as [NodeType, typeof NODE_CFG[NodeType]][]).map(([k, v]) => (
                 <button key={k} onClick={() => setAddType(k)}
-                  className={`flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium transition-all border ${addType === k ? 'border-transparent shadow-sm' : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700'}`}
+                  className={`flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium transition-all border ${addType === k ? 'border-transparent shadow-sm' : 'border-gray-800 text-[#7f8a9c] hover:text-gray-300 hover:border-gray-700'}`}
                   style={addType === k ? { background: v.top, borderColor: v.accent + '55', color: v.accent } : {}}
                 >
                   <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: v.accent }} />
@@ -642,7 +642,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               ))}
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Nombre</label>
+              <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium">Nombre</label>
               <input value={pendingLabel} onChange={e => setPendingLabel(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && confirmAdd()}
                 placeholder="Nombre del componente" autoFocus
@@ -650,7 +650,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               />
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setPendingCell(null)} className="text-gray-500 hover:text-white text-sm px-3 py-2 rounded-xl hover:bg-gray-800 transition-colors">Cancelar</button>
+              <button onClick={() => setPendingCell(null)} className="text-[#7f8a9c] hover:text-white text-sm px-3 py-2 rounded-xl hover:bg-gray-800 transition-colors">Cancelar</button>
               <button onClick={confirmAdd} disabled={!pendingLabel.trim()}
                 className="px-4 py-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition-all active:scale-95">
                 Agregar
@@ -667,14 +667,14 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               <h3 className="text-sm font-semibold text-white">Nueva conexion</h3>
               <div className="flex items-center gap-2 mt-1.5">
                 <span className="text-xs text-white font-medium">{arch.nodes.find(n => n.id === pendingEdge.from)?.label}</span>
-                <span className="text-xs text-gray-600">{'→'}</span>
+                <span className="text-xs text-[#7f8a9c]">{'→'}</span>
                 <span className="text-xs text-white font-medium">{arch.nodes.find(n => n.id === pendingEdge.to)?.label}</span>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {(Object.entries(EDGE_CFG) as [EdgeType, typeof EDGE_CFG[EdgeType]][]).map(([k, v]) => (
                 <button key={k} onClick={() => setEdgeType(k)}
-                  className={`flex flex-col items-center gap-2 px-2 py-3 rounded-xl text-xs font-medium transition-all border ${edgeType === k ? 'border-transparent' : 'border-gray-800 text-gray-500 hover:text-gray-300 hover:border-gray-700'}`}
+                  className={`flex flex-col items-center gap-2 px-2 py-3 rounded-xl text-xs font-medium transition-all border ${edgeType === k ? 'border-transparent' : 'border-gray-800 text-[#7f8a9c] hover:text-gray-300 hover:border-gray-700'}`}
                   style={edgeType === k ? { background: v.stroke + '1a', borderColor: v.stroke + '55', color: v.stroke } : {}}
                 >
                   <svg width="24" height="8">
@@ -686,7 +686,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               ))}
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] text-gray-600 uppercase tracking-wider font-medium">Payload / etiqueta (opcional)</label>
+              <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium">Payload / etiqueta (opcional)</label>
               <input value={edgeLabel} onChange={e => setEdgeLabel(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && confirmEdge()}
                 placeholder="ej: JWT, eventos, queries SQL..." autoFocus
@@ -694,7 +694,7 @@ export default function ArchitectureTab({ leadId }: { leadId: string }) {
               />
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setPendingEdge(null)} className="text-gray-500 hover:text-white text-sm px-3 py-2 rounded-xl hover:bg-gray-800 transition-colors">Cancelar</button>
+              <button onClick={() => setPendingEdge(null)} className="text-[#7f8a9c] hover:text-white text-sm px-3 py-2 rounded-xl hover:bg-gray-800 transition-colors">Cancelar</button>
               <button onClick={confirmEdge}
                 className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-medium transition-all active:scale-95">
                 Conectar

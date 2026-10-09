@@ -68,7 +68,7 @@ export default function LoginPage() {
                 <label className="block text-sm font-medium text-gray-400">
                   Contraseña
                 </label>
-                <a href="#" className="text-xs text-gray-500 hover:text-orange-400 transition-colors">
+                <a href="#" className="text-xs text-[#7f8a9c] hover:text-orange-400 transition-colors">
                   ¿Se te ha olvidado la contraseña?
                 </a>
               </div>
@@ -84,7 +84,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7f8a9c] hover:text-gray-300 transition-colors"
                   title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
                   {showPassword ? (
@@ -126,7 +126,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-600 mt-6">
+          <p className="text-center text-xs text-[#7f8a9c] mt-6">
             Acceso exclusivo para miembros del equipo ArchiTechIA
           </p>
         </div>

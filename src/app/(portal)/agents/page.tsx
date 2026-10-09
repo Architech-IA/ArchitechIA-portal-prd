@@ -71,14 +71,14 @@ export default function AgentsPage() {
           <div className="flex items-center gap-2">
             <Bot size={16} className="text-violet-400" />
             <span className="text-sm font-semibold text-white">Agentes SAGE</span>
-            <span className="text-xs text-gray-500 bg-white/5 rounded-full px-2 py-0.5">{agents.length}</span>
+            <span className="text-xs text-[#7f8a9c] bg-white/5 rounded-full px-2 py-0.5">{agents.length}</span>
           </div>
           <button onClick={openCreate} className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10">
             <Plus size={13} /> Nuevo
           </button>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
-          {loading ? <p className="text-xs text-gray-600 text-center py-8">Cargando...</p> : agents.map(a => (
+          {loading ? <p className="text-xs text-[#7f8a9c] text-center py-8">Cargando...</p> : agents.map(a => (
             <button key={a.slug} onClick={() => setSelected(a)}
               className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${selected?.slug === a.slug ? 'bg-white/5' : 'hover:bg-white/[0.03]'}`}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
@@ -89,7 +89,7 @@ export default function AgentsPage() {
                 <p className="text-sm font-medium text-white truncate">{a.name}</p>
                 <p className={`text-xs ${ROLE_COLOR[a.role] ?? 'text-gray-400'}`}>{a.role}</p>
               </div>
-              <Circle size={7} className={a.status === 'ACTIVE' ? 'fill-emerald-400 text-emerald-400' : 'fill-gray-600 text-gray-600'} />
+              <Circle size={7} className={a.status === 'ACTIVE' ? 'fill-emerald-400 text-emerald-400' : 'fill-gray-600 text-[#7f8a9c]'} />
             </button>
           ))}
         </div>
@@ -118,7 +118,7 @@ export default function AgentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => openEdit(selected)} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"><Pencil size={14} /></button>
-                <button onClick={() => toggleStatus(selected)} className={`p-2 rounded-lg transition-colors ${selected.status === 'ACTIVE' ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-gray-500 hover:bg-white/5'}`}><Power size={14} /></button>
+                <button onClick={() => toggleStatus(selected)} className={`p-2 rounded-lg transition-colors ${selected.status === 'ACTIVE' ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-[#7f8a9c] hover:bg-white/5'}`}><Power size={14} /></button>
               </div>
             </div>
 
@@ -131,7 +131,7 @@ export default function AgentsPage() {
                   <Cpu size={12} className="text-violet-400 flex-shrink-0" />
                   <span className="text-sm text-gray-300 font-mono">{modelLabel(selected.llmModel)}</span>
                 </div>
-                {!selected.llmModel && <p className="text-xs text-gray-600 mt-1">Usa el modelo por defecto del claude CLI</p>}
+                {!selected.llmModel && <p className="text-xs text-[#7f8a9c] mt-1">Usa el modelo por defecto del claude CLI</p>}
               </Section>
               {selected.systemPrompt && (
                 <Section title="System Prompt">
@@ -145,7 +145,7 @@ export default function AgentsPage() {
               </Section>
               <Section title="Repositorios asignados">
                 {selected.repos.length === 0
-                  ? <p className="text-xs text-gray-600">Sin repos asignados aún</p>
+                  ? <p className="text-xs text-[#7f8a9c]">Sin repos asignados aún</p>
                   : selected.repos.map(r => <p key={r} className="text-xs text-blue-400 font-mono">{r}</p>)}
               </Section>
               <div className="grid grid-cols-2 gap-4">
@@ -156,8 +156,8 @@ export default function AgentsPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center py-20">
-            <Bot size={32} className="text-gray-700 mb-3" />
-            <p className="text-sm text-gray-600">Seleccioná un agente para ver su perfil</p>
+            <Bot size={32} className="text-[#7f8a9c] mb-3" />
+            <p className="text-sm text-[#7f8a9c]">Seleccioná un agente para ver su perfil</p>
           </div>
         )}
       </div>
@@ -200,7 +200,7 @@ export default function AgentsPage() {
                 <label className="text-xs text-gray-400 mb-1 block">Personalidad</label>
                 <textarea rows={3} value={form.personality ?? ''} onChange={e => setForm(f => ({ ...f, personality: e.target.value }))}
                   placeholder="Descripción de personalidad y comportamiento..."
-                  className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white resize-none placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50" />
+                  className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white resize-none placeholder:text-[#7f8a9c] focus:outline-none focus:border-violet-500/50" />
               </div>
               {/* Modelo LLM */}
               <div>
@@ -209,13 +209,13 @@ export default function AgentsPage() {
                   className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50">
                   {LLM_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
-                <p className="text-[10px] text-gray-600 mt-1">Se usa al llamar claude CLI en el motor de debate del Council</p>
+                <p className="text-[11px] text-[#7f8a9c] mt-1">Se usa al llamar claude CLI en el motor de debate del Council</p>
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">System Prompt</label>
                 <textarea rows={4} value={form.systemPrompt ?? ''} onChange={e => setForm(f => ({ ...f, systemPrompt: e.target.value }))}
                   placeholder="Prompt completo de sistema para Claude Code headless..."
-                  className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white font-mono text-xs resize-none placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50" />
+                  className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white font-mono text-xs resize-none placeholder:text-[#7f8a9c] focus:outline-none focus:border-violet-500/50" />
               </div>
               <Field label="Vault Path" value={form.vaultPath ?? ''} onChange={v => setForm(f => ({ ...f, vaultPath: v }))} placeholder="/agents/ares/" />
               <Field label="Discord User ID" value={form.discordUserId ?? ''} onChange={v => setForm(f => ({ ...f, discordUserId: v }))} placeholder="123456789" />
@@ -238,7 +238,7 @@ export default function AgentsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{title}</p>
+      <p className="text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider mb-3">{title}</p>
       {children}
     </div>
   )
@@ -249,7 +249,7 @@ function Field({ label, value, onChange, placeholder, disabled }: { label: strin
     <div>
       <label className="text-xs text-gray-400 mb-1 block">{label}</label>
       <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} disabled={disabled}
-        className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-violet-500/50 disabled:opacity-40" />
+        className="w-full bg-white/5 border border-white/8 rounded-xl px-3 py-2 text-sm text-white placeholder:text-[#7f8a9c] focus:outline-none focus:border-violet-500/50 disabled:opacity-40" />
     </div>
   )
 }

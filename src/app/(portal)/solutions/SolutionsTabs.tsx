@@ -76,7 +76,7 @@ export default function SolutionsTabs() {
                 <span style={{
                   minWidth: '16px', height: '16px', padding: '0 3px',
                   borderRadius: '8px', background: '#ef4444', color: '#fff',
-                  fontSize: '9px', fontWeight: 700,
+                  fontSize: '10px', fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {pending}

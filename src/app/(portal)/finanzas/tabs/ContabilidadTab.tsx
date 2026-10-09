@@ -81,7 +81,7 @@ function PlanCuentasTab({ isAdmin }: { isAdmin: boolean }) {
         <div className="flex gap-2 flex-wrap">
           {['', 'ACTIVO', 'PASIVO', 'PATRIMONIO', 'INGRESO', 'GASTO'].map(t => (
             <button key={t} onClick={() => setFiltroTipo(t)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${filtroTipo === t ? 'border-orange-500/50 bg-orange-500/10 text-orange-400' : 'border-white/10 text-gray-500 hover:text-gray-300'}`}>
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${filtroTipo === t ? 'border-orange-500/50 bg-orange-500/10 text-orange-400' : 'border-white/10 text-[#7f8a9c] hover:text-gray-300'}`}>
               {t || 'Todas'}
             </button>
           ))}
@@ -101,7 +101,7 @@ function PlanCuentasTab({ isAdmin }: { isAdmin: boolean }) {
           <thead>
             <tr className="border-b border-white/6 bg-white/2">
               {['Código', 'Nombre', 'Tipo', 'Subtipo', 'Nivel', ''].map(h => (
-                <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
@@ -111,7 +111,7 @@ function PlanCuentasTab({ isAdmin }: { isAdmin: boolean }) {
                 {[...Array(6)].map((_, j) => <td key={j} className="px-4 py-3"><div className="h-3.5 bg-gray-700/40 rounded animate-pulse" /></td>)}
               </tr>
             )) : filtradas.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-500 text-sm">Sin cuentas registradas</td></tr>
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-[#7f8a9c] text-sm">Sin cuentas registradas</td></tr>
             ) : filtradas.map(c => (
               <tr key={c.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
                 <td className="px-4 py-2.5 text-xs font-mono text-gray-300">{c.codigo}</td>
@@ -119,16 +119,16 @@ function PlanCuentasTab({ isAdmin }: { isAdmin: boolean }) {
                 <td className="px-4 py-2.5">
                   <span className="text-xs font-bold px-2 py-0.5 rounded-md" style={{ background: TIPO_COLOR[c.tipo] + '18', color: TIPO_COLOR[c.tipo] }}>{c.tipo}</span>
                 </td>
-                <td className="px-4 py-2.5 text-xs text-gray-500">{c.subtipo ?? '—'}</td>
-                <td className="px-4 py-2.5 text-xs text-gray-600">{c.nivel}</td>
+                <td className="px-4 py-2.5 text-xs text-[#7f8a9c]">{c.subtipo ?? '—'}</td>
+                <td className="px-4 py-2.5 text-xs text-[#7f8a9c]">{c.nivel}</td>
                 <td className="px-4 py-2.5">
-                  {isAdmin && <button onClick={() => openEdit(c)} className="text-xs text-gray-500 hover:text-white transition-colors">Editar</button>}
+                  {isAdmin && <button onClick={() => openEdit(c)} className="text-xs text-[#7f8a9c] hover:text-white transition-colors">Editar</button>}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div className="px-4 py-2 border-t border-white/6 bg-white/1 text-xs text-gray-600">{filtradas.length} cuentas</div>
+        <div className="px-4 py-2 border-t border-white/6 bg-white/1 text-xs text-[#7f8a9c]">{filtradas.length} cuentas</div>
       </div>
 
       {showModal && (
@@ -223,7 +223,7 @@ function LibroDiarioTab({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <p className="text-xs text-gray-500">{asientos.length} asientos registrados</p>
+        <p className="text-xs text-[#7f8a9c]">{asientos.length} asientos registrados</p>
         {isAdmin && (
           <button onClick={() => { setError(''); setShowModal(true); }}
             className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-lg transition-colors">
@@ -234,7 +234,7 @@ function LibroDiarioTab({ isAdmin }: { isAdmin: boolean }) {
 
       <div className="space-y-2">
         {loading ? [...Array(3)].map((_, i) => <div key={i} className="h-14 rounded-xl bg-gray-700/20 animate-pulse" />) :
-          asientos.length === 0 ? <p className="text-center text-gray-500 text-sm py-10">Sin asientos contables</p> :
+          asientos.length === 0 ? <p className="text-center text-[#7f8a9c] text-sm py-10">Sin asientos contables</p> :
           asientos.map(a => {
             const totalDebe = a.lineas.reduce((s, l) => s + l.debe, 0);
             const isOpen = expanded === a.id;
@@ -243,28 +243,28 @@ function LibroDiarioTab({ isAdmin }: { isAdmin: boolean }) {
                 <div onClick={() => setExpanded(isOpen ? null : a.id)}
                   className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-white/2 transition-colors">
                   <span className="text-xs font-mono text-orange-400 w-12">#{a.numero}</span>
-                  <span className="text-xs text-gray-500 w-24">{new Date(a.fecha).toLocaleDateString('es')}</span>
+                  <span className="text-xs text-[#7f8a9c] w-24">{new Date(a.fecha).toLocaleDateString('es')}</span>
                   <span className="flex-1 text-sm font-medium text-white">{a.descripcion}</span>
-                  {a.referencia && <span className="text-xs text-gray-600">{a.referencia}</span>}
+                  {a.referencia && <span className="text-xs text-[#7f8a9c]">{a.referencia}</span>}
                   <span className="text-sm font-bold text-white">{fmt(totalDebe)}</span>
-                  <span className="text-xs text-gray-500">{isOpen ? '▲' : '▼'}</span>
+                  <span className="text-xs text-[#7f8a9c]">{isOpen ? '▲' : '▼'}</span>
                 </div>
                 {isOpen && (
                   <div className="border-t border-white/6 bg-black/20">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-white/6">
-                          <th className="px-6 py-2 text-left text-xs text-gray-600 font-medium">Cuenta</th>
-                          <th className="px-4 py-2 text-left text-xs text-gray-600 font-medium">Descripción</th>
-                          <th className="px-4 py-2 text-right text-xs text-gray-600 font-medium">Debe</th>
-                          <th className="px-4 py-2 text-right text-xs text-gray-600 font-medium">Haber</th>
+                          <th className="px-6 py-2 text-left text-xs text-[#7f8a9c] font-medium">Cuenta</th>
+                          <th className="px-4 py-2 text-left text-xs text-[#7f8a9c] font-medium">Descripción</th>
+                          <th className="px-4 py-2 text-right text-xs text-[#7f8a9c] font-medium">Debe</th>
+                          <th className="px-4 py-2 text-right text-xs text-[#7f8a9c] font-medium">Haber</th>
                         </tr>
                       </thead>
                       <tbody>
                         {a.lineas.map(l => (
                           <tr key={l.id} className="border-b border-white/4">
-                            <td className="px-6 py-2 text-xs text-gray-300"><span className="font-mono text-gray-500 mr-2">{l.cuenta.codigo}</span>{l.cuenta.nombre}</td>
-                            <td className="px-4 py-2 text-xs text-gray-500">{l.descripcion ?? '—'}</td>
+                            <td className="px-6 py-2 text-xs text-gray-300"><span className="font-mono text-[#7f8a9c] mr-2">{l.cuenta.codigo}</span>{l.cuenta.nombre}</td>
+                            <td className="px-4 py-2 text-xs text-[#7f8a9c]">{l.descripcion ?? '—'}</td>
                             <td className="px-4 py-2 text-right text-xs font-mono text-green-400">{l.debe > 0 ? fmt(l.debe) : '—'}</td>
                             <td className="px-4 py-2 text-right text-xs font-mono text-red-400">{l.haber > 0 ? fmt(l.haber) : '—'}</td>
                           </tr>
@@ -272,7 +272,7 @@ function LibroDiarioTab({ isAdmin }: { isAdmin: boolean }) {
                       </tbody>
                       <tfoot>
                         <tr className="border-t border-white/6">
-                          <td colSpan={2} className="px-6 py-2 text-xs text-gray-500 font-bold">TOTAL</td>
+                          <td colSpan={2} className="px-6 py-2 text-xs text-[#7f8a9c] font-bold">TOTAL</td>
                           <td className="px-4 py-2 text-right text-xs font-bold font-mono text-green-400">{fmt(a.lineas.reduce((s, l) => s + l.debe, 0))}</td>
                           <td className="px-4 py-2 text-right text-xs font-bold font-mono text-red-400">{fmt(a.lineas.reduce((s, l) => s + l.haber, 0))}</td>
                         </tr>
@@ -325,10 +325,10 @@ function LibroDiarioTab({ isAdmin }: { isAdmin: boolean }) {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-white/6 bg-white/2">
-                        <th className="px-3 py-2 text-left text-xs text-gray-500">Cuenta</th>
-                        <th className="px-3 py-2 text-left text-xs text-gray-500">Descripción</th>
-                        <th className="px-3 py-2 text-right text-xs text-gray-500">Debe</th>
-                        <th className="px-3 py-2 text-right text-xs text-gray-500">Haber</th>
+                        <th className="px-3 py-2 text-left text-xs text-[#7f8a9c]">Cuenta</th>
+                        <th className="px-3 py-2 text-left text-xs text-[#7f8a9c]">Descripción</th>
+                        <th className="px-3 py-2 text-right text-xs text-[#7f8a9c]">Debe</th>
+                        <th className="px-3 py-2 text-right text-xs text-[#7f8a9c]">Haber</th>
                         <th className="w-8" />
                       </tr>
                     </thead>
@@ -364,7 +364,7 @@ function LibroDiarioTab({ isAdmin }: { isAdmin: boolean }) {
                     </tbody>
                     <tfoot>
                       <tr className="border-t border-white/6 bg-white/1">
-                        <td colSpan={2} className="px-3 py-2 text-xs text-gray-500 font-bold">TOTALES</td>
+                        <td colSpan={2} className="px-3 py-2 text-xs text-[#7f8a9c] font-bold">TOTALES</td>
                         <td className="px-3 py-2 text-right text-xs font-bold font-mono" style={{ color: cuadra ? '#34d399' : '#f87171' }}>{fmt(totalDebe)}</td>
                         <td className="px-3 py-2 text-right text-xs font-bold font-mono" style={{ color: cuadra ? '#34d399' : '#f87171' }}>{fmt(totalHaber)}</td>
                         <td />
@@ -440,7 +440,7 @@ function BalanceTab() {
         </div>
         <input type="date" value={desde} onChange={e => setDesde(e.target.value)}
           className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white focus:outline-none" />
-        <span className="text-gray-600 text-xs">a</span>
+        <span className="text-[#7f8a9c] text-xs">a</span>
         <input type="date" value={hasta} onChange={e => setHasta(e.target.value)}
           className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white focus:outline-none" />
       </div>
@@ -462,7 +462,7 @@ function BalanceTab() {
             <p className="text-lg font-bold" style={{ color: s.color }}>
               {'isPercent' in s && s.isPercent ? `${(s.value as number).toFixed(1)}%` : fmt(s.value as number)}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+            <p className="text-xs text-[#7f8a9c] mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -481,16 +481,16 @@ function BalanceTab() {
                 <thead>
                   <tr className="border-b" style={{ borderColor: sec.color + '15', background: sec.color + '08' }}>
                     {['Código', 'Cuenta', 'Debe', 'Haber', 'Saldo'].map(h => (
-                      <th key={h} className={`px-4 py-2 text-xs font-semibold text-gray-500 ${h === 'Código' || h === 'Cuenta' ? 'text-left' : 'text-right'}`}>{h}</th>
+                      <th key={h} className={`px-4 py-2 text-xs font-semibold text-[#7f8a9c] ${h === 'Código' || h === 'Cuenta' ? 'text-left' : 'text-right'}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {cuentasSec.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-6 text-center text-xs text-gray-600">Sin movimientos</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-6 text-center text-xs text-[#7f8a9c]">Sin movimientos</td></tr>
                   ) : cuentasSec.map(c => (
                     <tr key={c.id} className="border-b border-white/4 hover:bg-white/2">
-                      <td className="px-4 py-2 text-xs font-mono text-gray-500">{c.codigo}</td>
+                      <td className="px-4 py-2 text-xs font-mono text-[#7f8a9c]">{c.codigo}</td>
                       <td className="px-4 py-2 text-xs text-gray-300">{c.nombre}</td>
                       <td className="px-4 py-2 text-right text-xs font-mono text-gray-400">{fmt(c.totalDebe)}</td>
                       <td className="px-4 py-2 text-right text-xs font-mono text-gray-400">{fmt(c.totalHaber)}</td>
@@ -562,7 +562,7 @@ function ConciliacionTab({ isAdmin }: { isAdmin: boolean }) {
         ].map(s => (
           <div key={s.label} className="p-4 rounded-xl border border-white/6 bg-white/2">
             <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+            <p className="text-xs text-[#7f8a9c] mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -588,7 +588,7 @@ function ConciliacionTab({ isAdmin }: { isAdmin: boolean }) {
           <thead>
             <tr className="border-b border-white/6 bg-white/2">
               {['Fecha', 'Descripción', 'Referencia', 'Banco', 'Tipo', 'Monto', 'Estado', ''].map(h => (
-                <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
@@ -598,13 +598,13 @@ function ConciliacionTab({ isAdmin }: { isAdmin: boolean }) {
                 {[...Array(8)].map((_, j) => <td key={j} className="px-4 py-3"><div className="h-3.5 bg-gray-700/40 rounded animate-pulse" /></td>)}
               </tr>
             )) : filtrados.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-500 text-sm">Sin movimientos bancarios</td></tr>
+              <tr><td colSpan={8} className="px-4 py-10 text-center text-[#7f8a9c] text-sm">Sin movimientos bancarios</td></tr>
             ) : filtrados.map(m => (
               <tr key={m.id} className={`border-b border-white/4 transition-colors ${m.conciliado ? 'opacity-60' : 'hover:bg-white/2'}`}>
                 <td className="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap">{new Date(m.fecha).toLocaleDateString('es')}</td>
                 <td className="px-4 py-2.5 text-sm text-white max-w-xs truncate">{m.descripcion}</td>
-                <td className="px-4 py-2.5 text-xs text-gray-500">{m.referencia ?? '—'}</td>
-                <td className="px-4 py-2.5 text-xs text-gray-500">{m.banco}</td>
+                <td className="px-4 py-2.5 text-xs text-[#7f8a9c]">{m.referencia ?? '—'}</td>
+                <td className="px-4 py-2.5 text-xs text-[#7f8a9c]">{m.banco}</td>
                 <td className="px-4 py-2.5">
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${m.tipo === 'CREDITO' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                     {m.tipo === 'CREDITO' ? '↑' : '↓'} {m.tipo}
@@ -620,7 +620,7 @@ function ConciliacionTab({ isAdmin }: { isAdmin: boolean }) {
                 </td>
                 <td className="px-4 py-2.5">
                   {isAdmin && (
-                    <button onClick={() => toggleConciliado(m)} className={`text-xs transition-colors ${m.conciliado ? 'text-gray-500 hover:text-yellow-400' : 'text-gray-500 hover:text-green-400'}`}>
+                    <button onClick={() => toggleConciliado(m)} className={`text-xs transition-colors ${m.conciliado ? 'text-[#7f8a9c] hover:text-yellow-400' : 'text-[#7f8a9c] hover:text-green-400'}`}>
                       {m.conciliado ? 'Deshacer' : 'Conciliar'}
                     </button>
                   )}
@@ -706,7 +706,7 @@ export default function ContabilidadPage() {
       <div className="flex gap-1 border-b border-white/6">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${tab === t.id ? 'text-orange-400 border-orange-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}>
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${tab === t.id ? 'text-orange-400 border-orange-400' : 'text-[#7f8a9c] border-transparent hover:text-gray-300'}`}>
             {t.label}
           </button>
         ))}

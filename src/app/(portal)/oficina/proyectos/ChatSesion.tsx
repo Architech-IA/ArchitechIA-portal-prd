@@ -158,26 +158,26 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
           <button onClick={() => !esBitacora && setEditTitulo(full?.titulo ?? sesion.titulo)} title={esBitacora ? undefined : 'Clic para renombrar'}
             className="flex-1 min-w-0 text-left text-[13px] font-semibold text-gray-100 truncate hover:text-white">{full?.titulo ?? sesion.titulo}</button>
         )}
-        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide flex-shrink-0" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }}>{ETIQUETA_TIPO[tipo] ?? tipo}</span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide flex-shrink-0" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }}>{ETIQUETA_TIPO[tipo] ?? tipo}</span>
         {full && !esBitacora && (
           <button onClick={() => soyDuenio && void cambiar({ privada: !full.privada })} disabled={!soyDuenio}
             title={full.privada ? 'Privada: solo la ves tú. Clic para compartir con el equipo' : soyDuenio ? 'Compartida con el equipo. Clic para hacerla privada' : `Compartida · creada por ${full.creadaPorNombre}`}
-            className="flex-shrink-0 text-gray-500 hover:text-gray-200 disabled:hover:text-gray-500">{full.privada ? <Lock size={13} className="text-amber-400" /> : <Unlock size={13} />}</button>
+            className="flex-shrink-0 text-[#7f8a9c] hover:text-gray-200 disabled:hover:text-[#7f8a9c]">{full.privada ? <Lock size={13} className="text-amber-400" /> : <Unlock size={13} />}</button>
         )}
         {!esBitacora && !cerrada && (
           <>
             <button onClick={() => setPlan(true)} disabled={mensajes.length < 2 || generando} title="El coordinador propone tareas de backlog a partir de esta conversación"
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
+              className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
               <ListPlus size={11} /> Convertir en tareas
             </button>
             <button onClick={() => void cerrar()} disabled={generando || mensajes.length === 0} title="Cerrar: resumen final y propuesta de memoria"
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg text-gray-300 border border-white/10 hover:bg-white/5 disabled:opacity-40 flex-shrink-0"><CheckCircle2 size={11} /> Cerrar sesión</button>
+              className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-300 border border-white/10 hover:bg-white/5 disabled:opacity-40 flex-shrink-0"><CheckCircle2 size={11} /> Cerrar sesión</button>
           </>
         )}
         {!esBitacora && soyDuenio && (
           <>
-            <button onClick={() => { if (window.confirm('¿Archivar la sesión? Deja de aparecer en la lista (se conserva).')) void cambiar({ estado: 'ARCHIVADA' }).then(() => onAbrirSesion(null)) }} title="Archivar" className="text-gray-500 hover:text-gray-200 flex-shrink-0"><Archive size={13} /></button>
-            <button onClick={() => void eliminar()} title="Eliminar" className="text-gray-500 hover:text-red-400 flex-shrink-0"><Trash2 size={13} /></button>
+            <button onClick={() => { if (window.confirm('¿Archivar la sesión? Deja de aparecer en la lista (se conserva).')) void cambiar({ estado: 'ARCHIVADA' }).then(() => onAbrirSesion(null)) }} title="Archivar" className="text-[#7f8a9c] hover:text-gray-200 flex-shrink-0"><Archive size={13} /></button>
+            <button onClick={() => void eliminar()} title="Eliminar" className="text-[#7f8a9c] hover:text-red-400 flex-shrink-0"><Trash2 size={13} /></button>
           </>
         )}
       </div>
@@ -198,9 +198,9 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
 
       {/* Mensajes */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
-        {cargando && <div className="flex justify-center py-10 text-gray-500"><Loader2 size={18} className="animate-spin" /></div>}
+        {cargando && <div className="flex justify-center py-10 text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>}
         {!cargando && mensajes.length === 0 && !error && (
-          <div className="text-center text-[12px] text-gray-500 py-12 px-6 space-y-2">
+          <div className="text-center text-[12px] text-[#7f8a9c] py-12 px-6 space-y-2">
             <Sparkles size={22} className="mx-auto text-indigo-400/70" />
             <p className="text-gray-300 font-medium">Sesión nueva</p>
             <p>Todo lo que escribas aquí queda guardado. La IA responde con el contexto vivo del proyecto (PRD, diseño, backlog, memoria, adjuntos…): revisa qué ve exactamente en el panel <b className="text-gray-300">Contexto</b>.</p>
@@ -215,17 +215,17 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
           const fuentes = m.rol === 'assistant' ? fuentesDe(m) : []
           return (
             <div key={m.id} className={`flex gap-2.5 ${m.rol === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black"
+              <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black"
                 style={m.rol === 'assistant' ? { background: 'rgba(99,102,241,0.25)', color: '#818cf8', border: '1.5px solid rgba(99,102,241,0.4)' } : { background: 'rgba(255,255,255,0.08)', color: '#9ca3af', border: '1.5px solid rgba(255,255,255,0.1)' }}>
                 {m.rol === 'assistant' ? (m.metadata?.origen === 'suscripcion' ? <Brain size={12} /> : 'IA') : <User size={12} />}
               </div>
               <div className={m.rol === 'user' ? 'max-w-[78%]' : 'flex-1 min-w-0 max-w-[92%]'}>
-                {m.rol === 'user' && !propio && <p className="text-[9px] text-gray-500 text-right mb-0.5">{m.autorNombre}</p>}
+                {m.rol === 'user' && !propio && <p className="text-[10px] text-[#7f8a9c] text-right mb-0.5">{m.autorNombre}</p>}
                 <div className="rounded-xl px-3 py-2" style={m.rol === 'assistant'
                   ? { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }
                   : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   {m.estado === 'GENERANDO' && <div className="flex items-center gap-2 text-[11px] text-indigo-300"><Loader2 size={12} className="animate-spin" /> {(m.metadata?.progreso?.length ?? 0) > 0 ? `Consultando el proyecto (${m.metadata!.progreso!.length} lectura${m.metadata!.progreso!.length === 1 ? '' : 's'}: ${m.metadata!.progreso![m.metadata!.progreso!.length - 1].nombre.replace(/_/g, ' ')})…` : 'Pensando con el contexto del proyecto…'}</div>}
-                  {m.estado === 'LISTO' && m.rol === 'assistant' && m.metadata?.cortada && <div className="mb-1.5 text-[10px] text-amber-400 flex items-center gap-1"><AlertTriangle size={10} /> Respuesta cortada por límite de longitud. Pide que continúe o haz una pregunta más concreta.</div>}
+                  {m.estado === 'LISTO' && m.rol === 'assistant' && m.metadata?.cortada && <div className="mb-1.5 text-[11px] text-amber-400 flex items-center gap-1"><AlertTriangle size={10} /> Respuesta cortada por límite de longitud. Pide que continúe o haz una pregunta más concreta.</div>}
                   {m.estado === 'ERROR' && (
                     <div className="text-[11px] text-red-400 flex items-start gap-1.5"><AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
                       <span className="flex-1">{m.error || 'No se pudo generar la respuesta.'}</span>
@@ -233,7 +233,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                     </div>)}
                   {m.estado === 'LISTO' && (m.rol === 'assistant' ? <Md texto={parsed ? parsed.prosa : m.contenido} /> : <p className="text-[12px] text-gray-200 whitespace-pre-wrap break-words">{m.contenido}</p>)}
                   {m.rol === 'user' && (m.metadata?.adjuntos?.length ?? 0) > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">{m.metadata!.adjuntos!.map(a => <span key={a.id} className="text-[10px] px-1.5 py-0.5 rounded-md text-gray-400" style={{ background: 'rgba(255,255,255,0.06)' }}>📎 {a.nombre}</span>)}</div>)}
+                    <div className="mt-1.5 flex flex-wrap gap-1">{m.metadata!.adjuntos!.map(a => <span key={a.id} className="text-[11px] px-1.5 py-0.5 rounded-md text-gray-400" style={{ background: 'rgba(255,255,255,0.06)' }}>📎 {a.nombre}</span>)}</div>)}
                 </div>
 
                 {parsed && (
@@ -244,14 +244,14 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                         <button key={oi} disabled={bloqueado} onClick={() => (otra ? inputRef.current?.focus() : void enviar(`${oi + 1}. ${op}`))}
                           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-[11px] text-gray-300 hover:text-white transition-colors disabled:opacity-50"
                           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: otra ? 'rgba(251,191,36,0.15)' : 'rgba(99,102,241,0.2)', color: otra ? '#fbbf24' : '#818cf8' }}>{otra ? '✎' : oi + 1}</span>
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: otra ? 'rgba(251,191,36,0.15)' : 'rgba(99,102,241,0.2)', color: otra ? '#fbbf24' : '#818cf8' }}>{otra ? '✎' : oi + 1}</span>
                           {op}
                         </button>)
                     })}
                   </div>)}
 
                 {/* Pie del mensaje */}
-                <div className={`mt-1 flex items-center gap-2 text-[10px] text-gray-600 ${m.rol === 'user' ? 'justify-end' : ''}`}>
+                <div className={`mt-1 flex items-center gap-2 text-[11px] text-[#7f8a9c] ${m.rol === 'user' ? 'justify-end' : ''}`}>
                   <span>{fechaHora(m.createdAt)}</span>
                   {m.rol === 'assistant' && m.estado === 'LISTO' && m.metadata?.uso && (
                     <span title={`Entrada: ${m.metadata.uso.promptTokens.toLocaleString('es-CO')} tokens (${m.metadata.uso.cachedTokens.toLocaleString('es-CO')} reutilizados de la caché) · Salida: ${m.metadata.uso.completionTokens.toLocaleString('es-CO')} (${m.metadata.uso.reasoningTokens.toLocaleString('es-CO')} razonando)`}
@@ -269,18 +269,18 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                     </>)}
                 </div>
                 {abiertos.has(m.id) && (
-                  <div className="mt-1 rounded-lg px-2.5 py-2 text-[10px] text-gray-400 space-y-0.5" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="mt-1 rounded-lg px-2.5 py-2 text-[11px] text-gray-400 space-y-0.5" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     {(m.metadata?.contexto ?? []).map(f => (
                       <div key={f.clave} className="flex items-center gap-2">
-                        <span className={f.estado === 'incluida' ? 'text-emerald-400' : f.estado === 'recortada' ? 'text-amber-400' : 'text-gray-600'}>●</span>
-                        <span className="flex-1 truncate">{f.etiqueta}{f.nota ? <span className="text-gray-600"> · {f.nota}</span> : null}</span>
-                        <span className="text-gray-600">{f.estado === 'incluida' || f.estado === 'recortada' ? `${f.chars.toLocaleString('es-CO')} car.` : f.estado}</span>
+                        <span className={f.estado === 'incluida' ? 'text-emerald-400' : f.estado === 'recortada' ? 'text-amber-400' : 'text-[#7f8a9c]'}>●</span>
+                        <span className="flex-1 truncate">{f.etiqueta}{f.nota ? <span className="text-[#7f8a9c]"> · {f.nota}</span> : null}</span>
+                        <span className="text-[#7f8a9c]">{f.estado === 'incluida' || f.estado === 'recortada' ? `${f.chars.toLocaleString('es-CO')} car.` : f.estado}</span>
                       </div>))}
                     {(m.metadata?.herramientas?.length ?? 0) > 0 && (
-                      <div className="pt-1 text-gray-500">Lecturas extra: {m.metadata!.herramientas!.map((h, i) => <span key={i} className="mr-2" title={h.args}>{h.nombre.replace(/_/g, ' ')} ({h.chars.toLocaleString('es-CO')} car.)</span>)}</div>)}
-                    <p className="pt-1 text-gray-600">Total {(m.metadata?.totalChars ?? 0).toLocaleString('es-CO')} caracteres · {Math.round((m.metadata?.ms ?? 0) / 1000)} s</p>
+                      <div className="pt-1 text-[#7f8a9c]">Lecturas extra: {m.metadata!.herramientas!.map((h, i) => <span key={i} className="mr-2" title={h.args}>{h.nombre.replace(/_/g, ' ')} ({h.chars.toLocaleString('es-CO')} car.)</span>)}</div>)}
+                    <p className="pt-1 text-[#7f8a9c]">Total {(m.metadata?.totalChars ?? 0).toLocaleString('es-CO')} caracteres · {Math.round((m.metadata?.ms ?? 0) / 1000)} s</p>
                     {m.metadata?.uso && (
-                      <p className="text-gray-600">
+                      <p className="text-[#7f8a9c]">
                         Tokens: entrada {m.metadata.uso.promptTokens.toLocaleString('es-CO')} ({m.metadata.uso.cachedTokens.toLocaleString('es-CO')} de caché, {pctCache(m.metadata.uso)} %) · salida {m.metadata.uso.completionTokens.toLocaleString('es-CO')} ({m.metadata.uso.reasoningTokens.toLocaleString('es-CO')} razonando)
                       </p>)}
                   </div>)}
@@ -298,9 +298,9 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
         {adjuntos.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-1.5">
             {adjuntos.map(a => (
-              <span key={a.id} className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1.5 text-gray-300" style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${a.legible ? 'rgba(255,255,255,0.1)' : 'rgba(245,158,11,0.4)'}` }}>
-                📎 {a.nombre} <span className="text-gray-500">{kb(a.size)}{a.legible ? '' : ' · ilegible'}</span>
-                <button onClick={() => setAdjuntos(prev => prev.filter(x => x.id !== a.id))} className="text-gray-500 hover:text-gray-200"><X size={10} /></button>
+              <span key={a.id} className="text-[11px] px-2 py-1 rounded-lg flex items-center gap-1.5 text-gray-300" style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${a.legible ? 'rgba(255,255,255,0.1)' : 'rgba(245,158,11,0.4)'}` }}>
+                📎 {a.nombre} <span className="text-[#7f8a9c]">{kb(a.size)}{a.legible ? '' : ' · ilegible'}</span>
+                <button onClick={() => setAdjuntos(prev => prev.filter(x => x.id !== a.id))} className="text-[#7f8a9c] hover:text-gray-200"><X size={10} /></button>
               </span>))}
           </div>)}
         <div className="flex items-end gap-2">

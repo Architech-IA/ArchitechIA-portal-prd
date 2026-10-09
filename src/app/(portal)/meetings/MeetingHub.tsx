@@ -387,7 +387,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
             <h2 className="text-lg font-bold text-white truncate">{meeting.title}</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {fechaTexto} · {typeLabel}{meeting.location ? ` · ${meeting.location}` : ''}
-              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] ${soloLectura ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[11px] ${soloLectura ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
                 {soloLectura ? 'Completada' : meeting.status === 'CANCELLED' ? 'Cancelada' : 'Programada'}
               </span>
             </p>
@@ -407,9 +407,9 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
         <div className="px-6 flex items-center gap-1 border-b border-white/10">
           {TABS.map(t => (
             <button key={t.key} type="button" onClick={() => setTab(t.key)}
-              className={`px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${tab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+              className={`px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${tab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-[#7f8a9c] hover:text-gray-300'}`}>
               {t.label}
-              {t.badge ? <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-300">{t.badge}</span> : null}
+              {t.badge ? <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-300">{t.badge}</span> : null}
             </button>
           ))}
         </div>
@@ -435,22 +435,22 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                   )}
                 </div>
                 <div className="space-y-2">
-                  {hub.puntos.length === 0 && <p className="text-xs text-gray-600 italic">Sin puntos todavía.</p>}
+                  {hub.puntos.length === 0 && <p className="text-xs text-[#7f8a9c] italic">Sin puntos todavía.</p>}
                   {hub.puntos.map((p, i) => (
                     <div key={p.id} className="flex items-start gap-2">
-                      <span className="text-xs text-gray-500 font-mono mt-2.5 w-5 text-right">{i + 1}.</span>
+                      <span className="text-xs text-[#7f8a9c] font-mono mt-2.5 w-5 text-right">{i + 1}.</span>
                       <AutoArea value={p.texto} disabled={soloLectura} placeholder="Punto de agenda"
                         onChange={v => setItems('puntos', prev => prev.map(x => x.id === p.id ? { ...x, texto: v } : x))} />
                       {!soloLectura && (
                         <button type="button" onClick={() => setItems('puntos', prev => prev.filter(x => x.id !== p.id))}
-                          className="mt-1.5 w-7 h-7 rounded text-gray-600 hover:text-red-400 hover:bg-red-900/20 flex-shrink-0">✕</button>
+                          className="mt-1.5 w-7 h-7 rounded text-[#7f8a9c] hover:text-red-400 hover:bg-red-900/20 flex-shrink-0">✕</button>
                       )}
                     </div>
                   ))}
                 </div>
                 {!soloLectura && (
                   <button type="button" onClick={() => setItems('puntos', prev => [...prev, { id: uid(), texto: '' }])}
-                    className="mt-2 text-xs text-gray-500 hover:text-orange-400">+ Agregar punto</button>
+                    className="mt-2 text-xs text-[#7f8a9c] hover:text-orange-400">+ Agregar punto</button>
                 )}
               </div>
             </div>
@@ -473,8 +473,8 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                   className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-orange-600 hover:bg-orange-500 disabled:opacity-40">Agregar</button>
               </div>
               {errorAcc && <p className="text-xs text-red-400 mb-2">{errorAcc}</p>}
-              {cargandoAcc && <p className="text-xs text-gray-500">Cargando…</p>}
-              {!cargandoAcc && acciones.length === 0 && <p className="text-xs text-gray-600 italic">Sin acciones todavía.</p>}
+              {cargandoAcc && <p className="text-xs text-[#7f8a9c]">Cargando…</p>}
+              {!cargandoAcc && acciones.length === 0 && <p className="text-xs text-[#7f8a9c] italic">Sin acciones todavía.</p>}
               <div className="space-y-2">
                 {acciones.map(a => (
                   <div key={a.id} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2">
@@ -483,7 +483,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                       {(Object.keys(ESTADO_ACCION) as Accion['estado'][]).map(k => <option key={k} value={k} className="bg-gray-900">{ESTADO_ACCION[k].label}</option>)}
                     </select>
                     <input defaultValue={a.texto} onBlur={e => { const v = e.target.value.trim(); if (v && v !== a.texto) void actualizarAccion(a.id, { texto: v }); }}
-                      className={`flex-1 min-w-0 bg-transparent text-sm focus:outline-none ${a.estado === 'HECHA' ? 'text-gray-500 line-through' : 'text-gray-100'}`} />
+                      className={`flex-1 min-w-0 bg-transparent text-sm focus:outline-none ${a.estado === 'HECHA' ? 'text-[#7f8a9c] line-through' : 'text-gray-100'}`} />
                     <select value={a.responsable ?? ''} onChange={e => { void actualizarAccion(a.id, { responsable: e.target.value || null }); }}
                       className="text-xs bg-white/[0.04] border border-white/10 rounded px-2 py-1 text-gray-300 focus:outline-none max-w-[160px]">
                       <option value="" className="bg-gray-900">Sin responsable</option>
@@ -493,7 +493,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                       onChange={e => { void actualizarAccion(a.id, { fechaLimite: e.target.value || null }); }}
                       className="text-xs bg-white/[0.04] border border-white/10 rounded px-2 py-1 text-gray-300 focus:outline-none [color-scheme:dark]" />
                     <button type="button" onClick={() => { void borrarAccion(a.id); }} title="Eliminar"
-                      className="w-7 h-7 rounded text-gray-600 hover:text-red-400 hover:bg-red-900/20 flex-shrink-0">✕</button>
+                      className="w-7 h-7 rounded text-[#7f8a9c] hover:text-red-400 hover:bg-red-900/20 flex-shrink-0">✕</button>
                   </div>
                 ))}
               </div>
@@ -508,9 +508,9 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                   <a href={meeting.actaFile} download={meeting.actaFileName || 'acta'} className="text-sm text-orange-300 hover:text-orange-200 truncate">
                     {meeting.actaFileName || 'acta'}
                   </a>
-                  <button type="button" onClick={() => { void quitarActa(); }} className="text-xs text-gray-500 hover:text-red-400">Quitar</button>
+                  <button type="button" onClick={() => { void quitarActa(); }} className="text-xs text-[#7f8a9c] hover:text-red-400">Quitar</button>
                 </div>
-              ) : <p className="text-xs text-gray-600 italic mb-2">Sin acta adjunta.</p>}
+              ) : <p className="text-xs text-[#7f8a9c] italic mb-2">Sin acta adjunta.</p>}
               <label className={`mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-white/20 text-xs text-gray-300 hover:border-orange-500/60 hover:text-orange-300 cursor-pointer ${subiendo ? 'opacity-50 pointer-events-none' : ''}`}>
                 {subiendo ? 'Subiendo…' : meeting.actaFile ? 'Reemplazar acta' : 'Adjuntar acta'}
                 <input type="file" className="hidden" onChange={subirActa} />
@@ -522,7 +522,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
               {errorActa && <p className="mt-2 text-xs text-red-400">{errorActa}</p>}
               {actaBorrador !== null && (
                 <div className="mt-4">
-                  <p className="text-[11px] text-gray-500 mb-1.5">Borrador generado con IA a partir de la agenda, el contenido y los pendientes. Revísalo y edítalo antes de guardar.</p>
+                  <p className="text-[11px] text-[#7f8a9c] mb-1.5">Borrador generado con IA a partir de la agenda, el contenido y los pendientes. Revísalo y edítalo antes de guardar.</p>
                   <textarea value={actaBorrador} onChange={e => setActaBorrador(e.target.value)} rows={20} spellCheck={false}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-gray-100 leading-relaxed focus:outline-none focus:border-orange-500/50 resize-y" />
                   <div className="mt-2 flex items-center gap-2 justify-end">
@@ -542,13 +542,13 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
         <aside className="hidden md:flex w-72 shrink-0 flex-col gap-5 border-l border-white/10 overflow-y-auto px-4 py-5" style={{ background: 'rgba(249,115,22,0.035)' }}>
           {/* Información clave */}
           <section>
-            <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">Información clave</h4>
+            <h4 className="text-[11px] uppercase tracking-wider text-[#7f8a9c] font-semibold mb-2">Información clave</h4>
             <dl className="space-y-1.5 text-xs">
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Tipo</dt><dd className="text-gray-200 text-right">{typeLabel}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Estado</dt>
-                <dd><span className={`px-1.5 py-0.5 rounded-full text-[10px] ${soloLectura ? 'bg-green-500/20 text-green-400' : meeting.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
+              <div className="flex justify-between gap-3"><dt className="text-[#7f8a9c]">Tipo</dt><dd className="text-gray-200 text-right">{typeLabel}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-[#7f8a9c]">Estado</dt>
+                <dd><span className={`px-1.5 py-0.5 rounded-full text-[11px] ${soloLectura ? 'bg-green-500/20 text-green-400' : meeting.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
                   {soloLectura ? 'Completada' : meeting.status === 'CANCELLED' ? 'Cancelada' : 'Programada'}</span></dd></div>
-              <div className="flex justify-between gap-3 items-center"><dt className="text-gray-500">Lugar</dt>
+              <div className="flex justify-between gap-3 items-center"><dt className="text-[#7f8a9c]">Lugar</dt>
                 <dd className="text-gray-200 text-right truncate flex items-center justify-end gap-1.5">
                   {meeting.location || '—'}
                   {meeting.link && (
@@ -558,30 +558,30 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                     </a>
                   )}
                 </dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-gray-500">Asistentes</dt><dd className="text-gray-200">{meeting.type === 'INTERNAL_DAILY' ? 'ArchitechIA' : asistentes.length}</dd></div>
-              <div className="flex justify-between gap-3 text-[11px]"><dt className="text-gray-500">Fecha</dt>
+              <div className="flex justify-between gap-3"><dt className="text-[#7f8a9c]">Asistentes</dt><dd className="text-gray-200">{meeting.type === 'INTERNAL_DAILY' ? 'ArchitechIA' : asistentes.length}</dd></div>
+              <div className="flex justify-between gap-3 text-[11px]"><dt className="text-[#7f8a9c]">Fecha</dt>
                 <dd className="text-gray-200 text-right">{fechaCorta(meeting.date)} {getTimeStrUTC5(meeting.date)}{meeting.endDate ? `-${getTimeStrUTC5(meeting.endDate)}` : ''}</dd></div>
             </dl>
             {meeting.type !== 'INTERNAL_DAILY' && asistentes.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {asistentes.map(a => <span key={a} className="text-[10px] text-gray-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">{a}</span>)}
+                {asistentes.map(a => <span key={a} className="text-[11px] text-gray-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">{a}</span>)}
               </div>
             )}
           </section>
 
           {/* Pendientes */}
           <section>
-            <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2 flex items-center gap-2">
+            <h4 className="text-[11px] uppercase tracking-wider text-[#7f8a9c] font-semibold mb-2 flex items-center gap-2">
               Pendientes
-              {vencidas > 0 && <span className="text-[10px] normal-case tracking-normal text-red-400 bg-red-500/10 border border-red-600/30 rounded-full px-1.5 py-0.5">{vencidas} vencida{vencidas === 1 ? '' : 's'}</span>}
+              {vencidas > 0 && <span className="text-[11px] normal-case tracking-normal text-red-400 bg-red-500/10 border border-red-600/30 rounded-full px-1.5 py-0.5">{vencidas} vencida{vencidas === 1 ? '' : 's'}</span>}
             </h4>
             <ul className="space-y-1 mb-3">
               {checklist.map(c => (
                 <li key={c.tab}>
                   <button type="button" onClick={() => setTab(c.tab)} className="w-full flex items-center gap-2 text-left text-xs rounded-md px-1.5 py-1 hover:bg-white/[0.05]">
-                    <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[9px] flex-shrink-0 ${c.ok ? 'bg-green-600/30 border-green-500/60 text-green-300' : 'border-gray-600 text-transparent'}`}>✓</span>
+                    <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] flex-shrink-0 ${c.ok ? 'bg-green-600/30 border-green-500/60 text-green-300' : 'border-gray-600 text-transparent'}`}>✓</span>
                     <span className={c.ok ? 'text-gray-400' : 'text-gray-200'}>{c.label}</span>
-                    <span className="ml-auto text-[10px] text-gray-500 truncate max-w-[110px]">{c.detalle}</span>
+                    <span className="ml-auto text-[11px] text-[#7f8a9c] truncate max-w-[110px]">{c.detalle}</span>
                   </button>
                 </li>
               ))}
@@ -594,8 +594,8 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
             <div className="h-1.5 rounded-full bg-white/[0.08] overflow-hidden mb-2">
               <div className="h-full bg-green-500/70 transition-all" style={{ width: acciones.length ? `${Math.round((hechas / acciones.length) * 100)}%` : '0%' }} />
             </div>
-            {cargandoAcc && <p className="text-[11px] text-gray-500">Cargando…</p>}
-            {!cargandoAcc && accPend.length === 0 && <p className="text-[11px] text-gray-500 italic">{acciones.length ? 'Sin acciones pendientes 🎉' : 'Sin acciones todavía.'}</p>}
+            {cargandoAcc && <p className="text-[11px] text-[#7f8a9c]">Cargando…</p>}
+            {!cargandoAcc && accPend.length === 0 && <p className="text-[11px] text-[#7f8a9c] italic">{acciones.length ? 'Sin acciones pendientes 🎉' : 'Sin acciones todavía.'}</p>}
             <ul className="space-y-1">
               {accPend.slice(0, 5).map(a => (
                 <li key={a.id} className="flex items-start gap-2 text-xs rounded-md px-1.5 py-1 hover:bg-white/[0.05]">
@@ -603,7 +603,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                     className="mt-0.5 w-4 h-4 rounded border border-gray-600 hover:border-green-400 hover:bg-green-500/20 flex-shrink-0" />
                   <button type="button" onClick={() => setTab('acciones')} className="flex-1 min-w-0 text-left">
                     <span className="block text-gray-200 truncate">{a.texto}</span>
-                    <span className="block text-[10px] text-gray-500 truncate">
+                    <span className="block text-[11px] text-[#7f8a9c] truncate">
                       {a.responsable || 'Sin responsable'}
                       {a.fechaLimite && <span className={vencida(a) ? 'text-red-400' : ''}> · {corta(a.fechaLimite)}{vencida(a) ? ' (vencida)' : ''}</span>}
                     </span>
@@ -620,7 +620,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
 
         {/* Pie */}
         <div className="px-6 py-3 flex items-center justify-between gap-3" style={{ background: 'rgba(249,115,22,0.04)', borderTop: '1px solid rgba(251,146,60,0.18)' }}>
-          <span className={`text-[11px] ${saveState === 'error' ? 'text-red-400' : saveState === 'saving' ? 'text-orange-400' : 'text-gray-500'}`}>{estadoGuardado}</span>
+          <span className={`text-[11px] ${saveState === 'error' ? 'text-red-400' : saveState === 'saving' ? 'text-orange-400' : 'text-[#7f8a9c]'}`}>{estadoGuardado}</span>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => { void cerrar(); }} className={`${btnBase} text-gray-300 border-white/10 hover:bg-white/[0.06]`}>Cerrar</button>
             <button type="button" onClick={() => { void completarOReabrir(); }}

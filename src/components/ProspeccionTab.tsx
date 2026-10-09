@@ -239,11 +239,11 @@ export default function ProspeccionTab() {
                   <td className="px-4 py-3 text-sm font-medium text-white">{p.empresa}</td>
                   <td className="px-4 py-3 text-sm text-gray-400">
                     <p>{p.industria}</p>
-                    {p.nicho && <p className="text-xs text-gray-500">{p.nicho}</p>}
+                    {p.nicho && <p className="text-xs text-[#7f8a9c]">{p.nicho}</p>}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-400">
                     {p.contacto && <p>{p.contacto}</p>}
-                    {p.email && <p className="text-xs text-gray-500">{p.email}</p>}
+                    {p.email && <p className="text-xs text-[#7f8a9c]">{p.email}</p>}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-400">{p.pais || '—'}</td>
                   <td className="px-4 py-3 text-sm text-gray-400">{p.fuente}</td>
@@ -265,7 +265,7 @@ export default function ProspeccionTab() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-6 py-16 text-center text-gray-500">
+                <tr><td colSpan={8} className="px-6 py-16 text-center text-[#7f8a9c]">
                   {prospectos.length === 0 ? 'Sin prospectos. Agrega el primero.' : 'Sin resultados con estos filtros.'}
                 </td></tr>
               )}

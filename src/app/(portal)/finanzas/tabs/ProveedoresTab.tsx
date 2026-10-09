@@ -128,7 +128,7 @@ export default function ProveedoresPage() {
         ].map(s => (
           <div key={s.label} className="p-4 rounded-xl border border-white/6 bg-white/2">
             <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">{s.label}</p>
+            <p className="text-xs text-[#7f8a9c] font-medium mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -136,7 +136,7 @@ export default function ProveedoresPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-white/6">
         {(['proveedores', 'ordenes'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${tab === t ? 'text-orange-400 border-orange-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${tab === t ? 'text-orange-400 border-orange-400' : 'text-[#7f8a9c] border-transparent hover:text-gray-300'}`}>
             {t === 'ordenes' ? 'Órdenes de Compra' : 'Proveedores'}
           </button>
         ))}
@@ -152,7 +152,7 @@ export default function ProveedoresPage() {
             <thead>
               <tr className="border-b border-white/6 bg-white/2">
                 {['Proveedor', 'Tipo', 'Contacto', 'País', 'Órdenes', 'Estado', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -162,7 +162,7 @@ export default function ProveedoresPage() {
                   {[...Array(7)].map((_, j) => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-700/50 rounded animate-pulse" /></td>)}
                 </tr>
               )) : filtProvs.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-500 text-sm">Sin proveedores registrados</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-[#7f8a9c] text-sm">Sin proveedores registrados</td></tr>
               ) : filtProvs.map(p => (
                 <tr key={p.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
                   <td className="px-4 py-3">
@@ -170,14 +170,14 @@ export default function ProveedoresPage() {
                     {p.website && <a href={p.website} target="_blank" rel="noreferrer" className="text-xs text-orange-400/70 hover:text-orange-400">{p.website}</a>}
                   </td>
                   <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-1 rounded-md" style={{ background: TIPO_COLOR[p.tipo] + '18', color: TIPO_COLOR[p.tipo] }}>{p.tipo}</span></td>
-                  <td className="px-4 py-3"><p className="text-xs text-gray-400">{p.contacto ?? '—'}</p><p className="text-xs text-gray-600">{p.email ?? ''}</p></td>
+                  <td className="px-4 py-3"><p className="text-xs text-gray-400">{p.contacto ?? '—'}</p><p className="text-xs text-[#7f8a9c]">{p.email ?? ''}</p></td>
                   <td className="px-4 py-3 text-sm text-gray-400">{p.pais ?? '—'}</td>
                   <td className="px-4 py-3 text-sm font-semibold text-white">{p.ordenes?.length ?? 0}</td>
                   <td className="px-4 py-3"><span className={`text-xs font-bold px-2 py-1 rounded-full ${p.estado === 'ACTIVO' ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'}`}>● {p.estado}</span></td>
                   <td className="px-4 py-3">
                     {isAdmin && (
                       <div className="flex gap-2">
-                        <button onClick={() => { setEditProv(p); setFormProv({ nombre: p.nombre, tipo: p.tipo, contacto: p.contacto ?? '', email: p.email ?? '', telefono: p.telefono ?? '', pais: p.pais ?? '', website: p.website ?? '', estado: p.estado, notas: p.notas ?? '' }); setShowProvModal(true); }} className="text-xs text-gray-500 hover:text-white transition-colors">Editar</button>
+                        <button onClick={() => { setEditProv(p); setFormProv({ nombre: p.nombre, tipo: p.tipo, contacto: p.contacto ?? '', email: p.email ?? '', telefono: p.telefono ?? '', pais: p.pais ?? '', website: p.website ?? '', estado: p.estado, notas: p.notas ?? '' }); setShowProvModal(true); }} className="text-xs text-[#7f8a9c] hover:text-white transition-colors">Editar</button>
                         <button onClick={() => setConfirmDel({ type: 'prov', id: p.id, name: p.nombre })} className="text-xs text-red-500/60 hover:text-red-400 transition-colors">Eliminar</button>
                       </div>
                     )}
@@ -196,7 +196,7 @@ export default function ProveedoresPage() {
             <thead>
               <tr className="border-b border-white/6 bg-white/2">
                 {['Número', 'Concepto', 'Proveedor', 'Monto', 'Estado', 'Vencimiento', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -206,19 +206,19 @@ export default function ProveedoresPage() {
                   {[...Array(7)].map((_, j) => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-700/50 rounded animate-pulse" /></td>)}
                 </tr>
               )) : filtOCs.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-500 text-sm">Sin órdenes registradas</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-[#7f8a9c] text-sm">Sin órdenes registradas</td></tr>
               ) : filtOCs.map(o => (
                 <tr key={o.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
                   <td className="px-4 py-3 text-xs font-mono text-orange-400">{o.numero}</td>
-                  <td className="px-4 py-3"><p className="text-sm font-semibold text-white">{o.concepto}</p>{o.categoria && <p className="text-xs text-gray-500">{o.categoria}</p>}</td>
+                  <td className="px-4 py-3"><p className="text-sm font-semibold text-white">{o.concepto}</p>{o.categoria && <p className="text-xs text-[#7f8a9c]">{o.categoria}</p>}</td>
                   <td className="px-4 py-3 text-sm text-gray-400">{o.proveedor?.nombre ?? '—'}</td>
                   <td className="px-4 py-3 text-sm font-bold text-white">{fmt(o.monto, o.moneda)}</td>
                   <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-1 rounded-full" style={{ background: OC_COLOR[o.estado] + '18', color: OC_COLOR[o.estado] }}>● {o.estado}</span></td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{o.fechaVencimiento ? new Date(o.fechaVencimiento).toLocaleDateString('es') : '—'}</td>
+                  <td className="px-4 py-3 text-xs text-[#7f8a9c]">{o.fechaVencimiento ? new Date(o.fechaVencimiento).toLocaleDateString('es') : '—'}</td>
                   <td className="px-4 py-3">
                     {isAdmin && (
                       <div className="flex gap-2">
-                        <button onClick={() => { setEditOC(o); setFormOC({ concepto: o.concepto, descripcion: o.descripcion ?? '', monto: String(o.monto), moneda: o.moneda, estado: o.estado, proveedorId: o.proveedorId, fechaEmision: o.fechaEmision.slice(0, 10), fechaVencimiento: o.fechaVencimiento?.slice(0, 10) ?? '', categoria: o.categoria ?? '', aprobadoPor: o.aprobadoPor ?? '', notas: o.notas ?? '' }); setShowOCModal(true); }} className="text-xs text-gray-500 hover:text-white transition-colors">Editar</button>
+                        <button onClick={() => { setEditOC(o); setFormOC({ concepto: o.concepto, descripcion: o.descripcion ?? '', monto: String(o.monto), moneda: o.moneda, estado: o.estado, proveedorId: o.proveedorId, fechaEmision: o.fechaEmision.slice(0, 10), fechaVencimiento: o.fechaVencimiento?.slice(0, 10) ?? '', categoria: o.categoria ?? '', aprobadoPor: o.aprobadoPor ?? '', notas: o.notas ?? '' }); setShowOCModal(true); }} className="text-xs text-[#7f8a9c] hover:text-white transition-colors">Editar</button>
                         <button onClick={() => setConfirmDel({ type: 'oc', id: o.id, name: o.numero })} className="text-xs text-red-500/60 hover:text-red-400 transition-colors">Eliminar</button>
                       </div>
                     )}

@@ -84,7 +84,7 @@ export default function AppsHubPage() {
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
                   active
                     ? 'bg-white/[0.12] border-white/[0.25] text-white'
-                    : 'border-white/[0.06] text-slate-500 hover:text-slate-300 hover:bg-white/[0.05]'
+                    : 'border-white/[0.06] text-[#7f8a9c] hover:text-slate-300 hover:bg-white/[0.05]'
                 }`}
               >
                 {label}
@@ -93,7 +93,7 @@ export default function AppsHubPage() {
           })}
         </div>
         <div className="relative flex-shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#7f8a9c]" />
           <input
             type="text"
             value={search}
@@ -122,8 +122,8 @@ export default function AppsHubPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-12 text-center" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-          <Box className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">No se encontraron apps</p>
+          <Box className="h-12 w-12 text-[#7f8a9c] mx-auto mb-4" />
+          <p className="text-[#7f8a9c] text-sm">No se encontraron apps</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -168,7 +168,7 @@ function AppCard({ app }: { app: AppInstance }) {
         </div>
         <div className="flex flex-col items-end gap-1 ml-2">
           <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+            className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
             style={{ color: cs.color, background: cs.bg, border: `1px solid ${cs.border}` }}
           >
             {category?.label ?? app.appType.category}
@@ -179,7 +179,7 @@ function AppCard({ app }: { app: AppInstance }) {
             return (
               <span
                 key={ec}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
                 style={{ color: ecs.color, background: ecs.bg, border: `1px solid ${ecs.border}` }}
               >
                 {ecMeta?.label ?? ec}
@@ -195,7 +195,7 @@ function AppCard({ app }: { app: AppInstance }) {
       </h3>
 
       {/* Descripcion */}
-      <p className="text-[11px] text-slate-500 line-clamp-3 leading-relaxed flex-1 mb-4">
+      <p className="text-[11px] text-[#7f8a9c] line-clamp-3 leading-relaxed flex-1 mb-4">
         {app.description ?? 'Sin descripcion'}
       </p>
 

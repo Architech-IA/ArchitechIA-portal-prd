@@ -47,7 +47,7 @@ export default function ProjectGantt({ project }: ProjectGanttProps) {
       {/* Month headers */}
       <div className="relative mb-2 ml-24">
         {months.map((m, i) => (
-          <span key={i} className="absolute text-[10px] text-gray-500" style={{ left: `${m.start}%` }}>
+          <span key={i} className="absolute text-[11px] text-gray-500" style={{ left: `${m.start}%` }}>
             {m.label}
           </span>
         ))}
@@ -60,7 +60,7 @@ export default function ProjectGantt({ project }: ProjectGanttProps) {
           <div className="absolute inset-y-0 bg-orange-600/20 rounded-lg" style={{ left: '0%', width: `${project.progress}%` }} />
           {todayOffset > 0 && todayOffset < 100 && (
             <div className="absolute top-0 bottom-0 w-0.5 bg-white z-10" style={{ left: `${todayOffset}%` }}>
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] text-white bg-gray-700 px-1 rounded">Hoy</span>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[11px] text-white bg-gray-700 px-1 rounded">Hoy</span>
             </div>
           )}
         </div>

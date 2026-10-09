@@ -268,7 +268,7 @@ export default function ProposalsTab({ isAdmin }: { isAdmin: boolean }) {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 7 : 6} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={isAdmin ? 7 : 6} className="px-6 py-12 text-center text-[#7f8a9c]">
                     No hay propuestas que coincidan con los filtros.
                   </td>
                 </tr>

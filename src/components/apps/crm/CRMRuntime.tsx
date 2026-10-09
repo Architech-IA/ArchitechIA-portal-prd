@@ -464,14 +464,14 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
           </div>
           <div className="min-w-0">
             <h2 className="truncate text-sm font-semibold">{companyName}</h2>
-            <p className="text-xs text-gray-500">Gestor Documental</p>
+            <p className="text-xs text-[#7f8a9c]">Gestor Documental</p>
           </div>
         </div>
 
         {/* Search */}
         <div className="px-3 py-3">
           <div className="flex items-center gap-2 rounded-lg border border-[#222222] bg-[#141414]/50 px-3 py-2">
-            <Search className="h-4 w-4 text-gray-500" />
+            <Search className="h-4 w-4 text-[#7f8a9c]" />
             <input
               type="text"
               value={search}
@@ -518,7 +518,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
           <button
             type="button"
             onClick={() => setFinancialOpen((v) => !v)}
-            className="mt-2 flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-400"
+            className="mt-2 flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#7f8a9c] hover:text-gray-400"
           >
             <span>Financial Center</span>
             {financialOpen ? (
@@ -570,7 +570,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
           <button
             type="button"
             onClick={() => setAnalyticsOpen((v) => !v)}
-            className="mt-2 flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-400"
+            className="mt-2 flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#7f8a9c] hover:text-gray-400"
           >
             <span>Analytics</span>
             {analyticsOpen ? (
@@ -677,7 +677,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
         </header>
 
         {/* Breadcrumb */}
-        <div className="px-6 py-3 text-xs text-gray-500">
+        <div className="px-6 py-3 text-xs text-[#7f8a9c]">
           <button
             type="button"
             onClick={() => switchView('Overview')}
@@ -782,7 +782,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
               {sortLabel}
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
-            <span className="text-xs text-gray-500">{filteredRows.length} Results</span>
+            <span className="text-xs text-[#7f8a9c]">{filteredRows.length} Results</span>
           </div>
         </div>
 
@@ -824,7 +824,7 @@ export default function CRMRuntime({ app }: { app: AppInstance }) {
 
 function SidebarSectionHeader({ label }: { label: string }) {
   return (
-    <div className="mt-3 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+    <div className="mt-3 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#7f8a9c]">
       {label}
     </div>
   );
@@ -912,7 +912,7 @@ function InvoiceManagerTable({
                 }`}
               >
                 <td className="px-3 py-3">
-                  <GripVertical className="h-4 w-4 text-gray-600" />
+                  <GripVertical className="h-4 w-4 text-[#7f8a9c]" />
                 </td>
                 <td className="px-3 py-3">
                   <input
@@ -928,7 +928,7 @@ function InvoiceManagerTable({
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-2.5">
                     <div
-                      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${getAvatarColor(
+                      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${getAvatarColor(
                         row.clientName,
                       )}`}
                     >
@@ -954,7 +954,7 @@ function InvoiceManagerTable({
         </tbody>
       </table>
       {filteredRows.length === 0 && (
-        <div className="px-6 py-12 text-center text-xs text-gray-500">
+        <div className="px-6 py-12 text-center text-xs text-[#7f8a9c]">
           No results found.
         </div>
       )}
@@ -1035,7 +1035,7 @@ function StatCard({
       }`}
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs text-gray-500">{label}</span>
+        <span className="text-xs text-[#7f8a9c]">{label}</span>
         <div className="rounded-lg bg-[#1a1a1a] p-1.5">
           <Icon className="h-4 w-4 text-gray-400" />
         </div>
@@ -1118,7 +1118,7 @@ function OverviewView({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <SectionCard
           title="Revenue Trend"
-          action={<span className="text-xs text-gray-500">Last 6 months</span>}
+          action={<span className="text-xs text-[#7f8a9c]">Last 6 months</span>}
         >
           <div className="flex h-48 items-end gap-2">
             {[35, 48, 42, 60, 55, 72].map((h, i) => (
@@ -1135,7 +1135,7 @@ function OverviewView({
                   }`}
                   style={{ height: `${h}%` }}
                 />
-                <span className="text-[10px] text-gray-500">
+                <span className="text-[11px] text-[#7f8a9c]">
                   {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i]}
                 </span>
               </div>
@@ -1155,7 +1155,7 @@ function OverviewView({
                 <item.icon className={`mt-0.5 h-4 w-4 flex-shrink-0 ${item.color}`} />
                 <div className="flex-1">
                   <p className="text-xs text-gray-300">{item.text}</p>
-                  <p className="text-[10px] text-gray-500">{item.time}</p>
+                  <p className="text-[11px] text-[#7f8a9c]">{item.time}</p>
                 </div>
               </div>
             ))}
@@ -1185,7 +1185,7 @@ function OverviewView({
         </SectionCard>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-[#222222] bg-[#141414]/50 px-4 py-2 text-xs text-gray-500">
+      <div className="flex items-center justify-between rounded-lg border border-[#222222] bg-[#141414]/50 px-4 py-2 text-xs text-[#7f8a9c]">
         <span>Last updated: {formatDate(lastUpdated)} at {lastUpdated.toLocaleTimeString()}</span>
         <span className="flex items-center gap-1 text-emerald-400">
           <CircleDot className="h-3 w-3" />
@@ -1227,7 +1227,7 @@ function ClientsView({ pulseStats }: { pulseStats: boolean }) {
             <div key={client.name} className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white ${getAvatarColor(
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold text-white ${getAvatarColor(
                     client.name,
                   )}`}
                 >
@@ -1235,12 +1235,12 @@ function ClientsView({ pulseStats }: { pulseStats: boolean }) {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-200">{client.name}</p>
-                  <p className="text-[10px] text-gray-500">{client.company}</p>
+                  <p className="text-[11px] text-[#7f8a9c]">{client.company}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     client.status === 'Active'
                       ? 'bg-emerald-500/10 text-emerald-400'
                       : client.status === 'Trial'
@@ -1284,10 +1284,10 @@ function ProjectsView() {
               <div className="mb-2 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-200">{project.name}</p>
-                  <p className="text-[10px] text-gray-500">{project.client}</p>
+                  <p className="text-[11px] text-[#7f8a9c]">{project.client}</p>
                 </div>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     project.status === 'On Track'
                       ? 'bg-emerald-500/10 text-emerald-400'
                       : project.status === 'At Risk'
@@ -1304,7 +1304,7 @@ function ProjectsView() {
                   style={{ width: `${project.progress}%` }}
                 />
               </div>
-              <div className="mt-1 flex justify-end text-[10px] text-gray-500">{project.progress}%</div>
+              <div className="mt-1 flex justify-end text-[11px] text-[#7f8a9c]">{project.progress}%</div>
             </div>
           ))}
         </div>
@@ -1333,7 +1333,7 @@ function PaymentsHubView({ pulseStats }: { pulseStats: boolean }) {
               <div key={method.name}>
                 <div className="mb-1 flex justify-between text-xs">
                   <span className="text-gray-300">{method.name}</span>
-                  <span className="text-gray-500">{method.share}%</span>
+                  <span className="text-[#7f8a9c]">{method.share}%</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#1a1a1a]">
                   <div className={`h-full rounded-full ${method.color}`} style={{ width: `${method.share}%` }} />
@@ -1353,13 +1353,13 @@ function PaymentsHubView({ pulseStats }: { pulseStats: boolean }) {
             ].map((tx) => (
               <div key={tx.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-gray-500" />
+                  <CreditCard className="h-4 w-4 text-[#7f8a9c]" />
                   <span className="text-xs text-gray-300">{tx.name}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-gray-200">{formatCurrency(tx.amount)}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                       tx.status === 'Completed'
                         ? 'bg-emerald-500/10 text-emerald-400'
                         : 'bg-amber-500/10 text-amber-400'
@@ -1472,11 +1472,11 @@ function SubscriptionsView() {
             <div key={plan.name} className="flex items-center justify-between rounded-lg border border-[#222222] bg-[#141414]/50 p-3">
               <div>
                 <p className="text-xs font-medium text-gray-200">{plan.name}</p>
-                <p className="text-[10px] text-gray-500">{plan.clients} clients</p>
+                <p className="text-[11px] text-[#7f8a9c]">{plan.clients} clients</p>
               </div>
               <div className="text-right">
                 <p className="text-xs font-medium text-gray-200">{formatCurrency(plan.mrr)}</p>
-                <p className="text-[10px] text-emerald-400">{plan.growth}</p>
+                <p className="text-[11px] text-emerald-400">{plan.growth}</p>
               </div>
             </div>
           ))}
@@ -1511,7 +1511,7 @@ function RevenueInsightsView() {
                   <div className="flex-1 rounded-t bg-emerald-500/70" style={{ height: `${revH}%` }} />
                   <div className="flex-1 rounded-t bg-rose-500/70" style={{ height: `${expH}%` }} />
                 </div>
-                <span className="text-[10px] text-gray-500">{month}</span>
+                <span className="text-[11px] text-[#7f8a9c]">{month}</span>
               </div>
             );
           })}
@@ -1551,7 +1551,7 @@ function GrowthOverviewView() {
                 <div className={`h-full ${channel.color}`} style={{ width: `${channel.value}%` }} />
               </div>
               <p className="text-lg font-semibold text-white">{channel.value}%</p>
-              <p className="text-[10px] text-gray-500">{channel.name}</p>
+              <p className="text-[11px] text-[#7f8a9c]">{channel.name}</p>
             </div>
           ))}
         </div>
@@ -1628,7 +1628,7 @@ function PerformanceReportsView() {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-200">{report.name}</p>
-                  <p className="text-[10px] text-gray-500">{report.date}</p>
+                  <p className="text-[11px] text-[#7f8a9c]">{report.date}</p>
                 </div>
               </div>
               <button className="rounded-md border border-[#2a2a2a] p-1.5 text-gray-400 hover:bg-[#1a1a1a] hover:text-white">
@@ -1666,11 +1666,11 @@ function SupportCenterView() {
                 <p className="text-xs font-medium text-gray-200">
                   {ticket.id} — {ticket.subject}
                 </p>
-                <p className="text-[10px] text-gray-500">{ticket.client}</p>
+                <p className="text-[11px] text-[#7f8a9c]">{ticket.client}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     ticket.priority === 'High'
                       ? 'bg-rose-500/10 text-rose-400'
                       : ticket.priority === 'Medium'
@@ -1681,7 +1681,7 @@ function SupportCenterView() {
                   {ticket.priority}
                 </span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     ticket.status === 'Resolved'
                       ? 'bg-emerald-500/10 text-emerald-400'
                       : ticket.status === 'In Progress'
@@ -1712,7 +1712,7 @@ function NotificationsView() {
     <SectionCard
       title="Notifications"
       action={
-        <button className="text-xs text-gray-500 hover:text-gray-300">Mark all read</button>
+        <button className="text-xs text-[#7f8a9c] hover:text-gray-300">Mark all read</button>
       }
     >
       <div className="space-y-2">
@@ -1724,11 +1724,11 @@ function NotificationsView() {
             }`}
           >
             <div className={`mt-0.5 rounded-full p-1 ${note.read ? 'bg-[#1a1a1a]' : 'bg-amber-500/10'}`}>
-              <note.icon className={`h-3.5 w-3.5 ${note.read ? 'text-gray-500' : 'text-amber-400'}`} />
+              <note.icon className={`h-3.5 w-3.5 ${note.read ? 'text-[#7f8a9c]' : 'text-amber-400'}`} />
             </div>
             <div className="flex-1">
               <p className={`text-xs ${note.read ? 'text-gray-400' : 'text-gray-200'}`}>{note.text}</p>
-              <p className="text-[10px] text-gray-500">{note.time}</p>
+              <p className="text-[11px] text-[#7f8a9c]">{note.time}</p>
             </div>
             {!note.read && <span className="h-2 w-2 rounded-full bg-amber-400" />}
           </div>
@@ -1766,7 +1766,7 @@ function TeamAccessView() {
             <div key={member.name} className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white ${getAvatarColor(
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold text-white ${getAvatarColor(
                     member.name,
                   )}`}
                 >
@@ -1774,11 +1774,11 @@ function TeamAccessView() {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-200">{member.name}</p>
-                  <p className="text-[10px] text-gray-500">{member.role}</p>
+                  <p className="text-[11px] text-[#7f8a9c]">{member.role}</p>
                 </div>
               </div>
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                   member.status === 'Active'
                     ? 'bg-emerald-500/10 text-emerald-400'
                     : 'bg-amber-500/10 text-amber-400'
@@ -1823,10 +1823,10 @@ function AutomationRulesView() {
             <div key={rule.name} className="flex items-center justify-between py-3">
               <div>
                 <p className="text-xs font-medium text-gray-200">{rule.name}</p>
-                <p className="text-[10px] text-gray-500">Trigger: {rule.trigger}</p>
+                <p className="text-[11px] text-[#7f8a9c]">Trigger: {rule.trigger}</p>
               </div>
               <button
-                className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
                   rule.status === 'Active'
                     ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                     : 'bg-gray-500/10 text-gray-400 hover:bg-gray-500/20'
@@ -1872,11 +1872,11 @@ function IntegrationsView() {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-gray-200">{integration.name}</p>
-                  <p className="text-[10px] text-gray-500">{integration.category}</p>
+                  <p className="text-[11px] text-[#7f8a9c]">{integration.category}</p>
                 </div>
               </div>
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                   integration.status === 'Connected'
                     ? 'bg-emerald-500/10 text-emerald-400'
                     : 'bg-gray-500/10 text-gray-400'
@@ -1914,10 +1914,10 @@ function ComplianceCenterView() {
             <div key={check.name} className="flex items-center justify-between py-3">
               <div>
                 <p className="text-xs font-medium text-gray-200">{check.name}</p>
-                <p className="text-[10px] text-gray-500">Next review: {check.date}</p>
+                <p className="text-[11px] text-[#7f8a9c]">Next review: {check.date}</p>
               </div>
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                   check.status === 'Compliant'
                     ? 'bg-emerald-500/10 text-emerald-400'
                     : check.status === 'Pending Review'
@@ -2070,13 +2070,13 @@ function DocAssistant({
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-200">AI Document Agent</p>
-                <p className="text-[10px] text-gray-500">Smartlex Assistant</p>
+                <p className="text-[11px] text-[#7f8a9c]">Smartlex Assistant</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-gray-500 transition-colors hover:text-white"
+              className="text-[#7f8a9c] transition-colors hover:text-white"
             >
               <X className="h-4 w-4" />
             </button>
@@ -2098,7 +2098,7 @@ function DocAssistant({
                           key={a.label}
                           type="button"
                           onClick={a.onClick}
-                          className="rounded-md border border-[#2a2a2a] bg-[#141414] px-2 py-1 text-[10px] text-gray-300 transition-colors hover:border-amber-500/50 hover:text-amber-400"
+                          className="rounded-md border border-[#2a2a2a] bg-[#141414] px-2 py-1 text-[11px] text-gray-300 transition-colors hover:border-amber-500/50 hover:text-amber-400"
                         >
                           {a.label}
                         </button>
@@ -2125,7 +2125,7 @@ function DocAssistant({
                   key={a.label}
                   type="button"
                   onClick={a.onClick}
-                  className="rounded-full border border-[#2a2a2a] bg-[#1a1a1a] px-2 py-0.5 text-[10px] text-gray-400 transition-colors hover:border-amber-500/50 hover:text-amber-400"
+                  className="rounded-full border border-[#2a2a2a] bg-[#1a1a1a] px-2 py-0.5 text-[11px] text-gray-400 transition-colors hover:border-amber-500/50 hover:text-amber-400"
                 >
                   {a.label}
                 </button>
@@ -2140,7 +2140,7 @@ function DocAssistant({
                   if (e.key === 'Enter') handleSend();
                 }}
                 placeholder="Escribe una tarea..."
-                className="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-gray-600"
+                className="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-[#7f8a9c]"
               />
               <button
                 type="button"

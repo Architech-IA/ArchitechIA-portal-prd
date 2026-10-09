@@ -81,13 +81,13 @@ export default function CategorySelector({ value, onChange }: Props) {
           open ? 'border-orange-500' : 'border-gray-700 hover:border-gray-600'
         }`}
       >
-        <Tag size={13} className="text-gray-500 flex-shrink-0" />
-        <span className={`flex-1 truncate ${value ? 'text-white' : 'text-gray-500'}`}>
+        <Tag size={13} className="text-[#7f8a9c] flex-shrink-0" />
+        <span className={`flex-1 truncate ${value ? 'text-white' : 'text-[#7f8a9c]'}`}>
           {value || `Seleccionar categoría (${totalSubs} disponibles)`}
         </span>
         {value
-          ? <button onClick={clear} className="text-gray-500 hover:text-white flex-shrink-0"><X size={13} /></button>
-          : <ChevronDown size={13} className="text-gray-500 flex-shrink-0" />
+          ? <button onClick={clear} className="text-[#7f8a9c] hover:text-white flex-shrink-0"><X size={13} /></button>
+          : <ChevronDown size={13} className="text-[#7f8a9c] flex-shrink-0" />
         }
       </button>
 
@@ -99,7 +99,7 @@ export default function CategorySelector({ value, onChange }: Props) {
           {/* Search */}
           <div className="p-2 border-b border-gray-800 sticky top-0 bg-gray-900">
             <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#7f8a9c]" />
               <input
                 ref={searchRef}
                 type="text"
@@ -114,7 +114,7 @@ export default function CategorySelector({ value, onChange }: Props) {
           {/* Sectors list */}
           <div className="overflow-y-auto" style={{ maxHeight: '360px' }}>
             {filteredSectors.length === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-600 text-sm">
+              <div className="px-4 py-8 text-center text-[#7f8a9c] text-sm">
                 Sin resultados para "{search}"
               </div>
             ) : (
@@ -128,10 +128,10 @@ export default function CategorySelector({ value, onChange }: Props) {
                   >
                     <span className="text-base leading-none">{sector.icon}</span>
                     <span className="flex-1 text-sm font-medium text-gray-300">{sector.label}</span>
-                    <span className="text-[10px] text-gray-600 mr-1">{sector.subcategories.length}</span>
+                    <span className="text-[11px] text-[#7f8a9c] mr-1">{sector.subcategories.length}</span>
                     {expanded.has(sector.id)
-                      ? <ChevronDown size={13} className="text-gray-500" />
-                      : <ChevronRight size={13} className="text-gray-500" />
+                      ? <ChevronDown size={13} className="text-[#7f8a9c]" />
+                      : <ChevronRight size={13} className="text-[#7f8a9c]" />
                     }
                   </button>
 

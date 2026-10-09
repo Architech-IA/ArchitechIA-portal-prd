@@ -68,7 +68,7 @@ export default function ResultsMap({ places }: { places: Place[] }) {
           <Popup>
             <div className="text-sm space-y-1 min-w-[160px]">
               <p className="font-semibold">{p.name}</p>
-              {p.address && <p className="text-gray-500 text-xs">{p.address}</p>}
+              {p.address && <p className="text-[#7f8a9c] text-xs">{p.address}</p>}
               {p.phone && <p className="text-xs">📞 {p.phone}</p>}
               {p.rating && <p className="text-xs">⭐ {p.rating}/5</p>}
               <div className="flex items-center gap-1 pt-1">

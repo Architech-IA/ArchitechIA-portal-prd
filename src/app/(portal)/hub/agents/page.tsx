@@ -88,7 +88,7 @@ const AGENTS: AgentConfig[] = [
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 function StatusBadge({ status, latency }: { status: AgentStatus['status']; latency?: number }) {
-  if (status === 'loading') return <span className="flex items-center gap-1 text-xs text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-gray-500 animate-pulse inline-block" />Verificando...</span>;
+  if (status === 'loading') return <span className="flex items-center gap-1 text-xs text-[#7f8a9c]"><span className="w-1.5 h-1.5 rounded-full bg-gray-500 animate-pulse inline-block" />Verificando...</span>;
   const map = { online: { dot: 'bg-green-400', text: 'text-green-400', label: 'Online' }, degraded: { dot: 'bg-yellow-400 animate-pulse', text: 'text-yellow-400', label: 'Degradado' }, offline: { dot: 'bg-red-500', text: 'text-red-400', label: 'Offline' } };
   const s = map[status] ?? map.offline;
   return <span className={`flex items-center gap-1 text-xs ${s.text}`}><span className={`w-1.5 h-1.5 rounded-full inline-block ${s.dot}`} />{s.label}{latency !== undefined ? ` · ${latency}ms` : ''}</span>;
@@ -97,7 +97,7 @@ function StatusBadge({ status, latency }: { status: AgentStatus['status']; laten
 function TabBtn({ active, accent, onClick, children }: { active: boolean; accent: string; onClick: () => void; children: React.ReactNode }) {
   return (
     <button onClick={onClick} className="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all"
-      style={active ? { background: 'rgba(255,255,255,0.1)', color: accent } : { color: '#64748b' }}>
+      style={active ? { background: 'rgba(255,255,255,0.1)', color: accent } : { color: '#7f8a9c' }}>
       {children}
     </button>
   );
@@ -260,7 +260,7 @@ function ChatPanel({ agent, status, selectedModel, onNewSession }: {
       {messages.length > 0 && (
         <div className="flex justify-end mb-2">
           <button onClick={handleNewSession}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-gray-500 hover:text-gray-300 transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-[#7f8a9c] hover:text-gray-300 transition-all"
             style={{ background: 'rgba(255,255,255,0.04)' }}>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
             Nueva sesión
@@ -271,7 +271,7 @@ function ChatPanel({ agent, status, selectedModel, onNewSession }: {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 pb-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
         {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center gap-2 text-gray-600">
+          <div className="h-full flex flex-col items-center justify-center gap-2 text-[#7f8a9c]">
             <svg className="w-8 h-8 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={agent.iconPath} /></svg>
             <p className="text-xs">Escríbele algo a {agent.name}</p>
           </div>
@@ -305,7 +305,7 @@ function ChatPanel({ agent, status, selectedModel, onNewSession }: {
         {/* Active tool pills while streaming */}
         {loading && activeTools.length > 0 && (
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] text-gray-600 pl-1">Usando herramientas…</p>
+            <p className="text-[11px] text-[#7f8a9c] pl-1">Usando herramientas…</p>
             <div className="flex flex-wrap gap-1.5 pl-1">
               {activeTools.map(t => (
                 <ToolPill key={t.name} name={t.name} done={t.done} accent={agent.color.accent} badge={agent.color.badge} />
@@ -343,7 +343,7 @@ function ChatPanel({ agent, status, selectedModel, onNewSession }: {
           <svg className="w-4 h-4" fill="none" stroke="#0f172a" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m-7 7l7-7 7 7" /></svg>
         </button>
       </div>
-      {sessionId && <p className="text-[10px] text-gray-700 mt-1 truncate">Session: {sessionId}</p>}
+      {sessionId && <p className="text-[11px] text-[#7f8a9c] mt-1 truncate">Session: {sessionId}</p>}
     </div>
   );
 }
@@ -372,8 +372,8 @@ function HistoryPanel({ agent }: { agent: AgentConfig }) {
     setMsgLoading(false);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-40 text-gray-600 text-xs">Cargando sesiones...</div>;
-  if (sessions.length === 0) return <div className="flex flex-col items-center justify-center h-40 gap-2 text-gray-600 text-xs">Sin sesiones previas</div>;
+  if (loading) return <div className="flex items-center justify-center h-40 text-[#7f8a9c] text-xs">Cargando sesiones...</div>;
+  if (sessions.length === 0) return <div className="flex flex-col items-center justify-center h-40 gap-2 text-[#7f8a9c] text-xs">Sin sesiones previas</div>;
 
   return (
     <div className="flex gap-3 h-[460px]">
@@ -381,7 +381,7 @@ function HistoryPanel({ agent }: { agent: AgentConfig }) {
         {sessions.map(s => (
           <button key={s.id} onClick={() => loadMessages(s.id)}
             className="w-full text-left px-2.5 py-2 rounded-lg text-xs transition-all"
-            style={selectedId === s.id ? { background: agent.color.badge, border: `1px solid ${agent.color.border}`, color: '#fff' } : { background: 'rgba(255,255,255,0.03)', color: '#64748b' }}>
+            style={selectedId === s.id ? { background: agent.color.badge, border: `1px solid ${agent.color.border}`, color: '#fff' } : { background: 'rgba(255,255,255,0.03)', color: '#7f8a9c' }}>
             <div className="font-medium truncate">{s.preview?.slice(0, 18) || s.id.slice(0, 12)}…</div>
             <div className="opacity-60 mt-0.5 flex items-center gap-1">
               {s.updated_at && new Date(s.updated_at * 1000).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
@@ -391,8 +391,8 @@ function HistoryPanel({ agent }: { agent: AgentConfig }) {
         ))}
       </div>
       <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
-        {!selectedId && <div className="flex items-center justify-center h-full text-gray-600 text-xs">Seleccioná una sesión</div>}
-        {msgLoading && <div className="flex items-center justify-center h-full text-gray-600 text-xs">Cargando...</div>}
+        {!selectedId && <div className="flex items-center justify-center h-full text-[#7f8a9c] text-xs">Seleccioná una sesión</div>}
+        {msgLoading && <div className="flex items-center justify-center h-full text-[#7f8a9c] text-xs">Cargando...</div>}
         {!msgLoading && messages.filter(m => m.role === 'user' || m.role === 'assistant').map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className="max-w-[90%] px-3 py-2 rounded-xl text-xs leading-relaxed whitespace-pre-wrap"
@@ -417,7 +417,7 @@ function ConfigPanel({ agent, status, selectedModel, onModelChange }: {
     <div className="space-y-5 text-sm">
       {/* Model selector */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Modelo</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#7f8a9c]">Modelo</p>
         {agent.id === 'nexus' && onModelChange ? (
           <div className="relative">
             <select value={selectedModel || 'kimi-k2.5'} onChange={e => onModelChange(e.target.value)}
@@ -427,7 +427,7 @@ function ConfigPanel({ agent, status, selectedModel, onModelChange }: {
                 <option key={m.id} value={m.id} style={{ background: '#1e293b', color: '#e2e8f0' }}>{m.group} — {m.label}</option>
               ))}
             </select>
-            <svg className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            <svg className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           </div>
         ) : (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -438,28 +438,28 @@ function ConfigPanel({ agent, status, selectedModel, onModelChange }: {
 
       {/* Status */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Estado del proceso</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#7f8a9c]">Estado del proceso</p>
         <div className="flex items-center justify-between px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
           <StatusBadge status={status.status} latency={status.latency} />
-          <span className="text-xs text-gray-600">puerto {agent.id === 'nexus' ? '8642' : '8643'}</span>
+          <span className="text-xs text-[#7f8a9c]">puerto {agent.id === 'nexus' ? '8642' : '8643'}</span>
         </div>
       </div>
 
       {/* Notifications */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Notificaciones</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#7f8a9c]">Notificaciones</p>
         <button
           onClick={() => typeof Notification !== 'undefined' && Notification.requestPermission()}
           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs transition-all hover:opacity-80"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#94a3b8' }}>
-          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+          <svg className="w-4 h-4 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
           {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✓ Notificaciones activas' : 'Activar notificaciones push'}
         </button>
       </div>
 
       {/* MCP Tools */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Herramientas MCP activas</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#7f8a9c]">Herramientas MCP activas</p>
         <div className="grid grid-cols-2 gap-1.5">
           {agent.mcpTools.map(tool => (
             <div key={tool} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ background: agent.color.badge }}>
@@ -472,13 +472,13 @@ function ConfigPanel({ agent, status, selectedModel, onModelChange }: {
 
       {/* Telegram */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Plataformas</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#7f8a9c]">Plataformas</p>
         <a href={agent.telegramUrl} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all hover:opacity-80"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
           <svg className="w-4 h-4 text-sky-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
           <span className="text-xs text-gray-300">Telegram — {agent.telegramUrl.replace('https://t.me/', '@')}</span>
-          <svg className="w-3.5 h-3.5 text-gray-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+          <svg className="w-3.5 h-3.5 text-[#7f8a9c] ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
         </a>
       </div>
     </div>
@@ -561,7 +561,7 @@ export default function AgentsPage() {
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-gray-400 text-sm">Asistentes IA conectados al ecosistema ArchiTechIA</p>
-        <button onClick={fetchStatus} className="p-1.5 text-gray-600 hover:text-gray-400 transition-colors" title="Refrescar estado">
+        <button onClick={fetchStatus} className="p-1.5 text-[#7f8a9c] hover:text-gray-400 transition-colors" title="Refrescar estado">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
         </button>
       </div>

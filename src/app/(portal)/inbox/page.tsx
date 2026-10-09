@@ -122,7 +122,7 @@ export default function InboxPage() {
           </div>
           <div>
             <h1 className="text-base font-semibold text-white">Unified Inbox</h1>
-            <p className="text-xs text-gray-500">Correos de Microsoft 365 y Google Workspace en un solo lugar</p>
+            <p className="text-xs text-[#7f8a9c]">Correos de Microsoft 365 y Google Workspace en un solo lugar</p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-3 text-xs">
@@ -153,7 +153,7 @@ export default function InboxPage() {
       <div className="px-5 py-3 border-b border-white/5">
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7f8a9c]" />
             <input
               type="text"
               placeholder="Buscar por remitente, asunto o contenido…"
@@ -165,7 +165,7 @@ export default function InboxPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+              <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7f8a9c]" />
               <select
                 value={filters.provider}
                 onChange={(e) => setFilters((f) => ({ ...f, provider: e.target.value as InboxFilters['provider'] }))}
@@ -220,7 +220,7 @@ export default function InboxPage() {
             mobileDetail ? 'hidden lg:flex' : 'flex'
           }`}
         >
-          <div className="px-4 py-2 text-xs font-medium text-gray-500 border-b border-white/5 flex items-center justify-between">
+          <div className="px-4 py-2 text-xs font-medium text-[#7f8a9c] border-b border-white/5 flex items-center justify-between">
             <span>{filtered.length} mensajes</span>
             {filters.status === 'UNREAD' && counts.unread > 0 && (
               <span className="text-orange-400">{counts.unread} pendientes</span>
@@ -228,7 +228,7 @@ export default function InboxPage() {
           </div>
           <div className="flex-1 overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-3">
+              <div className="flex flex-col items-center justify-center h-full text-[#7f8a9c] gap-3">
                 <MailOpen className="w-10 h-10 opacity-20" />
                 <p className="text-sm">No hay mensajes que coincidan con los filtros.</p>
                 <button
@@ -263,7 +263,7 @@ export default function InboxPage() {
                           {m.senderName}
                         </span>
                         <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0 ${
+                          className={`text-[11px] px-1.5 py-0.5 rounded border flex-shrink-0 ${
                             PROVIDER_STYLES[m.provider]
                           }`}
                         >
@@ -273,21 +273,21 @@ export default function InboxPage() {
                           <Star className="w-3 h-3 text-orange-400 fill-orange-400 flex-shrink-0" />
                         )}
                         {m.hasAttachments && (
-                          <Paperclip className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                          <Paperclip className="w-3 h-3 text-[#7f8a9c] flex-shrink-0" />
                         )}
-                        <span className="ml-auto text-xs text-gray-500 flex-shrink-0">
+                        <span className="ml-auto text-xs text-[#7f8a9c] flex-shrink-0">
                           {formatInboxDate(m.receivedAt)}
                         </span>
                       </div>
                       <p className={`text-sm truncate ${!m.isRead ? 'text-white font-medium' : 'text-gray-400'}`}>
                         {m.subject}
                       </p>
-                      <p className="text-xs text-gray-500 truncate mt-0.5">{m.bodyPreview}</p>
+                      <p className="text-xs text-[#7f8a9c] truncate mt-0.5">{m.bodyPreview}</p>
                       <div className="flex items-center gap-1.5 mt-1.5">
                         {m.categories.map((c) => (
                           <span
                             key={c}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5"
+                            className="text-[11px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5"
                           >
                             {c}
                           </span>
@@ -320,14 +320,14 @@ export default function InboxPage() {
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-white truncate">{selected.subject}</h2>
                     <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded border flex-shrink-0 ${
+                      className={`text-[11px] px-1.5 py-0.5 rounded border flex-shrink-0 ${
                         PROVIDER_STYLES[selected.provider]
                       }`}
                     >
                       {PROVIDER_LABELS[selected.provider]}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-[#7f8a9c] truncate">
                     {selected.senderName} · {selected.senderEmail}
                   </p>
                 </div>
@@ -339,7 +339,7 @@ export default function InboxPage() {
                   >
                     <Star
                       className={`w-4 h-4 ${
-                        selected.isImportant ? 'text-orange-400 fill-orange-400' : 'text-gray-500'
+                        selected.isImportant ? 'text-orange-400 fill-orange-400' : 'text-[#7f8a9c]'
                       }`}
                     />
                   </button>
@@ -348,7 +348,7 @@ export default function InboxPage() {
                     title="Marcar como no leído"
                     className="p-1.5 rounded-md hover:bg-white/5"
                   >
-                    <MailOpen className="w-4 h-4 text-gray-500" />
+                    <MailOpen className="w-4 h-4 text-[#7f8a9c]" />
                   </button>
                 </div>
               </div>
@@ -367,10 +367,10 @@ export default function InboxPage() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-white">{msg.senderName}</p>
-                            <p className="text-[10px] text-gray-500">{msg.senderEmail}</p>
+                            <p className="text-[11px] text-[#7f8a9c]">{msg.senderEmail}</p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-500">{formatInboxDate(msg.receivedAt)}</span>
+                        <span className="text-xs text-[#7f8a9c]">{formatInboxDate(msg.receivedAt)}</span>
                       </div>
                       <div
                         className="prose prose-invert prose-sm max-w-none text-sm text-gray-300"
@@ -382,14 +382,14 @@ export default function InboxPage() {
               </div>
 
               <div className="px-5 py-3 border-t border-white/5">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="flex items-center gap-2 text-xs text-[#7f8a9c]">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Vista de conversación sincronizada desde {PROVIDER_LABELS[selected.provider]}</span>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-3">
+            <div className="flex flex-col items-center justify-center h-full text-[#7f8a9c] gap-3">
               <MailOpen className="w-12 h-12 opacity-20" />
               <p className="text-sm">Selecciona un correo para ver la conversación.</p>
             </div>

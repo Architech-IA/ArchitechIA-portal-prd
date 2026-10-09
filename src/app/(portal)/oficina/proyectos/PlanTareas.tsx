@@ -52,7 +52,7 @@ export default function PlanTareas({ proyectoId, sesionId, onCerrar, onAplicado 
             <ListPlus size={16} className="text-indigo-300" />
             <h3 className="text-sm font-semibold text-gray-100">Convertir el plan en tareas de backlog</h3>
           </div>
-          <button onClick={onCerrar} className="text-gray-500 hover:text-gray-200"><X size={16} /></button>
+          <button onClick={onCerrar} className="text-[#7f8a9c] hover:text-gray-200"><X size={16} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
@@ -60,7 +60,7 @@ export default function PlanTareas({ proyectoId, sesionId, onCerrar, onAplicado 
           {error && <p className="text-xs text-red-400 flex items-start gap-1.5"><AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />{error}</p>}
           {!cargando && tareas.length > 0 && (
             <>
-              <p className="text-[11px] text-gray-500">Revisa y edita. Solo se crean las marcadas, en estado <b className="text-gray-300">BACKLOG</b> y sin asignar (listas para el despachador). Las marcadas como «ya existe» coinciden con una tarea del backlog.</p>
+              <p className="text-[11px] text-[#7f8a9c]">Revisa y edita. Solo se crean las marcadas, en estado <b className="text-gray-300">BACKLOG</b> y sin asignar (listas para el despachador). Las marcadas como «ya existe» coinciden con una tarea del backlog.</p>
               {notas && <p className="text-[11px] text-indigo-200/80 rounded-lg px-3 py-2" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}>{notas}</p>}
               {tareas.map((t, i) => (
                 <div key={i} className="rounded-xl p-3 space-y-1.5" style={{ background: sel[i] ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${sel[i] ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.07)'}` }}>
@@ -68,11 +68,11 @@ export default function PlanTareas({ proyectoId, sesionId, onCerrar, onAplicado 
                     <input type="checkbox" checked={!!sel[i]} onChange={e => setSel(prev => prev.map((v, j) => (j === i ? e.target.checked : v)))} className="mt-1 accent-indigo-500" />
                     <input value={t.title} onChange={e => editar(i, { title: e.target.value })} maxLength={140}
                       className="flex-1 bg-transparent text-[12px] font-medium text-gray-100 outline-none border-b border-transparent focus:border-indigo-500/50" />
-                    <select value={t.priority} onChange={e => editar(i, { priority: e.target.value })} className="text-[10px] rounded-md px-1.5 py-1 text-gray-300 outline-none" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <select value={t.priority} onChange={e => editar(i, { priority: e.target.value })} className="text-[11px] rounded-md px-1.5 py-1 text-gray-300 outline-none" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       {PRIORIDADES.map(p => <option key={p} value={p}>{ETIQ_PRIO[p]}</option>)}
                     </select>
                   </div>
-                  {t.duplicada && <p className="ml-6 text-[10px] text-amber-400">Ya existe una tarea con este nombre en el backlog.</p>}
+                  {t.duplicada && <p className="ml-6 text-[11px] text-amber-400">Ya existe una tarea con este nombre en el backlog.</p>}
                   <textarea value={t.description} onChange={e => editar(i, { description: e.target.value })} rows={2}
                     className="ml-6 w-[calc(100%-1.5rem)] bg-transparent text-[11px] text-gray-400 outline-none resize-y rounded-md px-2 py-1 border border-white/5 focus:border-indigo-500/40" />
                 </div>
@@ -82,7 +82,7 @@ export default function PlanTareas({ proyectoId, sesionId, onCerrar, onAplicado 
         </div>
 
         <div className="flex items-center justify-between px-5 py-3 border-t border-white/10">
-          <span className="text-[11px] text-gray-500">{elegidas.length} de {tareas.length} seleccionadas</span>
+          <span className="text-[11px] text-[#7f8a9c]">{elegidas.length} de {tareas.length} seleccionadas</span>
           <div className="flex gap-2">
             <button onClick={onCerrar} className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-200 border border-white/10">Cancelar</button>
             <button onClick={aplicar} disabled={elegidas.length === 0 || aplicando || cargando}

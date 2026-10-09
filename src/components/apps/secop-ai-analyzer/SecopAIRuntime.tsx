@@ -27,7 +27,7 @@ export default function SecopAIRuntime({ app }: SecopAIRuntimeProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-gray-800 bg-gray-950 px-4 py-2">
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-[#7f8a9c]">
           Embebido desde <span className="text-indigo-400">{new URL(embedUrl).hostname}</span>
         </span>
         <a

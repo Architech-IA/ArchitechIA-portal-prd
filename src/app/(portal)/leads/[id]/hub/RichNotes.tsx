@@ -166,7 +166,7 @@ export default function RichNotes({ value, onChange, placeholder }: RichNotesPro
         </ToolBtn>
 
         {viewMode && (
-          <span className="text-[10px] text-gray-500 ml-1">Vista previa</span>
+          <span className="text-[11px] text-[#7f8a9c] ml-1">Vista previa</span>
         )}
       </div>
 
@@ -176,7 +176,7 @@ export default function RichNotes({ value, onChange, placeholder }: RichNotesPro
           <div
             className={`rich-notes-view text-sm leading-relaxed min-h-[120px] ${
               isEmpty(value)
-                ? 'text-gray-600 italic'
+                ? 'text-[#7f8a9c] italic'
                 : 'text-gray-100'
             }`}
             dangerouslySetInnerHTML={{

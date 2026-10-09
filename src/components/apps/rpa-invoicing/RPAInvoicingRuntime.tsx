@@ -93,7 +93,7 @@ export default function RPAInvoicingRuntime({ app }: { app: AppInstance }) {
         <div className="flex-1 overflow-auto p-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-white">Pipeline de facturas</h3>
-            <span className="text-xs text-gray-500">{DUMMY_INVOICES.length} facturas activas</span>
+            <span className="text-xs text-[#7f8a9c]">{DUMMY_INVOICES.length} facturas activas</span>
           </div>
 
           <div className="space-y-4">
@@ -109,7 +109,7 @@ export default function RPAInvoicingRuntime({ app }: { app: AppInstance }) {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-white">{invoice.vendor}</p>
-                      <p className="text-xs text-gray-500">{invoice.id}</p>
+                      <p className="text-xs text-[#7f8a9c]">{invoice.id}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -134,15 +134,15 @@ export default function RPAInvoicingRuntime({ app }: { app: AppInstance }) {
                                 ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
                                 : active
                                   ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                                  : 'border-gray-700 bg-gray-950 text-gray-500'
+                                  : 'border-gray-700 bg-gray-950 text-[#7f8a9c]'
                             }`}
                           >
                             {completed ? <CheckCircle2 className="h-3.5 w-3.5" /> : index + 1}
                           </div>
-                          <span className="whitespace-nowrap text-[10px] text-gray-500">{step}</span>
+                          <span className="whitespace-nowrap text-[11px] text-[#7f8a9c]">{step}</span>
                         </div>
                         {index < steps.length - 1 && (
-                          <ArrowRight className="mx-1 h-3 w-3 flex-shrink-0 text-gray-700" />
+                          <ArrowRight className="mx-1 h-3 w-3 flex-shrink-0 text-[#7f8a9c]" />
                         )}
                       </div>
                     );
@@ -163,7 +163,7 @@ export default function RPAInvoicingRuntime({ app }: { app: AppInstance }) {
             {approvalRules.map((rule, i) => (
               <div key={i} className="rounded-lg border border-gray-800 bg-gray-950 p-3">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-500" />
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#7f8a9c]" />
                   <p className="text-xs text-gray-300">{rule}</p>
                 </div>
               </div>
@@ -175,7 +175,7 @@ export default function RPAInvoicingRuntime({ app }: { app: AppInstance }) {
               Tiempo promedio de ciclo
             </div>
             <p className="text-2xl font-bold text-white">4.2 h</p>
-            <p className="text-xs text-gray-500">Desde recepción hasta pago</p>
+            <p className="text-xs text-[#7f8a9c]">Desde recepción hasta pago</p>
           </div>
         </aside>
       </div>

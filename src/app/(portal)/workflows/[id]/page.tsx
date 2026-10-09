@@ -283,8 +283,8 @@ export default function ProcessDetailPage() {
           {/* Metadata section */}
           <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <p style={{ margin: 0, fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Definición del Proceso</p>
-              <button onClick={() => setEditMeta(!editMeta)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', color: '#64748b', fontSize: '10px', cursor: 'pointer' }}>
+              <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Definición del Proceso</p>
+              <button onClick={() => setEditMeta(!editMeta)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', color: '#64748b', fontSize: '11px', cursor: 'pointer' }}>
                 {editMeta ? 'Cerrar' : 'Editar'}
               </button>
             </div>
@@ -317,9 +317,9 @@ export default function ProcessDetailPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>{proceso.desc || <span style={{ color: '#334155' }}>Sin descripción</span>}</p>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: ar.bg, color: ar.color, border: `1px solid ${ar.border}` }}>{ar.label}</span>
-                  <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', color: '#64748b', border: '1px solid rgba(255,255,255,0.07)' }}>{TIPOS[proceso.tipo]}</span>
-                  <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: proceso.estado === 'activo' ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.05)', color: proceso.estado === 'activo' ? '#34d399' : '#475569', border: `1px solid ${proceso.estado === 'activo' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.07)'}` }}>{proceso.estado === 'activo' ? 'Activo' : 'Borrador'}</span>
+                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: ar.bg, color: ar.color, border: `1px solid ${ar.border}` }}>{ar.label}</span>
+                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', color: '#64748b', border: '1px solid rgba(255,255,255,0.07)' }}>{TIPOS[proceso.tipo]}</span>
+                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: proceso.estado === 'activo' ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.05)', color: proceso.estado === 'activo' ? '#34d399' : '#475569', border: `1px solid ${proceso.estado === 'activo' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.07)'}` }}>{proceso.estado === 'activo' ? 'Activo' : 'Borrador'}</span>
                 </div>
                 {(proceso.responsable || proceso.sla) && (
                   <div style={{ display: 'flex', gap: '12px' }}>
@@ -334,8 +334,8 @@ export default function ProcessDetailPage() {
           {/* Steps section */}
           <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <p style={{ margin: 0, fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Pasos del Proceso</p>
-              <button onClick={() => setAddingStep(!addingStep)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', color: '#64748b', fontSize: '10px', cursor: 'pointer' }}>
+              <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Pasos del Proceso</p>
+              <button onClick={() => setAddingStep(!addingStep)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', color: '#64748b', fontSize: '11px', cursor: 'pointer' }}>
                 + Agregar
               </button>
             </div>
@@ -376,7 +376,7 @@ export default function ProcessDetailPage() {
                 >
                   {/* Number + connector */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: sm.bg, border: `1.5px solid ${sm.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: sm.color }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: sm.bg, border: `1.5px solid ${sm.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: sm.color }}>
                       {idx + 1}
                     </div>
                     {idx < proceso.pasos.length - 1 && (
@@ -388,15 +388,15 @@ export default function ProcessDetailPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#e2e8f0', lineHeight: 1.3 }}>{step.label}</p>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '4px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '20px', background: sm.bg, color: sm.color, border: `1px solid ${sm.color}30` }}>{sm.label}</span>
-                      {step.responsable && <span style={{ fontSize: '10px', color: '#475569' }}>{step.responsable}</span>}
+                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '20px', background: sm.bg, color: sm.color, border: `1px solid ${sm.color}30` }}>{sm.label}</span>
+                      {step.responsable && <span style={{ fontSize: '11px', color: '#475569' }}>{step.responsable}</span>}
                     </div>
                   </div>
 
                   {/* Controls */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexShrink: 0 }}>
-                    <button onClick={() => moveStep(step.id, -1)} disabled={idx === 0} style={{ background: 'none', border: 'none', color: idx === 0 ? '#1e293b' : '#475569', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '10px', padding: '1px 4px', lineHeight: 1 }}>▲</button>
-                    <button onClick={() => moveStep(step.id, 1)} disabled={idx === proceso.pasos.length - 1} style={{ background: 'none', border: 'none', color: idx === proceso.pasos.length - 1 ? '#1e293b' : '#475569', cursor: idx === proceso.pasos.length - 1 ? 'default' : 'pointer', fontSize: '10px', padding: '1px 4px', lineHeight: 1 }}>▼</button>
+                    <button onClick={() => moveStep(step.id, -1)} disabled={idx === 0} style={{ background: 'none', border: 'none', color: idx === 0 ? '#1e293b' : '#475569', cursor: idx === 0 ? 'default' : 'pointer', fontSize: '11px', padding: '1px 4px', lineHeight: 1 }}>▲</button>
+                    <button onClick={() => moveStep(step.id, 1)} disabled={idx === proceso.pasos.length - 1} style={{ background: 'none', border: 'none', color: idx === proceso.pasos.length - 1 ? '#1e293b' : '#475569', cursor: idx === proceso.pasos.length - 1 ? 'default' : 'pointer', fontSize: '11px', padding: '1px 4px', lineHeight: 1 }}>▼</button>
                     <button onClick={() => removeStep(step.id)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '12px', padding: '1px 4px', lineHeight: 1 }}>×</button>
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export default function ProcessDetailPage() {
           <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ flex: 1 }}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: canvasActive ? '#f97316' : '#475569' }}>⚡ Automatización</p>
-              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>{canvasActive ? `${nodes.length} nodos configurados` : 'Sin workflow vinculado'}</p>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#334155' }}>{canvasActive ? `${nodes.length} nodos configurados` : 'Sin workflow vinculado'}</p>
             </div>
             <button
               onClick={toggleWorkflow}
@@ -425,10 +425,10 @@ export default function ProcessDetailPage() {
 
             {/* Palette (mini) */}
             <div style={{ width: '180px', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.07)', background: 'rgba(8,8,26,0.95)', overflowY: 'auto', padding: '8px' }}>
-              <p style={{ margin: '4px 4px 8px', fontSize: '9px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Paleta</p>
+              <p style={{ margin: '4px 4px 8px', fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Paleta</p>
               {cats.map(cat => (
                 <div key={cat} style={{ marginBottom: '8px' }}>
-                  <p style={{ margin: '0 0 3px 4px', fontSize: '8px', fontWeight: 700, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{CAT_LABELS[cat]}</p>
+                  <p style={{ margin: '0 0 3px 4px', fontSize: '10px', fontWeight: 700, color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{CAT_LABELS[cat]}</p>
                   {TEMPLATES.filter(t => t.cat === cat).map(tpl => (
                     <div
                       key={tpl.id}
@@ -439,7 +439,7 @@ export default function ProcessDetailPage() {
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = tpl.bg}
                     >
                       <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: tpl.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: '10px', fontWeight: 600, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.label}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.label}</span>
                     </div>
                   ))}
                 </div>
@@ -543,16 +543,16 @@ export default function ProcessDetailPage() {
                 )}
                 <div style={{ background: 'rgba(8,8,26,0.92)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '7px', padding: '3px 8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
                   <button onClick={() => setZoom(z => Math.min(2.5, z * 1.2))} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}>+</button>
-                  <span style={{ fontSize: '10px', color: '#475569', minWidth: '32px', textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+                  <span style={{ fontSize: '11px', color: '#475569', minWidth: '32px', textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
                   <button onClick={() => setZoom(z => Math.max(0.2, z * 0.85))} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: '0 2px' }}>−</button>
                 </div>
               </div>
 
               {nodes.length > 0 && (
                 <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(8,8,26,0.9)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '7px', padding: '4px 10px', display: 'flex', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#475569' }}>{nodes.length} nodos</span>
-                  <span style={{ fontSize: '10px', color: '#1e293b' }}>·</span>
-                  <span style={{ fontSize: '10px', color: '#475569' }}>{edges.length} conexiones</span>
+                  <span style={{ fontSize: '11px', color: '#475569' }}>{nodes.length} nodos</span>
+                  <span style={{ fontSize: '11px', color: '#1e293b' }}>·</span>
+                  <span style={{ fontSize: '11px', color: '#475569' }}>{edges.length} conexiones</span>
                 </div>
               )}
             </div>

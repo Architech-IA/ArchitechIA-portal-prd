@@ -125,7 +125,7 @@ export default function SecurityDashboardRuntime({ app }: { app: AppInstance }) 
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-4xl font-bold text-white">{score}</span>
-                  <span className="text-xs text-gray-500">/ 100</span>
+                  <span className="text-xs text-[#7f8a9c]">/ 100</span>
                 </div>
               </div>
               <p className="mt-3 text-sm text-emerald-400">Postura segura</p>
@@ -153,7 +153,7 @@ export default function SecurityDashboardRuntime({ app }: { app: AppInstance }) 
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-white">{asset}</p>
-                    <p className="text-xs text-gray-500">{healthy ? 'Monitoreo activo' : 'Requiere atención'}</p>
+                    <p className="text-xs text-[#7f8a9c]">{healthy ? 'Monitoreo activo' : 'Requiere atención'}</p>
                   </div>
                 );
               })}
@@ -185,7 +185,7 @@ export default function SecurityDashboardRuntime({ app }: { app: AppInstance }) 
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">{threat.name}</p>
-                    <p className="text-xs text-gray-500">{threat.id} • hace {threat.time}</p>
+                    <p className="text-xs text-[#7f8a9c]">{threat.id} • hace {threat.time}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function SecurityDashboardRuntime({ app }: { app: AppInstance }) 
                   ) : (
                     <XCircle className="h-4 w-4 text-red-400" />
                   )}
-                  <span className={`text-xs ${item.passed ? 'text-gray-300' : 'text-gray-500'}`}>{item.label}</span>
+                  <span className={`text-xs ${item.passed ? 'text-gray-300' : 'text-[#7f8a9c]'}`}>{item.label}</span>
                 </div>
               ))}
             </div>

@@ -292,9 +292,9 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
           />
         </div>
         <div className="flex gap-2 mt-1">
-          <span className="text-[9px] text-gray-600 flex-1 text-center">Fecha</span>
-          <span className="text-[9px] text-gray-600 flex-1 text-center">Inicio</span>
-          <span className="text-[9px] text-gray-600 flex-1 text-center">Fin</span>
+          <span className="text-[10px] text-gray-600 flex-1 text-center">Fecha</span>
+          <span className="text-[10px] text-gray-600 flex-1 text-center">Inicio</span>
+          <span className="text-[10px] text-gray-600 flex-1 text-center">Fin</span>
         </div>
       </div>
       <div>
@@ -312,7 +312,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
         />
       </div>
       {selected.resultado?.trim() && (
-        <p className="text-[10px] text-gray-600">
+        <p className="text-[11px] text-gray-600">
           Guardado automáticamente al escribir. El agente que inicie la próxima sesión verá este contenido en el plan.
         </p>
       )}
@@ -453,7 +453,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                     {dayGroups.map(dg => (
                       <div
                         key={dg.dayStr}
-                        className="text-center text-[10px] text-cyan-200 font-semibold py-1 border-r border-cyan-800/40 last:border-r-0"
+                        className="text-center text-[11px] text-cyan-200 font-semibold py-1 border-r border-cyan-800/40 last:border-r-0"
                         style={{ gridColumn: `span ${dg.count}` }}
                       >
                         {dg.label}
@@ -469,10 +469,10 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                     {slots.map((slot, i) =>
                       slot.type === 'gap' ? (
                         <div key={i} className="flex items-center justify-center py-1 border-r border-cyan-800/20 last:border-r-0">
-                          <span className="text-[8px] text-gray-600 tracking-widest">···</span>
+                          <span className="text-[10px] text-gray-600 tracking-widest">···</span>
                         </div>
                       ) : (
-                        <div key={i} className="text-center text-[9px] text-cyan-400/60 font-mono py-1 border-r border-cyan-800/20 last:border-r-0">
+                        <div key={i} className="text-center text-[10px] text-cyan-400/60 font-mono py-1 border-r border-cyan-800/20 last:border-r-0">
                           {String(slot.hour).padStart(2, '0')}h
                         </div>
                       )
@@ -533,7 +533,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                             if (slot.type === 'gap') {
                               return (
                                 <div key={i} className="relative h-12 flex items-center justify-center border-r border-dashed border-cyan-800/30 last:border-r-0">
-                                  <span className="text-[8px] text-gray-700 tracking-widest select-none">···</span>
+                                  <span className="text-[10px] text-gray-700 tracking-widest select-none">···</span>
                                 </div>
                               )
                             }
@@ -585,7 +585,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                                     }}
                                   >
                                     {isFirst && f.horaEjecucion && (
-                                      <span className="text-[9px] text-white/90 font-mono px-1.5 whitespace-nowrap flex-shrink-0">
+                                      <span className="text-[10px] text-white/90 font-mono px-1.5 whitespace-nowrap flex-shrink-0">
                                         {f.horaEjecucion}
                                       </span>
                                     )}
@@ -641,7 +641,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                 <div className="flex border-b border-cyan-800/30">
                   {monthGroups.map((g, i) => (
                     <div key={i} style={{ width: g.count * COL_W }}
-                      className="px-2 py-1.5 text-[10px] font-bold text-cyan-300 tracking-wide border-r border-cyan-800/20 last:border-r-0">
+                      className="px-2 py-1.5 text-[11px] font-bold text-cyan-300 tracking-wide border-r border-cyan-800/20 last:border-r-0">
                       {g.label}
                     </div>
                   ))}
@@ -654,7 +654,7 @@ export default function CronogramaTimeline({ fases, onUpdate, onRemove, solucion
                     return (
                       <div key={i} style={{ width: COL_W }} className="flex items-center justify-center py-1.5 border-r border-cyan-800/10 last:border-r-0">
                         <div className={`flex flex-col items-center justify-center rounded-lg px-4 py-1 ${isToday ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : ''}`}>
-                          <span className={`text-[9px] font-medium capitalize ${isToday ? 'text-white/90' : 'text-gray-500'}`}>
+                          <span className={`text-[10px] font-medium capitalize ${isToday ? 'text-white/90' : 'text-gray-500'}`}>
                             {d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '')}
                           </span>
                           <span className={`mt-0.5 text-[11px] font-bold leading-none ${isToday ? 'text-white' : 'text-gray-300'}`}>

@@ -102,13 +102,13 @@ function EmptyState({ icon, text, sub, href, linkText }: { icon: string; text: s
   return (
     <div className="flex flex-col items-center justify-center py-10 gap-3">
       <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,90,0,0.08)' }}>
-        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={icon} />
         </svg>
       </div>
       <div className="text-center">
-        <p className="text-sm text-gray-500">{text}</p>
-        {sub && <p className="text-xs text-gray-700 mt-0.5">{sub}</p>}
+        <p className="text-sm text-[#7f8a9c]">{text}</p>
+        {sub && <p className="text-xs text-[#7f8a9c] mt-0.5">{sub}</p>}
       </div>
       {href && linkText && (
         <a href={href} className="text-xs text-orange-500 hover:text-orange-400 transition-colors mt-1">
@@ -277,7 +277,7 @@ export default function PersonalDashboard() {
           <h1 className="text-2xl font-bold text-white leading-tight">
             Hola, <span style={{ color: '#FF7A2F' }}>{d.user.name.split(' ')[0]}</span>
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-[#7f8a9c] mt-0.5">
             {today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
@@ -309,8 +309,8 @@ export default function PersonalDashboard() {
                 <Sparkline data={k.spark} color={k.color} />
               </div>
               <p className="text-xl md:text-2xl font-bold text-white tracking-tight tabular-nums">{k.value}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">{k.label}</p>
-              <div className="flex items-center gap-1 mt-2 text-[10px] text-slate-700 group-hover:text-slate-500 transition-colors">
+              <p className="text-[11px] text-[#7f8a9c] mt-0.5">{k.label}</p>
+              <div className="flex items-center gap-1 mt-2 text-[11px] text-[#7f8a9c] group-hover:text-[#7f8a9c] transition-colors">
                 <span className="truncate">{k.sub}</span>
                 <ArrowUpRight size={9} className="flex-shrink-0" />
               </div>
@@ -336,7 +336,7 @@ export default function PersonalDashboard() {
                 </span>
               )}
             </div>
-            <a href="/backlog" className="text-xs text-gray-600 hover:text-orange-400 transition-colors">Ver todas →</a>
+            <a href="/backlog" className="text-xs text-[#7f8a9c] hover:text-orange-400 transition-colors">Ver todas →</a>
           </div>
 
           {d.myBacklog.length === 0 ? (
@@ -371,22 +371,22 @@ export default function PersonalDashboard() {
                     <p className="text-sm text-gray-200 truncate group-hover:text-white transition-colors leading-snug">
                       {item.title}
                     </p>
-                    <p className="text-[11px] text-gray-600 truncate mt-0.5">
+                    <p className="text-[11px] text-[#7f8a9c] truncate mt-0.5">
                       {item.solucion?.nombre ?? 'Sin solución'}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     {item.points != null && item.points > 0 && (
-                      <span className="text-[10px] text-gray-600 font-medium">{item.points}pt</span>
+                      <span className="text-[11px] text-[#7f8a9c] font-medium">{item.points}pt</span>
                     )}
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${BACKLOG_STATUS_PILL[item.status] ?? 'bg-gray-700/60 text-gray-400'}`}>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${BACKLOG_STATUS_PILL[item.status] ?? 'bg-gray-700/60 text-gray-400'}`}>
                       {BACKLOG_STATUS_LABEL[item.status] ?? item.status}
                     </span>
                   </div>
                 </button>
               ))}
               {d.myBacklog.length > 8 && (
-                <a href="/backlog" className="block text-center text-xs text-gray-600 hover:text-orange-400 pt-2 transition-colors">
+                <a href="/backlog" className="block text-center text-xs text-[#7f8a9c] hover:text-orange-400 pt-2 transition-colors">
                   +{d.myBacklog.length - 8} tareas más →
                 </a>
               )}
@@ -408,7 +408,7 @@ export default function PersonalDashboard() {
                 </span>
               )}
             </div>
-            <a href="/meetings" className="text-xs text-gray-600 hover:text-orange-400 transition-colors">Ver calendario →</a>
+            <a href="/meetings" className="text-xs text-[#7f8a9c] hover:text-orange-400 transition-colors">Ver calendario →</a>
           </div>
 
           {d.upcomingMeetings.length === 0 ? (
@@ -439,22 +439,22 @@ export default function PersonalDashboard() {
                       className="flex-shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center"
                       style={{ background: isToday ? 'rgba(255,90,0,0.2)' : 'rgba(255,255,255,0.05)' }}
                     >
-                      <span className="text-[9px] font-semibold leading-none" style={{ color: isToday ? '#FF7A2F' : '#64748b' }}>
+                      <span className="text-[10px] font-semibold leading-none" style={{ color: isToday ? '#FF7A2F' : '#64748b' }}>
                         {monthAbbr}
                       </span>
                       <span className="text-sm font-bold leading-tight text-white">{dayNum}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-200 truncate leading-snug">{m.title}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
+                      <p className="text-[11px] text-[#7f8a9c] mt-0.5">
                         {formatTime(m.date)}{m.endDate ? ` — ${formatTime(m.endDate)}` : ''} · {MEETING_TYPE_LABEL[m.type] ?? m.type}
                       </p>
                     </div>
                     {isToday && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-semibold flex-shrink-0">HOY</span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-semibold flex-shrink-0">HOY</span>
                     )}
                     {isTomorrow && !isToday && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold flex-shrink-0">MAÑANA</span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-semibold flex-shrink-0">MAÑANA</span>
                     )}
                     {m.link && (
                       <a
@@ -495,7 +495,7 @@ export default function PersonalDashboard() {
                 </span>
               )}
             </div>
-            <a href="/leads" className="text-xs text-gray-600 hover:text-orange-400 transition-colors">Ver todos →</a>
+            <a href="/leads" className="text-xs text-[#7f8a9c] hover:text-orange-400 transition-colors">Ver todos →</a>
           </div>
 
           {d.myLeads.length === 0 ? (
@@ -533,13 +533,13 @@ export default function PersonalDashboard() {
                           <span title={`Sin actividad ${daysSince} días`} className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-600 truncate mt-0.5">{l.contactName}</p>
+                      <p className="text-[11px] text-[#7f8a9c] truncate mt-0.5">{l.contactName}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {l.estimatedValue > 0 && (
                         <span className="text-xs text-gray-400 font-medium">${l.estimatedValue.toLocaleString()}</span>
                       )}
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${LEAD_STATUS_PILL[l.status] ?? 'bg-gray-700/60 text-gray-400'}`}>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full ${LEAD_STATUS_PILL[l.status] ?? 'bg-gray-700/60 text-gray-400'}`}>
                         {STATUS_LEAD[l.status] ?? l.status}
                       </span>
                     </div>
@@ -547,7 +547,7 @@ export default function PersonalDashboard() {
                 );
               })}
               {d.myLeads.length > 8 && (
-                <a href="/leads" className="block text-center text-xs text-gray-600 hover:text-orange-400 pt-2 transition-colors">
+                <a href="/leads" className="block text-center text-xs text-[#7f8a9c] hover:text-orange-400 pt-2 transition-colors">
                   +{d.myLeads.length - 8} más →
                 </a>
               )}
@@ -569,7 +569,7 @@ export default function PersonalDashboard() {
                 </span>
               )}
             </div>
-            <a href="/projects" className="text-xs text-gray-600 hover:text-orange-400 transition-colors">Ver todos →</a>
+            <a href="/projects" className="text-xs text-[#7f8a9c] hover:text-orange-400 transition-colors">Ver todos →</a>
           </div>
 
           {d.myProjects.length === 0 ? (
@@ -603,7 +603,7 @@ export default function PersonalDashboard() {
                   >
                     <div className="flex items-start justify-between gap-2 mb-2.5">
                       <p className="text-sm text-gray-200 font-medium leading-snug flex-1 min-w-0 truncate">{p.name}</p>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${PROJECT_STATUS_PILL[p.status] ?? 'bg-gray-700/60 text-gray-400'}`}>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full flex-shrink-0 ${PROJECT_STATUS_PILL[p.status] ?? 'bg-gray-700/60 text-gray-400'}`}>
                         {PROJECT_STATUS_LABEL[p.status] ?? p.status}
                       </span>
                     </div>
@@ -621,13 +621,13 @@ export default function PersonalDashboard() {
                           }}
                         />
                       </div>
-                      <span className="text-xs text-gray-500 font-medium tabular-nums w-8 text-right flex-shrink-0">
+                      <span className="text-xs text-[#7f8a9c] font-medium tabular-nums w-8 text-right flex-shrink-0">
                         {p.progress}%
                       </span>
                     </div>
 
                     {p.endDate && (
-                      <p className={`text-[11px] ${isOverdue ? 'text-red-400' : isUrgent ? 'text-yellow-400' : 'text-gray-600'}`}>
+                      <p className={`text-[11px] ${isOverdue ? 'text-red-400' : isUrgent ? 'text-yellow-400' : 'text-[#7f8a9c]'}`}>
                         {isOverdue
                           ? `⚠ Vencido hace ${Math.abs(days!)} días`
                           : isUrgent

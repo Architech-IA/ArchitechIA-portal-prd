@@ -150,7 +150,7 @@ export default function TopBar({
             <button
               onClick={() => router.push(titleHref)}
               className="text-xs font-medium truncate flex items-center gap-1.5 group"
-              style={{ color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              style={{ color: '#7f8a9c', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#cbd5e1'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#64748b'}
               title={HUB_SUBPAGE_RE.test(pathname) ? "Volver al Hub" : "Ir a Solutions"}
@@ -179,7 +179,7 @@ export default function TopBar({
       <button
         onClick={() => window.dispatchEvent(new Event('open-global-search'))}
         className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors border"
-        style={{ color: '#64748b', background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}
+        style={{ color: '#7f8a9c', background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}
         onMouseEnter={e => {
           (e.currentTarget as HTMLElement).style.color = '#94a3b8';
           (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
@@ -194,8 +194,8 @@ export default function TopBar({
         </svg>
         <span>Buscar</span>
         <kbd
-          className="text-[9px] px-1.5 py-0.5 rounded font-mono"
-          style={{ color: '#64748b', background: 'rgba(255,255,255,0.08)' }}
+          className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+          style={{ color: '#7f8a9c', background: 'rgba(255,255,255,0.08)' }}
         >
           K
         </kbd>
@@ -215,13 +215,13 @@ export default function TopBar({
             (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
           }}
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: '#64748b' }}>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: '#7f8a9c' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
           {unread > 0 && (
             <span
               className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 text-white font-bold rounded-full flex items-center justify-center px-1"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', fontSize: '9px' }}
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', fontSize: '10px' }}
             >
               {unread}
             </span>
@@ -250,10 +250,10 @@ export default function TopBar({
             <div className="max-h-72 overflow-y-auto">
               {notifs.length === 0 && (
                 <div className="text-center py-8 px-4">
-                  <svg className="w-7 h-7 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#334155' }}>
+                  <svg className="w-7 h-7 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#7f8a9c' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
-                  <p className="text-sm" style={{ color: '#475569' }}>Sin notificaciones pendientes</p>
+                  <p className="text-sm" style={{ color: '#7f8a9c' }}>Sin notificaciones pendientes</p>
                 </div>
               )}
               {notifs.map(n => {
@@ -283,7 +283,7 @@ export default function TopBar({
                       >
                         {n.texto}
                       </p>
-                      <p className="text-xs mt-0.5" style={{ color: '#475569' }}>{n.sub}</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#7f8a9c' }}>{n.sub}</p>
                     </div>
                     {!n.leida && (
                       <span

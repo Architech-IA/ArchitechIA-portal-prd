@@ -150,7 +150,7 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
             >
               A-
             </button>
-            <span className="text-[10px] text-gray-500 w-6 text-center tabular-nums select-none">
+            <span className="text-[11px] text-[#7f8a9c] w-6 text-center tabular-nums select-none">
               {parseInt(curFS)}
             </span>
             <button
@@ -173,14 +173,14 @@ function TabEditor({ tab, onChange }: { tab: NoteTab; onChange: (html: string) =
         <ToolBtn title={viewMode ? 'Modo edición' : 'Vista previa'} onClick={() => setViewMode(v => !v)} active={viewMode}>
           {viewMode ? <Pencil size={13} /> : <Eye size={13} />}
         </ToolBtn>
-        {viewMode && <span className="text-[10px] text-gray-500 ml-1">Vista previa</span>}
+        {viewMode && <span className="text-[11px] text-[#7f8a9c] ml-1">Vista previa</span>}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-3" style={{ background: "rgba(0,0,0,0.08)" }}>
         {viewMode ? (
           <div
-            className={`rich-notes-view text-sm leading-relaxed min-h-[100px] ${empty(tab.content) ? 'text-gray-600 italic' : 'text-gray-100'}`}
+            className={`rich-notes-view text-sm leading-relaxed min-h-[100px] ${empty(tab.content) ? 'text-[#7f8a9c] italic' : 'text-gray-100'}`}
             dangerouslySetInnerHTML={{ __html: empty(tab.content) ? 'Sin notas aún.' : tab.content }}
           />
         ) : (
@@ -306,7 +306,7 @@ export default function TabbedNotes({ value, onChange, onActiveChange, initialAc
               {tabs.length > 1 && !editingId && (
                 <button
                   onClick={e => removeTab(tab.id, e)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all shrink-0"
+                  className="opacity-0 group-hover:opacity-100 text-[#7f8a9c] hover:text-red-400 transition-all shrink-0"
                   title="Eliminar tab"
                 >
                   <X size={11} />
@@ -318,7 +318,7 @@ export default function TabbedNotes({ value, onChange, onActiveChange, initialAc
         <button
           onClick={addTab}
           title="Agregar tab"
-          className="px-2.5 py-2 text-gray-500 hover:text-orange-400 transition-colors shrink-0"
+          className="px-2.5 py-2 text-[#7f8a9c] hover:text-orange-400 transition-colors shrink-0"
         >
           <Plus size={14} />
         </button>

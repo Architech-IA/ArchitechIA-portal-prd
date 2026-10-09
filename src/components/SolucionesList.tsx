@@ -97,8 +97,8 @@ export default function SolucionesList({ tipo, color, title, refreshKey, headerA
       <div className="card p-6 md:p-8">
         {header}
         <div className="text-center py-6">
-          <p className="text-gray-500 text-sm">No hay soluciones de este tipo asociadas a leads.</p>
-          <p className="text-gray-600 text-xs mt-1">Selecciona una solución al crear o editar un lead, o usa el botón de arriba.</p>
+          <p className="text-[#7f8a9c] text-sm">No hay soluciones de este tipo asociadas a leads.</p>
+          <p className="text-[#7f8a9c] text-xs mt-1">Selecciona una solución al crear o editar un lead, o usa el botón de arriba.</p>
         </div>
       </div>
     )
@@ -144,8 +144,8 @@ export default function SolucionesList({ tipo, color, title, refreshKey, headerA
             <div className="flex items-center gap-2 text-sm text-gray-300">
               <DollarSign size={14} className={c.text} />
               <span className="font-medium">${s.valorEstimado.toLocaleString()}</span>
-              <span className="text-gray-600 mx-2">·</span>
-              <span className="text-gray-500 text-xs">{new Date(s.createdAt).toLocaleDateString('es-CO')}</span>
+              <span className="text-[#7f8a9c] mx-2">·</span>
+              <span className="text-[#7f8a9c] text-xs">{new Date(s.createdAt).toLocaleDateString('es-CO')}</span>
             </div>
           </div>
         ))}

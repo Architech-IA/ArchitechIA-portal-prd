@@ -40,7 +40,7 @@ function EmptyState({ tab }: { tab: TabKey }) {
       </div>
       <h3 className="text-xl font-semibold text-white mb-2">{TABS.find(t => t.key === tab)?.label}</h3>
       <p className="text-gray-400 max-w-lg mx-auto leading-relaxed">{DESCRIPTIONS[tab]}</p>
-      <p className="text-gray-500 text-sm mt-4">Próximamente disponible.</p>
+      <p className="text-[#7f8a9c] text-sm mt-4">Próximamente disponible.</p>
     </div>
   );
 }

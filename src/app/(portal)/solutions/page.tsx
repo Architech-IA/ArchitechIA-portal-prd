@@ -59,7 +59,7 @@ function AppCard({ app, onClick }: { app: AppInstance; onClick: () => void }) {
           style={{ background: cs.color + '22', border: `1px solid ${cs.color}33` }}>
           <Icon className="h-4 w-4" style={{ color: cs.color }} />
         </div>
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
           style={{ background: cs.color + '22', color: cs.color }}>
           {category?.label ?? app.appType.category}
         </span>
@@ -208,18 +208,18 @@ export default function SolutionsHome() {
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <a href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <a href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           Backlog
         </a>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <a href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <a href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#93c5fd' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Rocket size={10}/> Sprints
         </a>
-        <a href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <a href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,147,117,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1D9375' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Layers size={10}/> Epicas
@@ -377,7 +377,7 @@ export default function SolutionsHome() {
           <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
             <h2 className="text-sm font-semibold text-white flex-shrink-0">Catalog</h2>
             <div className="relative flex-shrink-0 w-36">
-              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8a9c] pointer-events-none" />
               <input
                 className="w-full bg-white/5 border border-white/[0.08] rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-white/20"
                 placeholder="Buscar..."
@@ -412,14 +412,14 @@ export default function SolutionsHome() {
                 </button>
               )
             })}
-            <Link href="/apps" className="flex-shrink-0 ml-auto text-[11px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+            <Link href="/apps" className="flex-shrink-0 ml-auto text-[11px] text-[#7f8a9c] hover:text-gray-300 transition-colors flex items-center gap-1">
               Ver todas <ArrowRight size={10} />
             </Link>
           </div>
 
           {loadingApps ? (
             <div className="flex justify-center py-12">
-              <Loader2 size={20} className="animate-spin text-gray-600" />
+              <Loader2 size={20} className="animate-spin text-[#7f8a9c]" />
             </div>
           ) : (() => {
             const filtered = apps.filter(a => {
@@ -428,7 +428,7 @@ export default function SolutionsHome() {
               return matchCat && matchSearch
             })
             return filtered.length === 0 ? (
-              <p className="text-xs text-gray-600 text-center py-10">Sin apps para mostrar</p>
+              <p className="text-xs text-[#7f8a9c] text-center py-10">Sin apps para mostrar</p>
             ) : (
               <div className="overflow-hidden">
                 <div
@@ -490,14 +490,14 @@ export default function SolutionsHome() {
         {/* List */}
         {loadingList ? (
           <div className="flex justify-center py-8">
-            <Loader2 size={16} className="animate-spin text-gray-500" />
+            <Loader2 size={16} className="animate-spin text-[#7f8a9c]" />
           </div>
         ) : allItems.length === 0 ? (
-          <p className="text-xs text-gray-500 text-center py-8">Sin soluciones registradas</p>
+          <p className="text-xs text-[#7f8a9c] text-center py-8">Sin soluciones registradas</p>
         ) : (
           <div className="overflow-y-auto" style={{ maxHeight: '212px' }}>
             {allItems.map((item, i) => {
-              const meta = TYPE_META[item.tipo] || { label: item.tipo, color: '#6b7280', href: '/solutions' }
+              const meta = TYPE_META[item.tipo] || { label: item.tipo, color: '#7f8a9c', href: '/solutions' }
               const estado = (item as Solucion).estado || ''
               const estadoColor = ESTADO_COLOR[estado] || '#6b7280'
               return (
@@ -513,9 +513,9 @@ export default function SolutionsHome() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-200 truncate">{item.nombre}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-medium" style={{ color: meta.color }}>{meta.label}</span>
+                      <span className="text-[11px] font-medium" style={{ color: meta.color }}>{meta.label}</span>
                       {estado && (
-                        <span className="text-[10px]" style={{ color: estadoColor }}>{estado}</span>
+                        <span className="text-[11px]" style={{ color: estadoColor }}>{estado}</span>
                       )}
                     </div>
                   </div>
@@ -544,10 +544,10 @@ export default function SolutionsHome() {
 
           {loadingIniciativas ? (
             <div className="flex justify-center py-6">
-              <Loader2 size={16} className="animate-spin text-gray-500" />
+              <Loader2 size={16} className="animate-spin text-[#7f8a9c]" />
             </div>
           ) : iniciativas.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-6">Sin iniciativas registradas</p>
+            <p className="text-xs text-[#7f8a9c] text-center py-6">Sin iniciativas registradas</p>
           ) : (
             <div className="overflow-y-auto" style={{ maxHeight: '212px' }}>
               {iniciativas.map(item => {
@@ -567,10 +567,10 @@ export default function SolutionsHome() {
                       <p className="text-xs font-medium text-gray-200 truncate">{item.nombre}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {item.categoria && (
-                          <span className="text-[10px] text-gray-500">{item.categoria}</span>
+                          <span className="text-[11px] text-[#7f8a9c]">{item.categoria}</span>
                         )}
                         {item.prioridad && (
-                          <span className="text-[10px] font-medium" style={{ color: dotColor }}>{item.prioridad}</span>
+                          <span className="text-[11px] font-medium" style={{ color: dotColor }}>{item.prioridad}</span>
                         )}
                       </div>
                     </div>
@@ -584,7 +584,7 @@ export default function SolutionsHome() {
 
       {/* Detail popup */}
       {detail && (() => {
-        const meta = TYPE_META[detail.tipo] || { label: detail.tipo, color: '#6b7280', href: '/solutions' }
+        const meta = TYPE_META[detail.tipo] || { label: detail.tipo, color: '#7f8a9c', href: '/solutions' }
         const estadoColor = ESTADO_COLOR[detail.estado] || '#6b7280'
         return (
           <div
@@ -601,13 +601,13 @@ export default function SolutionsHome() {
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: meta.color + '11' }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: meta.color }}>{meta.label}</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                    <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: meta.color }}>{meta.label}</p>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
                       style={{ background: estadoColor + '22', color: estadoColor, border: `1px solid ${estadoColor}44` }}>
                       {detail.estado}
                     </span>
                     {detail.solucionCode && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold"
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-mono font-semibold"
                         style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         {detail.solucionCode}
                       </span>
@@ -615,7 +615,7 @@ export default function SolutionsHome() {
                   </div>
                   <h2 className="text-sm font-semibold text-white leading-snug">{detail.nombre}</h2>
                 </div>
-                <button onClick={() => setDetail(null)} className="text-gray-500 hover:text-gray-300 ml-3 flex-shrink-0 mt-0.5">
+                <button onClick={() => setDetail(null)} className="text-[#7f8a9c] hover:text-gray-300 ml-3 flex-shrink-0 mt-0.5">
                   <X size={15} />
                 </button>
               </div>
@@ -638,14 +638,14 @@ export default function SolutionsHome() {
                 <div className="space-y-2">
                   {detail.lead && (
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <User size={12} className="flex-shrink-0 text-gray-600" />
+                      <User size={12} className="flex-shrink-0 text-[#7f8a9c]" />
                       <span>{detail.lead.companyName}</span>
-                      {detail.lead.contactName && <span className="text-gray-600">· {detail.lead.contactName}</span>}
+                      {detail.lead.contactName && <span className="text-[#7f8a9c]">· {detail.lead.contactName}</span>}
                     </div>
                   )}
                   {detail.repositorio && (
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <Tag size={12} className="flex-shrink-0 text-gray-600" />
+                      <Tag size={12} className="flex-shrink-0 text-[#7f8a9c]" />
                       <a href={detail.repositorio} target="_blank" rel="noopener noreferrer"
                         className="truncate hover:text-white transition-colors" style={{ color: meta.color }}>
                         {detail.repositorio}
@@ -653,8 +653,8 @@ export default function SolutionsHome() {
                     </div>
                   )}
                   {detail.createdAt && (
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Calendar size={12} className="flex-shrink-0 text-gray-600" />
+                    <div className="flex items-center gap-2 text-xs text-[#7f8a9c]">
+                      <Calendar size={12} className="flex-shrink-0 text-[#7f8a9c]" />
                       {new Date(detail.createdAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </div>
                   )}
@@ -725,13 +725,13 @@ export default function SolutionsHome() {
                     <Icon className="h-5 w-5" style={{ color: cs.color }} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: cs.color }}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: cs.color }}>
                       {category?.label ?? appDetail.appType.category}
                     </p>
                     <h2 className="text-sm font-semibold text-white leading-snug">{appDetail.name}</h2>
                   </div>
                 </div>
-                <button onClick={() => setAppDetail(null)} className="text-gray-500 hover:text-gray-300 mt-0.5 flex-shrink-0">
+                <button onClick={() => setAppDetail(null)} className="text-[#7f8a9c] hover:text-gray-300 mt-0.5 flex-shrink-0">
                   <X size={15} />
                 </button>
               </div>
@@ -741,25 +741,25 @@ export default function SolutionsHome() {
                 {appDetail.description ? (
                   <p className="text-xs text-gray-300 leading-relaxed">{appDetail.description}</p>
                 ) : (
-                  <p className="text-xs text-gray-600 italic">Sin descripción disponible</p>
+                  <p className="text-xs text-[#7f8a9c] italic">Sin descripción disponible</p>
                 )}
 
                 {/* Meta */}
                 <div className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500">Categoría</span>
+                    <span className="text-[#7f8a9c]">Categoría</span>
                     <span className="font-medium px-2 py-0.5 rounded-full text-[11px]"
                       style={{ background: cs.color + '22', color: cs.color }}>
                       {category?.label ?? appDetail.appType.category}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500">Slug</span>
+                    <span className="text-[#7f8a9c]">Slug</span>
                     <span className="text-gray-400 font-mono text-[11px]">{appDetail.slug}</span>
                   </div>
                   {extUrl && (
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500">URL externa</span>
+                      <span className="text-[#7f8a9c]">URL externa</span>
                       <a href={extUrl} target="_blank" rel="noopener noreferrer"
                         className="text-[11px] truncate max-w-[140px] hover:text-white transition-colors"
                         style={{ color: cs.color }}>

@@ -63,9 +63,9 @@ function SesionesView({ body, sectionIndex }: { body: string; sectionIndex: numb
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white leading-tight truncate">Sesión {s.numero} — {s.titulo}</p>
-                {objetivo && <p className="text-xs text-gray-500 mt-0.5 truncate">{objetivo}</p>}
+                {objetivo && <p className="text-xs text-[#7f8a9c] mt-0.5 truncate">{objetivo}</p>}
               </div>
-              <ChevronRight size={14} className="text-gray-600 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
+              <ChevronRight size={14} className="text-[#7f8a9c] group-hover:text-cyan-400 transition-colors flex-shrink-0" />
             </button>
           )
         })}
@@ -85,9 +85,9 @@ export default function PlanVisualView({ markdown }: { markdown: string }) {
   if (!markdown.trim()) {
     return (
       <div className="text-center py-10">
-        <ListChecks size={28} className="text-gray-700 mx-auto mb-2" />
-        <p className="text-gray-500 text-sm">No hay plan de trabajo todavía.</p>
-        <p className="text-gray-600 text-xs mt-1">Escribilo o importalo desde la vista Markdown.</p>
+        <ListChecks size={28} className="text-[#7f8a9c] mx-auto mb-2" />
+        <p className="text-[#7f8a9c] text-sm">No hay plan de trabajo todavía.</p>
+        <p className="text-[#7f8a9c] text-xs mt-1">Escribilo o importalo desde la vista Markdown.</p>
       </div>
     )
   }
@@ -113,7 +113,7 @@ export default function PlanVisualView({ markdown }: { markdown: string }) {
               </span>
               <ChevronDown
                 size={16}
-                className="text-gray-500 flex-shrink-0 transition-transform"
+                className="text-[#7f8a9c] flex-shrink-0 transition-transform"
                 style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
               />
             </button>

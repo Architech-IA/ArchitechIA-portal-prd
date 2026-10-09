@@ -121,7 +121,7 @@ export default function HubPage() {
                 <h3 className="text-lg font-semibold text-white group-hover:text-orange-400 transition-colors">{card.title}</h3>
                 <p className="text-sm text-gray-400 mt-1 leading-relaxed">{card.description}</p>
               </div>
-              <svg className="w-5 h-5 text-gray-600 group-hover:text-orange-400 transition-colors flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-[#7f8a9c] group-hover:text-orange-400 transition-colors flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -136,21 +136,21 @@ export default function HubPage() {
             <div className={`w-2.5 h-2.5 rounded-full ${loadingStatus ? 'bg-gray-600' : allOk ? 'bg-green-400' : hasIssues ? 'bg-yellow-400 animate-pulse' : 'bg-gray-600'}`} />
             <h3 className="text-sm font-semibold text-white">Estado del Sistema</h3>
             {!loadingStatus && (
-              <span className={`text-xs px-2 py-0.5 rounded-full ${allOk ? 'bg-green-900/30 text-green-400' : hasIssues ? 'bg-yellow-900/30 text-yellow-400' : 'bg-gray-800 text-gray-500'}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${allOk ? 'bg-green-900/30 text-green-400' : hasIssues ? 'bg-yellow-900/30 text-yellow-400' : 'bg-gray-800 text-[#7f8a9c]'}`}>
                 {allOk ? 'Todos operativos' : hasIssues ? 'Incidencia detectada' : 'Verificando...'}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
             {lastCheck && (
-              <span className="text-xs text-gray-600">
+              <span className="text-xs text-[#7f8a9c]">
                 Actualizado {lastCheck.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
             <button
               onClick={fetchStatus}
               disabled={loadingStatus}
-              className="p-1.5 text-gray-500 hover:text-white transition-colors disabled:opacity-40"
+              className="p-1.5 text-[#7f8a9c] hover:text-white transition-colors disabled:opacity-40"
               title="Refrescar"
             >
               <svg className={`w-4 h-4 ${loadingStatus ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +187,7 @@ export default function HubPage() {
                   }`}>
                     {s.status === 'ok' ? 'Operativo' : s.status === 'degraded' ? 'Degradado' : 'Sin servicio'}
                   </span>
-                  <span className="text-xs text-gray-600">{s.latency}ms</span>
+                  <span className="text-xs text-[#7f8a9c]">{s.latency}ms</span>
                 </div>
               </div>
             ))}

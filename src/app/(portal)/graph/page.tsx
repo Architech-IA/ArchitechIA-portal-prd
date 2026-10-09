@@ -312,7 +312,7 @@ export default function GraphPage() {
         <div className="absolute bottom-4 left-4 rounded-xl px-4 py-3 text-sm"
           style={{ background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(249,115,22,0.3)' }}>
           <p className="text-orange-400 font-semibold">{hovered.title}</p>
-          <p className="text-gray-500 text-xs mt-0.5">{hovered.folder}/{hovered.path.split('/').pop()}</p>
+          <p className="text-[#7f8a9c] text-xs mt-0.5">{hovered.folder}/{hovered.path.split('/').pop()}</p>
         </div>
       )}
     </div>

@@ -122,7 +122,7 @@ function PanelPublicar({ proyectoId }: { proyectoId: string }) {
         ) : estado?.deployStatus === 'FAILED' ? (
           <span className="text-red-400">Falló la última publicación</span>
         ) : (
-          <span className="text-gray-500">Todavía no se publicó este proyecto</span>
+          <span className="text-[#7f8a9c]">Todavía no se publicó este proyecto</span>
         )}
         {error && <div className="text-red-400 mt-0.5">{error}</div>}
       </div>
@@ -261,11 +261,11 @@ function PanelBaseDatos({ proyectoId }: { proyectoId: string }) {
               Variables de entorno — solo se muestran los nombres, nunca los valores.
             </div>
             <div className="space-y-1 mb-2">
-              {(variables ?? []).length === 0 && <div className="text-[10.5px] text-gray-600">Sin variables cargadas.</div>}
+              {(variables ?? []).length === 0 && <div className="text-[10.5px] text-[#7f8a9c]">Sin variables cargadas.</div>}
               {(variables ?? []).map(nombre => (
                 <div key={nombre} className="flex items-center gap-2 text-[10.5px] text-gray-300 px-2 py-1 rounded" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <span className="flex-1 font-mono truncate">{nombre}</span>
-                  <button onClick={() => borrarVariable(nombre)} className="text-gray-500 hover:text-red-400 transition-colors flex-shrink-0">
+                  <button onClick={() => borrarVariable(nombre)} className="text-[#7f8a9c] hover:text-red-400 transition-colors flex-shrink-0">
                     <Trash2 size={11} />
                   </button>
                 </div>
@@ -310,9 +310,9 @@ export default function PanelEjecucion({ proyectoId }: { proyectoId: string }) {
     return () => { cancelled = true; clearInterval(poll) }
   }, [proyectoId])
 
-  if (sprints === null) return <div className="p-4 text-[12px] text-gray-500">Cargando…</div>
+  if (sprints === null) return <div className="p-4 text-[12px] text-[#7f8a9c]">Cargando…</div>
   if (sprints.length === 0) return (
-    <div className="p-4 text-[12px] text-gray-500">
+    <div className="p-4 text-[12px] text-[#7f8a9c]">
       Este proyecto todavía no tiene sprints con tareas. Armá un plan en una sesión de PLANIFICACIÓN y tocá «Convertir en tareas».
     </div>
   )
@@ -337,7 +337,7 @@ export default function PanelEjecucion({ proyectoId }: { proyectoId: string }) {
                   className="w-full text-left px-3 py-2 text-[11px] hover:bg-white/5 transition-colors flex items-center justify-between gap-2"
                   style={{ color: s.id === actual.id ? '#c7d2fe' : '#d1d5db', background: s.id === actual.id ? 'rgba(99,102,241,0.1)' : 'transparent' }}>
                   <span className="truncate">{s.sprintCode ?? s.name}</span>
-                  {s.enCurso > 0 && <span className="flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(6,182,212,0.15)', color: '#06b6d4' }}>{s.enCurso} en curso</span>}
+                  {s.enCurso > 0 && <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(6,182,212,0.15)', color: '#06b6d4' }}>{s.enCurso} en curso</span>}
                 </button>
               ))}
             </div>

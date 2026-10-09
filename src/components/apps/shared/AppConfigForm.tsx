@@ -109,7 +109,7 @@ export default function AppConfigForm({ schema, config, onChange }: AppConfigFor
             {prop.title ?? key}
             {schema.required?.includes(key) && <span className="ml-1 text-red-400">*</span>}
           </label>
-          {prop.description && <p className="mb-1.5 text-xs text-gray-500">{prop.description}</p>}
+          {prop.description && <p className="mb-1.5 text-xs text-[#7f8a9c]">{prop.description}</p>}
           {renderField(key, prop)}
         </div>
       ))}
@@ -214,7 +214,7 @@ function ObjectArrayEditor({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {Object.entries(properties).map(([key, prop]) => (
               <div key={key}>
-                <label className="mb-1 block text-xs text-gray-500">
+                <label className="mb-1 block text-xs text-[#7f8a9c]">
                   {prop.title ?? key}
                   {required?.includes(key) && <span className="ml-1 text-red-400">*</span>}
                 </label>

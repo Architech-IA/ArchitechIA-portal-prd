@@ -97,9 +97,9 @@ export default function BIDashboardRuntime({ app }: { app: AppInstance }) {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-white">{chart.title}</h3>
-                  <p className="text-xs text-gray-500">{chart.dataSource || 'Datos internos'}</p>
+                  <p className="text-xs text-[#7f8a9c]">{chart.dataSource || 'Datos internos'}</p>
                 </div>
-                <span className="rounded-full border border-gray-700 bg-gray-950 px-2 py-0.5 text-[10px] uppercase text-gray-400">
+                <span className="rounded-full border border-gray-700 bg-gray-950 px-2 py-0.5 text-[11px] uppercase text-gray-400">
                   {chart.type}
                 </span>
               </div>

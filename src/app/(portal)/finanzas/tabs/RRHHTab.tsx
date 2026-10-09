@@ -164,7 +164,7 @@ export default function RRHHPage() {
         ].map(s => (
           <div key={s.label} className="p-4 rounded-xl border border-white/6 bg-white/2">
             <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">{s.label}</p>
+            <p className="text-xs text-[#7f8a9c] font-medium mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -172,7 +172,7 @@ export default function RRHHPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-white/6">
         {([['equipo', 'Equipo'], ['nomina', 'Nómina'], ['vacaciones', 'Vacaciones']] as const).map(([t, label]) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${tab === t ? 'text-orange-400 border-orange-400' : 'text-gray-500 border-transparent hover:text-gray-300'}`}>{label}</button>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${tab === t ? 'text-orange-400 border-orange-400' : 'text-[#7f8a9c] border-transparent hover:text-gray-300'}`}>{label}</button>
         ))}
       </div>
 
@@ -183,7 +183,7 @@ export default function RRHHPage() {
       {tab === 'equipo' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? [...Array(4)].map((_, i) => <div key={i} className="h-40 rounded-xl bg-gray-700/20 animate-pulse" />) :
-            filtEmpleados.length === 0 ? <p className="text-gray-500 text-sm col-span-3 py-12 text-center">Sin empleados registrados</p> :
+            filtEmpleados.length === 0 ? <p className="text-[#7f8a9c] text-sm col-span-3 py-12 text-center">Sin empleados registrados</p> :
             filtEmpleados.map(emp => {
               const dColor = DEPTO_COLOR[emp.departamento] ?? '#94a3b8';
               return (
@@ -200,25 +200,25 @@ export default function RRHHPage() {
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Departamento</span>
+                      <span className="text-[#7f8a9c]">Departamento</span>
                       <span className="font-medium" style={{ color: dColor }}>{emp.departamento}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Tipo</span>
+                      <span className="text-[#7f8a9c]">Tipo</span>
                       <span className="text-gray-300">{emp.tipo.replace('_', ' ')}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Salario base</span>
+                      <span className="text-[#7f8a9c]">Salario base</span>
                       <span className="text-white font-semibold">{fmt(emp.salarioBase, emp.moneda)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Ingreso</span>
+                      <span className="text-[#7f8a9c]">Ingreso</span>
                       <span className="text-gray-400">{new Date(emp.fechaIngreso).toLocaleDateString('es')}</span>
                     </div>
                   </div>
                   {isAdmin && (
                     <div className="flex gap-2 mt-3 pt-3 border-t border-white/5">
-                      <button onClick={() => { setEditEmp(emp); setFormEmp({ nombre: emp.nombre, email: emp.email, cargo: emp.cargo, departamento: emp.departamento, tipo: emp.tipo, estado: emp.estado, salarioBase: String(emp.salarioBase), moneda: emp.moneda, fechaIngreso: emp.fechaIngreso.slice(0, 10), pais: emp.pais ?? '', notas: emp.notas ?? '' }); setShowEmpModal(true); }} className="flex-1 text-xs text-gray-500 hover:text-white transition-colors text-center">Editar</button>
+                      <button onClick={() => { setEditEmp(emp); setFormEmp({ nombre: emp.nombre, email: emp.email, cargo: emp.cargo, departamento: emp.departamento, tipo: emp.tipo, estado: emp.estado, salarioBase: String(emp.salarioBase), moneda: emp.moneda, fechaIngreso: emp.fechaIngreso.slice(0, 10), pais: emp.pais ?? '', notas: emp.notas ?? '' }); setShowEmpModal(true); }} className="flex-1 text-xs text-[#7f8a9c] hover:text-white transition-colors text-center">Editar</button>
                       <button onClick={() => setConfirmDel({ id: emp.id, name: emp.nombre })} className="flex-1 text-xs text-red-500/60 hover:text-red-400 transition-colors text-center">Eliminar</button>
                     </div>
                   )}
@@ -235,7 +235,7 @@ export default function RRHHPage() {
             <thead>
               <tr className="border-b border-white/6 bg-white/2">
                 {['Empleado', 'Período', 'Base', 'Bonos', 'Deducciones', 'Total', 'Estado', 'Fecha Pago'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -243,7 +243,7 @@ export default function RRHHPage() {
               {loading ? [...Array(3)].map((_, i) => (
                 <tr key={i} className="border-b border-white/4">{[...Array(8)].map((_, j) => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-700/50 rounded animate-pulse" /></td>)}</tr>
               )) : filtNominas.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-500 text-sm">Sin registros de nómina</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-[#7f8a9c] text-sm">Sin registros de nómina</td></tr>
               ) : filtNominas.map(n => (
                 <tr key={n.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
                   <td className="px-4 py-3 text-sm font-semibold text-white">{n.empleado?.nombre ?? '—'}</td>
@@ -253,14 +253,14 @@ export default function RRHHPage() {
                   <td className="px-4 py-3 text-sm text-red-400">-{fmt(n.deducciones, n.moneda)}</td>
                   <td className="px-4 py-3 text-sm font-bold text-white">{fmt(n.total, n.moneda)}</td>
                   <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-1 rounded-full" style={{ background: NOM_COLOR[n.estado] + '18', color: NOM_COLOR[n.estado] }}>● {n.estado}</span></td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{n.fechaPago ? new Date(n.fechaPago).toLocaleDateString('es') : '—'}</td>
+                  <td className="px-4 py-3 text-xs text-[#7f8a9c]">{n.fechaPago ? new Date(n.fechaPago).toLocaleDateString('es') : '—'}</td>
                 </tr>
               ))}
             </tbody>
             {filtNominas.length > 0 && (
               <tfoot>
                 <tr className="border-t border-white/6 bg-white/1">
-                  <td colSpan={5} className="px-4 py-3 text-xs text-gray-500 font-semibold">Total nómina</td>
+                  <td colSpan={5} className="px-4 py-3 text-xs text-[#7f8a9c] font-semibold">Total nómina</td>
                   <td className="px-4 py-3 text-sm font-bold text-white">{fmt(filtNominas.reduce((s, n) => s + n.total, 0), 'USD')}</td>
                   <td colSpan={2} />
                 </tr>
@@ -277,7 +277,7 @@ export default function RRHHPage() {
             <thead>
               <tr className="border-b border-white/6 bg-white/2">
                 {['Empleado', 'Desde', 'Hasta', 'Días', 'Tipo', 'Estado', 'Aprobado por', isAdmin ? 'Acciones' : ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -285,7 +285,7 @@ export default function RRHHPage() {
               {loading ? [...Array(3)].map((_, i) => (
                 <tr key={i} className="border-b border-white/4">{[...Array(8)].map((_, j) => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-700/50 rounded animate-pulse" /></td>)}</tr>
               )) : filtVacaciones.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-500 text-sm">Sin solicitudes de vacaciones</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-[#7f8a9c] text-sm">Sin solicitudes de vacaciones</td></tr>
               ) : filtVacaciones.map(v => (
                 <tr key={v.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
                   <td className="px-4 py-3 text-sm font-semibold text-white">{v.empleado?.nombre ?? '—'}</td>
@@ -294,7 +294,7 @@ export default function RRHHPage() {
                   <td className="px-4 py-3 text-sm font-bold text-white">{v.dias}</td>
                   <td className="px-4 py-3 text-xs text-gray-400">{v.tipo}</td>
                   <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-1 rounded-full" style={{ background: VAC_COLOR[v.estado] + '18', color: VAC_COLOR[v.estado] }}>● {v.estado}</span></td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{v.aprobadoPor ?? '—'}</td>
+                  <td className="px-4 py-3 text-xs text-[#7f8a9c]">{v.aprobadoPor ?? '—'}</td>
                   <td className="px-4 py-3">
                     {isAdmin && v.estado === 'PENDIENTE' && (
                       <div className="flex gap-2">

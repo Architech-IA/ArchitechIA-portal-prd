@@ -31,7 +31,7 @@ const NODE_TYPES: Record<ArchNodeType, { label: string; icon: typeof Monitor; co
   ia:       { label: 'IA / LLM', icon: Brain,    color: '#FF5A00' },
   queue:    { label: 'Cola/Job', icon: Clock,     color: '#F59E0B' },
   cache:    { label: 'Cache',    icon: Zap,       color: '#EAB308' },
-  externo:  { label: 'Servicio externo', icon: Globe2, color: '#64748B' },
+  externo:  { label: 'Servicio externo', icon: Globe2, color: '#7f8a9c' },
 }
 
 const NODE_W = 140
@@ -482,7 +482,7 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
               </button>
             </div>
             <div className="p-5 space-y-3">
-              <p className="text-gray-500 text-xs">
+              <p className="text-[#7f8a9c] text-xs">
                 Pegá el <strong className="text-gray-300">JSON</strong> exportado de otro lienzo, o un diagrama <strong className="text-gray-300">Mermaid</strong> (flowchart/graph) — se agregan como componentes nuevos al lienzo actual, junto con sus flechas.
               </p>
               <textarea
@@ -573,17 +573,17 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
                   Conexiones relacionadas {relatedConnections.length > 0 && `(${relatedConnections.length})`}
                 </label>
                 {relatedConnections.length === 0 ? (
-                  <p className="text-gray-600 text-xs">Sin conexiones todavía. Arrastrá desde el borde derecho del nodo para crear una.</p>
+                  <p className="text-[#7f8a9c] text-xs">Sin conexiones todavía. Arrastrá desde el borde derecho del nodo para crear una.</p>
                 ) : (
                   <div className="space-y-1.5">
                     {relatedConnections.map(({ conn, dir, other }) => (
                       <div key={conn.id} className="flex items-center justify-between gap-2 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2">
                         <span className="text-xs text-gray-300 truncate flex items-center gap-1.5">
-                          {dir === 'out' ? <ArrowUpRight size={12} className="text-gray-500 flex-shrink-0" /> : <ArrowDownLeft size={12} className="text-gray-500 flex-shrink-0" />}
+                          {dir === 'out' ? <ArrowUpRight size={12} className="text-[#7f8a9c] flex-shrink-0" /> : <ArrowDownLeft size={12} className="text-[#7f8a9c] flex-shrink-0" />}
                           {other?.label || 'Sin nombre'}
                         </span>
                         <button type="button" onClick={() => removeConnection(conn.id)}
-                          className="text-gray-600 hover:text-red-400 transition-colors flex-shrink-0">
+                          className="text-[#7f8a9c] hover:text-red-400 transition-colors flex-shrink-0">
                           <X size={12} />
                         </button>
                       </div>
@@ -622,7 +622,7 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
       >
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="text-gray-600 text-sm">Agrega componentes desde los botones de arriba y arrástralos al lienzo.</p>
+            <p className="text-[#7f8a9c] text-sm">Agrega componentes desde los botones de arriba y arrástralos al lienzo.</p>
           </div>
         )}
 
@@ -734,7 +734,7 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
                       {node.label}
                     </p>
                   )}
-                  <p className="text-[10px] text-gray-500 truncate">{t.label}</p>
+                  <p className="text-[11px] text-[#7f8a9c] truncate">{t.label}</p>
                 </div>
                 <button
                   type="button"
@@ -761,7 +761,7 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
             className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
             <ZoomOut size={13} />
           </button>
-          <span className="text-[10px] text-gray-500 font-mono w-9 text-center select-none">{Math.round(view.scale * 100)}%</span>
+          <span className="text-[11px] text-[#7f8a9c] font-mono w-9 text-center select-none">{Math.round(view.scale * 100)}%</span>
           <button type="button" onClick={() => zoomAt(1.2)} title="Acercar"
             className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
             <ZoomIn size={13} />
@@ -773,7 +773,7 @@ export default function ArchitectureCanvas({ nodes, connections, onChange }: Arc
           </button>
         </div>
       </div>
-      <p className="text-[11px] text-gray-600">
+      <p className="text-[11px] text-[#7f8a9c]">
         Arrastra los componentes para ubicarlos, doble click para renombrar. Arrastrá el fondo vacío para mover la vista, rueda del mouse para zoom. Arrastrá desde el punto del borde derecho para conectar dos componentes; click en una flecha para borrarla.
       </p>
     </div>

@@ -79,7 +79,7 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
           onClick={handleLogout}
           title="Cerrar sesión"
           className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-          style={{ color: '#475569' }}
+          style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.color = '#f87171'; el.style.background = 'rgba(239,68,68,0.1)'; }}
           onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.color = '#475569'; el.style.background = 'transparent'; }}
         >
@@ -97,7 +97,7 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
           <p className="truncate" style={{ fontSize: '12px', fontWeight: 500, color: '#e2e8f0', lineHeight: 1.3 }}>
             {name}
           </p>
-          <p className="truncate" style={{ fontSize: '10.5px', fontWeight: 300, color: '#64748b', lineHeight: 1.3 }}>
+          <p className="truncate" style={{ fontSize: '10.5px', fontWeight: 300, color: '#7f8a9c', lineHeight: 1.3 }}>
             {ROLE_LABELS[role] ?? email}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function SidebarUser({ collapsed = false }: { collapsed?: boolean
           onClick={handleLogout}
           title="Cerrar sesión"
           className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
-          style={{ color: '#475569' }}
+          style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.color = '#f87171'; el.style.background = 'rgba(239,68,68,0.1)'; }}
           onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.color = '#475569'; el.style.background = 'transparent'; }}
         >

@@ -46,7 +46,7 @@ function ScoreBadge({ score }: { score: number }) {
               : score >= 40 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
               : 'bg-red-500/20 text-red-400 border-red-500/30'
   return (
-    <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${color}`}>
+    <span className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${color}`}>
       <Zap size={9} /> {score}
     </span>
   )
@@ -92,7 +92,7 @@ const RADIUS_OPTIONS = [
 ]
 
 function Stars({ rating }: { rating: number | null }) {
-  if (!rating) return <span className="text-xs text-gray-500">Sin calificación</span>
+  if (!rating) return <span className="text-xs text-[#7f8a9c]">Sin calificación</span>
   return (
     <div className="flex items-center gap-1">
       <Star size={11} className="text-yellow-400 fill-yellow-400" />
@@ -441,7 +441,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
         >
           <Table2 size={13} /> Prospector Table
           {savedResults.length > 0 && (
-            <span className="bg-orange-500/30 text-orange-300 text-[10px] px-1.5 py-0.5 rounded-full">
+            <span className="bg-orange-500/30 text-orange-300 text-[11px] px-1.5 py-0.5 rounded-full">
               {savedResults.length}
             </span>
           )}
@@ -477,7 +477,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
             <div className="h-[500px]">
               <MapPicker onSelect={handleMapSelect} radius={radius} />
             </div>
-            <div className="px-5 py-3 border-t border-gray-700 text-xs text-gray-500">
+            <div className="px-5 py-3 border-t border-gray-700 text-xs text-[#7f8a9c]">
               Radio de búsqueda actual: <span className="text-orange-400 font-medium">
                 {RADIUS_OPTIONS.find(r => r.value === radius)?.label ?? `${radius}m`}
               </span>
@@ -491,7 +491,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
 
         {/* Batch mode toggle */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">Modo de búsqueda</span>
+          <span className="text-xs text-[#7f8a9c]">Modo de búsqueda</span>
           <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
             <button onClick={() => setBatchMode(false)} className={`px-3 py-1 text-xs rounded-md transition-colors ${!batchMode ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
               Simple
@@ -521,7 +521,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                     placeholder="Busca ciudad, municipio..."
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500"
                   />
-                  {loadingSugg && <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 animate-spin" />}
+                  {loadingSugg && <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7f8a9c] animate-spin" />}
                   {showSugg && suggestions.length > 0 && (
                     <div className="absolute top-full mt-1 left-0 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-30 overflow-hidden">
                       {suggestions.map(s => (
@@ -529,7 +529,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                           <MapPin size={12} className="text-orange-400 flex-shrink-0 mt-0.5" />
                           <div>
                             <p className="text-sm text-white">{s.mainText}</p>
-                            {s.secondaryText && <p className="text-xs text-gray-500">{s.secondaryText}</p>}
+                            {s.secondaryText && <p className="text-xs text-[#7f8a9c]">{s.secondaryText}</p>}
                           </div>
                         </button>
                       ))}
@@ -541,7 +541,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                 </button>
               </div>
             )}
-            {!batchMode && coords && <p className="text-[10px] text-orange-400 flex items-center gap-1"><MapPin size={9} /> Coordenadas desde mapa</p>}
+            {!batchMode && coords && <p className="text-[11px] text-orange-400 flex items-center gap-1"><MapPin size={9} /> Coordenadas desde mapa</p>}
             {batchMode && (
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-1.5">
@@ -568,7 +568,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                   <datalist id="municipios-batch">
                     {['Bogotá','Medellín','Cali','Barranquilla','Cartagena','Bucaramanga','Pereira','Manizales','Cúcuta','Ibagué','Pasto','Neiva','Villavicencio','Armenia'].map(m => <option key={m} value={m} />)}
                   </datalist>
-                  <button onClick={() => {}} className="text-[10px] text-gray-500 px-2">↵ Enter</button>
+                  <button onClick={() => {}} className="text-[11px] text-[#7f8a9c] px-2">↵ Enter</button>
                 </div>
               </div>
             )}
@@ -603,7 +603,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                 className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
                   maxResults === n
                     ? 'bg-orange-600/20 border-orange-500/40 text-orange-400'
-                    : 'border-gray-700 text-gray-500 hover:text-gray-300'
+                    : 'border-gray-700 text-[#7f8a9c] hover:text-gray-300'
                 }`}
               >
                 {n}
@@ -642,7 +642,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 text-yellow-400 text-sm font-medium">
                 <AlertTriangle size={15} /> {duplicates.length} posible{duplicates.length > 1 ? 's' : ''} duplicado{duplicates.length > 1 ? 's' : ''} detectado{duplicates.length > 1 ? 's' : ''}
-                <span className="text-[10px] text-yellow-600 ml-1">(ya están en Prospector Table)</span>
+                <span className="text-[11px] text-yellow-600 ml-1">(ya están en Prospector Table)</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {duplicates.map(d => (
@@ -650,7 +650,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                     <AlertTriangle size={11} className="text-yellow-500 flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="text-xs text-white truncate">{d.name}</p>
-                      {d.phone && <p className="text-[10px] text-yellow-600">{d.phone}</p>}
+                      {d.phone && <p className="text-[11px] text-yellow-600">{d.phone}</p>}
                     </div>
                     <ScoreBadge score={d.score} />
                   </div>
@@ -663,16 +663,16 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
             <div className="flex items-center gap-3">
               <div>
                 <span className="text-sm font-semibold text-white">{places.length} resultados</span>
-                <span className="text-xs text-gray-500 ml-2">"{query}"</span>
+                <span className="text-xs text-[#7f8a9c] ml-2">"{query}"</span>
               </div>
               {/* Cards / Map toggle */}
               <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-0.5">
                 <button onClick={() => setResultsView('cards')} title="Tarjetas"
-                  className={`p-1.5 rounded-md transition-colors ${resultsView === 'cards' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}>
+                  className={`p-1.5 rounded-md transition-colors ${resultsView === 'cards' ? 'bg-orange-600 text-white' : 'text-[#7f8a9c] hover:text-white'}`}>
                   <LayoutGrid size={13} />
                 </button>
                 <button onClick={() => setResultsView('map')} title="Mapa"
-                  className={`p-1.5 rounded-md transition-colors ${resultsView === 'map' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}>
+                  className={`p-1.5 rounded-md transition-colors ${resultsView === 'map' ? 'bg-orange-600 text-white' : 'text-[#7f8a9c] hover:text-white'}`}>
                   <Map size={13} />
                 </button>
               </div>
@@ -728,7 +728,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                     <div className="mt-0.5 flex-shrink-0 text-orange-400">
                       {selected.has(place.placeId)
                         ? <CheckSquare size={16} />
-                        : <Square size={16} className="text-gray-600" />
+                        : <Square size={16} className="text-[#7f8a9c]" />
                       }
                     </div>
                     <h3 className="text-sm font-semibold text-white leading-tight">{place.name}</h3>
@@ -742,19 +742,19 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                 <div className="ml-6 space-y-1.5">
                   {place.address && (
                     <div className="flex items-start gap-1.5 text-xs text-gray-400">
-                      <MapPin size={11} className="mt-0.5 flex-shrink-0 text-gray-600" />
+                      <MapPin size={11} className="mt-0.5 flex-shrink-0 text-[#7f8a9c]" />
                       <span className="line-clamp-2">{place.address}</span>
                     </div>
                   )}
                   {place.phone && (
                     <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                      <Phone size={11} className="text-gray-600" />
+                      <Phone size={11} className="text-[#7f8a9c]" />
                       <span>{place.phone}</span>
                     </div>
                   )}
                   {place.website && (
                     <div className="flex items-center gap-1.5 text-xs">
-                      <Globe size={11} className="text-gray-600" />
+                      <Globe size={11} className="text-[#7f8a9c]" />
                       <a
                         href={place.website}
                         target="_blank"
@@ -769,7 +769,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                   {place.types.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-1">
                       {place.types.slice(0, 3).map(t => (
-                        <span key={t} className="text-[10px] bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">
+                        <span key={t} className="text-[11px] bg-gray-800 text-[#7f8a9c] px-2 py-0.5 rounded-full">
                           {t.replace(/_/g, ' ')}
                         </span>
                       ))}
@@ -778,7 +778,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                 </div>
 
                 {selected.has(place.placeId) && (
-                  <div className="ml-6 mt-2 flex items-center gap-1 text-[10px] text-orange-400">
+                  <div className="ml-6 mt-2 flex items-center gap-1 text-[11px] text-orange-400">
                     <ArrowRight size={10} /> Se agregará a Clientes
                   </div>
                 )}
@@ -789,7 +789,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
       )}
 
       {!loading && places.length === 0 && query && (
-        <div className="text-center py-16 text-gray-600">
+        <div className="text-center py-16 text-[#7f8a9c]">
           <Search size={32} className="mx-auto mb-3 opacity-20" />
           <p className="text-sm">Sin resultados para "{query}"</p>
           <p className="text-xs mt-1">Prueba con otro término o amplía el radio</p>
@@ -834,12 +834,12 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                   <h3 className="text-white font-semibold text-lg leading-tight">{r.name}</h3>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{r.category}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${r.convertedToLead ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full border ${r.convertedToLead ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-gray-800 text-[#7f8a9c] border-gray-700'}`}>
                       {r.convertedToLead ? '✓ Convertido' : 'Pendiente'}
                     </span>
                   </div>
                 </div>
-                <button onClick={() => setViewRecord(null)} className="text-gray-500 hover:text-white transition-colors mt-0.5">
+                <button onClick={() => setViewRecord(null)} className="text-[#7f8a9c] hover:text-white transition-colors mt-0.5">
                   <X size={18} />
                 </button>
               </div>
@@ -852,19 +852,19 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                   <div className="space-y-2.5">
                     {r.address && (
                       <div className="flex items-start gap-2.5 text-sm text-gray-300">
-                        <MapPin size={14} className="text-gray-500 flex-shrink-0 mt-0.5" />
+                        <MapPin size={14} className="text-[#7f8a9c] flex-shrink-0 mt-0.5" />
                         <span>{r.address}</span>
                       </div>
                     )}
                     {r.phone && (
                       <div className="flex items-center gap-2.5 text-sm text-gray-300">
-                        <Phone size={14} className="text-gray-500 flex-shrink-0" />
+                        <Phone size={14} className="text-[#7f8a9c] flex-shrink-0" />
                         <span>{r.phone}</span>
                       </div>
                     )}
                     {r.website && (
                       <div className="flex items-center gap-2.5">
-                        <Globe size={14} className="text-gray-500 flex-shrink-0" />
+                        <Globe size={14} className="text-[#7f8a9c] flex-shrink-0" />
                         <a href={r.website} target="_blank" rel="noopener noreferrer" className="text-sm text-orange-400 hover:underline truncate">
                           {r.website.replace(/^https?:\/\//, '')}
                         </a>
@@ -874,7 +874,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                       <div className="flex items-center gap-2.5">
                         <Star size={14} className="text-yellow-400 fill-yellow-400 flex-shrink-0" />
                         <span className="text-sm text-gray-300">{r.rating} / 5</span>
-                        <span className="text-xs text-gray-600">({r.totalRatings} reseñas)</span>
+                        <span className="text-xs text-[#7f8a9c]">({r.totalRatings} reseñas)</span>
                       </div>
                     )}
                   {/* Mini mapa interactivo */}
@@ -899,22 +899,22 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                   {r.types && JSON.parse(r.types).length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {JSON.parse(r.types).slice(0, 5).map((t: string) => (
-                        <span key={t} className="text-[10px] bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">{t.replace(/_/g, ' ')}</span>
+                        <span key={t} className="text-[11px] bg-gray-800 text-[#7f8a9c] px-2 py-0.5 rounded-full">{t.replace(/_/g, ' ')}</span>
                       ))}
                     </div>
                   )}
 
                   <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-800 text-center">
                     <div className="bg-gray-800/60 rounded-lg p-2">
-                      <p className="text-[10px] text-gray-500 mb-0.5 flex items-center justify-center gap-1"><User size={9} /> Guardado</p>
+                      <p className="text-[11px] text-[#7f8a9c] mb-0.5 flex items-center justify-center gap-1"><User size={9} /> Guardado</p>
                       <p className="text-xs text-white truncate">{r.savedByName}</p>
                     </div>
                     <div className="bg-gray-800/60 rounded-lg p-2">
-                      <p className="text-[10px] text-gray-500 mb-0.5 flex items-center justify-center gap-1"><Calendar size={9} /> Creado</p>
+                      <p className="text-[11px] text-[#7f8a9c] mb-0.5 flex items-center justify-center gap-1"><Calendar size={9} /> Creado</p>
                       <p className="text-xs text-white">{new Date(r.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}</p>
                     </div>
                     <div className="bg-gray-800/60 rounded-lg p-2">
-                      <p className="text-[10px] text-gray-500 mb-0.5 flex items-center justify-center gap-1"><Clock size={9} /> Modificado</p>
+                      <p className="text-[11px] text-[#7f8a9c] mb-0.5 flex items-center justify-center gap-1"><Clock size={9} /> Modificado</p>
                       <p className="text-xs text-white">{new Date(r.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}</p>
                     </div>
                   </div>
@@ -925,35 +925,35 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
 
                   {/* Score */}
                   <div className={`rounded-xl border p-4 text-center ${scoreBg}`}>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 flex items-center justify-center gap-1">
+                    <p className="text-[11px] text-[#7f8a9c] uppercase tracking-widest mb-2 flex items-center justify-center gap-1">
                       <Zap size={9} /> Score
                     </p>
                     <p className="text-5xl font-bold" style={{ color: scoreColor }}>{score}</p>
-                    <p className="text-[10px] mt-1" style={{ color: scoreColor }}>{scoreLabel}</p>
+                    <p className="text-[11px] mt-1" style={{ color: scoreColor }}>{scoreLabel}</p>
                     {/* Progress bar */}
                     <div className="mt-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, backgroundColor: scoreColor }} />
                     </div>
-                    <p className="text-[10px] text-gray-600 mt-1">{score} / 100</p>
+                    <p className="text-[11px] text-[#7f8a9c] mt-1">{score} / 100</p>
                   </div>
 
                   {/* Criteria */}
                   <div className="space-y-2">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Calificación</p>
+                    <p className="text-[11px] text-[#7f8a9c] uppercase tracking-widest">Calificación</p>
                     {criteria.map((c, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                           c.unknown ? 'bg-gray-700' : c.ok ? 'bg-green-500/20' : 'bg-red-500/20'
                         }`}>
                           {c.unknown
-                            ? <span className="text-gray-500 text-[9px] font-bold">?</span>
+                            ? <span className="text-[#7f8a9c] text-[10px] font-bold">?</span>
                             : c.ok
                             ? <CheckCircle2 size={10} className="text-green-400" />
                             : <X size={10} className="text-red-400" />
                           }
                         </div>
                         <p className={`text-xs leading-tight ${
-                          c.unknown ? 'text-gray-600' : c.ok ? 'text-gray-300' : 'text-gray-500'
+                          c.unknown ? 'text-[#7f8a9c]' : c.ok ? 'text-gray-300' : 'text-[#7f8a9c]'
                         }`}>
                           {c.unknown ? c.neg : c.ok ? c.label : c.neg}
                         </p>
@@ -991,7 +991,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
             <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-5">
               <p className="text-white font-medium">{confirmDelete.name}</p>
               {confirmDelete.city && (
-                <p className="text-xs text-gray-500 mt-1">{confirmDelete.city} · {confirmDelete.category}</p>
+                <p className="text-xs text-[#7f8a9c] mt-1">{confirmDelete.city} · {confirmDelete.category}</p>
               )}
             </div>
 
@@ -1032,7 +1032,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
 
             <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-5 space-y-2">
               <p className="text-white font-medium">{confirmConvert.name}</p>
-              {confirmConvert.address && <p className="text-xs text-gray-500">{confirmConvert.address}</p>}
+              {confirmConvert.address && <p className="text-xs text-[#7f8a9c]">{confirmConvert.address}</p>}
               <div className="flex flex-wrap gap-3 pt-1">
                 {confirmConvert.phone && (
                   <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -1082,7 +1082,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
             {/* Row 1: text + refresh */}
             <div className="flex items-center gap-3">
               <div className="relative flex-1">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#7f8a9c]" />
                 <input
                   type="text"
                   placeholder="Buscar por nombre..."
@@ -1091,7 +1091,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                   className="w-full pl-8 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500"
                 />
               </div>
-              <span className="text-xs text-gray-500 flex-shrink-0">{filteredSaved.length} registros</span>
+              <span className="text-xs text-[#7f8a9c] flex-shrink-0">{filteredSaved.length} registros</span>
               <button
                 onClick={() => {
                   const headers = ['Nombre','Dirección','Teléfono','Web','Rating','Ciudad','Categoría','Estado','Guardado por','Fecha']
@@ -1114,7 +1114,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
             {/* Row 2: selectboxes */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider">Ciudad</label>
+                <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider">Ciudad</label>
                 <select
                   value={filterCity}
                   onChange={e => setFilterCity(e.target.value)}
@@ -1126,7 +1126,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider">Categoría</label>
+                <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider">Categoría</label>
                 <select
                   value={filterCategory}
                   onChange={e => setFilterCategory(e.target.value)}
@@ -1138,7 +1138,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider">Estado</label>
+                <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider">Estado</label>
                 <select
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
@@ -1151,7 +1151,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider">
+                <label className="text-[11px] text-[#7f8a9c] uppercase tracking-wider">
                   Rating mínimo: <span className="text-orange-400">{filterRatingMin > 0 ? `${filterRatingMin}★` : 'Todos'}</span>
                 </label>
                 <input
@@ -1161,7 +1161,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                   onChange={e => setFilterRatingMin(Number(e.target.value))}
                   className="w-full h-2 bg-gray-700 rounded-full appearance-none cursor-pointer accent-orange-500"
                 />
-                <div className="flex justify-between text-[10px] text-gray-600">
+                <div className="flex justify-between text-[11px] text-[#7f8a9c]">
                   <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
                 </div>
               </div>
@@ -1171,15 +1171,15 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
             {(filterCity || filterCategory || filterStatus || filterRatingMin > 0 || tableFilter) && (
               <div className="flex items-center justify-between pt-1 border-t border-gray-800">
                 <div className="flex flex-wrap gap-2">
-                  {tableFilter   && <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">"{tableFilter}"</span>}
-                  {filterCity    && <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">{filterCity}</span>}
-                  {filterCategory && <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">{filterCategory.slice(0,25)}</span>}
-                  {filterStatus  && <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full capitalize">{filterStatus}</span>}
-                  {filterRatingMin > 0 && <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">≥ {filterRatingMin}★</span>}
+                  {tableFilter   && <span className="text-[11px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">"{tableFilter}"</span>}
+                  {filterCity    && <span className="text-[11px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">{filterCity}</span>}
+                  {filterCategory && <span className="text-[11px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">{filterCategory.slice(0,25)}</span>}
+                  {filterStatus  && <span className="text-[11px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full capitalize">{filterStatus}</span>}
+                  {filterRatingMin > 0 && <span className="text-[11px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full">≥ {filterRatingMin}★</span>}
                 </div>
                 <button
                   onClick={() => { setTableFilter(''); setFilterCity(''); setFilterCategory(''); setFilterStatus(''); setFilterRatingMin(0) }}
-                  className="text-[10px] text-gray-500 hover:text-white transition-colors"
+                  className="text-[11px] text-[#7f8a9c] hover:text-white transition-colors"
                 >
                   Limpiar filtros
                 </button>
@@ -1188,11 +1188,11 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
           </div>
 
           {loadingTable ? (
-            <div className="flex items-center justify-center py-16 gap-2 text-gray-500">
+            <div className="flex items-center justify-center py-16 gap-2 text-[#7f8a9c]">
               <Loader2 size={16} className="animate-spin" /> Cargando tabla...
             </div>
           ) : filteredSaved.length === 0 ? (
-            <div className="text-center py-16 text-gray-600">
+            <div className="text-center py-16 text-[#7f8a9c]">
               <Table2 size={32} className="mx-auto mb-3 opacity-20" />
               <p className="text-sm">{savedResults.length === 0 ? 'Tabla vacía' : 'Sin resultados para ese filtro'}</p>
               <p className="text-xs mt-1">Busca negocios y usa "Prospector Table" para guardarlos aquí</p>
@@ -1217,12 +1217,12 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                       <tr key={r.id} className={`hover:bg-gray-800/50 transition-colors ${r.convertedToLead ? 'opacity-50' : ''}`}>
                         <td className="px-4 py-3">
                           <p className="font-medium text-white">{r.name}</p>
-                          {r.address && <p className="text-xs text-gray-500 truncate max-w-[200px]">{r.address}</p>}
+                          {r.address && <p className="text-xs text-[#7f8a9c] truncate max-w-[200px]">{r.address}</p>}
                         </td>
                         <td className="px-4 py-3 space-y-1">
                           {r.phone && (
                             <p className="text-xs text-gray-400 flex items-center gap-1">
-                              <Phone size={10} className="text-gray-600" /> {r.phone}
+                              <Phone size={10} className="text-[#7f8a9c]" /> {r.phone}
                             </p>
                           )}
                           {r.website && (
@@ -1256,14 +1256,14 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                             ? <span className="text-xs text-yellow-400 flex items-center justify-center gap-1">
                                 <Star size={10} className="fill-yellow-400" /> {r.rating}
                               </span>
-                            : <span className="text-xs text-gray-600">—</span>
+                            : <span className="text-xs text-[#7f8a9c]">—</span>
                           }
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`text-[10px] px-2 py-1 rounded-full border ${
+                          <span className={`text-[11px] px-2 py-1 rounded-full border ${
                             r.convertedToLead
                               ? 'bg-green-500/10 text-green-400 border-green-500/30'
-                              : 'bg-gray-800 text-gray-500 border-gray-700'
+                              : 'bg-gray-800 text-[#7f8a9c] border-gray-700'
                           }`}>
                             {r.convertedToLead ? '✓ Convertido' : 'Pendiente'}
                           </span>
@@ -1272,7 +1272,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => setViewRecord(r)}
-                              className="text-gray-600 hover:text-blue-400 transition-colors"
+                              className="text-[#7f8a9c] hover:text-blue-400 transition-colors"
                               title="Ver detalle"
                             >
                               <Eye size={15} />
@@ -1280,7 +1280,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                             {!r.convertedToLead && (
                               <button
                                 onClick={() => setConfirmConvert(r)}
-                                className="text-gray-600 hover:text-orange-400 transition-colors"
+                                className="text-[#7f8a9c] hover:text-orange-400 transition-colors"
                                 title="Convertir a Cliente"
                               >
                                 <CheckCircle2 size={15} />
@@ -1288,7 +1288,7 @@ export default function ProspectorTab({ onLeadsCreated, initialView = 'search' }
                             )}
                             <button
                               onClick={() => setConfirmDelete(r)}
-                              className="text-gray-600 hover:text-red-400 transition-colors"
+                              className="text-[#7f8a9c] hover:text-red-400 transition-colors"
                               title="Eliminar"
                             >
                               <Trash2 size={14} />

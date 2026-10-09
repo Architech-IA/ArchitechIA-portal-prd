@@ -507,9 +507,9 @@ function FaseStepper({ fases, onIr }: { fases: FaseProyecto[]; onIr: (t: TabKey)
           <div key={f.key} className="flex items-center gap-1 flex-shrink-0">
             <button type="button" disabled={!clickable} onClick={() => f.tab && onIr(f.tab)} title={f.hint}
               className={'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors ' + color[f.estado] + (clickable ? ' hover:brightness-125 cursor-pointer' : ' cursor-default')}>
-              {f.estado === 'hecho' ? <CheckCircle2 size={12} /> : <span className="text-[10px] opacity-70">{i + 1}</span>}
+              {f.estado === 'hecho' ? <CheckCircle2 size={12} /> : <span className="text-[11px] opacity-70">{i + 1}</span>}
               {f.label}
-              {f.estado === 'proximamente' && <span className="text-[9px] uppercase tracking-wide opacity-70">pronto</span>}
+              {f.estado === 'proximamente' && <span className="text-[10px] uppercase tracking-wide opacity-70">pronto</span>}
             </button>
             {i < fases.length - 1 && <span className="text-gray-700 text-xs">›</span>}
           </div>
@@ -656,8 +656,8 @@ function RichToolbar() {
       <button type="button" title="Alinear derecha" onMouseDown={on(() => execCmd('justifyRight'))} className={btnCls}><AlignRight size={13} /></button>
       <button type="button" title="Justificar" onMouseDown={on(() => execCmd('justifyFull'))} className={btnCls}><AlignJustify size={13} /></button>
       <div className="w-px h-4 bg-gray-700 mx-0.5" />
-      <button type="button" title="Aumentar tamaño" onMouseDown={on(() => stepFontSize(1))} className={btnCls + ' text-[10px] font-bold w-auto px-1.5'}>A+</button>
-      <button type="button" title="Disminuir tamaño" onMouseDown={on(() => stepFontSize(-1))} className={btnCls + ' text-[10px] font-bold w-auto px-1.5'}>A-</button>
+      <button type="button" title="Aumentar tamaño" onMouseDown={on(() => stepFontSize(1))} className={btnCls + ' text-[11px] font-bold w-auto px-1.5'}>A+</button>
+      <button type="button" title="Disminuir tamaño" onMouseDown={on(() => stepFontSize(-1))} className={btnCls + ' text-[11px] font-bold w-auto px-1.5'}>A-</button>
     </div>
   )
 }
@@ -1585,7 +1585,7 @@ export default function SolucionDetailPage() {
           <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${aiPanel && !aiOculto ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">
+            <p className="text-[11px] uppercase tracking-wide text-cyan-600 font-semibold">
               Asistente IA · {aiPanel?.itemId ? 'Requisito' : `Sección ${aiPanel?.n ?? ''}`}
             </p>
             <h3 className="text-base font-bold text-[#111827] truncate">{aiPanel?.titulo}</h3>
@@ -1691,7 +1691,7 @@ export default function SolucionDetailPage() {
                     </div>
                   )}
                   {aiChat.mensajes.length > 0 && aiChat.mensajes[aiChat.mensajes.length - 1]?.opciones?.length ? (
-                    <p className="px-6 pt-2 text-[10px] text-gray-400">O escribí tu propia respuesta:</p>
+                    <p className="px-6 pt-2 text-[11px] text-gray-400">O escribí tu propia respuesta:</p>
                   ) : null}
                   <div className="px-6 py-3 flex items-center gap-2">
                     <input type="text" value={aiChatInput} onChange={e => setAiChatInput(e.target.value)}
@@ -1768,7 +1768,7 @@ export default function SolucionDetailPage() {
                 </button>
               ))}
               {!aiPanel?.itemId && (
-                <p className="text-[10px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
+                <p className="text-[11px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
               )}
             </div>
           </div>
@@ -1921,7 +1921,7 @@ export default function SolucionDetailPage() {
       <div className="flex items-start">
       <aside className="hidden md:flex flex-col gap-3 w-64 shrink-0 p-3 sticky top-0 self-start max-h-screen overflow-y-auto print:hidden">
         <div className="rounded-2xl p-4" style={glassCard}>
-          <p className="text-[10px] uppercase tracking-wider text-slate-600 font-bold mb-3">Info solución</p>
+          <p className="text-[11px] uppercase tracking-wider text-slate-600 font-bold mb-3">Info solución</p>
           <dl className="space-y-2 text-[11px]">
             <div className="flex justify-between gap-3"><dt className="text-slate-600">Cliente</dt>
               <dd className="text-right font-normal truncate">
@@ -1946,7 +1946,7 @@ export default function SolucionDetailPage() {
         </div>
 
         <div className="rounded-2xl p-4" style={glassCard}>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Fases</p>
+          <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Fases</p>
           <ol className="relative">
             {fasesPanel.map((f, i) => {
               const clickable = !!f.tab && f.estado !== 'proximamente'
@@ -1955,12 +1955,12 @@ export default function SolucionDetailPage() {
                   {i < fasesPanel.length - 1 && <span className="absolute left-[13px] top-7 bottom-0 w-px bg-white/10" aria-hidden />}
                   <button type="button" disabled={!clickable} onClick={() => f.tab && setActiveTab(f.tab)} title={f.hint}
                     className={'w-full flex items-center gap-3 py-1.5 text-left ' + (clickable ? 'cursor-pointer group' : 'cursor-default')}>
-                    <span className={'relative z-10 w-[27px] h-[27px] rounded-full border flex items-center justify-center flex-shrink-0 text-[10px] font-semibold ' + faseColor[f.estado]}>
+                    <span className={'relative z-10 w-[27px] h-[27px] rounded-full border flex items-center justify-center flex-shrink-0 text-[11px] font-semibold ' + faseColor[f.estado]}>
                       {f.estado === 'hecho' ? <CheckCircle2 size={13} /> : i + 1}
                     </span>
                     <span className="min-w-0">
                       <span className={'block text-[13px] font-semibold truncate ' + (f.estado === 'proximamente' ? 'text-gray-600' : 'text-gray-200 group-hover:text-orange-300')}>{f.label}</span>
-                      <span className={'block text-[10px] ' + (f.estado === 'hecho' ? 'text-emerald-400/80' : f.estado === 'progreso' ? 'text-orange-300/80' : 'text-gray-600')}>{faseTxt[f.estado]}</span>
+                      <span className={'block text-[11px] ' + (f.estado === 'hecho' ? 'text-emerald-400/80' : f.estado === 'progreso' ? 'text-orange-300/80' : 'text-gray-600')}>{faseTxt[f.estado]}</span>
                     </span>
                   </button>
                 </li>
@@ -2056,7 +2056,7 @@ export default function SolucionDetailPage() {
                   {archInfo.fuentes.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
                       <span className="text-gray-500">Contexto usado:</span>
-                      {archInfo.fuentes.map(f => <span key={f} className="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-[10px] text-gray-300">{f}</span>)}
+                      {archInfo.fuentes.map(f => <span key={f} className="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-[11px] text-gray-300">{f}</span>)}
                     </div>
                   )}
                 </div>
@@ -2319,14 +2319,14 @@ export default function SolucionDetailPage() {
                         const puedeDisparar = t.status === 'BACKLOG' || t.status === 'FAILED'
                         return (
                           <div key={t.id} className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5">
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${ESTADO_TAREA_COLOR[t.status] ?? 'text-gray-400 border-gray-700'}`}>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${ESTADO_TAREA_COLOR[t.status] ?? 'text-gray-400 border-gray-700'}`}>
                               {t.status}
                             </span>
                             <span className="text-xs text-gray-300 flex-1 truncate" title={t.title}>
                               {t.taskCode ? `${t.taskCode} — ` : ''}{t.title}
                             </span>
                             {t.prdRequisitoId && (
-                              <span className="text-[9px] text-cyan-400/70 flex-shrink-0">PRD</span>
+                              <span className="text-[10px] text-cyan-400/70 flex-shrink-0">PRD</span>
                             )}
                             <button type="button" onClick={() => dispatchTarea(t.id)} disabled={!puedeDisparar || dispatchingTareaId === t.id}
                               title={puedeDisparar ? 'Disparar tarea' : 'Solo se puede disparar desde BACKLOG o FAILED'}
@@ -2379,7 +2379,7 @@ export default function SolucionDetailPage() {
                     {prd.personas.length > 0 && (
                       <table className="w-full border-collapse mb-1">
                         <thead>
-                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                          <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                             <th className="font-semibold pb-1 pr-2 w-40">Rol</th>
                             <th className="font-semibold pb-1">Necesidad principal</th>
                             <th className="w-6"></th>
@@ -2461,7 +2461,7 @@ export default function SolucionDetailPage() {
                             <option value="VERIFICADO">Verificado</option>
                           </select>
                           {r.backlogItemId && (
-                            <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                            <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
                               En backlog
                             </span>
                           )}
@@ -2479,7 +2479,7 @@ export default function SolucionDetailPage() {
                         <RichTextField value={r.texto} onChange={v => updateRequisito(r.id, { texto: v })}
                           placeholder={r.tipo === 'historia' ? 'Como [rol], quiero [acción], para [beneficio]' : 'Actor, precondiciones, flujo principal...'}
                           className={narrativeCls} />
-                        <p className="text-[10px] uppercase tracking-wide text-gray-400 mt-1.5 mb-0.5">Criterio de aceptación</p>
+                        <p className="text-[11px] uppercase tracking-wide text-gray-400 mt-1.5 mb-0.5">Criterio de aceptación</p>
                         <RichTextField value={r.criterioAceptacion} onChange={v => updateRequisito(r.id, { criterioAceptacion: v })}
                           placeholder="¿Cuándo se considera terminado este requisito?"
                           className={narrativeCls} />
@@ -2499,7 +2499,7 @@ export default function SolucionDetailPage() {
                     {prd.requisitosNoFuncionales.length > 0 && (
                       <table className="w-full border-collapse mb-1">
                         <thead>
-                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                          <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                             <th className="font-semibold pb-1 pr-2 w-36">Categoría</th>
                             <th className="font-semibold pb-1">Requisito</th>
                             <th className="w-6"></th>
@@ -2545,7 +2545,7 @@ export default function SolucionDetailPage() {
                     {prd.metricas.length > 0 && (
                       <table className="w-full border-collapse mb-1">
                         <thead>
-                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                          <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                             <th className="font-semibold pb-1 pr-2">KPI</th>
                             <th className="font-semibold pb-1 pr-2">Meta</th>
                             <th className="font-semibold pb-1">Cómo se mide</th>
@@ -2602,7 +2602,7 @@ export default function SolucionDetailPage() {
                 <div className="hidden xl:flex flex-col gap-1 fixed right-6 top-40 print:hidden z-10">
                   {Array.from({ length: totalSecciones }, (_, i) => i + 1).map(n => (
                     <button key={n} type="button" onClick={() => irASeccion(n)} title={`Ir a la sección ${n}`}
-                      className="w-6 h-6 rounded-full bg-gray-900/80 border border-gray-700 text-gray-400 hover:bg-cyan-900/60 hover:text-cyan-300 hover:border-cyan-600 text-[10px] font-semibold flex items-center justify-center transition-colors">
+                      className="w-6 h-6 rounded-full bg-gray-900/80 border border-gray-700 text-gray-400 hover:bg-cyan-900/60 hover:text-cyan-300 hover:border-cyan-600 text-[11px] font-semibold flex items-center justify-center transition-colors">
                       {n}
                     </button>
                   ))}
@@ -2708,7 +2708,7 @@ export default function SolucionDetailPage() {
                             <div className="overflow-x-auto">
                               <table className="w-full border-collapse mb-1">
                                 <thead>
-                                  <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                                     {cfg.cols.map(c => (
                                       <th key={c.campo} className={`font-semibold pb-1 pr-2 ${c.ancho ?? ''}`}>{c.label}</th>
                                     ))}
@@ -2800,7 +2800,7 @@ export default function SolucionDetailPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full border-collapse mb-1">
                         <thead>
-                          <tr className="text-left text-[10px] uppercase tracking-wide text-gray-400">
+                          <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                             {cfg.cols.map(c => (
                               <th key={c.campo} className={`font-semibold pb-1 pr-2 ${c.ancho ?? ''}`}>{c.label}</th>
                             ))}

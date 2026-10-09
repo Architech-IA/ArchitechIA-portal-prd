@@ -128,8 +128,8 @@ export default function InventarioPage() {
             className="cursor-pointer p-3 rounded-xl border transition-all"
             style={{ background: filtroTipo === t.tipo ? TIPO_COLOR[t.tipo] + '18' : 'rgba(255,255,255,0.02)', borderColor: filtroTipo === t.tipo ? TIPO_COLOR[t.tipo] + '40' : 'rgba(255,255,255,0.06)' }}>
             <p className="text-lg font-bold" style={{ color: TIPO_COLOR[t.tipo] }}>{t.count}</p>
-            <p className="text-xs text-gray-500 font-medium">{t.tipo.replace('_', ' ')}</p>
-            <p className="text-xs text-gray-600">{fmt(t.valor, 'USD')}</p>
+            <p className="text-xs text-[#7f8a9c] font-medium">{t.tipo.replace('_', ' ')}</p>
+            <p className="text-xs text-[#7f8a9c]">{fmt(t.valor, 'USD')}</p>
           </div>
         ))}
       </div>
@@ -151,7 +151,7 @@ export default function InventarioPage() {
           <thead>
             <tr className="border-b border-white/6 bg-white/2">
               {['Activo', 'Tipo', 'Estado', 'Valor', 'Proveedor', 'Responsable', 'Vencimiento', ''].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
@@ -163,13 +163,13 @@ export default function InventarioPage() {
                 </tr>
               ))
             ) : filtrados.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-500 text-sm">Sin activos registrados</td></tr>
+              <tr><td colSpan={8} className="px-4 py-12 text-center text-[#7f8a9c] text-sm">Sin activos registrados</td></tr>
             ) : filtrados.map(a => (
               <tr key={a.id} className="border-b border-white/4 hover:bg-white/2 transition-colors">
                 <td className="px-4 py-3">
                   <p className="text-sm font-semibold text-white">{a.nombre}</p>
-                  {a.serial && <p className="text-xs text-gray-500">S/N: {a.serial}</p>}
-                  {a.ubicacion && <p className="text-xs text-gray-600">{a.ubicacion}</p>}
+                  {a.serial && <p className="text-xs text-[#7f8a9c]">S/N: {a.serial}</p>}
+                  {a.ubicacion && <p className="text-xs text-[#7f8a9c]">{a.ubicacion}</p>}
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-xs font-bold px-2 py-1 rounded-md" style={{ background: TIPO_COLOR[a.tipo] + '18', color: TIPO_COLOR[a.tipo] }}>{a.tipo.replace('_', ' ')}</span>
@@ -180,11 +180,11 @@ export default function InventarioPage() {
                 <td className="px-4 py-3 text-sm font-semibold text-white">{fmt(a.valor, a.moneda)}</td>
                 <td className="px-4 py-3 text-sm text-gray-400">{a.proveedorNombre ?? '—'}</td>
                 <td className="px-4 py-3 text-sm text-gray-400">{a.responsable ?? '—'}</td>
-                <td className="px-4 py-3 text-xs text-gray-500">{a.fechaVencimiento ? new Date(a.fechaVencimiento).toLocaleDateString('es') : '—'}</td>
+                <td className="px-4 py-3 text-xs text-[#7f8a9c]">{a.fechaVencimiento ? new Date(a.fechaVencimiento).toLocaleDateString('es') : '—'}</td>
                 <td className="px-4 py-3">
                   {isAdmin && (
                     <div className="flex gap-2">
-                      <button onClick={e => openEdit(a, e)} className="text-xs text-gray-500 hover:text-white transition-colors">Editar</button>
+                      <button onClick={e => openEdit(a, e)} className="text-xs text-[#7f8a9c] hover:text-white transition-colors">Editar</button>
                       <button onClick={e => { e.stopPropagation(); setConfirmDel(a); }} className="text-xs text-red-500/60 hover:text-red-400 transition-colors">Eliminar</button>
                     </div>
                   )}
@@ -195,7 +195,7 @@ export default function InventarioPage() {
         </table>
         {filtrados.length > 0 && (
           <div className="px-4 py-3 border-t border-white/6 flex justify-between items-center bg-white/1">
-            <span className="text-xs text-gray-500">{filtrados.length} activos</span>
+            <span className="text-xs text-[#7f8a9c]">{filtrados.length} activos</span>
             <span className="text-sm font-bold text-white">Total: {fmt(totalValor, 'USD')}</span>
           </div>
         )}

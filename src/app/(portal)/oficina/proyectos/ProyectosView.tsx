@@ -101,14 +101,14 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
       {/* ── Columna A: proyectos ── */}
       <div className="w-60 flex-shrink-0 flex flex-col border-r border-white/5" style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[10px] text-gray-600">{lista.length}</span></div>
+          <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[11px] text-[#7f8a9c]">{lista.length}</span></div>
           <div className="relative">
-            <Search size={11} className="absolute left-2 top-2 text-gray-600" />
+            <Search size={11} className="absolute left-2 top-2 text-[#7f8a9c]" />
             <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Filtrar…" className="w-full rounded-lg pl-7 pr-2 py-1.5 text-[11px] text-gray-300 outline-none border border-white/10 focus:border-indigo-500/40 placeholder-gray-600" style={{ background: 'rgba(255,255,255,0.04)' }} />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-1">
-          {cargandoLista && <div className="flex justify-center py-6 text-gray-600"><Loader2 size={14} className="animate-spin" /></div>}
+          {cargandoLista && <div className="flex justify-center py-6 text-[#7f8a9c]"><Loader2 size={14} className="animate-spin" /></div>}
           {filtrada.map(p => (
             <button key={p.id} onClick={() => elegirProyecto(p.id)} className="w-full text-left rounded-lg px-2.5 py-2 transition-colors"
               style={p.id === pid ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.35)' } : { background: 'rgba(255,255,255,0.02)', border: '1px solid transparent' }}>
@@ -116,11 +116,11 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                 <span className={`text-[11px] font-medium truncate flex-1 ${p.id === pid ? 'text-white' : 'text-gray-300'}`}>{p.nombre}</span>
                 {p.propuestasPendientes > 0 && <span title="Propuestas de memoria pendientes" className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
               </div>
-              <p className="text-[9px] text-gray-600 mt-0.5 truncate">
+              <p className="text-[10px] text-[#7f8a9c] mt-0.5 truncate">
                 {p.codigo ? `${p.codigo} · ` : ''}{p.sesiones} sesión{p.sesiones === 1 ? '' : 'es'}{p.ultimaActividad ? ` · ${hace(p.ultimaActividad)}` : ''}
               </p>
             </button>))}
-          {!cargandoLista && filtrada.length === 0 && <p className="text-[10px] text-gray-600 text-center py-4">Sin resultados.</p>}
+          {!cargandoLista && filtrada.length === 0 && <p className="text-[11px] text-[#7f8a9c] text-center py-4">Sin resultados.</p>}
         </div>
       </div>
 
@@ -130,7 +130,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
           <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-2">
             <FolderKanban size={30} className="text-indigo-400/60" />
             <p className="text-sm text-gray-200 font-medium">Elige un proyecto</p>
-            <p className="text-[12px] text-gray-500 max-w-md">Cada proyecto es una Solución. Aquí tiene sus conversaciones con la IA — todas guardadas, con el contexto vivo del proyecto, su memoria, sus adjuntos y automatizaciones.</p>
+            <p className="text-[12px] text-[#7f8a9c] max-w-md">Cada proyecto es una Solución. Aquí tiene sus conversaciones con la IA — todas guardadas, con el contexto vivo del proyecto, su memoria, sus adjuntos y automatizaciones.</p>
           </div>)}
 
         {pid && (
@@ -139,13 +139,13 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
             <div className="flex-shrink-0 border-b border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
               <div className="flex items-center gap-2 px-4 pt-2.5">
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
-                {det && <span className="text-[9px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
+                {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
                 <span className="flex-1" />
-                <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-200" title="Abrir el hub de la solución"><ExternalLink size={11} /> Hub de la solución</a>
-                <button onClick={() => setPanelAbierto(o => !o)} className="text-gray-500 hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
+                <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución"><ExternalLink size={11} /> Hub de la solución</a>
+                <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
               <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
-                {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-gray-600" />}
+                {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-[#7f8a9c]" />}
                 {det?.sesiones.map(s => (
                   <button key={s.id} onClick={() => { setSid(s.id); setNueva(false) }} title={`${ETIQUETA_TIPO[s.tipo as TipoSesion] ?? s.tipo} · ${s.creadaPorNombre} · ${s.mensajes} mensajes`}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 max-w-[200px] transition-colors"
@@ -159,12 +159,12 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
 
               {nueva && (
                 <div className="mx-4 mb-3 rounded-xl p-3 space-y-2" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div className="flex items-center justify-between"><span className="text-[11px] font-semibold text-gray-200">¿Qué tipo de sesión?</span><button onClick={() => setNueva(false)} className="text-gray-500 hover:text-gray-200"><X size={13} /></button></div>
+                  <div className="flex items-center justify-between"><span className="text-[11px] font-semibold text-gray-200">¿Qué tipo de sesión?</span><button onClick={() => setNueva(false)} className="text-[#7f8a9c] hover:text-gray-200"><X size={13} /></button></div>
                   <div className="grid grid-cols-2 gap-2">
                     {TIPOS_NUEVOS.map(t => (
                       <button key={t} onClick={() => setTipoNueva(t)} className="text-left rounded-lg px-3 py-2 transition-colors" style={tipoNueva === t ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.45)' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-200"><span className="w-1.5 h-1.5 rounded-full" style={{ background: COLOR_TIPO[t] }} />{ETIQUETA_TIPO[t]}</span>
-                        <span className="block text-[10px] text-gray-500 mt-0.5 leading-snug">{DESCRIPCION_TIPO[t]}</span>
+                        <span className="block text-[11px] text-[#7f8a9c] mt-0.5 leading-snug">{DESCRIPCION_TIPO[t]}</span>
                       </button>))}
                   </div>
                   <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                 <div className="h-full flex flex-col items-center justify-center text-center px-8 gap-3">
                   <MessageSquare size={26} className="text-indigo-400/60" />
                   <p className="text-[13px] text-gray-200 font-medium">Este proyecto todavía no tiene sesiones</p>
-                  <p className="text-[12px] text-gray-500 max-w-md">Empieza una: la IA ya conoce la ficha, el PRD, el diseño, el backlog y todo lo que agregues a la memoria y los adjuntos.</p>
+                  <p className="text-[12px] text-[#7f8a9c] max-w-md">Empieza una: la IA ya conoce la ficha, el PRD, el diseño, el backlog y todo lo que agregues a la memoria y los adjuntos.</p>
                   <button onClick={() => setNueva(true)} className="px-4 py-2 rounded-lg text-[12px] font-semibold text-white" style={{ background: 'rgba(99,102,241,0.85)' }}>Crear la primera sesión</button>
                 </div>)}
             </div>
@@ -199,9 +199,9 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
           <div className="flex border-b border-white/5 flex-shrink-0">
             {TABS.map(t => (
               <button key={t.k} onClick={() => setPanel(t.k)} title={t.txt} className="flex-1 flex flex-col items-center gap-0.5 py-2 relative transition-colors"
-                style={panel === t.k ? { color: '#c7d2fe', borderBottom: '2px solid #6366f1', background: 'rgba(99,102,241,0.08)' } : { color: '#6b7280', borderBottom: '2px solid transparent' }}>
-                <t.icono size={14} /><span className="text-[9px] font-medium">{t.txt}</span>
-                {!!t.badge && <span className="absolute top-1 right-2 min-w-[14px] h-[14px] rounded-full text-[8px] font-bold flex items-center justify-center text-white px-1" style={{ background: t.k === 'memoria' ? '#f59e0b' : '#6366f1' }}>{t.badge}</span>}
+                style={panel === t.k ? { color: '#c7d2fe', borderBottom: '2px solid #6366f1', background: 'rgba(99,102,241,0.08)' } : { color: '#7f8a9c', borderBottom: '2px solid transparent' }}>
+                <t.icono size={14} /><span className="text-[10px] font-medium">{t.txt}</span>
+                {!!t.badge && <span className="absolute top-1 right-2 min-w-[14px] h-[14px] rounded-full text-[10px] font-bold flex items-center justify-center text-white px-1" style={{ background: t.k === 'memoria' ? '#f59e0b' : '#6366f1' }}>{t.badge}</span>}
               </button>))}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">

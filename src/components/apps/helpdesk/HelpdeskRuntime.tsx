@@ -111,14 +111,14 @@ export default function HelpdeskRuntime({ app }: { app: AppInstance }) {
         {/* Filters */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="flex flex-1 items-center gap-2 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2">
-            <Search className="h-4 w-4 text-gray-500" />
+            <Search className="h-4 w-4 text-[#7f8a9c]" />
             <input
               type="text"
               placeholder="Buscar tickets..."
               className="flex-1 border-none bg-transparent text-sm text-white outline-none placeholder-gray-600"
             />
           </div>
-          <div className="text-xs text-gray-500">SLA estándar: {slaHours}h</div>
+          <div className="text-xs text-[#7f8a9c]">SLA estándar: {slaHours}h</div>
         </div>
 
         {/* Table */}
@@ -139,7 +139,7 @@ export default function HelpdeskRuntime({ app }: { app: AppInstance }) {
               <tbody>
                 {DUMMY_TICKETS.map((ticket) => (
                   <tr key={ticket.id} className="border-b border-gray-800 last:border-0 hover:bg-white/5">
-                    <td className="px-4 py-3 text-gray-500">{ticket.id}</td>
+                    <td className="px-4 py-3 text-[#7f8a9c]">{ticket.id}</td>
                     <td className="px-4 py-3 font-medium text-white">{ticket.subject}</td>
                     <td className="px-4 py-3 text-gray-400">{ticket.requester}</td>
                     <td className="px-4 py-3 text-gray-400">{ticket.category}</td>
@@ -165,7 +165,7 @@ export default function HelpdeskRuntime({ app }: { app: AppInstance }) {
         {/* Categories & priorities reference */}
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-            <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Categorías</h4>
+            <h4 className="mb-2 text-xs font-semibold uppercase text-[#7f8a9c]">Categorías</h4>
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
                 <span key={cat} className="rounded-full border border-gray-700 bg-gray-950 px-2.5 py-1 text-xs text-gray-400">
@@ -175,7 +175,7 @@ export default function HelpdeskRuntime({ app }: { app: AppInstance }) {
             </div>
           </div>
           <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-            <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Prioridades</h4>
+            <h4 className="mb-2 text-xs font-semibold uppercase text-[#7f8a9c]">Prioridades</h4>
             <div className="flex flex-wrap gap-2">
               {priorities.map((p) => (
                 <span key={p} className="rounded-full border border-gray-700 bg-gray-950 px-2.5 py-1 text-xs text-gray-400">

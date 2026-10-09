@@ -22,7 +22,7 @@ const inputSt: React.CSSProperties = {
   borderRadius: '7px', padding: '7px 11px', color: '#e2e8f0',
   fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box',
 };
-const labelSt: React.CSSProperties = { fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '5px' };
+const labelSt: React.CSSProperties = { fontSize: '11px', color: '#7f8a9c', display: 'block', marginBottom: '5px' };
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 export default function WorkflowsPage() {
@@ -120,7 +120,7 @@ export default function WorkflowsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: ar.color, boxShadow: `0 0 6px ${ar.color}` }} />
               <h2 style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: ar.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ar.label}</h2>
-              <span style={{ fontSize: '11px', color: '#334155', marginLeft: '4px' }}>{items.length} proceso{items.length !== 1 ? 's' : ''}</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c', marginLeft: '4px' }}>{items.length} proceso{items.length !== 1 ? 's' : ''}</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
@@ -131,7 +131,7 @@ export default function WorkflowsPage() {
       })}
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '64px 0', color: '#334155' }}>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: '#7f8a9c' }}>
           <p style={{ fontSize: '14px' }}>No hay procesos que coincidan</p>
         </div>
       )}
@@ -145,7 +145,7 @@ export default function WorkflowsPage() {
           <div style={{ background: 'rgba(10,10,28,0.97)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '28px', width: '500px', maxWidth: '95vw', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', backdropFilter: 'blur(24px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#f1f5f9' }}>Nuevo Proceso</h3>
-              <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>×</button>
+              <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', color: '#7f8a9c', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>×</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -187,7 +187,7 @@ export default function WorkflowsPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '24px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowCreate(false)} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#64748b', fontSize: '13px', cursor: 'pointer' }}>
+              <button onClick={() => setShowCreate(false)} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#7f8a9c', fontSize: '13px', cursor: 'pointer' }}>
                 Cancelar
               </button>
               <button onClick={handleCreate} disabled={!form.nombre.trim()} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: form.nombre.trim() ? 'linear-gradient(135deg,#f97316,#ea580c)' : 'rgba(255,255,255,0.06)', color: form.nombre.trim() ? 'white' : '#334155', fontSize: '13px', fontWeight: 700, cursor: form.nombre.trim() ? 'pointer' : 'default' }}>
@@ -223,18 +223,18 @@ function ProcessCard({ p, onClick }: { p: Proceso; onClick: () => void }) {
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: ar.bg, color: ar.color, border: `1px solid ${ar.border}` }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px', background: ar.bg, color: ar.color, border: `1px solid ${ar.border}` }}>
             {ar.label}
           </span>
-          <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', color: '#64748b', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', color: '#7f8a9c', border: '1px solid rgba(255,255,255,0.07)' }}>
             {TIPOS[p.tipo]}
           </span>
         </div>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
           {p.hasWorkflow && (
-            <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: 'rgba(249,115,22,0.12)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)', letterSpacing: '0.04em' }}>⚡ AUTO</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: 'rgba(249,115,22,0.12)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)', letterSpacing: '0.04em' }}>⚡ AUTO</span>
           )}
-          <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: p.estado === 'activo' ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.05)', color: p.estado === 'activo' ? '#34d399' : '#475569', border: `1px solid ${p.estado === 'activo' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.07)'}` }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: p.estado === 'activo' ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.05)', color: p.estado === 'activo' ? '#34d399' : '#475569', border: `1px solid ${p.estado === 'activo' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.07)'}` }}>
             {p.estado === 'activo' ? 'Activo' : 'Borrador'}
           </span>
         </div>
@@ -242,13 +242,13 @@ function ProcessCard({ p, onClick }: { p: Proceso; onClick: () => void }) {
 
       {/* Name */}
       <h3 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 700, color: '#e2e8f0', lineHeight: 1.3 }}>{p.nombre}</h3>
-      <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#475569', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.desc}</p>
+      <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#7f8a9c', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.desc}</p>
 
       {/* Meta row */}
       <div style={{ display: 'flex', gap: '14px', marginBottom: '12px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '11px', color: '#475569' }}>👤 {p.responsable || '—'}</span>
-        {p.sla && <span style={{ fontSize: '11px', color: '#475569' }}>⏱ {p.sla}</span>}
-        <span style={{ fontSize: '11px', color: '#475569' }}>{p.pasos.length} pasos</span>
+        <span style={{ fontSize: '11px', color: '#7f8a9c' }}>👤 {p.responsable || '—'}</span>
+        {p.sla && <span style={{ fontSize: '11px', color: '#7f8a9c' }}>⏱ {p.sla}</span>}
+        <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{p.pasos.length} pasos</span>
       </div>
 
       {/* Steps breakdown bar */}
@@ -266,7 +266,7 @@ function ProcessCard({ p, onClick }: { p: Proceso; onClick: () => void }) {
               const colors: Record<string, string> = { automatizado: '#60a5fa', manual: '#64748b', decision: '#fbbf24' };
               const labels: Record<string, string> = { automatizado: 'Auto', manual: 'Manual', decision: 'Decisión' };
               return (
-                <span key={tipo} style={{ fontSize: '10px', color: colors[tipo] }}>{count} {labels[tipo]}</span>
+                <span key={tipo} style={{ fontSize: '11px', color: colors[tipo] }}>{count} {labels[tipo]}</span>
               );
             })}
           </div>

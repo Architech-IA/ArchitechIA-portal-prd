@@ -79,7 +79,7 @@ function AppTypeCard({ type }: { type: AppTypeDefinition }) {
         <Icon className="h-7 w-7" />
       </div>
       <h3 className="mb-1 text-lg font-semibold text-white">{type.name}</h3>
-      <p className="text-sm text-gray-500">{type.description}</p>
+      <p className="text-sm text-[#7f8a9c]">{type.description}</p>
       <div className="mt-4 flex items-center gap-2">
         <span className="rounded-full border border-gray-700 bg-gray-950 px-2 py-0.5 text-xs text-gray-400 capitalize">
           {type.category}

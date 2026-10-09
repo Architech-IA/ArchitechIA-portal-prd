@@ -53,7 +53,7 @@ function FinanceHub() {
               className={`px-4 py-2.5 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 flex-shrink-0 ${
                 active
                   ? 'border-b-orange-500 bg-orange-500/[0.07] text-orange-400'
-                  : 'border-b-transparent bg-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
+                  : 'border-b-transparent bg-transparent text-[#7f8a9c] hover:text-slate-300 hover:bg-white/[0.04]'
               }`}
             >
               {t.label}

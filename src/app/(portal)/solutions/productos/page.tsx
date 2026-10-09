@@ -256,7 +256,7 @@ export default function ProductosPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${TIPO_BADGE[entry.tipo]}`}>
                           {entry.tipo === 'feature' ? '✨ feature' : '🔧 fix'}
                         </span>
-                        <span className="text-xs text-gray-500">{entry.fecha}</span>
+                        <span className="text-xs text-[#7f8a9c]">{entry.fecha}</span>
                       </div>
                       <p className="text-gray-300 text-sm">{entry.descripcion}</p>
                     </div>
@@ -319,7 +319,7 @@ export default function ProductosPage() {
               <span className="px-2 py-0.5 text-xs bg-orange-900/30 text-orange-400 rounded-full border border-orange-800/40">
                 {soluciones.filter(s => s.tipo === 'PROJECT').length}
               </span>
-              <ArrowRight className="text-gray-600 group-hover:text-orange-400 transition-colors" size={18} />
+              <ArrowRight className="text-[#7f8a9c] group-hover:text-orange-400 transition-colors" size={18} />
             </div>
           </div>
           <h3 className="text-white font-semibold mb-1">Projects</h3>
@@ -337,7 +337,7 @@ export default function ProductosPage() {
               <span className="px-2 py-0.5 text-xs bg-cyan-900/30 text-cyan-400 rounded-full border border-cyan-800/40">
                 {soluciones.filter(s => s.tipo === 'DEMO').length}
               </span>
-              <ArrowRight className="text-gray-600 group-hover:text-cyan-400 transition-colors" size={18} />
+              <ArrowRight className="text-[#7f8a9c] group-hover:text-cyan-400 transition-colors" size={18} />
             </div>
           </div>
           <h3 className="text-white font-semibold mb-1">Pilots</h3>
@@ -355,7 +355,7 @@ export default function ProductosPage() {
               <span className="px-2 py-0.5 text-xs bg-violet-900/30 text-violet-400 rounded-full border border-violet-800/40">
                 {soluciones.filter(s => s.tipo === 'PARTNERSHIP').length}
               </span>
-              <ArrowRight className="text-gray-600 group-hover:text-violet-400 transition-colors" size={18} />
+              <ArrowRight className="text-[#7f8a9c] group-hover:text-violet-400 transition-colors" size={18} />
             </div>
           </div>
           <h3 className="text-white font-semibold mb-1">Partnership</h3>
@@ -373,7 +373,7 @@ export default function ProductosPage() {
               <span className="px-2 py-0.5 text-xs bg-emerald-900/30 text-emerald-400 rounded-full border border-emerald-800/40">
                 {soluciones.filter(s => s.tipo === 'INTERN').length}
               </span>
-              <ArrowRight className="text-gray-600 group-hover:text-emerald-400 transition-colors" size={18} />
+              <ArrowRight className="text-[#7f8a9c] group-hover:text-emerald-400 transition-colors" size={18} />
             </div>
           </div>
           <h3 className="text-white font-semibold mb-1">Intern</h3>
@@ -404,7 +404,7 @@ export default function ProductosPage() {
             <div className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded-full">{p.estado}</span>
-                <span className="text-xs text-gray-500">{p.tecnologias.length} tecnologías</span>
+                <span className="text-xs text-[#7f8a9c]">{p.tecnologias.length} tecnologías</span>
               </div>
               <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">{p.descripcion}</p>
               <div className="flex flex-wrap gap-1.5 mt-4">
@@ -416,7 +416,7 @@ export default function ProductosPage() {
                 )}
               </div>
               <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-between">
-                <span className="text-xs text-gray-500">Ver detalles</span>
+                <span className="text-xs text-[#7f8a9c]">Ver detalles</span>
                 <div className="flex items-center gap-2">
                   {isAdmin && (
                     <>
@@ -424,7 +424,7 @@ export default function ProductosPage() {
                       <button onClick={e => { e.stopPropagation(); setConfirmDel(p); }} className="text-xs text-gray-400 hover:text-red-400 transition-colors px-1">Eliminar</button>
                     </>
                   )}
-                  <svg className="w-4 h-4 text-gray-500 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-[#7f8a9c] group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -503,7 +503,7 @@ export default function ProductosPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Tecnologías <span className="text-gray-500 font-normal">(separadas por coma)</span>
+                  Tecnologías <span className="text-[#7f8a9c] font-normal">(separadas por coma)</span>
                 </label>
                 <input type="text" value={formData.tecnologias}
                   onChange={e => setFormData({...formData, tecnologias: e.target.value})}
@@ -513,7 +513,7 @@ export default function ProductosPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Características <span className="text-gray-500 font-normal">(una por línea)</span>
+                  Características <span className="text-[#7f8a9c] font-normal">(una por línea)</span>
                 </label>
                 <textarea value={formData.caracteristicas} rows={4}
                   onChange={e => setFormData({...formData, caracteristicas: e.target.value})}

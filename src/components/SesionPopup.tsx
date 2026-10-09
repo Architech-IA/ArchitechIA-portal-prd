@@ -104,7 +104,7 @@ function renderTextBlock(block: string, bk: string) {
 export function renderBody(body: string, kp: string) {
   const segs = splitFences(body)
   if (!segs.some(s => s.content.trim()))
-    return <p className="text-gray-600 text-sm italic">Sin contenido.</p>
+    return <p className="text-[#7f8a9c] text-sm italic">Sin contenido.</p>
   return segs.map((seg, si) => {
     const sk = `${kp}-seg${si}`
     if (seg.type === 'code') {
@@ -160,7 +160,7 @@ export default function SesionPopup({ sesion, onClose, extraTabs = [], defaultTa
         return (
           <div className="py-1 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-gray-500">Copiá este prompt al iniciar la sesión en Claude Code.</p>
+              <p className="text-xs text-[#7f8a9c]">Copiá este prompt al iniciar la sesión en Claude Code.</p>
               <button
                 onClick={copyPrompt}
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/25 transition-colors flex-shrink-0"
@@ -197,12 +197,12 @@ export default function SesionPopup({ sesion, onClose, extraTabs = [], defaultTa
             {sesion.numero}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Sesión {sesion.numero}</p>
+            <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider mb-0.5">Sesión {sesion.numero}</p>
             <h3 className="text-white font-semibold text-sm leading-tight">{sesion.titulo}</h3>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors flex-shrink-0"
+            className="text-[#7f8a9c] hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors flex-shrink-0"
           >
             <X size={15} />
           </button>
@@ -219,7 +219,7 @@ export default function SesionPopup({ sesion, onClose, extraTabs = [], defaultTa
                 'px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
                 activeTab === tab.key
                   ? 'text-cyan-300 border-cyan-400 bg-cyan-500/5'
-                  : 'text-gray-500 border-transparent hover:text-gray-300 hover:border-gray-700',
+                  : 'text-[#7f8a9c] border-transparent hover:text-gray-300 hover:border-gray-700',
               ].join(' ')}
             >
               {tab.label}

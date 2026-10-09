@@ -204,7 +204,7 @@ export default function PocSolutionPage() {
               </div>
               <div>
                 <p className="text-lg font-bold text-white leading-none">{s.value}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">{s.label}</p>
+                <p className="text-[11px] text-[#7f8a9c] mt-0.5">{s.label}</p>
               </div>
             </div>
           )
@@ -220,7 +220,7 @@ export default function PocSolutionPage() {
             <h2 className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#06b6d4' }}>
               Timeline PoCs activas
             </h2>
-            <span className="text-[10px] text-gray-600 ml-auto">
+            <span className="text-[11px] text-[#7f8a9c] ml-auto">
               {ganttMin.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' })}
               {' → '}
               {ganttMax.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' })}
@@ -246,7 +246,7 @@ export default function PocSolutionPage() {
                       }}
                       title={`${f.fase} (${f.estado})`}
                     >
-                      <span className="text-[9px] font-medium text-white truncate">{f.fase}</span>
+                      <span className="text-[10px] font-medium text-white truncate">{f.fase}</span>
                     </div>
                   ))}
                 </div>
@@ -257,7 +257,7 @@ export default function PocSolutionPage() {
             {[['completado','#10b981'],['activo','#06b6d4'],['pendiente','#374151']].map(([lbl,col]) => (
               <div key={lbl} className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-sm" style={{ background: col }} />
-                <span className="text-[10px] text-gray-500 capitalize">{lbl}</span>
+                <span className="text-[11px] text-[#7f8a9c] capitalize">{lbl}</span>
               </div>
             ))}
           </div>
@@ -307,7 +307,7 @@ export default function PocSolutionPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-10" style={{ background: 'rgba(255,255,255,0.01)' }}>
-            <p className="text-sm text-gray-500">No hay PoCs {filter !== 'todos' ? `(${filter})` : ''}</p>
+            <p className="text-sm text-[#7f8a9c]">No hay PoCs {filter !== 'todos' ? `(${filter})` : ''}</p>
           </div>
         ) : (
           <div className="divide-y" style={{ background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)' }}>
@@ -328,12 +328,12 @@ export default function PocSolutionPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <p className="text-sm font-medium text-white truncate">{p.nombre}</p>
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
+                      <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
                         style={{ background: estadoMeta.bg, color: estadoMeta.text }}>
                         {p.estado}
                       </span>
                     </div>
-                    {p.lead && <p className="text-xs text-gray-500">{p.lead.companyName}</p>}
+                    {p.lead && <p className="text-xs text-[#7f8a9c]">{p.lead.companyName}</p>}
                   </div>
 
                   {/* Value */}
@@ -345,7 +345,7 @@ export default function PocSolutionPage() {
                   )}
 
                   {/* Week counter */}
-                  <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0 w-12">
+                  <div className="flex items-center gap-1 text-xs text-[#7f8a9c] flex-shrink-0 w-12">
                     <Clock size={11} />
                     {weeks}w
                   </div>
@@ -354,8 +354,8 @@ export default function PocSolutionPage() {
                   {fases.length > 0 ? (
                     <div className="flex-shrink-0 w-32">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] text-gray-500">{progress}%</span>
-                        <span className="text-[10px] text-gray-600">{fases.filter(f => f.estado === 'completado').length}/{fases.length} fases</span>
+                        <span className="text-[11px] text-[#7f8a9c]">{progress}%</span>
+                        <span className="text-[11px] text-[#7f8a9c]">{fases.filter(f => f.estado === 'completado').length}/{fases.length} fases</span>
                       </div>
                       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                         <div className="h-full rounded-full transition-all"
@@ -364,7 +364,7 @@ export default function PocSolutionPage() {
                     </div>
                   ) : (
                     <div className="flex-shrink-0 w-32">
-                      <p className="text-[10px] text-gray-600 text-right">Sin cronograma</p>
+                      <p className="text-[11px] text-[#7f8a9c] text-right">Sin cronograma</p>
                     </div>
                   )}
                 </div>
@@ -396,7 +396,7 @@ export default function PocSolutionPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[10px] font-bold tracking-widest" style={{ color: s.color + '80' }}>{s.num}</span>
+                      <span className="text-[11px] font-bold tracking-widest" style={{ color: s.color + '80' }}>{s.num}</span>
                       <h3 className="text-sm font-semibold text-white">{s.title}</h3>
                     </div>
                     <p className="text-xs text-gray-400 leading-relaxed">{s.desc}</p>
@@ -418,7 +418,7 @@ export default function PocSolutionPage() {
             <div className="flex items-center justify-between px-6 py-4"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(6,182,212,0.06)' }}>
               <h2 className="text-sm font-semibold text-white">Nueva PoC</h2>
-              <button onClick={() => { if (!saving) setShowModal(false) }} className="text-gray-500 hover:text-gray-300">
+              <button onClick={() => { if (!saving) setShowModal(false) }} className="text-[#7f8a9c] hover:text-gray-300">
                 <X size={15} />
               </button>
             </div>
@@ -426,7 +426,7 @@ export default function PocSolutionPage() {
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5">Lead asociado *</label>
                 {loadingLeads ? (
-                  <div className="flex items-center gap-2 text-gray-500 text-xs py-2">
+                  <div className="flex items-center gap-2 text-[#7f8a9c] text-xs py-2">
                     <Loader2 size={13} className="animate-spin" /> Cargando leads…
                   </div>
                 ) : (
@@ -440,7 +440,7 @@ export default function PocSolutionPage() {
                   </select>
                 )}
                 {!loadingLeads && availableLeads.length === 0 && (
-                  <p className="text-gray-600 text-xs mt-1">No hay leads sin PoC asociada.</p>
+                  <p className="text-[#7f8a9c] text-xs mt-1">No hay leads sin PoC asociada.</p>
                 )}
               </div>
               <div>
@@ -448,7 +448,7 @@ export default function PocSolutionPage() {
                 <input type="text" value={nombre} onChange={e => setNombre(e.target.value)}
                   placeholder="Ej. Empresa XYZ — Demo" disabled={saving} style={inputStyle} />
               </div>
-              <p className="text-xs text-gray-600">Arquitectura, plan y cronograma se completan en la página de la PoC.</p>
+              <p className="text-xs text-[#7f8a9c]">Arquitectura, plan y cronograma se completan en la página de la PoC.</p>
               {error && <p className="text-xs text-red-400">{error}</p>}
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => setShowModal(false)} disabled={saving}

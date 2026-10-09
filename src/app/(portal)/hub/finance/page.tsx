@@ -116,7 +116,7 @@ const G = {
   modal: { background: 'rgba(8,8,26,0.97)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', backdropFilter: 'blur(24px)' } as React.CSSProperties,
   input: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9px', color: '#f1f5f9', outline: 'none', width: '100%', padding: '8px 12px', fontSize: '13px' } as React.CSSProperties,
 };
-const lbl: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' };
+const lbl: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' };
 const fmt = (n: number) => `$${n.toLocaleString('es-CO')}`;
 
 const PERIODOS = ['2025-Q1','2025-Q2','2025-Q3','2025-Q4','2026-Q1'];
@@ -170,8 +170,8 @@ function EmptyState({ icon, title, sub }: { icon: string; title: string; sub: st
         <div style={{ width:'52px', height:'52px', borderRadius:'14px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d={icon}/></svg>
         </div>
-        <p style={{ margin:0, fontSize:'14px', fontWeight:600, color:'#475569' }}>{title}</p>
-        <p style={{ margin:'4px 0 0', fontSize:'12px', color:'#334155' }}>{sub}</p>
+        <p style={{ margin:0, fontSize:'14px', fontWeight:600, color: '#7f8a9c' }}>{title}</p>
+        <p style={{ margin:'4px 0 0', fontSize:'12px', color: '#7f8a9c' }}>{sub}</p>
       </div>
     </td></tr>
   );
@@ -184,7 +184,7 @@ function Modal({ title, onClose, children, width = 560 }: { title: string; onClo
       <div style={{ ...G.modal, padding:'28px', width:'100%', maxWidth:`${width}px`, maxHeight:'90vh', overflowY:'auto' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
           <h2 style={{ margin:0, fontSize:'18px', fontWeight:800, color:'#f1f5f9' }}>{title}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'#475569', cursor:'pointer', fontSize:'22px', lineHeight:1 }}>×</button>
+          <button onClick={onClose} style={{ background:'none', border:'none', color: '#7f8a9c', cursor:'pointer', fontSize:'22px', lineHeight:1 }}>×</button>
         </div>
         {children}
       </div>
@@ -237,7 +237,7 @@ export default function FinancePage() {
           </div>
           <div>
             <h1 style={{ margin:0, fontSize:'22px', fontWeight:800, color:'#f1f5f9', letterSpacing:'-0.01em' }}>Finance</h1>
-            <p style={{ margin:'2px 0 0', fontSize:'13px', color:'#475569' }}>Control financiero · Flujo de caja · Presupuestos · Conciliación</p>
+            <p style={{ margin:'2px 0 0', fontSize:'13px', color: '#7f8a9c' }}>Control financiero · Flujo de caja · Presupuestos · Conciliación</p>
           </div>
         </div>
       </div>
@@ -321,13 +321,13 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
           <div key={k.label} style={{ ...G.card, padding:'20px', background:k.glow, boxShadow:`0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.06)`, position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', top:0, right:0, width:'80px', height:'80px', background:`radial-gradient(circle at 100% 0%, ${k.color}18, transparent 70%)`, borderRadius:'14px' }} />
             <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'12px' }}>
-              <p style={{ margin:0, fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
+              <p style={{ margin:0, fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
               <div style={{ width:'30px', height:'30px', borderRadius:'8px', background:`${k.color}15`, border:`1px solid ${k.color}30`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={k.color} strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d={k.icon}/></svg>
               </div>
             </div>
             <p style={{ margin:0, fontSize:'26px', fontWeight:800, color:k.color, letterSpacing:'-0.02em', lineHeight:1 }}>{k.value}</p>
-            <p style={{ margin:'6px 0 0', fontSize:'11px', color:'#334155' }}>{k.sub}</p>
+            <p style={{ margin:'6px 0 0', fontSize:'11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -353,7 +353,7 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
           <thead>
             <tr style={{ background:'rgba(255,255,255,0.03)', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
               {['Fecha','Concepto','Centro','Categoría','Estado','Monto'].map(h=>(
-                <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
+                <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -367,17 +367,17 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
                   onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(52,211,153,0.04)'}
                   onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='transparent'}
                 >
-                  <td style={{ padding:'12px 16px', fontSize:'12px', color:'#64748b', whiteSpace:'nowrap' }}>{new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})}</td>
+                  <td style={{ padding:'12px 16px', fontSize:'12px', color: '#7f8a9c', whiteSpace:'nowrap' }}>{new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})}</td>
                   <td style={{ padding:'12px 16px' }}>
                     <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{m.concepto}</p>
-                    {m.referencia && <p style={{ margin:'2px 0 0', fontSize:'11px', color:'#334155', fontFamily:'monospace' }}>{m.referencia}</p>}
+                    {m.referencia && <p style={{ margin:'2px 0 0', fontSize:'11px', color: '#7f8a9c', fontFamily:'monospace' }}>{m.referencia}</p>}
                   </td>
                   <td style={{ padding:'12px 16px', whiteSpace:'nowrap' }}>
                     {c && <span style={{ padding:'3px 9px', fontSize:'11px', fontWeight:600, borderRadius:'20px', background:c.color+'18', color:c.color, border:`1px solid ${c.color}35` }}>{c.nombre}</span>}
                   </td>
-                  <td style={{ padding:'12px 16px', fontSize:'12px', color:'#64748b', whiteSpace:'nowrap' }}>{m.categoria}</td>
+                  <td style={{ padding:'12px 16px', fontSize:'12px', color: '#7f8a9c', whiteSpace:'nowrap' }}>{m.categoria}</td>
                   <td style={{ padding:'12px 16px', whiteSpace:'nowrap' }}>
-                    <span style={{ padding:'3px 9px', fontSize:'10px', fontWeight:700, borderRadius:'20px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24', border:`1px solid ${m.estado==='confirmado'?'rgba(52,211,153,0.2)':'rgba(251,191,36,0.2)'}` }}>
+                    <span style={{ padding:'3px 9px', fontSize: '11px', fontWeight:700, borderRadius:'20px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24', border:`1px solid ${m.estado==='confirmado'?'rgba(52,211,153,0.2)':'rgba(251,191,36,0.2)'}` }}>
                       {m.estado==='confirmado'?'✓ Confirmado':'⏳ Pendiente'}
                     </span>
                   </td>
@@ -443,14 +443,14 @@ function FlujoCaja({ movs, centros, onSave }: { movs: Movimiento[]; centros: Cen
                 { label:'Referencia', val:selMov.referencia||'—' },
               ].map(f=>(
                 <div key={f.label} style={{ ...G.panel, padding:'12px 14px' }}>
-                  <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{f.label}</p>
+                  <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>{f.label}</p>
                   <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{f.val}</p>
                 </div>
               ))}
             </div>
             {selMov.notas && (
               <div style={{ ...G.panel, padding:'12px 14px', marginBottom:'20px' }}>
-                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Notas</p>
+                <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Notas</p>
                 <p style={{ margin:0, fontSize:'13px', color:'#94a3b8' }}>{selMov.notas}</p>
               </div>
             )}
@@ -507,7 +507,7 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
           { label:'Egresos totales',   value:fmt(totalGastos),                      color:'#f87171', glow:'rgba(248,113,113,0.08)' },
         ].map(k=>(
           <div key={k.label} style={{ ...G.card, padding:'18px 20px', background:k.glow }}>
-            <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
+            <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
             <p style={{ margin:0, fontSize:'24px', fontWeight:800, color:k.color, letterSpacing:'-0.02em' }}>{k.value}</p>
           </div>
         ))}
@@ -538,21 +538,21 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
                   </div>
                   <div>
                     <p style={{ margin:0, fontSize:'15px', fontWeight:700, color:'#f1f5f9' }}>{c.nombre}</p>
-                    <p style={{ margin:'2px 0 0', fontSize:'11px', color:'#475569', textTransform:'capitalize' }}>{c.area} · <span style={{ fontFamily:'monospace', fontSize:'10px', color:c.color }}>{c.codigo}</span></p>
+                    <p style={{ margin:'2px 0 0', fontSize:'11px', color: '#7f8a9c', textTransform:'capitalize' }}>{c.area} · <span style={{ fontFamily:'monospace', fontSize: '11px', color:c.color }}>{c.codigo}</span></p>
                   </div>
                 </div>
-                <button onClick={()=>toggleActivo(c.id)} style={{ padding:'3px 10px', fontSize:'10px', fontWeight:700, borderRadius:'20px', border:`1px solid ${c.activo?'rgba(52,211,153,0.3)':'rgba(255,255,255,0.08)'}`, background:c.activo?'rgba(52,211,153,0.08)':'rgba(255,255,255,0.04)', color:c.activo?'#34d399':'#475569', cursor:'pointer', flexShrink:0 }}>
+                <button onClick={()=>toggleActivo(c.id)} style={{ padding:'3px 10px', fontSize: '11px', fontWeight:700, borderRadius:'20px', border:`1px solid ${c.activo?'rgba(52,211,153,0.3)':'rgba(255,255,255,0.08)'}`, background:c.activo?'rgba(52,211,153,0.08)':'rgba(255,255,255,0.04)', color:c.activo?'#34d399':'#475569', cursor:'pointer', flexShrink:0 }}>
                   {c.activo?'● Activo':'○ Inactivo'}
                 </button>
               </div>
 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'14px' }}>
                 <div style={{ ...G.panel, padding:'10px 12px' }}>
-                  <p style={{ margin:'0 0 4px', fontSize:'10px', color:'#334155', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:700 }}>Ingresos</p>
+                  <p style={{ margin:'0 0 4px', fontSize: '11px', color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:700 }}>Ingresos</p>
                   <p style={{ margin:0, fontSize:'14px', fontWeight:800, color:'#34d399' }}>{fmt(ingreso)}</p>
                 </div>
                 <div style={{ ...G.panel, padding:'10px 12px' }}>
-                  <p style={{ margin:'0 0 4px', fontSize:'10px', color:'#334155', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:700 }}>Egresos</p>
+                  <p style={{ margin:'0 0 4px', fontSize: '11px', color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:700 }}>Egresos</p>
                   <p style={{ margin:0, fontSize:'14px', fontWeight:800, color:'#f87171' }}>{fmt(gasto)}</p>
                 </div>
               </div>
@@ -560,16 +560,16 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
               {presup>0 ? (
                 <div>
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px', alignItems:'center' }}>
-                    <span style={{ fontSize:'11px', color:'#475569', fontWeight:600 }}>Ejecución presupuestal</span>
+                    <span style={{ fontSize:'11px', color: '#7f8a9c', fontWeight:600 }}>Ejecución presupuestal</span>
                     <span style={{ fontSize:'11px', fontWeight:700, color:alerta?'#f87171':pct>=70?'#fbbf24':'#64748b' }}>{pct}%</span>
                   </div>
                   <div style={{ height:'6px', borderRadius:'3px', background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
                     <div style={{ height:'100%', width:`${pct}%`, borderRadius:'3px', background:alerta?'linear-gradient(90deg,#f97316,#f87171)':pct>=70?'linear-gradient(90deg,#fbbf24,#f97316)':`linear-gradient(90deg,${c.color},${c.color}90)`, transition:'width 0.5s ease' }} />
                   </div>
-                  <p style={{ margin:'4px 0 0', fontSize:'10px', color:'#334155' }}>Presup.: {fmt(presup)}</p>
+                  <p style={{ margin:'4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Presup.: {fmt(presup)}</p>
                 </div>
               ) : (
-                <p style={{ margin:0, fontSize:'11px', color:'#334155', fontStyle:'italic' }}>Sin presupuesto asignado</p>
+                <p style={{ margin:0, fontSize:'11px', color: '#7f8a9c', fontStyle:'italic' }}>Sin presupuesto asignado</p>
               )}
             </div>
           );
@@ -622,11 +622,11 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
               </div>
               <div>
                 <p style={{ margin:0, fontSize:'17px', fontWeight:800, color:'#f1f5f9' }}>{c.nombre}</p>
-                <p style={{ margin:'2px 0 0', fontSize:'12px', color:'#475569', textTransform:'capitalize' }}>{c.area} · <span style={{ fontFamily:'monospace', color:c.color }}>{c.codigo}</span> · {c.activo?'Activo':'Inactivo'}</p>
+                <p style={{ margin:'2px 0 0', fontSize:'12px', color: '#7f8a9c', textTransform:'capitalize' }}>{c.area} · <span style={{ fontFamily:'monospace', color:c.color }}>{c.codigo}</span> · {c.activo?'Activo':'Inactivo'}</p>
               </div>
               <div style={{ marginLeft:'auto', textAlign:'right' }}>
                 <p style={{ margin:0, fontSize:'22px', fontWeight:900, color:ingreso-gasto>=0?'#34d399':'#f87171' }}>{fmt(ingreso-gasto)}</p>
-                <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>SALDO NETO</p>
+                <p style={{ margin:0, fontSize: '11px', color: '#7f8a9c' }}>SALDO NETO</p>
               </div>
             </div>
             {/* KPI row */}
@@ -637,7 +637,7 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
                 { label:'Movimientos', val:centroMovs.length, color:'#94a3b8' },
               ].map(k=>(
                 <div key={k.label} style={{ ...G.panel, padding:'12px 14px', textAlign:'center' }}>
-                  <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{k.label}</p>
+                  <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>{k.label}</p>
                   <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:k.color }}>{k.val}</p>
                 </div>
               ))}
@@ -652,13 +652,13 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
                 <div style={{ height:'8px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
                   <div style={{ height:'100%', width:`${pct}%`, borderRadius:'4px', background:pct>=90?'linear-gradient(90deg,#f97316,#f87171)':pct>=70?'linear-gradient(90deg,#fbbf24,#f97316)':`linear-gradient(90deg,${c.color},${c.color}90)`, transition:'width 0.5s' }} />
                 </div>
-                <p style={{ margin:'6px 0 0', fontSize:'11px', color:'#475569' }}>Ejecutado {fmt(gasto)} de {fmt(presupTotal)} presupuestados</p>
+                <p style={{ margin:'6px 0 0', fontSize:'11px', color: '#7f8a9c' }}>Ejecutado {fmt(gasto)} de {fmt(presupTotal)} presupuestados</p>
               </div>
             )}
             {/* Top categorías */}
             {topCats.length>0 && (
               <div style={{ marginBottom:'20px' }}>
-                <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Top categorías de gasto</p>
+                <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Top categorías de gasto</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                   {topCats.map(([cat,monto])=>(
                     <div key={cat} style={{ display:'flex', alignItems:'center', gap:'10px' }}>
@@ -673,17 +673,17 @@ function CentrosCosto({ centros, movs, presups, onSave }: { centros: CentroCosto
               </div>
             )}
             {/* Últimos movimientos */}
-            <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Últimos movimientos</p>
+            <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Últimos movimientos</p>
             <div style={{ maxHeight:'200px', overflowY:'auto' }}>
               {centroMovs.slice(0,8).map(m=>(
                 <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', borderBottom:'1px solid rgba(255,255,255,0.04)', gap:'12px' }}>
                   <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:m.tipo==='ingreso'?'#34d399':'#f87171', flexShrink:0 }} />
                   <span style={{ flex:1, fontSize:'12px', color:'#e2e8f0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.concepto}</span>
-                  <span style={{ fontSize:'11px', color:'#475569', whiteSpace:'nowrap' }}>{m.fecha}</span>
+                  <span style={{ fontSize:'11px', color: '#7f8a9c', whiteSpace:'nowrap' }}>{m.fecha}</span>
                   <span style={{ fontSize:'13px', fontWeight:700, color:m.tipo==='ingreso'?'#34d399':'#f87171', whiteSpace:'nowrap' }}>{m.tipo==='ingreso'?'+':'-'}{fmt(m.monto)}</span>
                 </div>
               ))}
-              {centroMovs.length===0 && <p style={{ padding:'20px', textAlign:'center', color:'#334155', fontSize:'13px' }}>Sin movimientos registrados</p>}
+              {centroMovs.length===0 && <p style={{ padding:'20px', textAlign:'center', color: '#7f8a9c', fontSize:'13px' }}>Sin movimientos registrados</p>}
             </div>
           </Modal>
         );
@@ -739,7 +739,7 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
             { label:'Balance',       value:fmt(Math.abs(balance)), color:balance>=0?'#34d399':'#f87171' },
           ].map(s=>(
             <div key={s.label} style={{ ...G.card, padding:'8px 14px', display:'flex', alignItems:'center', gap:'8px' }}>
-              <span style={{ fontSize:'11px', color:'#475569' }}>{s.label}:</span>
+              <span style={{ fontSize:'11px', color: '#7f8a9c' }}>{s.label}:</span>
               <span style={{ fontSize:'13px', fontWeight:800, color:s.color }}>{s.value}</span>
             </div>
           ))}
@@ -753,7 +753,7 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
           <thead>
             <tr style={{ background:'rgba(255,255,255,0.03)', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
               {['Nombre','Centro','Tipo','Categoría','Presupuestado','Ejecutado','Variación',''].map(h=>(
-                <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
+                <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -776,9 +776,9 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
                     {centro && <span style={{ padding:'3px 9px', fontSize:'11px', borderRadius:'20px', background:centro.color+'18', color:centro.color, border:`1px solid ${centro.color}35`, fontWeight:600 }}>{centro.nombre}</span>}
                   </td>
                   <td style={{ padding:'12px 16px' }}>
-                    <span style={{ padding:'3px 9px', fontSize:'10px', fontWeight:700, borderRadius:'20px', background:p.tipo==='ingreso'?'rgba(52,211,153,0.1)':'rgba(248,113,113,0.1)', color:p.tipo==='ingreso'?'#34d399':'#f87171', border:`1px solid ${p.tipo==='ingreso'?'rgba(52,211,153,0.2)':'rgba(248,113,113,0.2)'}` }}>{p.tipo}</span>
+                    <span style={{ padding:'3px 9px', fontSize: '11px', fontWeight:700, borderRadius:'20px', background:p.tipo==='ingreso'?'rgba(52,211,153,0.1)':'rgba(248,113,113,0.1)', color:p.tipo==='ingreso'?'#34d399':'#f87171', border:`1px solid ${p.tipo==='ingreso'?'rgba(52,211,153,0.2)':'rgba(248,113,113,0.2)'}` }}>{p.tipo}</span>
                   </td>
-                  <td style={{ padding:'12px 16px', fontSize:'12px', color:'#64748b' }}>{p.categoria}</td>
+                  <td style={{ padding:'12px 16px', fontSize:'12px', color: '#7f8a9c' }}>{p.categoria}</td>
                   <td style={{ padding:'12px 16px', fontSize:'13px', fontWeight:700, color:'#94a3b8' }}>{fmt(p.monto)}</td>
                   <td style={{ padding:'12px 16px' }}>
                     <p style={{ margin:'0 0 5px', fontSize:'13px', fontWeight:700, color:'#f1f5f9' }}>{fmt(real)}</p>
@@ -786,14 +786,14 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
                       <div style={{ height:'4px', borderRadius:'2px', background:'rgba(255,255,255,0.06)', width:'80px', overflow:'hidden', flexShrink:0 }}>
                         <div style={{ height:'100%', width:`${Math.min(pct,100)}%`, borderRadius:'2px', background:pct>100?'#f87171':pct>70?'#fbbf24':'#34d399' }} />
                       </div>
-                      <span style={{ fontSize:'10px', color:'#475569' }}>{pct}%</span>
+                      <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{pct}%</span>
                     </div>
                   </td>
                   <td style={{ padding:'12px 16px', whiteSpace:'nowrap' }}>
                     <span style={{ fontSize:'13px', fontWeight:700, color:ok?'#34d399':'#f87171' }}>{ok?'+':'-'}{fmt(Math.abs(variacion))}</span>
                   </td>
                   <td style={{ padding:'12px 16px' }}>
-                    <button onClick={()=>eliminar(p.id)} title="Eliminar" style={{ background:'none', border:'none', color:'#475569', cursor:'pointer', fontSize:'16px', opacity:0.6, transition:'opacity 0.15s' }}
+                    <button onClick={()=>eliminar(p.id)} title="Eliminar" style={{ background:'none', border:'none', color: '#7f8a9c', cursor:'pointer', fontSize:'16px', opacity:0.6, transition:'opacity 0.15s' }}
                       onMouseEnter={e=>(e.currentTarget as HTMLElement).style.opacity='1'}
                       onMouseLeave={e=>(e.currentTarget as HTMLElement).style.opacity='0.6'}
                     >×</button>
@@ -828,14 +828,14 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
               <div>
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px' }}>
                   <span style={{ fontSize:'11px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:`${color}18`, color }}>{p.tipo}</span>
-                  <span style={{ fontSize:'11px', color:'#475569' }}>{p.periodo}</span>
+                  <span style={{ fontSize:'11px', color: '#7f8a9c' }}>{p.periodo}</span>
                   {centro && <span style={{ padding:'2px 8px', fontSize:'11px', borderRadius:'12px', background:centro.color+'18', color:centro.color, fontWeight:700 }}>{centro.nombre}</span>}
                 </div>
                 <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:'#f1f5f9' }}>{p.nombre}</p>
-                <p style={{ margin:'2px 0 0', fontSize:'12px', color:'#475569' }}>{p.categoria}</p>
+                <p style={{ margin:'2px 0 0', fontSize:'12px', color: '#7f8a9c' }}>{p.categoria}</p>
               </div>
               <div style={{ marginLeft:'auto', textAlign:'right' }}>
-                <p style={{ margin:0, fontSize:'11px', color:'#475569' }}>PRESUPUESTADO</p>
+                <p style={{ margin:0, fontSize:'11px', color: '#7f8a9c' }}>PRESUPUESTADO</p>
                 <p style={{ margin:0, fontSize:'24px', fontWeight:900, color:'#94a3b8' }}>{fmt(p.monto)}</p>
               </div>
             </div>
@@ -847,7 +847,7 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
                 { label:'% Ejecución', val:`${pct}%`, color:pct>100?'#f87171':pct>70?'#fbbf24':'#34d399' },
               ].map(k=>(
                 <div key={k.label} style={{ ...G.panel, padding:'12px 14px', textAlign:'center' }}>
-                  <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{k.label}</p>
+                  <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>{k.label}</p>
                   <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:k.color }}>{k.val}</p>
                 </div>
               ))}
@@ -862,14 +862,14 @@ function Presupuestos({ presups, centros, movs, onSave }: { presups: Presupuesto
               </div>
             </div>
             {/* Matching movs */}
-            <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Movimientos que impactan esta partida ({matchingMovs.length})</p>
+            <p style={{ margin:'0 0 10px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Movimientos que impactan esta partida ({matchingMovs.length})</p>
             <div style={{ maxHeight:'220px', overflowY:'auto', ...G.panel, borderRadius:'10px' }}>
-              {matchingMovs.length===0 && <p style={{ padding:'20px', textAlign:'center', color:'#334155', fontSize:'13px' }}>Sin movimientos en este período</p>}
+              {matchingMovs.length===0 && <p style={{ padding:'20px', textAlign:'center', color: '#7f8a9c', fontSize:'13px' }}>Sin movimientos en este período</p>}
               {matchingMovs.map(m=>(
                 <div key={m.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,0.04)', gap:'12px' }}>
                   <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:m.tipo==='ingreso'?'#34d399':'#f87171', flexShrink:0 }} />
                   <span style={{ flex:1, fontSize:'12px', color:'#e2e8f0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.concepto}</span>
-                  <span style={{ fontSize:'11px', color:'#475569', whiteSpace:'nowrap' }}>{m.fecha}</span>
+                  <span style={{ fontSize:'11px', color: '#7f8a9c', whiteSpace:'nowrap' }}>{m.fecha}</span>
                   <span style={{ fontSize:'11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24' }}>{m.estado}</span>
                   <span style={{ fontSize:'13px', fontWeight:700, color:m.tipo==='ingreso'?'#34d399':'#f87171', whiteSpace:'nowrap' }}>{fmt(m.monto)}</span>
                 </div>
@@ -934,14 +934,14 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
       {/* KPIs con progress ring */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'12px', marginBottom:'20px' }}>
         <div style={{ ...G.card, padding:'20px', background:'rgba(251,191,36,0.06)', boxShadow:'0 0 0 1px rgba(255,255,255,0.06)' }}>
-          <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>Pendientes</p>
+          <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>Pendientes</p>
           <p style={{ margin:0, fontSize:'28px', fontWeight:800, color:'#fbbf24', letterSpacing:'-0.02em' }}>{pendientes}</p>
-          <p style={{ margin:'4px 0 0', fontSize:'11px', color:'#334155' }}>movimientos sin conciliar</p>
+          <p style={{ margin:'4px 0 0', fontSize:'11px', color: '#7f8a9c' }}>movimientos sin conciliar</p>
         </div>
         <div style={{ ...G.card, padding:'20px', background:'rgba(52,211,153,0.06)' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px' }}>
-            <p style={{ margin:0, fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>Conciliados</p>
-            <span style={{ fontSize:'10px', fontWeight:700, color:'#34d399', background:'rgba(52,211,153,0.12)', padding:'2px 7px', borderRadius:'20px' }}>{pct}%</span>
+            <p style={{ margin:0, fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>Conciliados</p>
+            <span style={{ fontSize: '11px', fontWeight:700, color:'#34d399', background:'rgba(52,211,153,0.12)', padding:'2px 7px', borderRadius:'20px' }}>{pct}%</span>
           </div>
           <p style={{ margin:0, fontSize:'28px', fontWeight:800, color:'#34d399', letterSpacing:'-0.02em' }}>{conciliados}</p>
           <div style={{ marginTop:'8px', height:'4px', borderRadius:'2px', background:'rgba(255,255,255,0.06)' }}>
@@ -949,9 +949,9 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
           </div>
         </div>
         <div style={{ ...G.card, padding:'20px' }}>
-          <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>Neto pendiente</p>
+          <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>Neto pendiente</p>
           <p style={{ margin:0, fontSize:'24px', fontWeight:800, color:montosPend>=0?'#34d399':'#f87171', letterSpacing:'-0.02em' }}>{fmt(Math.abs(montosPend))}</p>
-          <p style={{ margin:'4px 0 0', fontSize:'11px', color:'#334155' }}>{montosPend>=0?'a favor':'a cargo'}</p>
+          <p style={{ margin:'4px 0 0', fontSize:'11px', color: '#7f8a9c' }}>{montosPend>=0?'a favor':'a cargo'}</p>
         </div>
       </div>
 
@@ -981,7 +981,7 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
           <thead>
             <tr style={{ background:'rgba(255,255,255,0.03)', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
               {['','Fecha','Concepto','Ref.','Centro','Monto','Estado',''].map(h=>(
-                <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
+                <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -998,17 +998,17 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
                   <td style={{ padding:'10px 14px' }}>
                     <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:m.tipo==='ingreso'?'#34d399':'#f87171', boxShadow:`0 0 5px ${m.tipo==='ingreso'?'#34d399':'#f87171'}` }} />
                   </td>
-                  <td style={{ padding:'10px 14px', fontSize:'12px', color:'#64748b', whiteSpace:'nowrap' }}>{new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'})}</td>
+                  <td style={{ padding:'10px 14px', fontSize:'12px', color: '#7f8a9c', whiteSpace:'nowrap' }}>{new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'})}</td>
                   <td style={{ padding:'10px 14px', fontSize:'13px', color:m.conciliado?'#475569':'#e2e8f0', fontWeight:500, maxWidth:'220px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.concepto}</td>
-                  <td style={{ padding:'10px 14px', fontSize:'11px', color:'#334155', fontFamily:'monospace' }}>{m.referencia||'—'}</td>
+                  <td style={{ padding:'10px 14px', fontSize:'11px', color: '#7f8a9c', fontFamily:'monospace' }}>{m.referencia||'—'}</td>
                   <td style={{ padding:'10px 14px' }}>
-                    {c && <span style={{ padding:'2px 8px', fontSize:'10px', borderRadius:'20px', background:c.color+'18', color:c.color, fontWeight:700 }}>{c.codigo}</span>}
+                    {c && <span style={{ padding:'2px 8px', fontSize: '11px', borderRadius:'20px', background:c.color+'18', color:c.color, fontWeight:700 }}>{c.codigo}</span>}
                   </td>
                   <td style={{ padding:'10px 14px', fontSize:'13px', fontWeight:800, color:m.tipo==='ingreso'?'#34d399':'#f87171', whiteSpace:'nowrap' }}>
                     {m.tipo==='ingreso'?'+':'-'}{fmt(m.monto)}
                   </td>
                   <td style={{ padding:'10px 14px' }}>
-                    <span style={{ padding:'2px 8px', fontSize:'10px', fontWeight:700, borderRadius:'20px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24' }}>
+                    <span style={{ padding:'2px 8px', fontSize: '11px', fontWeight:700, borderRadius:'20px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24' }}>
                       {m.estado==='confirmado'?'✓':'⏳'}
                     </span>
                   </td>
@@ -1034,9 +1034,9 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
               <p style={{ margin:'0 0 6px', fontSize:'38px', fontWeight:900, color, letterSpacing:'-0.03em', lineHeight:1 }}>{m.tipo==='ingreso'?'+':'-'}{fmt(m.monto)}</p>
               <p style={{ margin:0, fontSize:'15px', fontWeight:600, color:'#e2e8f0' }}>{m.concepto}</p>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginTop:'10px' }}>
-                <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:`${color}18`, color }}>{m.tipo}</span>
-                <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24' }}>{m.estado}</span>
-                <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:m.conciliado?'rgba(52,211,153,0.1)':'rgba(248,113,113,0.1)', color:m.conciliado?'#34d399':'#f87171' }}>{m.conciliado?'✓ Conciliado':'Pendiente conciliación'}</span>
+                <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:`${color}18`, color }}>{m.tipo}</span>
+                <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:m.estado==='confirmado'?'rgba(52,211,153,0.1)':'rgba(251,191,36,0.1)', color:m.estado==='confirmado'?'#34d399':'#fbbf24' }}>{m.estado}</span>
+                <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 8px', borderRadius:'5px', background:m.conciliado?'rgba(52,211,153,0.1)':'rgba(248,113,113,0.1)', color:m.conciliado?'#34d399':'#f87171' }}>{m.conciliado?'✓ Conciliado':'Pendiente conciliación'}</span>
               </div>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'20px' }}>
@@ -1047,12 +1047,12 @@ function Conciliacion({ movs, centros, onSave }: { movs: Movimiento[]; centros: 
                 { label:'Referencia', val:m.referencia||'—' },
               ].map(f=>(
                 <div key={f.label} style={{ ...G.panel, padding:'11px 14px' }}>
-                  <p style={{ margin:'0 0 3px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>{f.label}</p>
+                  <p style={{ margin:'0 0 3px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>{f.label}</p>
                   <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{f.val}</p>
                 </div>
               ))}
             </div>
-            {m.notas && <div style={{ ...G.panel, padding:'11px 14px', marginBottom:'20px' }}><p style={{ margin:'0 0 3px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Notas</p><p style={{ margin:0, fontSize:'13px', color:'#94a3b8' }}>{m.notas}</p></div>}
+            {m.notas && <div style={{ ...G.panel, padding:'11px 14px', marginBottom:'20px' }}><p style={{ margin:'0 0 3px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Notas</p><p style={{ margin:0, fontSize:'13px', color:'#94a3b8' }}>{m.notas}</p></div>}
             <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end' }}>
               <button onClick={()=>{ onSave(movs.map(x=>x.id===m.id?{...x,conciliado:!x.conciliado}:x)); setSelMov({...m,conciliado:!m.conciliado}); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:`1px solid ${m.conciliado?'rgba(255,255,255,0.1)':'rgba(52,211,153,0.3)'}`, background:m.conciliado?'rgba(255,255,255,0.04)':'rgba(52,211,153,0.1)', color:m.conciliado?'#475569':'#34d399', cursor:'pointer' }}>
                 {m.conciliado?'Marcar pendiente':'✓ Conciliar'}
@@ -1071,7 +1071,7 @@ function deltaBadge(v: number | null): React.ReactNode {
   if (v === null) return null;
   const up = v >= 0;
   return (
-    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '5px', background: up ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)', color: up ? '#34d399' : '#f87171', display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
+    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 6px', borderRadius: '5px', background: up ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)', color: up ? '#34d399' : '#f87171', display: 'inline-flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>
       {up ? '▲' : '▼'} {Math.abs(v).toFixed(1)}%
     </span>
   );
@@ -1211,7 +1211,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
           <select value={periodo} onChange={e => setPeriodo(e.target.value)} style={{ ...G.input, width: 'auto', padding: '7px 14px', fontSize: '13px', fontWeight: 700 }}>
             {PERIODOS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
-          <span style={{ fontSize: '11px', color: '#334155' }}>vs {prev}</span>
+          <span style={{ fontSize: '11px', color: '#7f8a9c' }}>vs {prev}</span>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {[
@@ -1222,7 +1222,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
           ].map(s => (
             <div key={s.label} style={{ ...G.panel, padding: '5px 11px', display: 'flex', alignItems: 'center', gap: '7px' }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0, background: s.ok ? '#34d399' : s.warn ? '#fbbf24' : '#f87171', boxShadow: `0 0 5px ${s.ok ? '#34d399' : s.warn ? '#fbbf24' : '#f87171'}60` }} />
-              <span style={{ fontSize: '10px', color: '#475569' }}>{s.label}</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{s.label}</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{s.val}</span>
             </div>
           ))}
@@ -1241,12 +1241,12 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
             <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 100% 0%, ${k.color}10, transparent 55%)`, pointerEvents: 'none' }} />
             <div style={{ position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <p style={{ margin: 0, fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
+                <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={k.color} strokeWidth={2} opacity={0.5}><path strokeLinecap="round" strokeLinejoin="round" d={k.icon} /></svg>
               </div>
               <p style={{ margin: 0, fontSize: '23px', fontWeight: 800, color: k.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{k.val}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                <span style={{ fontSize: '10px', color: '#334155' }}>{k.prev_}</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{k.prev_}</span>
                 {deltaBadge(k.delta)}
               </div>
             </div>
@@ -1259,7 +1259,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div>
             <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Estado de Resultados</p>
-            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>Formato P&L · {periodo} vs {prev}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Formato P&L · {periodo} vs {prev}</p>
           </div>
           <div style={{ display: 'flex', gap: '5px' }}>
             {(['tabla', 'waterfall'] as const).map(v => (
@@ -1275,7 +1275,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 {['Concepto', periodo, prev, 'Δ QoQ', '% s/Ingresos'].map((h, i) => (
-                  <th key={h} style={{ padding: '6px 10px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 700, fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
+                  <th key={h} style={{ padding: '6px 10px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 700, fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1294,9 +1294,9 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
                   <tr style={{ background: row.bold ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
                     <td style={{ padding: '8px 10px', color: row.bold ? '#e2e8f0' : '#94a3b8', fontWeight: row.bold ? 700 : 400, fontSize: row.bold ? '12px' : '11px' }}>{row.label}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: row.bold ? 700 : 500, color: row.color, fontVariantNumeric: 'tabular-nums' }}>{row.neg ? '− ' : ''}{fmt(row.curr)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{row.neg ? '− ' : ''}{fmt(row.prev_)}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>{row.neg ? '− ' : ''}{fmt(row.prev_)}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>{deltaBadge(calcDelta(row.curr, row.prev_))}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#334155', fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#7f8a9c', fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>
                       {totalIng > 0 ? `${((row.curr / totalIng) * 100).toFixed(1)}%` : '—'}
                     </td>
                   </tr>
@@ -1350,7 +1350,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
         {/* Grouped bar chart mensual */}
         <div style={{ ...G.card, padding: '20px' }}>
           <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Flujo Mensual</p>
-          <p style={{ margin: '0 0 12px', fontSize: '11px', color: '#475569' }}>Ingresos vs Egresos dentro del trimestre</p>
+          <p style={{ margin: '0 0 12px', fontSize: '11px', color: '#7f8a9c' }}>Ingresos vs Egresos dentro del trimestre</p>
           <div style={{ overflowX: 'auto' }}>
             <svg viewBox={`0 0 ${GW} ${GH + 30}`} style={{ width: '100%', minWidth: '240px', display: 'block' }}>
               <defs>
@@ -1389,9 +1389,9 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
             {monthlyData.map(d => (
               <div key={d.mes} style={{ flex: 1, ...G.panel, padding: '7px 8px', textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: '9px', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>{MESES_LABEL[d.mes]}</p>
+                <p style={{ margin: 0, fontSize: '10px', color: '#7f8a9c', fontWeight: 700, textTransform: 'uppercase' }}>{MESES_LABEL[d.mes]}</p>
                 <p style={{ margin: '3px 0 0', fontSize: '11px', fontWeight: 800, color: d.neto >= 0 ? '#34d399' : '#f87171', fontVariantNumeric: 'tabular-nums' }}>{d.neto >= 0 ? '+' : ''}{fmt(d.neto)}</p>
-                <p style={{ margin: '1px 0 0', fontSize: '9px', color: '#334155' }}>{d.neto >= 0 ? 'superávit' : 'déficit'}</p>
+                <p style={{ margin: '1px 0 0', fontSize: '10px', color: '#7f8a9c' }}>{d.neto >= 0 ? 'superávit' : 'déficit'}</p>
               </div>
             ))}
           </div>
@@ -1400,7 +1400,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
         {/* Composición por categoría con % participación */}
         <div style={{ ...G.card, padding: '20px' }}>
           <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Composición por Categoría</p>
-          <p style={{ margin: '0 0 14px', fontSize: '11px', color: '#475569' }}>Participación sobre ingresos totales</p>
+          <p style={{ margin: '0 0 14px', fontSize: '11px', color: '#7f8a9c' }}>Participación sobre ingresos totales</p>
           {(() => {
             const catMap2: Record<string, { ing: number; egr: number }> = {};
             movsP.forEach(m => {
@@ -1408,7 +1408,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
               catMap2[m.categoria][m.tipo === 'ingreso' ? 'ing' : 'egr'] += m.monto;
             });
             const items2 = Object.entries(catMap2).sort((a, b) => (b[1].ing + b[1].egr) - (a[1].ing + a[1].egr)).slice(0, 7);
-            if (items2.length === 0) return <p style={{ color: '#334155', fontSize: '12px' }}>Sin datos</p>;
+            if (items2.length === 0) return <p style={{ color: '#7f8a9c', fontSize: '12px' }}>Sin datos</p>;
             return items2.map(([cat, v]) => {
               const neto = v.ing - v.egr;
               const pctIng = totalIng > 0 ? ((v.ing + v.egr) / totalIng) * 100 : 0;
@@ -1417,7 +1417,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{cat}</span>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{pctIng.toFixed(1)}%</span>
+                      <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>{pctIng.toFixed(1)}%</span>
                       <span style={{ fontSize: '11px', fontWeight: 700, color: neto >= 0 ? '#34d399' : '#f87171', fontVariantNumeric: 'tabular-nums' }}>{neto >= 0 ? '+' : ''}{fmt(neto)}</span>
                     </div>
                   </div>
@@ -1426,8 +1426,8 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
                     {v.egr > 0 && <div style={{ flex: v.egr, background: 'linear-gradient(90deg,rgba(248,113,113,0.5),rgba(248,113,113,0.8))' }} />}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-                    {v.ing > 0 && <span style={{ fontSize: '9px', color: '#34d399', fontVariantNumeric: 'tabular-nums' }}>+{fmt(v.ing)}</span>}
-                    {v.egr > 0 && <span style={{ fontSize: '9px', color: '#f87171', fontVariantNumeric: 'tabular-nums' }}>−{fmt(v.egr)}</span>}
+                    {v.ing > 0 && <span style={{ fontSize: '10px', color: '#34d399', fontVariantNumeric: 'tabular-nums' }}>+{fmt(v.ing)}</span>}
+                    {v.egr > 0 && <span style={{ fontSize: '10px', color: '#f87171', fontVariantNumeric: 'tabular-nums' }}>−{fmt(v.egr)}</span>}
                   </div>
                 </div>
               );
@@ -1442,7 +1442,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
         {/* Gastos por centro con % */}
         <div style={{ ...G.card, padding: '20px' }}>
           <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Distribución de Egresos</p>
-          <p style={{ margin: '0 0 14px', fontSize: '11px', color: '#475569' }}>Por centro de costo — participación y monto</p>
+          <p style={{ margin: '0 0 14px', fontSize: '11px', color: '#7f8a9c' }}>Por centro de costo — participación y monto</p>
           {(() => {
             const items3 = centros.map(c => ({
               c,
@@ -1450,7 +1450,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
             })).filter(x => x.total > 0).sort((a, b) => b.total - a.total);
             const maxT = items3[0]?.total ?? 1;
             const totalE = items3.reduce((s, x) => s + x.total, 0);
-            if (items3.length === 0) return <p style={{ color: '#334155', fontSize: '12px' }}>Sin egresos en este período</p>;
+            if (items3.length === 0) return <p style={{ color: '#7f8a9c', fontSize: '12px' }}>Sin egresos en este período</p>;
             return items3.map(({ c, total }) => (
               <div key={c.id} style={{ marginBottom: '11px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
@@ -1459,7 +1459,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{c.nombre}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{totalE > 0 ? ((total / totalE) * 100).toFixed(1) : 0}%</span>
+                    <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>{totalE > 0 ? ((total / totalE) * 100).toFixed(1) : 0}%</span>
                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#f87171', fontVariantNumeric: 'tabular-nums' }}>{fmt(total)}</span>
                   </div>
                 </div>
@@ -1474,9 +1474,9 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
         {/* Presupuesto vs Real por línea */}
         <div style={{ ...G.card, padding: '20px' }}>
           <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Presupuesto vs Real</p>
-          <p style={{ margin: '0 0 14px', fontSize: '11px', color: '#475569' }}>{periodo} · ejecución por línea presupuestal</p>
+          <p style={{ margin: '0 0 14px', fontSize: '11px', color: '#7f8a9c' }}>{periodo} · ejecución por línea presupuestal</p>
           {presupPeriodo.length === 0
-            ? <p style={{ color: '#334155', fontSize: '12px' }}>Sin presupuesto definido para {periodo}</p>
+            ? <p style={{ color: '#7f8a9c', fontSize: '12px' }}>Sin presupuesto definido para {periodo}</p>
             : (
               <>
                 {presupPeriodo.map(p => {
@@ -1492,8 +1492,8 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
                           <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>{p.categoria}</span>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(real)} / {fmt(p.monto)}</span>
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: over ? '#f97316' : '#64748b', fontVariantNumeric: 'tabular-nums' }}>{exec.toFixed(0)}%</span>
+                          <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>{fmt(real)} / {fmt(p.monto)}</span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: over ? '#f97316' : '#64748b', fontVariantNumeric: 'tabular-nums' }}>{exec.toFixed(0)}%</span>
                         </div>
                       </div>
                       <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
@@ -1503,7 +1503,7 @@ function Reportes({ movs, centros, presups }: { movs: Movimiento[]; centros: Cen
                   );
                 })}
                 <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: '#475569' }}>Ejecución total</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Ejecución total</span>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#34d399', fontVariantNumeric: 'tabular-nums' }}>Ing: {totPresupIng > 0 ? ((totalIng / totPresupIng) * 100).toFixed(0) : 0}%</span>
                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#60a5fa', fontVariantNumeric: 'tabular-nums' }}>Egr: {totPresupEgr > 0 ? ((totalEgr / totPresupEgr) * 100).toFixed(0) : 0}%</span>
@@ -1653,7 +1653,7 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Forecasting Financiero</p>
-          <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>Tendencia histórica + proyección con regresión lineal</p>
+          <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Tendencia histórica + proyección con regresión lineal</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Horizonte */}
@@ -1688,9 +1688,9 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
         ].map(k => (
           <div key={k.label} style={{ ...G.card, padding: '15px 17px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 100% 0%, ${k.color}0e, transparent 55%)`, pointerEvents: 'none' }} />
-            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
+            <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
             <p style={{ margin: 0, fontSize: '21px', fontWeight: 800, color: k.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{k.val}</p>
-            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#334155' }}>{k.sub}</p>
+            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -1700,18 +1700,18 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
             <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Ingresos vs Egresos · Histórico + Proyección</p>
-            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>Línea sólida = histórico · Punteada = proyectado · Banda = rango de confianza</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Línea sólida = histórico · Punteada = proyectado · Banda = rango de confianza</p>
           </div>
           <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
             {[{ color: '#34d399', label: 'Ingresos' }, { color: '#f87171', label: 'Egresos' }].map(l => (
               <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <div style={{ width: '16px', height: '2px', background: l.color, borderRadius: '1px' }} />
-                <span style={{ fontSize: '10px', color: '#475569' }}>{l.label}</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{l.label}</span>
               </div>
             ))}
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{ width: '16px', height: '7px', background: 'rgba(52,211,153,0.12)', borderRadius: '2px' }} />
-              <span style={{ fontSize: '10px', color: '#475569' }}>Confianza ±15%</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Confianza ±15%</span>
             </div>
           </div>
         </div>
@@ -1764,7 +1764,7 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div>
             <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>Proyección Mensual · Escenario {SCENARIO_PARAMS[scenario].label}</p>
-            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>
               {editando ? 'Hacé clic en un valor para editarlo — los cambios sobreescriben el modelo' : 'Los valores se calculan por regresión lineal + multiplicador de escenario'}
             </p>
           </div>
@@ -1779,7 +1779,7 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
                 {['Mes', 'Ingresos proy.', 'Egresos proy.', 'Neto', 'Saldo acum.', 'Estado'].map((h, i) => (
-                  <th key={h} style={{ padding: '7px 10px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 700, fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
+                  <th key={h} style={{ padding: '7px 10px', textAlign: i === 0 ? 'left' : 'right', fontWeight: 700, fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1791,7 +1791,7 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
                   <tr key={p.key} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
                     <td style={{ padding: '8px 10px', color: '#e2e8f0', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {p.label}
-                      {isOverridden && <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>editado</span>}
+                      {isOverridden && <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>editado</span>}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                       {editando ? (
@@ -1814,7 +1814,7 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
                       {p.acum >= 0 ? '' : '−'}{fmt(Math.abs(p.acum))}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'right' }}>
-                      <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '5px', fontWeight: 700, background: neto >= 0 ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', color: neto >= 0 ? '#34d399' : '#f87171' }}>
+                      <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '5px', fontWeight: 700, background: neto >= 0 ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', color: neto >= 0 ? '#34d399' : '#f87171' }}>
                         {neto >= 0 ? 'superávit' : 'déficit'}
                       </span>
                     </td>
@@ -1828,7 +1828,7 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
                 <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: '#34d399' }}>{fmt(fTotalIng)}</td>
                 <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: '#f87171' }}>{fmt(fTotalEgr)}</td>
                 <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: fResultado >= 0 ? '#34d399' : '#f87171' }}>{fResultado >= 0 ? '+' : ''}{fmt(fResultado)}</td>
-                <td colSpan={2} style={{ padding: '8px 10px', textAlign: 'right', fontSize: '11px', color: '#475569' }}>
+                <td colSpan={2} style={{ padding: '8px 10px', textAlign: 'right', fontSize: '11px', color: '#7f8a9c' }}>
                   Margen proyectado: <strong style={{ color: scParam.color }}>{fMargen.toFixed(1)}%</strong>
                 </td>
               </tr>
@@ -1856,21 +1856,21 @@ function Forecast({ movs }: { movs: Movimiento[] }) {
               <div key={key} onClick={() => setScenario(key)} style={{ ...G.panel, padding: '16px 18px', cursor: 'pointer', border: `1px solid ${isActive ? sc.color + '40' : 'rgba(255,255,255,0.07)'}`, background: isActive ? `${sc.color}08` : 'rgba(255,255,255,0.02)', transition: 'all 0.2s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: sc.color }}>{sc.label}</p>
-                  {isActive && <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '4px', background: `${sc.color}20`, color: sc.color, fontWeight: 700 }}>ACTIVO</span>}
+                  {isActive && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: `${sc.color}20`, color: sc.color, fontWeight: 700 }}>ACTIVO</span>}
                 </div>
                 <p style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 800, color: sRes >= 0 ? sc.color : '#f87171', letterSpacing: '-0.02em' }}>{sRes >= 0 ? '+' : ''}{fmt(sRes)}</p>
-                <p style={{ margin: '0 0 10px', fontSize: '10px', color: '#475569' }}>resultado proyectado</p>
+                <p style={{ margin: '0 0 10px', fontSize: '11px', color: '#7f8a9c' }}>resultado proyectado</p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                   <span style={{ color: '#34d399' }}>Ing: {fmt(sTotalIng)}</span>
                   <span style={{ color: '#f87171' }}>Egr: {fmt(sTotalEgr)}</span>
                 </div>
                 <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '10px', color: '#475569' }}>Margen</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Margen</span>
                   <span style={{ fontSize: '11px', fontWeight: 700, color: sMar >= 15 ? '#34d399' : sMar >= 5 ? '#fbbf24' : '#f87171' }}>{sMar.toFixed(1)}%</span>
                 </div>
                 <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '10px', color: '#475569' }}>Crecimiento ing.</span>
-                  <span style={{ fontSize: '10px', color: sc.ingMult >= 1 ? '#34d399' : '#f87171' }}>{sc.ingMult >= 1 ? '+' : ''}{((sc.ingMult - 1) * 100).toFixed(0)}%/mes</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Crecimiento ing.</span>
+                  <span style={{ fontSize: '11px', color: sc.ingMult >= 1 ? '#34d399' : '#f87171' }}>{sc.ingMult >= 1 ? '+' : ''}{((sc.ingMult - 1) * 100).toFixed(0)}%/mes</span>
                 </div>
               </div>
             );
@@ -1911,7 +1911,7 @@ function agingOf(vencimientoISO: string): AgingBucket {
 function AgingChip({ bucket }: { bucket: AgingBucket }) {
   const b = AGING_BUCKETS.find(x => x.key === bucket)!;
   return (
-    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: b.bg, color: b.color, whiteSpace: 'nowrap' }}>
+    <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: b.bg, color: b.color, whiteSpace: 'nowrap' }}>
       {b.label}
     </span>
   );
@@ -2010,9 +2010,9 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
         ].map(k => (
           <div key={k.label} style={{ ...G.card, padding: '15px 17px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 100% 0%, ${k.color}0e, transparent 55%)`, pointerEvents: 'none' }} />
-            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
+            <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
             <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: k.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{k.val}</p>
-            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#334155' }}>{k.sub}</p>
+            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -2021,9 +2021,9 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '10px', marginBottom: '14px' }}>
         {bucketTotals.map(b => (
           <div key={b.key} style={{ ...G.panel, padding: '12px 14px', borderLeft: `3px solid ${b.color}`, cursor: 'pointer' }} onClick={() => setFiltro(b.key === 'corriente' ? 'pendientes' : 'vencidas')}>
-            <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: b.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{b.label}</p>
+            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 700, color: b.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{b.label}</p>
             <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: b.count > 0 ? b.color : '#334155' }}>{fmt(b.total)}</p>
-            <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#475569' }}>{b.count} factura{b.count !== 1 ? 's' : ''}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{b.count} factura{b.count !== 1 ? 's' : ''}</p>
             {b.total > 0 && totalCxC > 0 && (
               <div style={{ marginTop: '7px', height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.06)' }}>
                 <div style={{ height: '100%', width: `${(b.total / totalCxC) * 100}%`, background: b.color, borderRadius: '2px' }} />
@@ -2044,7 +2044,7 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
                 <SemaforoCliente facturas={facsCli} />
                 <div>
                   <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>{cliente}</p>
-                  <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{facsCli.length} factura{facsCli.length !== 1 ? 's' : ''} · {fmt(totalCli)}</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{facsCli.length} factura{facsCli.length !== 1 ? 's' : ''} · {fmt(totalCli)}</p>
                 </div>
               </div>
             );
@@ -2070,13 +2070,13 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
                 {['N° Factura','Cliente','Concepto','Emitida','Vencimiento','Monto','Cobrado','Saldo','Aging','Estado',''].map((h, i) => (
-                  <th key={h+i} style={{ padding: '9px 12px', textAlign: i >= 5 ? 'right' : 'left', fontWeight: 700, fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h+i} style={{ padding: '9px 12px', textAlign: i >= 5 ? 'right' : 'left', fontWeight: 700, fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {visible.length === 0 && (
-                <tr><td colSpan={11} style={{ padding: '32px', textAlign: 'center', color: '#334155', fontSize: '13px' }}>Sin facturas para mostrar</td></tr>
+                <tr><td colSpan={11} style={{ padding: '32px', textAlign: 'center', color: '#7f8a9c', fontSize: '13px' }}>Sin facturas para mostrar</td></tr>
               )}
               {visible.map((f, i) => {
                 const sal = saldo(f);
@@ -2097,7 +2097,7 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
                     <td style={{ padding: '9px 12px', color: '#94a3b8', maxWidth: '180px' }}>
                       <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.concepto}</p>
                     </td>
-                    <td style={{ padding: '9px 12px', color: '#475569', whiteSpace: 'nowrap' }}>{f.emitida}</td>
+                    <td style={{ padding: '9px 12px', color: '#7f8a9c', whiteSpace: 'nowrap' }}>{f.emitida}</td>
                     <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
                       <span style={{ color: bucket === 'corriente' ? '#94a3b8' : AGING_BUCKETS.find(b => b.key === bucket)!.color, fontWeight: bucket !== 'corriente' ? 700 : 400 }}>{f.vencimiento}</span>
                     </td>
@@ -2106,15 +2106,15 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
                     <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: sal > 0 ? (bucket !== 'corriente' ? '#f87171' : '#e2e8f0') : '#334155' }}>{sal > 0 ? fmt(sal) : '—'}</td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }}>{f.estado !== 'pagada' && <AgingChip bucket={bucket} />}</td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: `${estadoColor}18`, color: estadoColor, textTransform: 'capitalize' }}>{f.estado}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: `${estadoColor}18`, color: estadoColor, textTransform: 'capitalize' }}>{f.estado}</span>
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
                         {f.estado !== 'pagada' && f.estado !== 'anulada' && (
-                          <button onClick={e=>{e.stopPropagation();marcarPagada(f);}} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Cobrada</button>
+                          <button onClick={e=>{e.stopPropagation();marcarPagada(f);}} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Cobrada</button>
                         )}
-                        <button onClick={e=>{e.stopPropagation();openEdit(f);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
-                        <button onClick={e=>{e.stopPropagation();eliminar(f);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
+                        <button onClick={e=>{e.stopPropagation();openEdit(f);}} style={{ padding: '3px 7px', fontSize: '11px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={e=>{e.stopPropagation();eliminar(f);}} style={{ padding: '3px 7px', fontSize: '11px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
                       </div>
                     </td>
                   </tr>
@@ -2123,7 +2123,7 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
             </tbody>
             <tfoot>
               <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-                <td colSpan={5} style={{ padding: '8px 12px', fontWeight: 700, fontSize: '11px', color: '#475569' }}>TOTAL VISIBLE ({visible.length})</td>
+                <td colSpan={5} style={{ padding: '8px 12px', fontWeight: 700, fontSize: '11px', color: '#7f8a9c' }}>TOTAL VISIBLE ({visible.length})</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#e2e8f0' }}>{fmt(visible.reduce((s, f) => s + f.monto, 0))}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#34d399' }}>{fmt(visible.reduce((s, f) => s + f.pagado, 0))}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#f87171' }}>{fmt(visible.reduce((s, f) => s + saldo(f), 0))}</td>
@@ -2149,15 +2149,15 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
             <div style={{ padding:'18px 20px', background:'rgba(255,255,255,0.03)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.07)', marginBottom:'18px' }}>
               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'10px' }}>
                 <div>
-                  <p style={{ margin:'0 0 4px', fontFamily:'monospace', fontSize:'12px', color:'#475569' }}>{f.numero}</p>
+                  <p style={{ margin:'0 0 4px', fontFamily:'monospace', fontSize:'12px', color: '#7f8a9c' }}>{f.numero}</p>
                   <p style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#f1f5f9' }}>{f.cliente}</p>
                   <p style={{ margin:'4px 0 0', fontSize:'13px', color:'#94a3b8' }}>{f.concepto}</p>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <p style={{ margin:'0 0 4px', fontSize:'11px', color:'#475569' }}>MONTO TOTAL</p>
+                  <p style={{ margin:'0 0 4px', fontSize:'11px', color: '#7f8a9c' }}>MONTO TOTAL</p>
                   <p style={{ margin:0, fontSize:'28px', fontWeight:900, color:'#e2e8f0', letterSpacing:'-0.02em' }}>{fmt(f.monto)}</p>
                   <div style={{ display:'flex', gap:'6px', justifyContent:'flex-end', marginTop:'6px' }}>
-                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${estadoColor}18`, color:estadoColor }}>{f.estado}</span>
+                    <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${estadoColor}18`, color:estadoColor }}>{f.estado}</span>
                     {f.estado!=='pagada' && <AgingChip bucket={bucket} />}
                   </div>
                 </div>
@@ -2165,7 +2165,7 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
               {/* Payment progress */}
               <div style={{ marginTop:'12px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
-                  <span style={{ fontSize:'11px', color:'#475569' }}>Progreso de cobro</span>
+                  <span style={{ fontSize:'11px', color: '#7f8a9c' }}>Progreso de cobro</span>
                   <span style={{ fontSize:'11px', fontWeight:700, color:pctCobrado===100?'#34d399':'#94a3b8' }}>{pctCobrado}% cobrado</span>
                 </div>
                 <div style={{ height:'8px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
@@ -2173,22 +2173,22 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
                 </div>
                 <div style={{ display:'flex', justifyContent:'space-between', marginTop:'5px' }}>
                   <span style={{ fontSize:'11px', color:'#34d399' }}>Cobrado: {fmt(f.pagado)}</span>
-                  <span style={{ fontSize:'11px', color:sal>0?bInfo.color:'#334155', fontWeight:700 }}>Saldo: {fmt(sal)}</span>
+                  <span style={{ fontSize:'11px', color:sal>0?bInfo.color: '#7f8a9c', fontWeight:700 }}>Saldo: {fmt(sal)}</span>
                 </div>
               </div>
             </div>
             {/* Dates + aging */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginBottom:'18px' }}>
               <div style={{ ...G.panel, padding:'12px 14px' }}>
-                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Fecha emisión</p>
+                <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Fecha emisión</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{f.emitida}</p>
               </div>
               <div style={{ ...G.panel, padding:'12px 14px' }}>
-                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Vencimiento</p>
+                <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Vencimiento</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:bucket!=='corriente'?bInfo.color:'#e2e8f0' }}>{f.vencimiento}</p>
               </div>
               <div style={{ ...G.panel, padding:'12px 14px', background:bInfo.bg }}>
-                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Antigüedad</p>
+                <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Antigüedad</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:700, color:bInfo.color }}>
                   {diasVencimiento < 0 ? `Vence en ${Math.abs(diasVencimiento)}d` : diasVencimiento===0 ? 'Vence hoy' : `${diasVencimiento}d vencida`}
                 </p>
@@ -2212,7 +2212,7 @@ function CxC({ facturas, onSave }: { facturas: Factura[]; onSave: (v: Factura[])
           <div style={{ ...G.modal, width: '100%', maxWidth: '500px', padding: '0' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>{editing ? 'Editar factura' : 'Nueva factura CxC'}</p>
-              <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '18px' }}>×</button>
+              <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#7f8a9c', cursor: 'pointer', fontSize: '18px' }}>×</button>
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -2326,9 +2326,9 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
         ].map(k => (
           <div key={k.label} style={{ ...G.card, padding: '15px 17px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 100% 0%, ${k.color}0e, transparent 55%)`, pointerEvents: 'none' }} />
-            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
+            <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
             <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: k.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{k.val}</p>
-            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#334155' }}>{k.sub}</p>
+            <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -2337,9 +2337,9 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '10px', marginBottom: '14px' }}>
         {bucketTotals.map(b => (
           <div key={b.key} style={{ ...G.panel, padding: '12px 14px', borderLeft: `3px solid ${b.color}`, cursor: 'pointer' }} onClick={() => setFiltro(b.key === 'corriente' ? 'pendientes' : 'vencidas')}>
-            <p style={{ margin: '0 0 6px', fontSize: '10px', fontWeight: 700, color: b.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{b.label}</p>
+            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 700, color: b.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{b.label}</p>
             <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: b.count > 0 ? b.color : '#334155' }}>{fmt(b.total)}</p>
-            <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#475569' }}>{b.count} factura{b.count !== 1 ? 's' : ''}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{b.count} factura{b.count !== 1 ? 's' : ''}</p>
             {b.total > 0 && totalCxP > 0 && (
               <div style={{ marginTop: '7px', height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.06)' }}>
                 <div style={{ height: '100%', width: `${(b.total / totalCxP) * 100}%`, background: b.color, borderRadius: '2px' }} />
@@ -2360,8 +2360,8 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
               return (
                 <div key={p.id} style={{ ...G.panel, padding: '8px 12px', background: 'rgba(255,255,255,0.02)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: pc.bg, color: pc.color }}>{p.prioridad}</span>
-                    <span style={{ fontSize: '10px', color: '#475569' }}>vence en {diasV}d</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: pc.bg, color: pc.color }}>{p.prioridad}</span>
+                    <span style={{ fontSize: '11px', color: '#7f8a9c' }}>vence en {diasV}d</span>
                   </div>
                   <p style={{ margin: '0 0 2px', fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>{p.proveedor}</p>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#fbbf24' }}>{fmt(saldo(p))}</p>
@@ -2396,13 +2396,13 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
                 {['N° Doc.','Prioridad','Proveedor','Concepto','Recibida','Vencimiento','Monto','Pagado','Saldo','Aging','Estado',''].map((h, i) => (
-                  <th key={h+i} style={{ padding: '9px 12px', textAlign: i >= 6 ? 'right' : 'left', fontWeight: 700, fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h+i} style={{ padding: '9px 12px', textAlign: i >= 6 ? 'right' : 'left', fontWeight: 700, fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {visible.length === 0 && (
-                <tr><td colSpan={12} style={{ padding: '32px', textAlign: 'center', color: '#334155', fontSize: '13px' }}>Sin facturas para mostrar</td></tr>
+                <tr><td colSpan={12} style={{ padding: '32px', textAlign: 'center', color: '#7f8a9c', fontSize: '13px' }}>Sin facturas para mostrar</td></tr>
               )}
               {visible.map((p, i) => {
                 const sal = saldo(p);
@@ -2416,13 +2416,13 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
                   >
                     <td style={{ padding: '9px 12px', color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace', fontSize: '11px', whiteSpace: 'nowrap' }}>{p.numero}</td>
                     <td style={{ padding: '9px 12px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: pc.bg, color: pc.color }}>{p.prioridad}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: pc.bg, color: pc.color }}>{p.prioridad}</span>
                     </td>
                     <td style={{ padding: '9px 12px', color: '#e2e8f0', fontWeight: 600 }}>{p.proveedor}</td>
                     <td style={{ padding: '9px 12px', color: '#94a3b8', maxWidth: '160px' }}>
                       <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.concepto}</p>
                     </td>
-                    <td style={{ padding: '9px 12px', color: '#475569', whiteSpace: 'nowrap' }}>{p.recibida}</td>
+                    <td style={{ padding: '9px 12px', color: '#7f8a9c', whiteSpace: 'nowrap' }}>{p.recibida}</td>
                     <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
                       <span style={{ color: bucket === 'corriente' ? '#94a3b8' : AGING_BUCKETS.find(b => b.key === bucket)!.color, fontWeight: bucket !== 'corriente' ? 700 : 400 }}>{p.vencimiento}</span>
                     </td>
@@ -2431,15 +2431,15 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
                     <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: sal > 0 ? (bucket !== 'corriente' ? '#f87171' : '#e2e8f0') : '#334155' }}>{sal > 0 ? fmt(sal) : '—'}</td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }}>{p.estado !== 'pagada' && <AgingChip bucket={bucket} />}</td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: `${estadoColor}18`, color: estadoColor, textTransform: 'capitalize' }}>{p.estado}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: `${estadoColor}18`, color: estadoColor, textTransform: 'capitalize' }}>{p.estado}</span>
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
                         {p.estado !== 'pagada' && (
-                          <button onClick={e=>{e.stopPropagation();marcarPagada(p);}} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Pagada</button>
+                          <button onClick={e=>{e.stopPropagation();marcarPagada(p);}} title="Marcar como pagada" style={{ padding: '3px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '5px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.1)', color: '#34d399', cursor: 'pointer' }}>✓ Pagada</button>
                         )}
-                        <button onClick={e=>{e.stopPropagation();openEdit(p);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
-                        <button onClick={e=>{e.stopPropagation();eliminar(p);}} style={{ padding: '3px 7px', fontSize: '10px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
+                        <button onClick={e=>{e.stopPropagation();openEdit(p);}} style={{ padding: '3px 7px', fontSize: '11px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={e=>{e.stopPropagation();eliminar(p);}} style={{ padding: '3px 7px', fontSize: '11px', borderRadius: '5px', border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(248,113,113,0.06)', color: '#f87171', cursor: 'pointer' }}>×</button>
                       </div>
                     </td>
                   </tr>
@@ -2448,7 +2448,7 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
             </tbody>
             <tfoot>
               <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-                <td colSpan={6} style={{ padding: '8px 12px', fontWeight: 700, fontSize: '11px', color: '#475569' }}>TOTAL VISIBLE ({visible.length})</td>
+                <td colSpan={6} style={{ padding: '8px 12px', fontWeight: 700, fontSize: '11px', color: '#7f8a9c' }}>TOTAL VISIBLE ({visible.length})</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#e2e8f0' }}>{fmt(visible.reduce((s, p) => s + p.monto, 0))}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#34d399' }}>{fmt(visible.reduce((s, p) => s + p.pagado, 0))}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: '#f87171' }}>{fmt(visible.reduce((s, p) => s + saldo(p), 0))}</td>
@@ -2477,17 +2477,17 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'10px' }}>
                 <div>
                   <div style={{ display:'flex', alignItems:'center', gap:'7px', marginBottom:'6px' }}>
-                    <p style={{ margin:0, fontFamily:'monospace', fontSize:'12px', color:'#475569' }}>{p.numero}</p>
-                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:pc.bg, color:pc.color }}>{p.prioridad}</span>
+                    <p style={{ margin:0, fontFamily:'monospace', fontSize:'12px', color: '#7f8a9c' }}>{p.numero}</p>
+                    <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:pc.bg, color:pc.color }}>{p.prioridad}</span>
                   </div>
                   <p style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#f1f5f9' }}>{p.proveedor}</p>
                   <p style={{ margin:'4px 0 0', fontSize:'13px', color:'#94a3b8' }}>{p.concepto}</p>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <p style={{ margin:'0 0 4px', fontSize:'11px', color:'#475569' }}>MONTO TOTAL</p>
+                  <p style={{ margin:'0 0 4px', fontSize:'11px', color: '#7f8a9c' }}>MONTO TOTAL</p>
                   <p style={{ margin:0, fontSize:'28px', fontWeight:900, color:'#e2e8f0', letterSpacing:'-0.02em' }}>{fmt(p.monto)}</p>
                   <div style={{ display:'flex', gap:'6px', justifyContent:'flex-end', marginTop:'6px' }}>
-                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${estadoColor}18`, color:estadoColor }}>{p.estado}</span>
+                    <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${estadoColor}18`, color:estadoColor }}>{p.estado}</span>
                     {p.estado!=='pagada' && <AgingChip bucket={bucket} />}
                   </div>
                 </div>
@@ -2495,7 +2495,7 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
               {/* Payment progress */}
               <div style={{ marginTop:'10px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
-                  <span style={{ fontSize:'11px', color:'#475569' }}>Progreso de pago</span>
+                  <span style={{ fontSize:'11px', color: '#7f8a9c' }}>Progreso de pago</span>
                   <span style={{ fontSize:'11px', fontWeight:700, color:pctPagado===100?'#34d399':'#94a3b8' }}>{pctPagado}% pagado</span>
                 </div>
                 <div style={{ height:'8px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
@@ -2510,15 +2510,15 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
             {/* Dates + urgencia */}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginBottom:'18px' }}>
               <div style={{ ...G.panel, padding:'12px 14px' }}>
-                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Recibida</p>
+                <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Recibida</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:'#e2e8f0' }}>{p.recibida}</p>
               </div>
               <div style={{ ...G.panel, padding:'12px 14px' }}>
-                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Vencimiento</p>
+                <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Vencimiento</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:600, color:bucket!=='corriente'?bInfo.color:'#e2e8f0' }}>{p.vencimiento}</p>
               </div>
               <div style={{ ...G.panel, padding:'12px 14px', background:bInfo.bg }}>
-                <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em' }}>Estado</p>
+                <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.05em' }}>Estado</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:700, color:bInfo.color }}>
                   {diasV < 0 ? `Vence en ${Math.abs(diasV)}d` : diasV===0 ? 'Vence hoy' : `${diasV}d vencida`}
                 </p>
@@ -2548,7 +2548,7 @@ function CxP({ provs, onSave }: { provs: FacturaProv[]; onSave: (v: FacturaProv[
           <div style={{ ...G.modal, width: '100%', maxWidth: '500px', padding: '0' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>{editing ? 'Editar factura proveedor' : 'Nueva factura CxP'}</p>
-              <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '18px' }}>×</button>
+              <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#7f8a9c', cursor: 'pointer', fontSize: '18px' }}>×</button>
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -2644,18 +2644,18 @@ function DashboardEjecutivo({
         <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 70% 50%, rgba(52,211,153,0.07), transparent 55%)', pointerEvents:'none' }} />
         <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'24px', alignItems:'center' }}>
           <div>
-            <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.08em' }}>Capital de Trabajo (Working Capital)</p>
+            <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.08em' }}>Capital de Trabajo (Working Capital)</p>
             <p style={{ margin:'0 0 4px', fontSize:'44px', fontWeight:900, letterSpacing:'-0.04em', lineHeight:1, color:wc>=0?'#34d399':'#f87171' }}>{fmt(Math.abs(wc))}</p>
-            <p style={{ margin:0, fontSize:'13px', color:'#475569' }}>{wc>=0?'▲ Posición positiva — CxC supera CxP':'▼ Posición negativa — CxP supera CxC'}</p>
+            <p style={{ margin:0, fontSize:'13px', color: '#7f8a9c' }}>{wc>=0?'▲ Posición positiva — CxC supera CxP':'▼ Posición negativa — CxP supera CxC'}</p>
           </div>
           <div style={{ display:'flex', gap:'16px' }}>
             <div style={{ textAlign:'center' }}>
-              <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase' }}>CxC</p>
+              <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase' }}>CxC</p>
               <p style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#34d399' }}>{fmt(cxcTotal)}</p>
             </div>
             <div style={{ width:'1px', background:'rgba(255,255,255,0.07)', alignSelf:'stretch' }} />
             <div style={{ textAlign:'center' }}>
-              <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase' }}>CxP</p>
+              <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase' }}>CxP</p>
               <p style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#f87171' }}>{fmt(cxpTotal)}</p>
             </div>
           </div>
@@ -2673,9 +2673,9 @@ function DashboardEjecutivo({
         ].map(k => (
           <div key={k.label} style={{ ...G.card, padding:'14px 16px', position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', inset:0, background:`radial-gradient(ellipse at 100% 0%, ${k.color}0c, transparent 60%)`, pointerEvents:'none' }} />
-            <p style={{ margin:'0 0 6px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
+            <p style={{ margin:'0 0 6px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
             <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:k.color, letterSpacing:'-0.02em', lineHeight:1 }}>{k.val}</p>
-            <p style={{ margin:'4px 0 0', fontSize:'10px', color:'#334155' }}>{k.sub}</p>
+            <p style={{ margin:'4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -2690,7 +2690,7 @@ function DashboardEjecutivo({
                 <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#f87171', boxShadow:'0 0 6px #f87171' }} />
                 <div style={{ textAlign:'left' }}>
                   <p style={{ margin:0, fontSize:'11px', fontWeight:700, color:'#f87171' }}>{facVencidas.length} facturas CxC vencidas</p>
-                  <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>{fmt(facVencidas.reduce((s,f)=>s+saldoFac(f),0))} por cobrar</p>
+                  <p style={{ margin:0, fontSize: '11px', color: '#7f8a9c' }}>{fmt(facVencidas.reduce((s,f)=>s+saldoFac(f),0))} por cobrar</p>
                 </div>
               </button>
             )}
@@ -2699,7 +2699,7 @@ function DashboardEjecutivo({
                 <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#fbbf24' }} />
                 <div style={{ textAlign:'left' }}>
                   <p style={{ margin:0, fontSize:'11px', fontWeight:700, color:'#fbbf24' }}>{provVencidos.length} vencidos · {provProximos.length} próximos (7d)</p>
-                  <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>CxP — {fmt([...provVencidos,...provProximos].reduce((s,p)=>s+saldoProv(p),0))}</p>
+                  <p style={{ margin:0, fontSize: '11px', color: '#7f8a9c' }}>CxP — {fmt([...provVencidos,...provProximos].reduce((s,p)=>s+saldoProv(p),0))}</p>
                 </div>
               </button>
             )}
@@ -2708,7 +2708,7 @@ function DashboardEjecutivo({
                 <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#f87171', boxShadow:'0 0 6px #f87171' }} />
                 <div style={{ textAlign:'left' }}>
                   <p style={{ margin:0, fontSize:'11px', fontWeight:700, color:'#f87171' }}>{impVencidos.length} impuesto{impVencidos.length!==1?'s':''} vencido{impVencidos.length!==1?'s':''}</p>
-                  <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>{fmt(impVencidos.reduce((s,i)=>s+i.monto-i.pagado,0))} pendiente</p>
+                  <p style={{ margin:0, fontSize: '11px', color: '#7f8a9c' }}>{fmt(impVencidos.reduce((s,i)=>s+i.monto-i.pagado,0))} pendiente</p>
                 </div>
               </button>
             )}
@@ -2717,7 +2717,7 @@ function DashboardEjecutivo({
                 <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#fbbf24' }} />
                 <div style={{ textAlign:'left' }}>
                   <p style={{ margin:0, fontSize:'11px', fontWeight:700, color:'#fbbf24' }}>{presAlerta.length} presupuesto{presAlerta.length!==1?'s':''} al límite (≥90%)</p>
-                  <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>Revisar ejecución presupuestal</p>
+                  <p style={{ margin:0, fontSize: '11px', color: '#7f8a9c' }}>Revisar ejecución presupuestal</p>
                 </div>
               </button>
             )}
@@ -2726,7 +2726,7 @@ function DashboardEjecutivo({
       )}
 
       {/* Module shortcuts */}
-      <p style={{ margin:'0 0 12px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.07em' }}>Acceso rápido a módulos</p>
+      <p style={{ margin:'0 0 12px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.07em' }}>Acceso rápido a módulos</p>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'10px' }}>
         {SHORTCUTS.map(m => (
           <button key={m.label} onClick={()=>onNav(m.tab)}
@@ -2738,7 +2738,7 @@ function DashboardEjecutivo({
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d={m.icon}/></svg>
             </div>
             <p style={{ margin:'0 0 2px', fontSize:'12px', fontWeight:700, color:'#e2e8f0' }}>{m.label}</p>
-            <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>{m.desc}</p>
+            <p style={{ margin:0, fontSize: '11px', color: '#7f8a9c' }}>{m.desc}</p>
           </button>
         ))}
       </div>
@@ -2809,9 +2809,9 @@ function Tesoreria({ movs, facturas, provs }: { movs: Movimiento[]; facturas: Fa
         ].map(k => (
           <div key={k.label} style={{ ...G.card, padding:'14px 16px', position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', inset:0, background:`radial-gradient(ellipse at 100% 0%, ${k.color}0c, transparent 60%)`, pointerEvents:'none' }} />
-            <p style={{ margin:'0 0 6px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
+            <p style={{ margin:'0 0 6px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
             <p style={{ margin:0, fontSize:'20px', fontWeight:800, color:k.color, letterSpacing:'-0.02em', lineHeight:1 }}>{k.val}</p>
-            <p style={{ margin:'4px 0 0', fontSize:'10px', color:'#334155' }}>{k.sub}</p>
+            <p style={{ margin:'4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -2856,7 +2856,7 @@ function Tesoreria({ movs, facturas, provs }: { movs: Movimiento[]; facturas: Fa
           <thead>
             <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)' }}>
               {['Semana','Período','Entradas','Salidas','Neto','Saldo acum.'].map((h,i)=>(
-                <th key={h} style={{ padding:'9px 12px', textAlign:i>=2?'right':'left', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap' }}>{h}</th>
+                <th key={h} style={{ padding:'9px 12px', textAlign:i>=2?'right':'left', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -2871,7 +2871,7 @@ function Tesoreria({ movs, facturas, provs }: { movs: Movimiento[]; facturas: Fa
                   onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background=b<0?'rgba(248,113,113,0.04)':selWeek===i?'rgba(52,211,153,0.04)':'transparent'}
                 >
                   <td style={{ padding:'8px 12px', fontWeight:700, color:b<0?'#f87171':'#e2e8f0' }}>{w.label}</td>
-                  <td style={{ padding:'8px 12px', fontSize:'11px', color:'#475569' }}>{w.from} → {w.to}</td>
+                  <td style={{ padding:'8px 12px', fontSize:'11px', color: '#7f8a9c' }}>{w.from} → {w.to}</td>
                   <td style={{ padding:'8px 12px', textAlign:'right', color:'#34d399', fontWeight:600 }}>{w.entradas>0?fmt(w.entradas):'—'}</td>
                   <td style={{ padding:'8px 12px', textAlign:'right', color:'#f87171', fontWeight:600 }}>{w.salidas>0?fmt(w.salidas):'—'}</td>
                   <td style={{ padding:'8px 12px', textAlign:'right', fontWeight:700, color:neto>=0?'#34d399':'#f87171' }}>{neto!==0?(neto>0?'+':'')+fmt(neto):'—'}</td>
@@ -2961,9 +2961,9 @@ function Impuestos({ impuestos, onSave }: { impuestos: Impuesto[]; onSave: (v: I
         ].map(k=>(
           <div key={k.label} style={{ ...G.card, padding:'14px 16px', position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', inset:0, background:`radial-gradient(ellipse at 100% 0%, ${k.color}0c, transparent 60%)`, pointerEvents:'none' }} />
-            <p style={{ margin:'0 0 6px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
+            <p style={{ margin:'0 0 6px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.06em' }}>{k.label}</p>
             <p style={{ margin:0, fontSize:k.label==='Próxima Obligación'?'13px':'20px', fontWeight:800, color:k.color, lineHeight:1.2 }}>{k.val}</p>
-            <p style={{ margin:'4px 0 0', fontSize:'10px', color:'#334155' }}>{k.sub}</p>
+            <p style={{ margin:'4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -2972,9 +2972,9 @@ function Impuestos({ impuestos, onSave }: { impuestos: Impuesto[]; onSave: (v: I
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'10px', marginBottom:'14px' }}>
         {tipoTotals.map(t=>(
           <div key={t.tipo} style={{ ...G.panel, padding:'12px 14px', borderLeft:`3px solid ${IMP_TIPO_COLORS[t.tipo]}` }}>
-            <p style={{ margin:'0 0 4px', fontSize:'10px', fontWeight:700, color:IMP_TIPO_COLORS[t.tipo], textTransform:'uppercase', letterSpacing:'0.05em' }}>{IMP_TIPO_LABELS[t.tipo]}</p>
+            <p style={{ margin:'0 0 4px', fontSize: '11px', fontWeight:700, color:IMP_TIPO_COLORS[t.tipo], textTransform:'uppercase', letterSpacing:'0.05em' }}>{IMP_TIPO_LABELS[t.tipo]}</p>
             <p style={{ margin:0, fontSize:'16px', fontWeight:800, color:t.count>0?IMP_TIPO_COLORS[t.tipo]:'#334155' }}>{fmt(t.total)}</p>
-            <p style={{ margin:'2px 0 0', fontSize:'10px', color:'#475569' }}>{t.count} obligación{t.count!==1?'es':''} pendiente{t.count!==1?'s':''}</p>
+            <p style={{ margin:'2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{t.count} obligación{t.count!==1?'es':''} pendiente{t.count!==1?'s':''}</p>
           </div>
         ))}
       </div>
@@ -3000,12 +3000,12 @@ function Impuestos({ impuestos, onSave }: { impuestos: Impuesto[]; onSave: (v: I
           <thead>
             <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.02)' }}>
               {['','Nombre','Tipo','Período','Fecha Límite','Monto','Pagado','Saldo','Estado',''].map((h,i)=>(
-                <th key={h+i} style={{ padding:'9px 12px', textAlign:i>=5?'right':'left', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap' }}>{h}</th>
+                <th key={h+i} style={{ padding:'9px 12px', textAlign:i>=5?'right':'left', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {visible.length===0&&<tr><td colSpan={10} style={{ padding:'32px', textAlign:'center', color:'#334155', fontSize:'13px' }}>Sin obligaciones para este filtro</td></tr>}
+            {visible.length===0&&<tr><td colSpan={10} style={{ padding:'32px', textAlign:'center', color: '#7f8a9c', fontSize:'13px' }}>Sin obligaciones para este filtro</td></tr>}
             {visible.map((imp, i) => {
               const sal  = saldo(imp);
               const ec   = IMP_ESTADO_COLORS[imp.estado];
@@ -3019,21 +3019,21 @@ function Impuestos({ impuestos, onSave }: { impuestos: Impuesto[]; onSave: (v: I
                 >
                   <td style={{ padding:'9px 12px' }}><div style={{ width:'8px', height:'8px', borderRadius:'50%', background:ec.color, boxShadow:`0 0 5px ${ec.color}` }} /></td>
                   <td style={{ padding:'9px 12px', fontWeight:600, color:'#e2e8f0' }}>{imp.nombre}</td>
-                  <td style={{ padding:'9px 12px' }}><span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${tc}18`, color:tc }}>{IMP_TIPO_LABELS[imp.tipo]}</span></td>
-                  <td style={{ padding:'9px 12px', color:'#475569', fontFamily:'monospace', fontSize:'11px' }}>{imp.periodo}</td>
+                  <td style={{ padding:'9px 12px' }}><span style={{ fontSize: '11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${tc}18`, color:tc }}>{IMP_TIPO_LABELS[imp.tipo]}</span></td>
+                  <td style={{ padding:'9px 12px', color: '#7f8a9c', fontFamily:'monospace', fontSize:'11px' }}>{imp.periodo}</td>
                   <td style={{ padding:'9px 12px', whiteSpace:'nowrap' }}>
                     <span style={{ fontWeight:dV>0&&imp.estado!=='pagado'?700:400, color:dV>0&&imp.estado!=='pagado'?'#f87171':'#94a3b8' }}>{imp.fechaLimite}</span>
-                    {dV>0&&imp.estado!=='pagado'&&<span style={{ fontSize:'10px', color:'#f87171', marginLeft:'4px' }}>+{dV}d</span>}
+                    {dV>0&&imp.estado!=='pagado'&&<span style={{ fontSize: '11px', color:'#f87171', marginLeft:'4px' }}>+{dV}d</span>}
                   </td>
                   <td style={{ padding:'9px 12px', textAlign:'right', fontWeight:600, color:'#e2e8f0' }}>{fmt(imp.monto)}</td>
                   <td style={{ padding:'9px 12px', textAlign:'right', color:'#34d399' }}>{imp.pagado>0?fmt(imp.pagado):'—'}</td>
                   <td style={{ padding:'9px 12px', textAlign:'right', fontWeight:700, color:sal>0?(imp.estado==='vencido'?'#f87171':'#fbbf24'):'#334155' }}>{sal>0?fmt(sal):'—'}</td>
-                  <td style={{ padding:'9px 12px', textAlign:'right' }}><span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:ec.bg, color:ec.color }}>{imp.estado}</span></td>
+                  <td style={{ padding:'9px 12px', textAlign:'right' }}><span style={{ fontSize: '11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:ec.bg, color:ec.color }}>{imp.estado}</span></td>
                   <td style={{ padding:'9px 12px', textAlign:'right', whiteSpace:'nowrap' }}>
                     <div style={{ display:'flex', gap:'5px', justifyContent:'flex-end' }}>
-                      {imp.estado!=='pagado'&&<button onClick={e=>{e.stopPropagation();onSave(impuestos.map(x=>x.id===imp.id?{...x,estado:'pagado',pagado:x.monto}:x));}} style={{ padding:'3px 8px', fontSize:'10px', fontWeight:700, borderRadius:'5px', border:'1px solid rgba(52,211,153,0.3)', background:'rgba(52,211,153,0.1)', color:'#34d399', cursor:'pointer' }}>✓ Pagar</button>}
-                      <button onClick={e=>{e.stopPropagation();openEdit(imp);}} style={{ padding:'3px 7px', fontSize:'10px', borderRadius:'5px', border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', color:'#94a3b8', cursor:'pointer' }}>Editar</button>
-                      <button onClick={e=>{e.stopPropagation();eliminar(imp);}} style={{ padding:'3px 7px', fontSize:'10px', borderRadius:'5px', border:'1px solid rgba(248,113,113,0.2)', background:'rgba(248,113,113,0.06)', color:'#f87171', cursor:'pointer' }}>×</button>
+                      {imp.estado!=='pagado'&&<button onClick={e=>{e.stopPropagation();onSave(impuestos.map(x=>x.id===imp.id?{...x,estado:'pagado',pagado:x.monto}:x));}} style={{ padding:'3px 8px', fontSize: '11px', fontWeight:700, borderRadius:'5px', border:'1px solid rgba(52,211,153,0.3)', background:'rgba(52,211,153,0.1)', color:'#34d399', cursor:'pointer' }}>✓ Pagar</button>}
+                      <button onClick={e=>{e.stopPropagation();openEdit(imp);}} style={{ padding:'3px 7px', fontSize: '11px', borderRadius:'5px', border:'1px solid rgba(255,255,255,0.08)', background:'rgba(255,255,255,0.04)', color:'#94a3b8', cursor:'pointer' }}>Editar</button>
+                      <button onClick={e=>{e.stopPropagation();eliminar(imp);}} style={{ padding:'3px 7px', fontSize: '11px', borderRadius:'5px', border:'1px solid rgba(248,113,113,0.2)', background:'rgba(248,113,113,0.06)', color:'#f87171', cursor:'pointer' }}>×</button>
                     </div>
                   </td>
                 </tr>
@@ -3057,20 +3057,20 @@ function Impuestos({ impuestos, onSave }: { impuestos: Impuesto[]; onSave: (v: I
               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
                 <div>
                   <div style={{ display:'flex', gap:'7px', marginBottom:'6px' }}>
-                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${tc}18`, color:tc }}>{IMP_TIPO_LABELS[imp.tipo]}</span>
-                    <span style={{ fontSize:'10px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:ec.bg, color:ec.color }}>{imp.estado}</span>
+                    <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:`${tc}18`, color:tc }}>{IMP_TIPO_LABELS[imp.tipo]}</span>
+                    <span style={{ fontSize: '11px', fontWeight:700, padding:'2px 7px', borderRadius:'5px', background:ec.bg, color:ec.color }}>{imp.estado}</span>
                   </div>
                   <p style={{ margin:0, fontSize:'18px', fontWeight:800, color:'#f1f5f9' }}>{imp.nombre}</p>
-                  <p style={{ margin:'4px 0 0', fontSize:'12px', color:'#475569' }}>Período: {imp.periodo}</p>
+                  <p style={{ margin:'4px 0 0', fontSize:'12px', color: '#7f8a9c' }}>Período: {imp.periodo}</p>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <p style={{ margin:0, fontSize:'11px', color:'#475569' }}>MONTO</p>
+                  <p style={{ margin:0, fontSize:'11px', color: '#7f8a9c' }}>MONTO</p>
                   <p style={{ margin:0, fontSize:'26px', fontWeight:900, color:'#e2e8f0' }}>{fmt(imp.monto)}</p>
                 </div>
               </div>
               <div style={{ marginTop:'14px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'5px' }}>
-                  <span style={{ fontSize:'11px', color:'#475569' }}>Progreso de pago</span>
+                  <span style={{ fontSize:'11px', color: '#7f8a9c' }}>Progreso de pago</span>
                   <span style={{ fontSize:'11px', fontWeight:700, color:pct===100?'#34d399':'#94a3b8' }}>{pct}%</span>
                 </div>
                 <div style={{ height:'7px', borderRadius:'4px', background:'rgba(255,255,255,0.06)' }}>
@@ -3078,23 +3078,23 @@ function Impuestos({ impuestos, onSave }: { impuestos: Impuesto[]; onSave: (v: I
                 </div>
                 <div style={{ display:'flex', justifyContent:'space-between', marginTop:'5px' }}>
                   <span style={{ fontSize:'11px', color:'#34d399' }}>Pagado: {fmt(imp.pagado)}</span>
-                  <span style={{ fontSize:'11px', fontWeight:700, color:sal>0?ec.color:'#334155' }}>Saldo: {fmt(sal)}</span>
+                  <span style={{ fontSize:'11px', fontWeight:700, color:sal>0?ec.color: '#7f8a9c' }}>Saldo: {fmt(sal)}</span>
                 </div>
               </div>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'18px' }}>
               <div style={{ ...G.panel, padding:'12px 14px' }}>
-                <p style={{ margin:'0 0 3px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase' }}>Fecha límite</p>
+                <p style={{ margin:'0 0 3px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase' }}>Fecha límite</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:700, color:dV>0&&imp.estado!=='pagado'?'#f87171':'#e2e8f0' }}>{imp.fechaLimite}</p>
               </div>
               <div style={{ ...G.panel, padding:'12px 14px', background:dV>0&&imp.estado!=='pagado'?'rgba(248,113,113,0.05)':undefined }}>
-                <p style={{ margin:'0 0 3px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase' }}>Antigüedad</p>
+                <p style={{ margin:'0 0 3px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase' }}>Antigüedad</p>
                 <p style={{ margin:0, fontSize:'13px', fontWeight:700, color:dV>0?'#f87171':dV>-15?'#fbbf24':'#34d399' }}>
                   {dV<0?`Vence en ${Math.abs(dV)} días`:dV===0?'Vence hoy':`Vencida hace ${dV} días`}
                 </p>
               </div>
             </div>
-            {imp.notas&&<div style={{ ...G.panel, padding:'12px 14px', marginBottom:'18px' }}><p style={{ margin:'0 0 3px', fontSize:'10px', fontWeight:700, color:'#475569', textTransform:'uppercase' }}>Notas</p><p style={{ margin:0, fontSize:'13px', color:'#94a3b8' }}>{imp.notas}</p></div>}
+            {imp.notas&&<div style={{ ...G.panel, padding:'12px 14px', marginBottom:'18px' }}><p style={{ margin:'0 0 3px', fontSize: '11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase' }}>Notas</p><p style={{ margin:0, fontSize:'13px', color:'#94a3b8' }}>{imp.notas}</p></div>}
             <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end' }}>
               {imp.estado!=='pagado'&&<button onClick={()=>{ onSave(impuestos.map(x=>x.id===imp.id?{...x,estado:'pagado',pagado:x.monto}:x)); setSelImp(null); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(52,211,153,0.3)', background:'rgba(52,211,153,0.1)', color:'#34d399', cursor:'pointer' }}>✓ Marcar pagado</button>}
               <button onClick={()=>{ setSelImp(null); openEdit(imp); }} style={{ padding:'8px 14px', fontSize:'12px', fontWeight:700, borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.04)', color:'#94a3b8', cursor:'pointer' }}>Editar</button>
@@ -3185,7 +3185,7 @@ function CapitalDeTrabajo({ movs, facturas, provs }: { movs: Movimiento[]; factu
           <text x={cx} y={cy+6} textAnchor="middle" fontSize="14" fontWeight="800" fill={color}>{isFinite(value)?value.toFixed(1):'∞'}</text>
         </svg>
         <p style={{ margin:'4px 0 2px', fontSize:'12px', fontWeight:700, color:'#e2e8f0' }}>{label}</p>
-        <p style={{ margin:0, fontSize:'10px', color:'#475569' }}>{sub}</p>
+        <p style={{ margin:0, fontSize: '11px', color: '#7f8a9c' }}>{sub}</p>
       </div>
     );
   };
@@ -3194,12 +3194,12 @@ function CapitalDeTrabajo({ movs, facturas, provs }: { movs: Movimiento[]; factu
     <>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'12px', marginBottom:'16px' }}>
         <div style={{ ...G.card, padding:'20px 24px', background:wc>=0?'rgba(52,211,153,0.05)':'rgba(248,113,113,0.05)', borderColor:wc>=0?'rgba(52,211,153,0.2)':'rgba(248,113,113,0.2)', position:'relative', overflow:'hidden' }}>
-          <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.07em' }}>Capital de Trabajo (WC)</p>
+          <p style={{ margin:'0 0 6px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.07em' }}>Capital de Trabajo (WC)</p>
           <p style={{ margin:0, fontSize:'36px', fontWeight:900, color:wc>=0?'#34d399':'#f87171', letterSpacing:'-0.03em', lineHeight:1 }}>{fmt(Math.abs(wc))}</p>
-          <p style={{ margin:'6px 0 0', fontSize:'12px', color:'#475569' }}>{wc>=0?'Posición neta positiva':'Posición neta negativa'}</p>
+          <p style={{ margin:'6px 0 0', fontSize:'12px', color: '#7f8a9c' }}>{wc>=0?'Posición neta positiva':'Posición neta negativa'}</p>
         </div>
         <div style={{ ...G.card, padding:'20px 24px' }}>
-          <p style={{ margin:'0 0 12px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.07em' }}>Desglose</p>
+          <p style={{ margin:'0 0 12px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.07em' }}>Desglose</p>
           <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
             {[
               { label:'CxC (activo circulante)',    val:fmt(cxcTotal), color:'#34d399' },
@@ -3217,7 +3217,7 @@ function CapitalDeTrabajo({ movs, facturas, provs }: { movs: Movimiento[]; factu
           </div>
         </div>
         <div style={{ ...G.card, padding:'20px 24px' }}>
-          <p style={{ margin:'0 0 12px', fontSize:'11px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.07em' }}>Rotaciones</p>
+          <p style={{ margin:'0 0 12px', fontSize:'11px', fontWeight:700, color: '#7f8a9c', textTransform:'uppercase', letterSpacing:'0.07em' }}>Rotaciones</p>
           <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
             {[
               { label:'Rotación CxC',    val:`${recTurnover.toFixed(2)}x`, color:'#60a5fa' },
@@ -3264,7 +3264,7 @@ function CapitalDeTrabajo({ movs, facturas, provs }: { movs: Movimiento[]; factu
               ))}
             </div>
             <div style={{ marginTop:'12px', paddingTop:'10px', borderTop:'1px solid rgba(255,255,255,0.06)', display:'flex', justifyContent:'space-between' }}>
-              <span style={{ fontSize:'11px', color:'#475569', fontWeight:700 }}>TOTAL</span>
+              <span style={{ fontSize:'11px', color: '#7f8a9c', fontWeight:700 }}>TOTAL</span>
               <span style={{ fontSize:'14px', fontWeight:900, color:col.color }}>{fmt(col.total)}</span>
             </div>
           </div>

@@ -63,7 +63,7 @@ const PRIORITY_LABEL: Record<string, string> = {
 }
 
 const SPRINT_STATUS: Record<string, { label: string; color: string }> = {
-  PLANNED:     { label: 'Planificado', color: '#4b5563' },
+  PLANNED:     { label: 'Planificado', color: '#7f8a9c' },
   IN_PROGRESS: { label: 'En progreso', color: '#3b82f6' },
   DONE:        { label: 'Completado',  color: '#34d399' },
   COMPLETED:   { label: 'Completado',  color: '#34d399' },
@@ -73,7 +73,7 @@ const SPRINT_STATUS: Record<string, { label: string; color: string }> = {
 const EPIC_STATUS: Record<string, { label: string; color: string }> = {
   ACTIVE:    { label: 'Activa',    color: '#34d399' },
   COMPLETED: { label: 'Completa',  color: '#7F77DD' },
-  ARCHIVED:  { label: 'Archivada', color: '#4b5563' },
+  ARCHIVED:  { label: 'Archivada', color: '#7f8a9c' },
 }
 
 export default function SolutionPage() {
@@ -114,18 +114,18 @@ export default function SolutionPage() {
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           Backlog
         </Link>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <Link href="/backlog/sprint" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/sprint" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Rocket size={10}/> Sprints
         </Link>
-        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,147,117,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1D9375' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Layers size={10}/> Epicas
@@ -135,7 +135,7 @@ export default function SolutionPage() {
           <MapIcon size={10}/> Solution
         </Link>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#3b82f6' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Play size={10}/> Sala de Control
@@ -237,7 +237,7 @@ export default function SolutionPage() {
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
                       <span className="text-[13px] font-semibold text-white leading-snug">{sol.nombre}</span>
                       {sol.solucionCode && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md"
+                        <span className="text-[11px] font-mono px-1.5 py-0.5 rounded-md"
                           style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {sol.solucionCode}
                         </span>
@@ -310,10 +310,10 @@ export default function SolutionPage() {
                                 <div className="mb-4 rounded-xl overflow-hidden"
                                   style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                   <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.2)' }}>
                                       Línea de tiempo
                                     </span>
-                                    <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                    <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
                                       {fmtDate(ganttMin.toISOString())} — {fmtDate(ganttMax.toISOString())}
                                     </span>
                                   </div>
@@ -360,7 +360,7 @@ export default function SolutionPage() {
                                                 style={{ width: `${pctDone * 100}%`, background: `${epic.color}80` }}/>
                                             </div>
                                           </div>
-                                          <span className="text-[10px] tabular-nums flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)', width: 32, textAlign: 'right' }}>
+                                          <span className="text-[11px] tabular-nums flex-shrink-0" style={{ color: 'rgba(255,255,255,0.2)', width: 32, textAlign: 'right' }}>
                                             {fmtDate(epic.endDate!)}
                                           </span>
                                         </div>
@@ -385,17 +385,17 @@ export default function SolutionPage() {
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                           <span className="text-[12px] font-semibold text-white">{epic.name}</span>
-                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                          <span className="text-[11px] px-1.5 py-0.5 rounded-full font-semibold"
                                             style={{ color: statusInfo.color, background: `${statusInfo.color}15`, border: `1px solid ${statusInfo.color}25` }}>
                                             {statusInfo.label}
                                           </span>
-                                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                                          <span className="text-[11px] px-1.5 py-0.5 rounded-full font-semibold"
                                             style={{ color: PRIORITY_COLOR[epic.priority], background: `${PRIORITY_COLOR[epic.priority]}15` }}>
                                             {PRIORITY_LABEL[epic.priority]}
                                           </span>
                                           {epic.startDate && epic.endDate ? (
                                             <button onClick={() => openDateEdit(epic)}
-                                              className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md transition-colors"
+                                              className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md transition-colors"
                                               style={{ color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.04)' }}
                                               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = epic.color; (e.currentTarget as HTMLElement).style.background = `${epic.color}15` }}
                                               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.3)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}>
@@ -403,7 +403,7 @@ export default function SolutionPage() {
                                             </button>
                                           ) : (
                                             <button onClick={() => openDateEdit(epic)}
-                                              className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md transition-colors"
+                                              className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md transition-colors"
                                               style={{ color: 'rgba(255,255,255,0.2)', border: '1px dashed rgba(255,255,255,0.1)' }}
                                               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = epic.color; (e.currentTarget as HTMLElement).style.borderColor = epic.color }}
                                               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.2)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)' }}>
@@ -415,7 +415,7 @@ export default function SolutionPage() {
                                               {epic.sprints.map(sp => {
                                                 const spInfo = SPRINT_STATUS[sp.status] || SPRINT_STATUS.PLANNED
                                                 return (
-                                                  <span key={sp.id} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md"
+                                                  <span key={sp.id} className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md"
                                                     style={{ background: `${spInfo.color}12`, border: `1px solid ${spInfo.color}20`, color: 'rgba(255,255,255,0.4)' }}>
                                                     <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: spInfo.color }}/>
                                                     <span className="truncate max-w-[200px]">{sp.name}</span>
@@ -431,7 +431,7 @@ export default function SolutionPage() {
                                         <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                                           <div className="h-full rounded-full" style={{ width: `${epicPct}%`, background: epic.color }}/>
                                         </div>
-                                        <span className="text-[10px] tabular-nums w-7 text-right" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
+                                        <span className="text-[11px] tabular-nums w-7 text-right" style={{ color: epicPct > 0 ? epic.color : 'rgba(255,255,255,0.2)' }}>
                                           {epicPct}%
                                         </span>
                                       </div>
@@ -445,7 +445,7 @@ export default function SolutionPage() {
                                           onChange={e => setEditingDates(p => ({ ...p, [epic.id]: { ...p[epic.id], start: e.target.value } }))}
                                           className="text-[11px] px-2 py-1 rounded-md outline-none"
                                           style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', colorScheme: 'dark' }}/>
-                                        <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>
+                                        <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>
                                         <input type="date" value={editingDates[epic.id].end}
                                           onChange={e => setEditingDates(p => ({ ...p, [epic.id]: { ...p[epic.id], end: e.target.value } }))}
                                           className="text-[11px] px-2 py-1 rounded-md outline-none"

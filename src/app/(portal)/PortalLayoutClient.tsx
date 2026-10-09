@@ -293,7 +293,7 @@ export default function PortalLayoutClient({
           {!isCollapsed && !isMobile && (
             <button onClick={toggleCollapse} title="Colapsar sidebar"
               className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
-              style={{ color: '#475569' }}
+              style={{ color: '#7f8a9c' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#FF7A2F'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.1)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
@@ -306,7 +306,7 @@ export default function PortalLayoutClient({
           {isMobile && (
             <button onClick={() => setMobileOpen(false)}
               className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0"
-              style={{ color: '#475569' }}
+              style={{ color: '#7f8a9c' }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -320,7 +320,7 @@ export default function PortalLayoutClient({
           {isCollapsed && (
             <button onClick={toggleCollapse} title="Expandir sidebar"
               className="w-full flex items-center justify-center py-2 mb-2 rounded-lg transition-all"
-              style={{ color: '#475569' }}
+              style={{ color: '#7f8a9c' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#FF7A2F'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,90,0,0.1)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
@@ -350,7 +350,7 @@ export default function PortalLayoutClient({
                 <button
                   onClick={() => toggleSection(section.id)}
                   className="w-full flex items-center justify-between px-3 py-1.5 transition-all group"
-                  style={{ color: '#475569' }}
+                  style={{ color: '#7f8a9c' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#94a3b8'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#475569'; }}
                 >

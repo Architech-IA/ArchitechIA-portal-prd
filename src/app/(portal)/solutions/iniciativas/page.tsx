@@ -291,7 +291,7 @@ export default function IniciativasPage() {
               className="relative flex items-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors">
               <Inbox size={15} /> Solicitudes
               {requests.length > 0 && (
-                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{requests.length}</span>
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">{requests.length}</span>
               )}
             </button>
           )}
@@ -311,7 +311,7 @@ export default function IniciativasPage() {
         ].map(k => (
           <div key={k.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{k.label}</p>
+            <p className="text-xs text-[#7f8a9c] mt-0.5">{k.label}</p>
           </div>
         ))}
       </div>
@@ -319,7 +319,7 @@ export default function IniciativasPage() {
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap mb-5">
         <div className="relative flex-1 min-w-[180px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7f8a9c]" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar iniciativa…"
             className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500" />
         </div>
@@ -336,8 +336,8 @@ export default function IniciativasPage() {
           {PRIORIDAD_KEYS.map(k => <option key={k} value={k}>{PRIORIDADES[k].label}</option>)}
         </select>
         <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
-          <button onClick={() => setView('cards')} className={`p-1.5 rounded-md transition-colors ${view === 'cards' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}><LayoutGrid size={15} /></button>
-          <button onClick={() => setView('tabla')} className={`p-1.5 rounded-md transition-colors ${view === 'tabla' ? 'bg-orange-600 text-white' : 'text-gray-500 hover:text-white'}`}><List size={15} /></button>
+          <button onClick={() => setView('cards')} className={`p-1.5 rounded-md transition-colors ${view === 'cards' ? 'bg-orange-600 text-white' : 'text-[#7f8a9c] hover:text-white'}`}><LayoutGrid size={15} /></button>
+          <button onClick={() => setView('tabla')} className={`p-1.5 rounded-md transition-colors ${view === 'tabla' ? 'bg-orange-600 text-white' : 'text-[#7f8a9c] hover:text-white'}`}><List size={15} /></button>
         </div>
       </div>
 
@@ -350,8 +350,8 @@ export default function IniciativasPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 border-2 border-dashed border-gray-800 rounded-2xl">
-          <Lightbulb className="mx-auto text-gray-700 mb-3" size={32} />
-          <p className="text-gray-500 text-sm">No hay iniciativas que coincidan.</p>
+          <Lightbulb className="mx-auto text-[#7f8a9c] mb-3" size={32} />
+          <p className="text-[#7f8a9c] text-sm">No hay iniciativas que coincidan.</p>
           <button onClick={openNew} className="mt-3 text-orange-400 hover:text-orange-300 text-sm">+ Crear la primera</button>
         </div>
       ) : view === 'cards' ? (
@@ -364,7 +364,7 @@ export default function IniciativasPage() {
               <div className="p-5">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-semibold text-white leading-tight">{i.nombre}</h3>
-                  {i.proyectoId && <span title="Convertida en proyecto" className="text-[10px] text-green-400 bg-green-500/10 border border-green-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">● proyecto</span>}
+                  {i.proyectoId && <span title="Convertida en proyecto" className="text-[11px] text-green-400 bg-green-500/10 border border-green-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">● proyecto</span>}
                 </div>
                 <p className="text-sm text-gray-400 line-clamp-2 leading-relaxed mb-3">{i.descripcion}</p>
                 <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -373,7 +373,7 @@ export default function IniciativasPage() {
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-gray-800">
                   <PrioridadTag prioridad={i.prioridad} />
-                  <span className="text-xs text-gray-600">{new Date(i.createdAt).toLocaleDateString('es-CO')}</span>
+                  <span className="text-xs text-[#7f8a9c]">{new Date(i.createdAt).toLocaleDateString('es-CO')}</span>
                 </div>
               </div>
             </div>
@@ -425,7 +425,7 @@ export default function IniciativasPage() {
                       {i.nombre}
                       {i.proyectoId && <span title="Convertida en proyecto" className="w-1.5 h-1.5 rounded-full bg-green-400" />}
                     </p>
-                    <p className="text-xs text-gray-500 truncate max-w-xs">{i.descripcion}</p>
+                    <p className="text-xs text-[#7f8a9c] truncate max-w-xs">{i.descripcion}</p>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-300">{i.categoria}</td>
                   <td className="px-4 py-3"><EstadoChip estado={i.estado} /></td>
@@ -435,9 +435,9 @@ export default function IniciativasPage() {
                   <td className="px-4 py-3 text-xs text-gray-400">{i.responsable ?? '—'}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => setSelected(i)} className="text-gray-500 hover:text-blue-400 transition-colors"><Eye size={14} /></button>
-                      <button onClick={() => openEdit(i)} className="text-gray-500 hover:text-white transition-colors"><Pencil size={14} /></button>
-                      <button onClick={() => askDelete(i)} className="text-gray-600 hover:text-red-400 transition-colors"><Trash2 size={14} /></button>
+                      <button onClick={() => setSelected(i)} className="text-[#7f8a9c] hover:text-blue-400 transition-colors"><Eye size={14} /></button>
+                      <button onClick={() => openEdit(i)} className="text-[#7f8a9c] hover:text-white transition-colors"><Pencil size={14} /></button>
+                      <button onClick={() => askDelete(i)} className="text-[#7f8a9c] hover:text-red-400 transition-colors"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -463,49 +463,49 @@ export default function IniciativasPage() {
 
             <div className="p-6 space-y-5">
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Descripción</p>
+                <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider mb-1">Descripción</p>
                 <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{selected.descripcion}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-800/60 rounded-lg p-3">
-                  <p className="text-[10px] text-gray-500 mb-1">Prioridad</p>
+                  <p className="text-[11px] text-[#7f8a9c] mb-1">Prioridad</p>
                   <PrioridadTag prioridad={selected.prioridad} />
                 </div>
                 <div className="bg-gray-800/60 rounded-lg p-3">
-                  <p className="text-[10px] text-gray-500 mb-1">Sector</p>
+                  <p className="text-[11px] text-[#7f8a9c] mb-1">Sector</p>
                   <p className="text-sm text-gray-300">{selected.sector || '—'}</p>
                 </div>
                 <div className="bg-gray-800/60 rounded-lg p-3">
-                  <p className="text-[10px] text-gray-500 mb-1">Costo estimado</p>
+                  <p className="text-[11px] text-[#7f8a9c] mb-1">Costo estimado</p>
                   <p className="text-sm text-gray-300">{costoRango(selected.costoMin, selected.costoMax)}</p>
                 </div>
                 <div className="bg-gray-800/60 rounded-lg p-3">
-                  <p className="text-[10px] text-gray-500 mb-1">Tiempo estimado</p>
+                  <p className="text-[11px] text-[#7f8a9c] mb-1">Tiempo estimado</p>
                   <p className="text-sm text-gray-300">{selected.tiempoEstimado || '—'}</p>
                 </div>
                 <div className="bg-gray-800/60 rounded-lg p-3">
-                  <p className="text-[10px] text-gray-500 mb-1">ROI estimado</p>
+                  <p className="text-[11px] text-[#7f8a9c] mb-1">ROI estimado</p>
                   <p className="text-sm text-gray-300">{selected.roiEstimado || '—'}</p>
                 </div>
               </div>
 
               {selected.problema && (
                 <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Problema que resuelve</p>
+                  <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider mb-1">Problema que resuelve</p>
                   <p className="text-sm text-gray-300 leading-relaxed">{selected.problema}</p>
                 </div>
               )}
               {selected.beneficios && (
                 <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Beneficios esperados</p>
+                  <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider mb-1">Beneficios esperados</p>
                   <p className="text-sm text-gray-300 leading-relaxed">{selected.beneficios}</p>
                 </div>
               )}
 
               {selected.tecnologias.length > 0 && (
                 <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Tecnologías</p>
+                  <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider mb-2">Tecnologías</p>
                   <div className="flex flex-wrap gap-2">
                     {selected.tecnologias.map(t => (
                       <span key={t} className="px-2.5 py-1 bg-orange-900/30 text-orange-400 text-xs rounded-full border border-orange-800">{t}</span>
@@ -515,7 +515,7 @@ export default function IniciativasPage() {
               )}
 
               {selected.responsable && (
-                <p className="text-xs text-gray-500">Responsable: <span className="text-gray-300">{selected.responsable}</span></p>
+                <p className="text-xs text-[#7f8a9c]">Responsable: <span className="text-gray-300">{selected.responsable}</span></p>
               )}
 
               {/* Acciones */}
@@ -544,7 +544,7 @@ export default function IniciativasPage() {
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800">
               <h2 className="text-lg font-bold text-white">{editItem ? 'Editar iniciativa' : 'Nueva iniciativa'}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white"><X size={18} /></button>
+              <button onClick={() => setShowModal(false)} className="text-[#7f8a9c] hover:text-white"><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
               <div>
@@ -590,7 +590,7 @@ export default function IniciativasPage() {
                 <textarea rows={2} value={form.beneficios} onChange={e => setForm({ ...form, beneficios: e.target.value })} placeholder="Impacto / valor esperado" className={inputCls + ' resize-none'} />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Tecnologías <span className="text-gray-600">(separadas por coma)</span></label>
+                <label className="block text-xs text-gray-400 mb-1">Tecnologías <span className="text-[#7f8a9c]">(separadas por coma)</span></label>
                 <input value={form.tecnologias} onChange={e => setForm({ ...form, tecnologias: e.target.value })} placeholder="n8n, Python, OpenAI, Supabase" className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -663,15 +663,15 @@ export default function IniciativasPage() {
           <div onClick={e => e.stopPropagation()} className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800 sticky top-0 bg-gray-900">
               <h2 className="text-lg font-bold text-white flex items-center gap-2"><Inbox size={18} /> Solicitudes de eliminación</h2>
-              <button onClick={() => setShowRequests(false)} className="text-gray-500 hover:text-white"><X size={18} /></button>
+              <button onClick={() => setShowRequests(false)} className="text-[#7f8a9c] hover:text-white"><X size={18} /></button>
             </div>
             <div className="p-6 space-y-3">
               {requests.length === 0 ? (
-                <p className="text-center text-gray-500 text-sm py-8">No hay solicitudes pendientes.</p>
+                <p className="text-center text-[#7f8a9c] text-sm py-8">No hay solicitudes pendientes.</p>
               ) : requests.map(r => (
                 <div key={r.id} className="bg-gray-800/60 border border-gray-800 rounded-xl p-4">
                   <p className="text-white font-medium text-sm">{r.iniciativa?.nombre ?? 'Iniciativa eliminada'}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Solicitado por {r.requesterName ?? 'desconocido'} · {new Date(r.createdAt).toLocaleDateString('es-CO')}</p>
+                  <p className="text-xs text-[#7f8a9c] mt-0.5">Solicitado por {r.requesterName ?? 'desconocido'} · {new Date(r.createdAt).toLocaleDateString('es-CO')}</p>
                   {r.reason && <p className="text-sm text-gray-400 mt-2 italic">&quot;{r.reason}&quot;</p>}
                   <div className="flex justify-end gap-2 mt-3">
                     <button onClick={() => resolveRequest(r.id, 'RECHAZAR')} disabled={reqBusy === r.id}

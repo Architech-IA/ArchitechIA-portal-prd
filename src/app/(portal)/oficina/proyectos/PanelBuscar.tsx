@@ -36,14 +36,14 @@ export default function PanelBuscar({ proyectoId, onAbrirSesion, onAbrirPanel }:
   return (
     <div className="p-3 space-y-3">
       <div className="relative">
-        <Search size={13} className="absolute left-2.5 top-2.5 text-gray-500" />
+        <Search size={13} className="absolute left-2.5 top-2.5 text-[#7f8a9c]" />
         <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar en sesiones, adjuntos y memoria…"
           className="w-full rounded-xl pl-8 pr-3 py-2 text-[12px] text-gray-200 outline-none border border-white/10 focus:border-indigo-500/50 placeholder-gray-600" style={{ background: 'rgba(255,255,255,0.05)' }} />
-        {cargando && <Loader2 size={12} className="absolute right-2.5 top-3 animate-spin text-gray-500" />}
+        {cargando && <Loader2 size={12} className="absolute right-2.5 top-3 animate-spin text-[#7f8a9c]" />}
       </div>
-      <p className="text-[10px] text-gray-600">Búsqueda por palabras (español: entiende plurales y conjugaciones). Solo ves las sesiones compartidas y las tuyas.</p>
+      <p className="text-[11px] text-[#7f8a9c]">Búsqueda por palabras (español: entiende plurales y conjugaciones). Solo ves las sesiones compartidas y las tuyas.</p>
       {error && <p className="text-[11px] text-red-400">{error}</p>}
-      {res && res.length === 0 && !cargando && <p className="text-[11px] text-gray-500 text-center py-4">Sin resultados para «{q}».</p>}
+      {res && res.length === 0 && !cargando && <p className="text-[11px] text-[#7f8a9c] text-center py-4">Sin resultados para «{q}».</p>}
       <ul className="space-y-1.5">
         {(res ?? []).map(r => {
           const Ic = ICONO[r.tipo]
@@ -51,7 +51,7 @@ export default function PanelBuscar({ proyectoId, onAbrirSesion, onAbrirPanel }:
             <li key={`${r.tipo}${r.id}`}>
               <button onClick={() => (r.tipo === 'MENSAJE' && r.sesionId ? onAbrirSesion(r.sesionId) : r.tipo === 'MEMORIA' ? onAbrirPanel('memoria') : onAbrirPanel('adjuntos'))}
                 className="w-full text-left rounded-lg px-2.5 py-2 hover:bg-white/5" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div className="flex items-center gap-1.5 text-[10px] text-gray-500 mb-0.5"><Ic size={11} className="text-indigo-300" /><span className="text-gray-300 font-medium truncate flex-1">{r.titulo}</span><span>{ETIQ[r.tipo]} · {hace(r.fecha)}</span></div>
+                <div className="flex items-center gap-1.5 text-[11px] text-[#7f8a9c] mb-0.5"><Ic size={11} className="text-indigo-300" /><span className="text-gray-300 font-medium truncate flex-1">{r.titulo}</span><span>{ETIQ[r.tipo]} · {hace(r.fecha)}</span></div>
                 <p className="text-[11px] text-gray-400 leading-snug">{resaltar(r.fragmento)}</p>
               </button>
             </li>)

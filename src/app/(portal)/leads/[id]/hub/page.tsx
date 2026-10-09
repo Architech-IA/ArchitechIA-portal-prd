@@ -685,12 +685,12 @@ function HubInteracciones({ leadId, companyName, items, onAdd }: {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                         <span style={{ fontSize: '12px', color: '#f1f5f9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</span>
-                        <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', flexShrink: 0, ...(STATUS_COLORS[m.status] || STATUS_COLORS['SCHEDULED']) }}>{STATUS_LABELS[m.status] || m.status}</span>
+                        <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', flexShrink: 0, ...(STATUS_COLORS[m.status] || STATUS_COLORS['SCHEDULED']) }}>{STATUS_LABELS[m.status] || m.status}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '10px', color: '#475569' }}>{MEET_TYPE_LABELS[m.type] || m.type}</span>
-                        <span style={{ fontSize: '10px', color: '#334155' }}>·</span>
-                        <span style={{ fontSize: '10px', color: '#475569' }}>{new Date(m.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        <span style={{ fontSize: '11px', color: '#475569' }}>{MEET_TYPE_LABELS[m.type] || m.type}</span>
+                        <span style={{ fontSize: '11px', color: '#334155' }}>·</span>
+                        <span style={{ fontSize: '11px', color: '#475569' }}>{new Date(m.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </div>
                     {isSelected && <CheckCircle2 size={15} style={{ color: '#f97316', flexShrink: 0 }} />}
@@ -725,9 +725,9 @@ function HubInteracciones({ leadId, companyName, items, onAdd }: {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '3px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Reunión vinculada</span>
-                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', ...(STATUS_COLORS[item.meeting.status] || STATUS_COLORS['SCHEDULED']) }}>{STATUS_LABELS[item.meeting.status] || item.meeting.status}</span>
-                      <span style={{ fontSize: '10px', color: '#334155' }}>· {item.user?.name ?? 'Sistema'}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Reunión vinculada</span>
+                      <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', ...(STATUS_COLORS[item.meeting.status] || STATUS_COLORS['SCHEDULED']) }}>{STATUS_LABELS[item.meeting.status] || item.meeting.status}</span>
+                      <span style={{ fontSize: '11px', color: '#334155' }}>· {item.user?.name ?? 'Sistema'}</span>
                     </div>
                     <p style={{ fontSize: '11px', color: '#f1f5f9', fontWeight: 600, margin: '0 0 3px' }}>{item.meeting.title}</p>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -752,9 +752,9 @@ function HubInteracciones({ leadId, companyName, items, onAdd }: {
                   <div style={{ marginTop: '2px', flexShrink: 0 }}>{INT_ICONS[item.type]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '2px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{INT_LABELS[item.type]}</span>
-                      <span style={{ fontSize: '10px', color: '#334155' }}>{new Date(item.date || item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                      <span style={{ fontSize: '10px', color: '#334155' }}>· {item.user?.name ?? 'Sistema'}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{INT_LABELS[item.type]}</span>
+                      <span style={{ fontSize: '11px', color: '#334155' }}>{new Date(item.date || item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      <span style={{ fontSize: '11px', color: '#334155' }}>· {item.user?.name ?? 'Sistema'}</span>
                     </div>
                     <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{item.description}</p>
                   </div>
@@ -807,7 +807,7 @@ function HubTareas({ leadId, items, onToggle }: {
             <div key={sprint} style={boxStyle}>
               <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#f97316' }}>{sprint}</span>
-                <span style={{ fontSize: '10px', color: '#475569' }}>{done}/{sprintItems.length} completados</span>
+                <span style={{ fontSize: '11px', color: '#475569' }}>{done}/{sprintItems.length} completados</span>
               </div>
               <div style={{ padding: '8px' }}>
                 {sprintItems.map(item => (
@@ -818,7 +818,7 @@ function HubTareas({ leadId, items, onToggle }: {
                     </div>
                     <div>
                       <span style={{ fontSize: '12px', color: item.status === 'DONE' ? '#475569' : '#94a3b8', textDecoration: item.status === 'DONE' ? 'line-through' : 'none' }}>{item.title}</span>
-                      {item.taskCode && <span style={{ marginLeft: '6px', fontSize: '10px', color: '#334155' }}>{item.taskCode}</span>}
+                      {item.taskCode && <span style={{ marginLeft: '6px', fontSize: '11px', color: '#334155' }}>{item.taskCode}</span>}
                     </div>
                   </button>
                 ))}
@@ -1023,7 +1023,7 @@ function HubPropuesta({ leadId, proposal, onSave }: {
                         <FileText size={14} color="#94a3b8" style={{ flexShrink: 0 }} />
                         <div style={{ minWidth: 0 }}>
                           <p style={{ fontSize: '12px', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</p>
-                          <p style={{ fontSize: '10px', color: '#475569' }}>
+                          <p style={{ fontSize: '11px', color: '#475569' }}>
                             {DOC_TYPE_LABELS[d.type] ?? d.type}
                             {d.version > 1 && <span style={{ color: '#fdba74' }}> · v{d.version}</span>}
                           </p>
@@ -1031,7 +1031,7 @@ function HubPropuesta({ leadId, proposal, onSave }: {
                       </div>
                       <div style={{ display: 'flex', gap: '4px', flexShrink: 0, alignItems: 'center' }}>
                         <button onClick={() => toggleHistory(d.id)} title="Historial de versiones"
-                          style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 7px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '10px' }}>
+                          style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '5px 7px', borderRadius: '5px', border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '11px' }}>
                           <History size={12} /> {history.length}
                         </button>
                         <button onClick={() => setPreviewDoc(d)} title="Vista previa"
@@ -1051,14 +1051,14 @@ function HubPropuesta({ leadId, proposal, onSave }: {
                     {expanded && (
                       <div style={{ marginLeft: '22px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: '10px' }}>
                         {history.length === 0 ? (
-                          <p style={{ fontSize: '10px', color: '#475569', padding: '4px 8px' }}>
+                          <p style={{ fontSize: '11px', color: '#475569', padding: '4px 8px' }}>
                             Versión original (v1) · sin versiones anteriores
                           </p>
                         ) : history.map(h => (
                           <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', borderRadius: '5px', background: 'rgba(255,255,255,0.02)' }}>
                             <div style={{ minWidth: 0 }}>
                               <p style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.name}</p>
-                              <p style={{ fontSize: '9px', color: '#475569' }}>v{h.version} · archivado · {new Date(h.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                              <p style={{ fontSize: '10px', color: '#475569' }}>v{h.version} · archivado · {new Date(h.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                             </div>
                             <div style={{ display: 'flex', gap: '2px' }}>
                               <button onClick={() => setPreviewDoc(h)} title="Vista previa"
@@ -1289,7 +1289,7 @@ export default function LeadHubPage() {
 
         {/* Widget info general del lead */}
         <div style={{ margin: '10px', marginBottom: '6px', padding: '16px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', flexShrink: 0 }}>
-          <p style={{ fontSize: '10px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Info Lead</p>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>Info Lead</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
             {lead.cliente && (
               <div
@@ -1359,7 +1359,7 @@ export default function LeadHubPage() {
         {/* Timeline — panel */}
         <div className="flex-1 overflow-y-auto px-2.5 pt-1.5 pb-3">
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2 pb-1">Pipeline</p>
+            <p className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-3 pt-2 pb-1">Pipeline</p>
             <div className="relative px-2 pb-2">
               {/* Vertical rail — single line behind all dots */}
               <div className="absolute left-[27px] top-5 bottom-5 w-px bg-gray-800" />
@@ -1406,7 +1406,7 @@ export default function LeadHubPage() {
                         {phase.label}
                       </p>
                       {hasData && (
-                        <p className="text-[9px] text-orange-400/60 mt-0.5">Con contenido</p>
+                        <p className="text-[10px] text-orange-400/60 mt-0.5">Con contenido</p>
                       )}
                     </div>
 
@@ -1482,7 +1482,7 @@ export default function LeadHubPage() {
                         </div>
                         <p className={`text-xs font-semibold truncate ${isActSt ? c.text : isDone ? 'text-gray-200' : 'text-gray-500'}`}>{phase.label}</p>
                       </div>
-                      <p className="text-[10px] text-gray-600">
+                      <p className="text-[11px] text-gray-600">
                         {isActSt ? 'En curso' : isDone ? 'Completada' : 'Pendiente'}
                         {data && data.files.length > 0 && ` · ${data.files.length} archivo${data.files.length !== 1 ? 's' : ''}`}
                       </p>
@@ -1491,7 +1491,7 @@ export default function LeadHubPage() {
                 })}
               </div>
 
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">Actividad reciente</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-600 mb-3">Actividad reciente</p>
               {(() => {
                 const recent = phases
                   .filter(p => p.content && extractPhasePreview(p.content))
@@ -1512,7 +1512,7 @@ export default function LeadHubPage() {
                           className="text-left rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-150">
                           <div className="flex items-center justify-between mb-1">
                             <span className={`text-xs font-semibold ${c?.text ?? 'text-gray-300'}`}>{label}</span>
-                            <span className="text-[8px] text-orange-400/60 whitespace-nowrap">
+                            <span className="text-[10px] text-orange-400/60 whitespace-nowrap">
                               {p.updatedBy ? `${p.updatedBy} · ` : ''}
                               {new Date(p.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </span>

@@ -63,7 +63,7 @@ type SortKey = 'companyName' | 'scope' | 'contactName' | 'email' | 'status' | 'e
 
 /** Correos y nombres de relleno que se cargaron para poder crear el lead (unknow@unknow.com, POR DEFINIR...). */
 const esRelleno = (v?: string | null) => !v || /^unknow(n)?@/i.test(v.trim()) || /^por definir$/i.test(v.trim())
-const sinDato = (titulo: string) => <span title={titulo} style={{ color: '#334155', fontWeight: 400 }}>—</span>
+const sinDato = (titulo: string) => <span title={titulo} style={{ color: '#7f8a9c', fontWeight: 400 }}>—</span>
 
 export default function LeadsPage() {
   const { data: session } = useSession();
@@ -102,10 +102,10 @@ export default function LeadsPage() {
     setActions(
       <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '3px' }}>
         <a href="/leads/lista" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 700, textDecoration: 'none', background: 'linear-gradient(135deg,#f97316,#ea580c)', color: '#fff', boxShadow: '0 2px 8px rgba(249,115,22,0.35)' }}>Leads</a>
-        <a href="/leads/clientes" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Clientes</a>
-        <a href="/leads/prospector" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Prospector</a>
-        <a href="/leads/pipeline" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Timeline</a>
-        <a href="/leads/mercado" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#6b7280', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Mercado</a>
+        <a href="/leads/clientes" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#7f8a9c', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Clientes</a>
+        <a href="/leads/prospector" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#7f8a9c', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Prospector</a>
+        <a href="/leads/pipeline" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#7f8a9c', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Timeline</a>
+        <a href="/leads/mercado" style={{ padding: '4px 14px', borderRadius: '7px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', color: '#7f8a9c', transition: 'all 0.15s' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>Mercado</a>
       </div>
     )
     return () => setActions(null)
@@ -202,11 +202,11 @@ export default function LeadsPage() {
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
   const sortIcon = (key: SortKey) => sortKey !== key
-    ? <span style={{ color: '#334155', marginLeft: '4px' }}>↕</span>
+    ? <span style={{ color: '#7f8a9c', marginLeft: '4px' }}>↕</span>
     : <span style={{ color: '#f97316', marginLeft: '4px' }}>{sortDir === 'asc' ? '↑' : '↓'}</span>;
 
   const inputCls: React.CSSProperties = { ...glass.input, padding: '8px 12px', fontSize: '13px' };
-  const labelCls: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }
+  const labelCls: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#7f8a9c', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }
       const selectCls: React.CSSProperties = { ...glass.input, padding: '8px 12px', fontSize: '13px', colorScheme: 'dark', cursor: 'pointer' };
 
   if (loading) return (
@@ -234,7 +234,7 @@ export default function LeadsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '20px' }}>
         {KPI_CARDS.map(k => (
           <div key={k.label} style={{ ...glass.card, padding: '16px 20px', background: k.accent }}>
-            <p style={{ fontSize: '11px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>{k.label}</p>
+            <p style={{ fontSize: '11px', fontWeight: 600, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>{k.label}</p>
             <p style={{ fontSize: '24px', fontWeight: 800, color: k.color, lineHeight: 1 }}>{k.value}</p>
           </div>
         ))}
@@ -253,7 +253,7 @@ export default function LeadsPage() {
           Filtros {activeFilterCount > 0 && `(${activeFilterCount})`}
         </button>
         <div style={{ flex: 1, position: 'relative' }}>
-          <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#475569' }} width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#7f8a9c' }} width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           <input type="text" placeholder="Buscar por empresa, contacto o email..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputCls, paddingLeft: '36px' }} />
         </div>
         <button onClick={exportCSV} title="Exportar CSV" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9px', color: '#94a3b8', cursor: 'pointer', flexShrink: 0 }}>
@@ -286,7 +286,7 @@ export default function LeadsPage() {
             </div>
           ))}
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <button onClick={clearFilters} style={{ padding: '8px 14px', fontSize: '12px', color: '#64748b', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', cursor: 'pointer' }}>
+            <button onClick={clearFilters} style={{ padding: '8px 14px', fontSize: '12px', color: '#7f8a9c', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', cursor: 'pointer' }}>
               Limpiar filtros
             </button>
           </div>
@@ -313,7 +313,7 @@ export default function LeadsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {isAdmin && <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>Acciones</th>}
+                {isAdmin && <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>Acciones</th>}
                 {([
                   { key: 'companyName'    as SortKey, label: 'Empresa'     },
                   { key: 'scope'          as SortKey, label: 'Alcance'     },
@@ -325,7 +325,7 @@ export default function LeadsPage() {
                   { key: 'user'           as SortKey, label: 'Responsable' },
                   { key: 'createdAt'      as SortKey, label: 'Creado'       },
                 ]).map(col => (
-                  <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+                  <th key={col.key} onClick={() => handleSort(col.key)} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
                     {col.label}{sortIcon(col.key)}
                   </th>
                 ))}
@@ -338,8 +338,8 @@ export default function LeadsPage() {
                     <div style={{ width: '52px', height: '52px', margin: '0 auto 16px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="24" height="24" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </div>
-                    <p style={{ color: '#64748b', fontSize: '14px', fontWeight: 500 }}>{leads.length === 0 ? 'No hay leads todavía' : 'Sin resultados'}</p>
-                    <p style={{ color: '#334155', fontSize: '12px', marginTop: '4px' }}>{leads.length === 0 ? 'Crea tu primer lead.' : 'Ningún lead coincide con los filtros.'}</p>
+                    <p style={{ color: '#7f8a9c', fontSize: '14px', fontWeight: 500 }}>{leads.length === 0 ? 'No hay leads todavía' : 'Sin resultados'}</p>
+                    <p style={{ color: '#7f8a9c', fontSize: '12px', marginTop: '4px' }}>{leads.length === 0 ? 'Crea tu primer lead.' : 'Ningún lead coincide con los filtros.'}</p>
                   </td>
                 </tr>
               ) : (
@@ -357,7 +357,7 @@ export default function LeadsPage() {
                         <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <button onClick={() => router.push(`/leads/${lead.id}/hub`)} title="HUB" style={{ background: 'none', border: 'none', color: '#f97316', cursor: 'pointer', display: 'flex' }}><LayoutDashboard size={14} /></button>
-                            <button onClick={() => openEdit(lead)} title="Editar" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex' }}><Pencil size={14} /></button>
+                            <button onClick={() => openEdit(lead)} title="Editar" style={{ background: 'none', border: 'none', color: '#7f8a9c', cursor: 'pointer', display: 'flex' }}><Pencil size={14} /></button>
                             <button onClick={() => setConfirmDel(lead)} title="Eliminar" style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', display: 'flex', opacity: 0.6 }}><Trash2 size={14} /></button>
                           </div>
                         </td>
@@ -373,14 +373,14 @@ export default function LeadsPage() {
                           <p style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.companyName}</p>
                         )}
                       </td>
-                      <td style={{ padding: '12px 12px', fontSize: '12px', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.scope || '—'}</td>
+                      <td style={{ padding: '12px 12px', fontSize: '12px', color: '#7f8a9c', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.scope || '—'}</td>
                       <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#94a3b8', maxWidth: '170px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={esRelleno(lead.contactName) ? undefined : lead.contactName}>{esRelleno(lead.contactName) ? sinDato('Contacto pendiente de completar') : lead.contactName}</td>
-                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b', maxWidth: '190px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={esRelleno(lead.email) ? undefined : lead.email}>{esRelleno(lead.email) ? sinDato('Sin correo real registrado') : lead.email}</td>
-                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>{lead.solucionAsociada ? <span style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}>{lead.solucionAsociada}</span> : <span style={{ color: '#334155', fontSize: '12px' }}>—</span>}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#7f8a9c', maxWidth: '190px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={esRelleno(lead.email) ? undefined : lead.email}>{esRelleno(lead.email) ? sinDato('Sin correo real registrado') : lead.email}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap' }}>{lead.solucionAsociada ? <span style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 600, borderRadius: '20px', background: 'rgba(249,115,22,0.1)', color: '#f97316', border: '1px solid rgba(249,115,22,0.25)' }}>{lead.solucionAsociada}</span> : <span style={{ color: '#7f8a9c', fontSize: '12px' }}>—</span>}</td>
                       <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 600, color: '#f1f5f9' }}>{lead.estimatedValue ? `${lead.estimatedValue.toLocaleString()}` : sinDato('Sin valor estimado')}</td>
                 
-                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#64748b' }}>{lead.user.name}</td>
-                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '11px', color: '#475569' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '12px', color: '#7f8a9c' }}>{lead.user.name}</td>
+                      <td style={{ padding: '12px 12px', whiteSpace: 'nowrap', fontSize: '11px', color: '#7f8a9c' }}>{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
                     </tr>
                   );
                 })
@@ -392,7 +392,7 @@ export default function LeadsPage() {
         {/* Pagination */}
         {sorted.length > 0 && (
           <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#7f8a9c' }}>
               <span>{sorted.length} resultado{sorted.length !== 1 ? 's' : ''}</span>
               <span style={{ color: '#1e293b' }}>|</span>
               <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '3px 8px', color: '#94a3b8', fontSize: '11px' }}>
@@ -400,14 +400,14 @@ export default function LeadsPage() {
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} style={{ padding: '4px 8px', borderRadius: '6px', background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '14px' }}>‹</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} style={{ padding: '4px 8px', borderRadius: '6px', background: 'none', border: 'none', color: '#7f8a9c', cursor: 'pointer', fontSize: '14px' }}>‹</button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => { if (totalPages <= 7) return true; if (p === 1 || p === totalPages) return true; if (Math.abs(p - safePage) <= 1) return true; return false; }).map((p, i, arr) => (
                 <span key={p}>
-                  {i > 0 && arr[i-1] !== p-1 && <span style={{ color: '#334155', padding: '0 4px' }}>…</span>}
+                  {i > 0 && arr[i-1] !== p-1 && <span style={{ color: '#7f8a9c', padding: '0 4px' }}>…</span>}
                   <button onClick={() => setPage(p)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, background: p === safePage ? 'linear-gradient(135deg,#f97316,#ea580c)' : 'transparent', color: p === safePage ? '#fff' : '#475569' }}>{p}</button>
                 </span>
               ))}
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} style={{ padding: '4px 8px', borderRadius: '6px', background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '14px' }}>›</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} style={{ padding: '4px 8px', borderRadius: '6px', background: 'none', border: 'none', color: '#7f8a9c', cursor: 'pointer', fontSize: '14px' }}>›</button>
             </div>
           </div>
         )}
@@ -520,7 +520,7 @@ export default function LeadsPage() {
               </div>
               <div>
                 <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px' }}>Eliminar lead</h3>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>¿Seguro que deseas eliminar <strong style={{ color: '#e2e8f0' }}>{confirmDel.companyName}</strong>? Esta acción no se puede deshacer.</p>
+                <p style={{ fontSize: '13px', color: '#7f8a9c', margin: 0 }}>¿Seguro que deseas eliminar <strong style={{ color: '#e2e8f0' }}>{confirmDel.companyName}</strong>? Esta acción no se puede deshacer.</p>
               </div>
             </div>
             {delError && <div style={{ padding: '8px 12px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px', color: '#f87171', fontSize: '12px', marginBottom: '12px' }}>{delError}</div>}

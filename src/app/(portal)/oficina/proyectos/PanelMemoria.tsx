@@ -77,30 +77,30 @@ export default function PanelMemoria({ proyectoId, onCambio }: { proyectoId: str
 
   const lineas = useMemo(() => propuestas.map(p => ({ id: p.id, d: diff(mem?.contenido ?? '', editada[p.id] ?? p.contenidoPropuesto) })), [propuestas, mem, editada])
 
-  if (cargando && !mem) return <div className="flex justify-center py-10 text-gray-500"><Loader2 size={16} className="animate-spin" /></div>
+  if (cargando && !mem) return <div className="flex justify-center py-10 text-[#7f8a9c]"><Loader2 size={16} className="animate-spin" /></div>
   return (
     <div className="p-3 space-y-3">
-      <p className="text-[11px] text-gray-500">Documento corto y curado (decisiones, acuerdos, restricciones, glosario). <b className="text-gray-300">La IA lo lee en todas las sesiones</b> del proyecto. Al cerrar una sesión propone cambios que tú apruebas.</p>
+      <p className="text-[11px] text-[#7f8a9c]">Documento corto y curado (decisiones, acuerdos, restricciones, glosario). <b className="text-gray-300">La IA lo lee en todas las sesiones</b> del proyecto. Al cerrar una sesión propone cambios que tú apruebas.</p>
 
       {propuestas.map(p => (
         <div key={p.id} className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-200"><Sparkles size={12} /> Propuesta de la IA · {fechaHora(p.createdAt)}</div>
           {p.resumenCambios && <p className="text-[11px] text-gray-300">{p.resumenCambios}</p>}
-          {(mem?.version ?? 0) !== p.baseVersion && <p className="text-[10px] text-amber-400 flex items-center gap-1"><AlertTriangle size={11} /> Se calculó sobre la versión {p.baseVersion}; la vigente es la {mem?.version}.</p>}
+          {(mem?.version ?? 0) !== p.baseVersion && <p className="text-[11px] text-amber-400 flex items-center gap-1"><AlertTriangle size={11} /> Se calculó sobre la versión {p.baseVersion}; la vigente es la {mem?.version}.</p>}
           {editada[p.id] === undefined ? (
-            <div className="max-h-56 overflow-y-auto rounded-lg px-2 py-1.5 font-mono text-[10px] leading-relaxed" style={{ background: 'rgba(0,0,0,0.3)' }}>
-              {lineas.find(x => x.id === p.id)!.d.map((x, i) => <div key={i} className={x.nueva ? 'text-emerald-300 bg-emerald-500/10' : 'text-gray-500'}>{x.l || ' '}</div>)}
+            <div className="max-h-56 overflow-y-auto rounded-lg px-2 py-1.5 font-mono text-[11px] leading-relaxed" style={{ background: 'rgba(0,0,0,0.3)' }}>
+              {lineas.find(x => x.id === p.id)!.d.map((x, i) => <div key={i} className={x.nueva ? 'text-emerald-300 bg-emerald-500/10' : 'text-[#7f8a9c]'}>{x.l || ' '}</div>)}
             </div>
           ) : (
             <textarea value={editada[p.id]} onChange={e => setEditada(prev => ({ ...prev, [p.id]: e.target.value }))} rows={10}
-              className="w-full rounded-lg px-2 py-1.5 font-mono text-[10px] text-gray-200 outline-none resize-y border border-white/10 focus:border-indigo-500/50" style={{ background: 'rgba(0,0,0,0.3)' }} />
+              className="w-full rounded-lg px-2 py-1.5 font-mono text-[11px] text-gray-200 outline-none resize-y border border-white/10 focus:border-indigo-500/50" style={{ background: 'rgba(0,0,0,0.3)' }} />
           )}
-          <p className="text-[9px] text-gray-600">En verde: líneas nuevas respecto a la memoria vigente.</p>
+          <p className="text-[10px] text-[#7f8a9c]">En verde: líneas nuevas respecto a la memoria vigente.</p>
           <div className="flex items-center gap-2">
-            <button onClick={() => setEditada(prev => { const n = { ...prev }; if (n[p.id] === undefined) n[p.id] = p.contenidoPropuesto; else delete n[p.id]; return n })} className="text-[10px] text-gray-400 hover:text-gray-200 underline underline-offset-2">{editada[p.id] === undefined ? 'Editar antes de aprobar' : 'Ver cambios'}</button>
+            <button onClick={() => setEditada(prev => { const n = { ...prev }; if (n[p.id] === undefined) n[p.id] = p.contenidoPropuesto; else delete n[p.id]; return n })} className="text-[11px] text-gray-400 hover:text-gray-200 underline underline-offset-2">{editada[p.id] === undefined ? 'Editar antes de aprobar' : 'Ver cambios'}</button>
             <span className="flex-1" />
-            <button onClick={() => void resolver(p, 'rechazar')} disabled={resolviendo === p.id} className="px-2.5 py-1 rounded-lg text-[10px] text-gray-300 border border-white/10 hover:bg-white/5 flex items-center gap-1"><X size={11} /> Rechazar</button>
-            <button onClick={() => void resolver(p, 'aprobar')} disabled={resolviendo === p.id} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white flex items-center gap-1" style={{ background: 'rgba(16,185,129,0.75)' }}>
+            <button onClick={() => void resolver(p, 'rechazar')} disabled={resolviendo === p.id} className="px-2.5 py-1 rounded-lg text-[11px] text-gray-300 border border-white/10 hover:bg-white/5 flex items-center gap-1"><X size={11} /> Rechazar</button>
+            <button onClick={() => void resolver(p, 'aprobar')} disabled={resolviendo === p.id} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white flex items-center gap-1" style={{ background: 'rgba(16,185,129,0.75)' }}>
               {resolviendo === p.id ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Aprobar
             </button>
           </div>
@@ -108,7 +108,7 @@ export default function PanelMemoria({ proyectoId, onCambio }: { proyectoId: str
       ))}
 
       <div>
-        <div className="flex items-center justify-between mb-1 text-[10px] text-gray-500">
+        <div className="flex items-center justify-between mb-1 text-[11px] text-[#7f8a9c]">
           <span>{mem && mem.version > 0 ? `Versión ${mem.version} · ${mem.actualizadoPor ?? ''}${mem.updatedAt ? ' · ' + fechaHora(mem.updatedAt) : ''}` : 'Aún no hay memoria'}</span>
           {mem && mem.version === 0 && texto === '' && <button onClick={() => setTexto(PLANTILLA)} className="text-indigo-300 hover:text-indigo-200 underline underline-offset-2">Usar plantilla</button>}
         </div>
@@ -121,7 +121,7 @@ export default function PanelMemoria({ proyectoId, onCambio }: { proyectoId: str
             {guardando ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Guardar
           </button>
         </div>
-        <p className="text-[9px] text-gray-600 mt-1">{texto.length.toLocaleString('es-CO')} / 30.000 caracteres</p>
+        <p className="text-[10px] text-[#7f8a9c] mt-1">{texto.length.toLocaleString('es-CO')} / 30.000 caracteres</p>
       </div>
 
       {error && <p className="text-[11px] text-red-400">{error}</p>}
@@ -135,9 +135,9 @@ export default function PanelMemoria({ proyectoId, onCambio }: { proyectoId: str
               <li key={v.version}>
                 <button onClick={() => void verVersion(v.version)} className="w-full text-left rounded-lg px-2.5 py-1.5 hover:bg-white/5" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div className="flex items-center gap-2 text-[11px] text-gray-300"><span className="font-semibold">v{v.version}</span>
-                    <span className="text-[9px] px-1.5 rounded-full" style={{ background: v.origen === 'IA' ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.08)', color: v.origen === 'IA' ? '#a5b4fc' : '#9ca3af' }}>{v.origen}</span>
-                    <span className="flex-1 truncate text-gray-500">{v.autor}</span></div>
-                  <p className="text-[10px] text-gray-600 truncate">{fechaHora(v.createdAt)}{v.nota ? ' · ' + v.nota : ''}</p>
+                    <span className="text-[10px] px-1.5 rounded-full" style={{ background: v.origen === 'IA' ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.08)', color: v.origen === 'IA' ? '#a5b4fc' : '#9ca3af' }}>{v.origen}</span>
+                    <span className="flex-1 truncate text-[#7f8a9c]">{v.autor}</span></div>
+                  <p className="text-[11px] text-[#7f8a9c] truncate">{fechaHora(v.createdAt)}{v.nota ? ' · ' + v.nota : ''}</p>
                 </button>
               </li>))}
           </ul>)}

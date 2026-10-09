@@ -177,7 +177,7 @@ export default function PipelineView({ leads, users, onLeadsChange }: PipelineVi
               <span className="text-xs font-semibold">{etapa}</span>
               <span className="text-xs opacity-70">{leadsEnEtapa(etapa).length}</span>
             </div>
-            <p className="px-3 py-1 text-xs text-gray-500 border-b border-gray-700/50">
+            <p className="px-3 py-1 text-xs text-[#7f8a9c] border-b border-gray-700/50">
               ${valorEtapa(etapa).toLocaleString()}
             </p>
             <div className="flex-1 p-2 space-y-2 min-h-24">
@@ -191,7 +191,7 @@ export default function PipelineView({ leads, users, onLeadsChange }: PipelineVi
                     className={`bg-gray-800 border border-gray-700 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-orange-500/40 transition-colors ${dragging === lead.id ? 'opacity-50' : ''}`}
                   >
                     <p className="text-xs font-semibold text-white leading-tight mb-1">{lead.companyName}</p>
-                    <p className="text-xs text-gray-500 mb-2">{lead.contactName}</p>
+                    <p className="text-xs text-[#7f8a9c] mb-2">{lead.contactName}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-orange-400">${lead.estimatedValue.toLocaleString()}</span>
                       <span className={`text-xs px-1.5 py-0.5 rounded-full ${p.cls}`}>{p.label}</span>

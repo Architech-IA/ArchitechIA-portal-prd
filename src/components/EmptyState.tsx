@@ -13,12 +13,12 @@ export default function EmptyState({ icon, title, description, action }: EmptySt
         className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
         style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
       >
-        <svg className="w-5 h-5" style={{ color: '#334155' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" style={{ color: '#7f8a9c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={icon ?? defaultIcon} />
         </svg>
       </div>
-      <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-      {description && <p className="text-xs text-gray-700 max-w-xs leading-relaxed">{description}</p>}
+      <p className="text-sm font-medium text-[#7f8a9c] mb-1">{title}</p>
+      {description && <p className="text-xs text-[#7f8a9c] max-w-xs leading-relaxed">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );

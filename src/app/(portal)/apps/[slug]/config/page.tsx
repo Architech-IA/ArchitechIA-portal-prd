@@ -261,7 +261,7 @@ function RelationSelect({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-gray-500">{label}</label>
+      <label className="mb-1.5 block text-xs font-medium text-[#7f8a9c]">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

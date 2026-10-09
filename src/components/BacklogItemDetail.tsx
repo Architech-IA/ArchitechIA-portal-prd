@@ -187,24 +187,24 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
         <div className="flex items-start justify-between px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div className="flex-1 min-w-0 pr-4">
             <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}>{TYPE_LABELS[item.type] ?? item.type}</span>
-              <span className={`flex items-center gap-1 text-[10px] ${pr?.color}`}>
+              <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: '#9ca3af' }}>{TYPE_LABELS[item.type] ?? item.type}</span>
+              <span className={`flex items-center gap-1 text-[11px] ${pr?.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${pr?.dot}`} /> {pr?.label}
               </span>
-              <span title="Creado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280' }}>{new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-              <span title="Actualizado" className="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>{new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+              <span title="Creado" className="text-[11px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(255,255,255,0.05)', color: '#7f8a9c' }}>{new Date(item.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+              <span title="Actualizado" className="text-[11px] font-mono px-1.5 py-0.5 rounded cursor-default" style={{ background: 'rgba(249,115,22,0.08)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.15)' }}>{new Date(item.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
               {item.points && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.07)', color: '#d1d5db' }}>{item.points}pt</span>
+                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.07)', color: '#d1d5db' }}>{item.points}pt</span>
               )}
               <div className="w-px h-3 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
-              <button onClick={onEdit} className="text-gray-600 hover:text-white transition-colors" title="Editar"><Pencil size={12} /></button>
-              <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors" title="Eliminar"><Trash2 size={12} /></button>
+              <button onClick={onEdit} className="text-[#7f8a9c] hover:text-white transition-colors" title="Editar"><Pencil size={12} /></button>
+              <button onClick={onDelete} className="text-[#7f8a9c] hover:text-red-400 transition-colors" title="Eliminar"><Trash2 size={12} /></button>
             </div>
             <h2 className="text-base font-semibold text-white leading-snug">{item.title}</h2>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors flex-shrink-0"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7f8a9c] hover:text-white transition-colors flex-shrink-0"
             style={{ background: 'rgba(255,255,255,0.05)' }}
           >
             <X size={14} />
@@ -222,11 +222,11 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               <div className="flex flex-wrap gap-3">
                 {item.assigneeName && (
                   <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[10px] font-bold text-black flex-shrink-0">
                       {item.assigneeName.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
                     </div>
                     <div>
-                      <p className="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Responsable</p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">Responsable</p>
                       <p className="text-sm text-white font-medium">{item.assigneeName}</p>
                     </div>
                   </div>
@@ -235,7 +235,7 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                   <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
                     <div className="w-1.5 h-7 rounded-full bg-emerald-500/60 flex-shrink-0" />
                     <div>
-                      <p className="text-[9px] text-emerald-400 uppercase tracking-wide leading-none mb-0.5">Solución asociada</p>
+                      <p className="text-[10px] text-emerald-400 uppercase tracking-wide leading-none mb-0.5">Solución asociada</p>
                       <p className="text-sm text-emerald-400 font-medium">{SOLUCION_TIPO_LABELS[item.solucion.tipo] ?? item.solucion.tipo}: {item.solucion.nombre}</p>
                     </div>
                   </div>
@@ -246,10 +246,10 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               {item.description && (
                 <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
                   <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10" />
                     </svg>
-                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Descripción</p>
+                    <p className="text-[11px] font-medium text-[#7f8a9c] uppercase tracking-wider">Descripción</p>
                   </div>
                   <div className="px-4 py-3" style={{ background: 'rgba(255,255,255,0.02)' }}>
                     <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{item.description}</p>
@@ -262,15 +262,15 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="flex items-center gap-2">
-                    <FileText size={11} className="text-gray-500" />
-                    <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Resultado</p>
+                    <FileText size={11} className="text-[#7f8a9c]" />
+                    <p className="text-[11px] font-medium text-[#7f8a9c] uppercase tracking-wider">Resultado</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={importMarkdown}
                       title="Importar archivo .md"
-                      className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-orange-400 transition-colors px-2 py-0.5 rounded"
+                      className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-orange-400 transition-colors px-2 py-0.5 rounded"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
                     >
                       <Upload size={9} />
@@ -293,8 +293,8 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
               {/* Fecha de ejecución */}
               <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <CalendarClock size={11} className="text-gray-500" />
-                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Fecha de ejecución</p>
+                  <CalendarClock size={11} className="text-[#7f8a9c]" />
+                  <p className="text-[11px] font-medium text-[#7f8a9c] uppercase tracking-wider">Fecha de ejecución</p>
                 </div>
                 <div className="px-4 py-3 flex gap-2" style={{ background: 'rgba(255,255,255,0.02)' }}>
                   <input
@@ -308,7 +308,7 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                     <button
                       onClick={() => saveFechaEjecucion(fechaEjecucion)}
                       disabled={savingFecha}
-                      className="px-3 rounded-lg text-[10px] font-semibold text-white flex-shrink-0 transition-colors disabled:opacity-50"
+                      className="px-3 rounded-lg text-[11px] font-semibold text-white flex-shrink-0 transition-colors disabled:opacity-50"
                       style={{ background: '#ea580c' }}
                     >
                       {savingFecha ? <Loader2 size={10} className="animate-spin" /> : '✓'}
@@ -324,8 +324,8 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
             <div className="flex-1 overflow-y-auto px-5 pt-5 pb-3 space-y-4">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Flag size={10} className="text-gray-600" />
-                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Avance de estado</p>
+                <Flag size={10} className="text-[#7f8a9c]" />
+                <p className="text-[11px] font-medium text-[#7f8a9c] uppercase tracking-wider">Avance de estado</p>
               </div>
 
               {/* Current status */}
@@ -355,15 +355,15 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
             {/* Trazabilidad in right panel */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
               <div className="flex items-center gap-2 mb-3">
-                <Clock size={10} className="text-gray-600" />
-                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Trazabilidad</p>
+                <Clock size={10} className="text-[#7f8a9c]" />
+                <p className="text-[11px] font-medium text-[#7f8a9c] uppercase tracking-wider">Trazabilidad</p>
               </div>
               {loadingLogs ? (
-                <div className="flex items-center gap-2 text-gray-600 text-xs"><Loader2 size={12} className="animate-spin" /> Cargando...</div>
+                <div className="flex items-center gap-2 text-[#7f8a9c] text-xs"><Loader2 size={12} className="animate-spin" /> Cargando...</div>
               ) : logs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-4 gap-2" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "10px" }}>
-                  <Clock size={14} className="text-gray-700" />
-                  <p className="text-[10px] text-gray-600">Sin transiciones registradas aún</p>
+                  <Clock size={14} className="text-[#7f8a9c]" />
+                  <p className="text-[11px] text-[#7f8a9c]">Sin transiciones registradas aún</p>
                 </div>
               ) : (
                 <div className="space-y-0 max-h-48 overflow-y-auto">
@@ -375,12 +375,12 @@ export default function BacklogItemDetail({ item, onClose, onStatusChange, curre
                       </div>
                       <div className="pb-3 min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {log.fromStatus && (<><span className="text-[9px] text-gray-500">{statusLabel(log.fromStatus)}</span><ArrowRight size={8} className="text-gray-600" /></>)}
-                          <span className="text-[9px] font-semibold text-orange-400">{statusLabel(log.toStatus)}</span>
-                          {log.userName && <span className="text-[9px] text-gray-500">· {log.userName}</span>}
+                          {log.fromStatus && (<><span className="text-[10px] text-[#7f8a9c]">{statusLabel(log.fromStatus)}</span><ArrowRight size={8} className="text-[#7f8a9c]" /></>)}
+                          <span className="text-[10px] font-semibold text-orange-400">{statusLabel(log.toStatus)}</span>
+                          {log.userName && <span className="text-[10px] text-[#7f8a9c]">· {log.userName}</span>}
                         </div>
-                        {log.note && <p className="text-[10px] text-gray-400 mt-1 leading-relaxed px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>{log.note}</p>}
-                        <p className="text-[9px] text-gray-700 mt-0.5">{formatDate(log.createdAt)}</p>
+                        {log.note && <p className="text-[11px] text-gray-400 mt-1 leading-relaxed px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>{log.note}</p>}
+                        <p className="text-[10px] text-[#7f8a9c] mt-0.5">{formatDate(log.createdAt)}</p>
                       </div>
                     </div>
                   ))}

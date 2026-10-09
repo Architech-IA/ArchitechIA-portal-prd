@@ -14,7 +14,7 @@ export default function AppRuntimePlaceholder({ app }: AppRuntimePlaceholderProp
         renderizará la interfaz de ejecución específica una vez que el equipo desarrolle el runtime.
       </p>
       <div className="rounded-lg border border-gray-800 bg-gray-950 p-6 text-left">
-        <p className="mb-2 text-sm text-gray-500">Configuración actual:</p>
+        <p className="mb-2 text-sm text-[#7f8a9c]">Configuración actual:</p>
         <pre className="max-h-64 max-w-xl overflow-auto rounded bg-gray-900 p-3 text-xs text-gray-300">
           {JSON.stringify(app.config, null, 2)}
         </pre>

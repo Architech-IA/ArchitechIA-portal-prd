@@ -124,10 +124,10 @@ export default function ReportesPage() {
                   <span className="text-white font-medium">${m.ingresos.toLocaleString()}</span>
                 </div>
                 <Bar value={m.ingresos} max={maxRevenue} color="bg-orange-500" />
-                <p className="text-xs text-gray-500 mt-0.5">{m.deals} deals cerrados</p>
+                <p className="text-xs text-[#7f8a9c] mt-0.5">{m.deals} deals cerrados</p>
               </div>
             ))}
-            {revenueMensual.length === 0 && <p className="text-gray-500 text-sm text-center py-4">Sin datos</p>}
+            {revenueMensual.length === 0 && <p className="text-[#7f8a9c] text-sm text-center py-4">Sin datos</p>}
           </div>
         </div>
 
@@ -144,7 +144,7 @@ export default function ReportesPage() {
                 <Bar value={e.count} max={maxEtapa} color="bg-blue-500" />
               </div>
             ))}
-            {pipelineEtapas.length === 0 && <p className="text-gray-500 text-sm text-center py-4">Sin datos</p>}
+            {pipelineEtapas.length === 0 && <p className="text-[#7f8a9c] text-sm text-center py-4">Sin datos</p>}
           </div>
         </div>
       </div>
@@ -164,7 +164,7 @@ export default function ReportesPage() {
                 <Bar value={c.total} max={maxCat} color="bg-purple-500" />
               </div>
             ))}
-            {revenueCategorias.length === 0 && <p className="text-gray-500 text-sm text-center py-4">Sin datos</p>}
+            {revenueCategorias.length === 0 && <p className="text-[#7f8a9c] text-sm text-center py-4">Sin datos</p>}
           </div>
         </div>
 
@@ -183,7 +183,7 @@ export default function ReportesPage() {
                 </div>
               </div>
             ))}
-            {propEstados.every(e => e.count === 0) && <p className="text-gray-500 text-sm text-center py-4">Sin datos</p>}
+            {propEstados.every(e => e.count === 0) && <p className="text-[#7f8a9c] text-sm text-center py-4">Sin datos</p>}
           </div>
         </div>
       </div>
@@ -203,7 +203,7 @@ export default function ReportesPage() {
               </div>
             </div>
           ))}
-          {topSocios.length === 0 && <p className="text-gray-500 text-sm col-span-full text-center py-4">Sin datos</p>}
+          {topSocios.length === 0 && <p className="text-[#7f8a9c] text-sm col-span-full text-center py-4">Sin datos</p>}
         </div>
       </div>
 
@@ -220,7 +220,7 @@ export default function ReportesPage() {
             <div key={k.label} className="bg-gray-800 rounded-lg p-4">
               <p className="text-xs text-gray-400 mb-1">{k.label}</p>
               <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-              <p className="text-xs text-gray-500 mt-1">{k.sub}</p>
+              <p className="text-xs text-[#7f8a9c] mt-1">{k.sub}</p>
             </div>
           ))}
         </div>
@@ -262,7 +262,7 @@ export default function ReportesPage() {
               <div key={k.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
                 <p className="text-xs text-gray-400 mb-1">{k.label}</p>
                 <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{k.sub}</p>
+                <p className="text-xs text-[#7f8a9c] mt-1">{k.sub}</p>
               </div>
             ))}
           </div>
@@ -272,14 +272,14 @@ export default function ReportesPage() {
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
               <h3 className="text-sm font-semibold text-white mb-4">Top categorías buscadas</h3>
               {prospecting.topCategories.length === 0 ? (
-                <p className="text-xs text-gray-600 text-center py-4">Sin búsquedas aún</p>
+                <p className="text-xs text-[#7f8a9c] text-center py-4">Sin búsquedas aún</p>
               ) : (
                 <div className="space-y-3">
                   {prospecting.topCategories.map(c => (
                     <div key={c.category}>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-300 truncate max-w-[160px]">{c.category}</span>
-                        <span className="text-gray-500">{c.count}</span>
+                        <span className="text-[#7f8a9c]">{c.count}</span>
                       </div>
                       <Bar value={c.count} max={prospecting.topCategories[0].count} color="bg-orange-500" />
                     </div>
@@ -292,14 +292,14 @@ export default function ReportesPage() {
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
               <h3 className="text-sm font-semibold text-white mb-4">Top ciudades buscadas</h3>
               {prospecting.topCities.length === 0 ? (
-                <p className="text-xs text-gray-600 text-center py-4">Sin búsquedas aún</p>
+                <p className="text-xs text-[#7f8a9c] text-center py-4">Sin búsquedas aún</p>
               ) : (
                 <div className="space-y-3">
                   {prospecting.topCities.map(c => (
                     <div key={c.city}>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-300">{c.city}</span>
-                        <span className="text-gray-500">{c.count}</span>
+                        <span className="text-[#7f8a9c]">{c.count}</span>
                       </div>
                       <Bar value={c.count} max={prospecting.topCities[0].count} color="bg-blue-500" />
                     </div>
@@ -312,14 +312,14 @@ export default function ReportesPage() {
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
               <h3 className="text-sm font-semibold text-white mb-4">Búsquedas por usuario</h3>
               {prospecting.byUser.length === 0 ? (
-                <p className="text-xs text-gray-600 text-center py-4">Sin búsquedas aún</p>
+                <p className="text-xs text-[#7f8a9c] text-center py-4">Sin búsquedas aún</p>
               ) : (
                 <div className="space-y-3">
                   {prospecting.byUser.map(u => (
                     <div key={u.name}>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-300 truncate max-w-[140px]">{u.name}</span>
-                        <span className="text-gray-500">{u.count} búsquedas</span>
+                        <span className="text-[#7f8a9c]">{u.count} búsquedas</span>
                       </div>
                       <Bar value={u.count} max={prospecting.byUser[0].count} color="bg-green-500" />
                     </div>
@@ -336,7 +336,7 @@ export default function ReportesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs text-gray-500 uppercase border-b border-gray-800">
+                    <tr className="text-xs text-[#7f8a9c] uppercase border-b border-gray-800">
                       <th className="text-left pb-2">Usuario</th>
                       <th className="text-left pb-2">Ciudad</th>
                       <th className="text-left pb-2">Categoría</th>
@@ -353,7 +353,7 @@ export default function ReportesPage() {
                         <td className="py-2 text-gray-400 max-w-[200px] truncate">{l.category}</td>
                         <td className="py-2 text-center text-orange-400 font-mono">{l.results}</td>
                         <td className="py-2 text-center">{l.fromMap ? '🗺️' : '—'}</td>
-                        <td className="py-2 text-right text-xs text-gray-500">
+                        <td className="py-2 text-right text-xs text-[#7f8a9c]">
                           {new Date(l.createdAt).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </td>
                       </tr>

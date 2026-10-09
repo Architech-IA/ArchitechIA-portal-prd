@@ -138,7 +138,7 @@ export default function IntegrationHubRuntime({ app }: { app: AppInstance }) {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#7f8a9c]">
                 <span>{integration.source}</span>
                 <span>{integration.target}</span>
               </div>
@@ -167,7 +167,7 @@ export default function IntegrationHubRuntime({ app }: { app: AppInstance }) {
               { time: '13:10', event: 'Forms → Email pausada manualmente', status: 'warn' },
             ].map((log, i) => (
               <div key={i} className="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-950 p-3">
-                <span className="text-xs text-gray-500">{log.time}</span>
+                <span className="text-xs text-[#7f8a9c]">{log.time}</span>
                 <span className="text-xs text-gray-300">{log.event}</span>
                 <span
                   className={`ml-auto h-2 w-2 rounded-full ${log.status === 'ok' ? 'bg-emerald-500' : 'bg-amber-500'}`}

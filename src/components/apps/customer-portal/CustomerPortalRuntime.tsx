@@ -81,7 +81,7 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 md:flex">
-            <Search className="h-4 w-4 text-gray-500" />
+            <Search className="h-4 w-4 text-[#7f8a9c]" />
             <input
               type="text"
               value={search}
@@ -90,7 +90,7 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
               className="border-none bg-transparent text-sm text-white outline-none placeholder-gray-600"
             />
           </div>
-          <button className="rounded-lg p-2 text-gray-500 hover:bg-gray-800 hover:text-white">
+          <button className="rounded-lg p-2 text-[#7f8a9c] hover:bg-gray-800 hover:text-white">
             <Bell className="h-5 w-5" />
           </button>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-xs font-bold text-white">
@@ -104,7 +104,7 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
         {/* Sidebar */}
         <aside className="hidden w-56 flex-shrink-0 flex-col border-r border-gray-800 bg-gray-900/40 md:flex">
           <nav className="flex-1 p-3">
-            <div className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Módulos</div>
+            <div className="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-[#7f8a9c]">Módulos</div>
             <div className="space-y-1">
               {modules.map((module) => {
                 const Icon = MODULE_ICONS[module];
@@ -130,7 +130,7 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
         <main className="flex-1 overflow-auto p-6">
           <div className="mb-6">
             <h3 className="text-lg font-bold text-white">{welcomeMessage}</h3>
-            <p className="text-sm text-gray-500">{MODULE_LABELS[activeModule]}</p>
+            <p className="text-sm text-[#7f8a9c]">{MODULE_LABELS[activeModule]}</p>
           </div>
 
           {activeModule === 'projects' && (
@@ -138,13 +138,13 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
               {DUMMY_PROJECTS.map((project) => (
                 <div key={project.id} className="rounded-xl border border-gray-800 bg-gray-900 p-5">
                   <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{project.id}</span>
+                    <span className="text-xs text-[#7f8a9c]">{project.id}</span>
                     <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs text-sky-400">
                       {project.status}
                     </span>
                   </div>
                   <h4 className="text-sm font-semibold text-white">{project.name}</h4>
-                  <p className="mt-1 text-xs text-gray-500">Entrega: {project.dueDate}</p>
+                  <p className="mt-1 text-xs text-[#7f8a9c]">Entrega: {project.dueDate}</p>
                   <div className="mt-3 h-2 w-full rounded-full bg-gray-800">
                     <div className="h-2 rounded-full bg-sky-500" style={{ width: `${project.progress}%` }} />
                   </div>
@@ -160,7 +160,7 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
                   <div key={invoice.id} className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-950 p-4">
                     <div>
                       <p className="text-sm font-semibold text-white">{invoice.concept}</p>
-                      <p className="text-xs text-gray-500">{invoice.id} • {invoice.date}</p>
+                      <p className="text-xs text-[#7f8a9c]">{invoice.id} • {invoice.date}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-white">{formatCurrency(invoice.amount)}</p>
@@ -181,10 +181,10 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
                   <div key={ticket.id} className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-950 p-4">
                     <div>
                       <p className="text-sm font-semibold text-white">{ticket.subject}</p>
-                      <p className="text-xs text-gray-500">{ticket.id}</p>
+                      <p className="text-xs text-[#7f8a9c]">{ticket.id}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">{ticket.priority}</span>
+                      <span className="text-xs text-[#7f8a9c]">{ticket.priority}</span>
                       <span className={`rounded-full border px-2 py-0.5 text-xs ${ticket.status === 'Resuelto' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'}`}>
                         {ticket.status}
                       </span>
@@ -203,7 +203,7 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
                     <FileText className="h-5 w-5" />
                   </div>
                   <h4 className="text-sm font-semibold text-white">{doc.name}</h4>
-                  <p className="mt-1 text-xs text-gray-500">{doc.size} • {doc.date}</p>
+                  <p className="mt-1 text-xs text-[#7f8a9c]">{doc.size} • {doc.date}</p>
                 </div>
               ))}
             </div>
@@ -217,16 +217,16 @@ export default function CustomerPortalRuntime({ app }: { app: AppInstance }) {
                 </div>
                 <div>
                   <h4 className="text-base font-semibold text-white">Cliente Demo</h4>
-                  <p className="text-sm text-gray-500">cliente@{companyName.toLowerCase().replace(/\s+/g, '')}.com</p>
+                  <p className="text-sm text-[#7f8a9c]">cliente@{companyName.toLowerCase().replace(/\s+/g, '')}.com</p>
                 </div>
               </div>
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border border-gray-800 bg-gray-950 p-4">
-                  <p className="text-xs text-gray-500">Plan contratado</p>
+                  <p className="text-xs text-[#7f8a9c]">Plan contratado</p>
                   <p className="text-sm font-semibold text-white">Enterprise</p>
                 </div>
                 <div className="rounded-lg border border-gray-800 bg-gray-950 p-4">
-                  <p className="text-xs text-gray-500">Desde</p>
+                  <p className="text-xs text-[#7f8a9c]">Desde</p>
                   <p className="text-sm font-semibold text-white">Enero 2026</p>
                 </div>
               </div>

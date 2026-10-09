@@ -58,9 +58,9 @@ export default function ClienteDetailPage() {
     fetch(`/api/clientes/${id}`).then(r => r.json()).then(c => { setCliente(c); setLoading(false) })
   }, [id])
 
-  if (loading) return <div className="flex items-center justify-center h-full text-gray-500 text-sm">Cargando...</div>
+  if (loading) return <div className="flex items-center justify-center h-full text-[#7f8a9c] text-sm">Cargando...</div>
   if (!cliente || (cliente as unknown as { error?: string }).error) {
-    return <div className="flex items-center justify-center h-full text-gray-500 text-sm">Cliente no encontrado</div>
+    return <div className="flex items-center justify-center h-full text-[#7f8a9c] text-sm">Cliente no encontrado</div>
   }
 
   const totalLeadsValue = cliente.leads.reduce((a, l) => a + l.estimatedValue, 0)
@@ -69,7 +69,7 @@ export default function ClienteDetailPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <LeadsNav />
-      <button onClick={() => router.push('/leads/clientes')} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 mb-4 transition-colors">
+      <button onClick={() => router.push('/leads/clientes')} className="flex items-center gap-1.5 text-xs text-[#7f8a9c] hover:text-gray-300 mb-4 transition-colors">
         <ArrowLeft size={13} /> Volver a Clientes
       </button>
 
@@ -79,7 +79,7 @@ export default function ClienteDetailPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">{cliente.nombre}</h1>
-          <p className="text-xs text-gray-500">{cliente.industria} · {cliente.pais}</p>
+          <p className="text-xs text-[#7f8a9c]">{cliente.industria} · {cliente.pais}</p>
         </div>
         <span className={`ml-auto px-2.5 py-1 rounded-full text-xs font-semibold ${cliente.estado === 'Activo' ? 'bg-green-500/10 text-green-400 border border-green-500/25' : 'bg-gray-500/10 text-gray-400 border border-gray-500/25'}`}>
           {cliente.estado}
@@ -94,7 +94,7 @@ export default function ClienteDetailPage() {
           { label: 'Leads / Ganados', value: `${cliente.leads.length} / ${wonLeads}` },
         ].map(kpi => (
           <div key={kpi.label} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">{kpi.label}</p>
+            <p className="text-[11px] uppercase tracking-wider text-[#7f8a9c] mb-1">{kpi.label}</p>
             <p className="text-sm font-semibold text-gray-200 truncate">{kpi.value}</p>
           </div>
         ))}
@@ -102,15 +102,15 @@ export default function ClienteDetailPage() {
 
       <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] overflow-hidden">
         <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Historial de Leads</p>
-          <p className="text-xs text-gray-500">Valor acumulado: <span className="text-orange-400 font-semibold">${totalLeadsValue.toLocaleString()}</span></p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#7f8a9c]">Historial de Leads</p>
+          <p className="text-xs text-[#7f8a9c]">Valor acumulado: <span className="text-orange-400 font-semibold">${totalLeadsValue.toLocaleString()}</span></p>
         </div>
         {cliente.leads.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-8">Este cliente aún no tiene leads asociados.</p>
+          <p className="text-sm text-[#7f8a9c] text-center py-8">Este cliente aún no tiene leads asociados.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-gray-500 border-b border-white/[0.06]">
+              <tr className="text-[11px] uppercase tracking-wider text-[#7f8a9c] border-b border-white/[0.06]">
                 <th className="text-left px-4 py-2 font-semibold">Contacto</th>
                 <th className="text-left px-4 py-2 font-semibold">Estado</th>
                 <th className="text-left px-4 py-2 font-semibold">Fuente</th>
@@ -135,8 +135,8 @@ export default function ClienteDetailPage() {
                     <td className="px-4 py-2.5 text-gray-400">{lead.source}</td>
                     <td className="px-4 py-2.5 text-right font-mono text-gray-300">${lead.estimatedValue.toLocaleString()}</td>
                     <td className="px-4 py-2.5 text-gray-400">{lead.user.name}</td>
-                    <td className="px-4 py-2.5 text-gray-500">{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                    <td className="px-4 py-2.5 text-right"><ExternalLink size={13} className="text-gray-600" /></td>
+                    <td className="px-4 py-2.5 text-[#7f8a9c]">{new Date(lead.createdAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                    <td className="px-4 py-2.5 text-right"><ExternalLink size={13} className="text-[#7f8a9c]" /></td>
                   </tr>
                 )
               })}

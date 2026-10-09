@@ -14,7 +14,7 @@ function inline(t: string, key: string): ReactNode[] {
     const tok = m[0]
     if (tok.startsWith('**')) out.push(<strong key={`${key}b${i}`} className="text-gray-100 font-semibold">{tok.slice(2, -2)}</strong>)
     else if (tok.startsWith('`')) out.push(<code key={`${key}c${i}`} className="px-1 py-0.5 rounded bg-white/10 text-[11px] text-indigo-200">{tok.slice(1, -1)}</code>)
-    else out.push(<span key={`${key}k${i}`} className="mx-0.5 px-1.5 py-[1px] rounded-md text-[10px] font-medium align-baseline" style={{ background: 'rgba(99,102,241,0.16)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>{tok.slice(1, -1)}</span>)
+    else out.push(<span key={`${key}k${i}`} className="mx-0.5 px-1.5 py-[1px] rounded-md text-[11px] font-medium align-baseline" style={{ background: 'rgba(99,102,241,0.16)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>{tok.slice(1, -1)}</span>)
     last = m.index + tok.length; i++
   }
   if (last < t.length) out.push(t.slice(last))

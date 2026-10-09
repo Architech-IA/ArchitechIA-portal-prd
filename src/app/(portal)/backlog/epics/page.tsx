@@ -45,7 +45,7 @@ const COLORS = ['#7F77DD', '#1D9375', '#E2562A', '#C0655A', '#3A9E42', '#3b82f6'
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   ACTIVE:    { label: 'Activa',     color: '#34d399' },
   COMPLETED: { label: 'Completada', color: '#7F77DD' },
-  ARCHIVED:  { label: 'Archivada',  color: '#4b5563' },
+  ARCHIVED:  { label: 'Archivada',  color: '#7f8a9c' },
 }
 
 const SPRINT_STATUS_COLOR: Record<string, string> = {
@@ -77,11 +77,11 @@ function Dropdown({ label, value, onChange, options }: {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{label}</label>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{label}</label>
       <button type="button" onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: open ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.08)', color: '#f1f5f9', fontSize: '13px', cursor: 'pointer', backdropFilter: 'blur(8px)', transition: 'all 0.15s' }}>
         <span>{selected?.label ?? '—'}</span>
-        <ChevronDown size={13} style={{ color: '#475569', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
+        <ChevronDown size={13} style={{ color: '#7f8a9c', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
       </button>
       {open && (
         <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100, borderRadius: '10px', background: 'rgba(15,18,36,0.97)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 16px 40px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', overflow: 'auto', maxHeight: '220px' }}>
@@ -156,7 +156,7 @@ function EpicModal({ initial, soluciones, onSave, onClose }: {
 
           {/* Nombre */}
           <div>
-            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Nombre *</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Nombre *</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="ej: Módulo de autenticación"
               style={inputStyle} />
@@ -174,18 +174,18 @@ function EpicModal({ initial, soluciones, onSave, onClose }: {
           {/* Fechas */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Inicio</label>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Inicio</label>
               <input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} style={{ ...inputStyle, colorScheme: 'dark' as const }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Fin</label>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Fin</label>
               <input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} style={{ ...inputStyle, colorScheme: 'dark' as const }} />
             </div>
           </div>
 
           {/* Descripción */}
           <div>
-            <label style={{ display: 'block', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Descripción</label>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Descripción</label>
             <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3}
               placeholder="Objetivo estratégico de esta épica..."
               style={{ ...inputStyle, resize: 'vertical' as const, lineHeight: '1.6' }} />
@@ -196,7 +196,7 @@ function EpicModal({ initial, soluciones, onSave, onClose }: {
         <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0 24px' }} />
         <div style={{ display: 'flex', gap: '8px', padding: '16px 24px' }}>
           <button onClick={onClose}
-            style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#475569', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer' }}>
+            style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, color: '#7f8a9c', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer' }}>
             Cancelar
           </button>
           <button onClick={handle} disabled={saving || !form.name.trim()}
@@ -225,13 +225,13 @@ export default function EpicsPage() {
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           Backlog
         </Link>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <Link href="/backlog/sprint" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/sprint" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Rocket size={10}/> Sprints
@@ -240,13 +240,13 @@ export default function EpicsPage() {
           style={{ background: 'rgba(29,147,117,0.2)', color: '#1D9375', border: '1px solid rgba(29,147,117,0.3)' }}>
           <Layers size={10}/> Epicas
         </Link>
-        <Link href="/backlog/solution" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/solution" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(127,119,221,0.08)'; (e.currentTarget as HTMLElement).style.color = '#7F77DD' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <MapIcon size={10}/> Solution
         </Link>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#3b82f6' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Play size={10}/> Sala de Control

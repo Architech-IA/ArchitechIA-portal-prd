@@ -175,26 +175,26 @@ export default function NichesTab() {
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-gray-800 rounded-lg p-2">
-                  <p className="text-gray-500">Industria</p>
+                  <p className="text-[#7f8a9c]">Industria</p>
                   <p className="text-white">{selected.industry}</p>
                 </div>
                 <div className="bg-gray-800 rounded-lg p-2">
-                  <p className="text-gray-500">Potencial</p>
+                  <p className="text-[#7f8a9c]">Potencial</p>
                   <p className="text-white">{selected.potential}%</p>
                 </div>
                 <div className="bg-gray-800 rounded-lg p-2">
-                  <p className="text-gray-500">Competidores</p>
+                  <p className="text-[#7f8a9c]">Competidores</p>
                   <p className="text-white">{selected.competitors}</p>
                 </div>
                 <div className="bg-gray-800 rounded-lg p-2">
-                  <p className="text-gray-500">Tendencia</p>
+                  <p className="text-[#7f8a9c]">Tendencia</p>
                   <p className="text-white capitalize">{selected.trend === 'up' ? 'Alza' : selected.trend === 'down' ? 'Baja' : 'Estable'}</p>
                 </div>
               </div>
               {selected.description && (
                 <p className="text-xs text-gray-400 bg-gray-800 rounded-lg p-2">{selected.description}</p>
               )}
-              <p className="text-xs text-gray-600">Responsable: {selected.user.name}</p>
+              <p className="text-xs text-[#7f8a9c]">Responsable: {selected.user.name}</p>
               <button onClick={() => handleDelete(selected.id)} className="w-full px-3 py-1.5 bg-red-900/30 border border-red-800/50 text-red-400 text-xs rounded-lg hover:bg-red-800/40">
                 Eliminar Nodo
               </button>
@@ -202,7 +202,7 @@ export default function NichesTab() {
               {/* Connected edges */}
               {edges.filter(e => e.fromId === selected.id || e.toId === selected.id).length > 0 && (
                 <div className="border-t border-gray-800 pt-3">
-                  <p className="text-xs text-gray-500 mb-2">Conexiones</p>
+                  <p className="text-xs text-[#7f8a9c] mb-2">Conexiones</p>
                   {edges.filter(e => e.fromId === selected.id || e.toId === selected.id).map(e => {
                     const otherId = e.fromId === selected.id ? e.toId : e.fromId;
                     const other = nodes.find(n => n.id === otherId);
@@ -219,10 +219,10 @@ export default function NichesTab() {
           ) : (
             <div className="text-center py-8">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-800 flex items-center justify-center">
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <svg className="w-5 h-5 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               </div>
-              <p className="text-gray-500 text-sm">Selecciona un nodo</p>
-              <p className="text-gray-600 text-xs mt-1">Shift+Click para conectar</p>
+              <p className="text-[#7f8a9c] text-sm">Selecciona un nodo</p>
+              <p className="text-[#7f8a9c] text-xs mt-1">Shift+Click para conectar</p>
             </div>
           )}
         </div>

@@ -154,7 +154,7 @@ export default function ClientesTab() {
                       </div>
                       <div>
                         <p className="font-medium text-white">{c.nombre}</p>
-                        <p className="text-xs text-gray-500">{c.contacto}</p>
+                        <p className="text-xs text-[#7f8a9c]">{c.contacto}</p>
                       </div>
                     </div>
                   </td>
@@ -177,7 +177,7 @@ export default function ClientesTab() {
                 </tr>
               ))}
               {filtrados.length === 0 && (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-500">Sin clientes</td></tr>
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-[#7f8a9c]">Sin clientes</td></tr>
               )}
             </tbody>
           </table>

@@ -157,7 +157,7 @@ export default function LeadAiPanel({
       <div className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 flex flex-col print:hidden transition-transform duration-300 ease-out ${oculto ? 'translate-x-full' : 'translate-x-0'}`}>
         <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Fase {fase.label}</p>
+            <p className="text-[11px] uppercase tracking-wide text-cyan-600 font-semibold">Asistente IA · Fase {fase.label}</p>
             <h3 className="text-base font-bold text-[#111827] truncate">{chat ? chat.titulo : 'Asistente del lead'}</h3>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -201,7 +201,7 @@ export default function LeadAiPanel({
                   <ChevronLeft size={12} /> Volver a opciones
                 </button>
                 {chat.ctx && chat.ctx.archivosTotal > 0 && (
-                  <p className="text-[10px] text-[#9ca3af]">Contexto: {chat.ctx.archivosLeidos} de {chat.ctx.archivosTotal} archivo{chat.ctx.archivosTotal === 1 ? '' : 's'} adjunto{chat.ctx.archivosTotal === 1 ? '' : 's'} leído{chat.ctx.archivosLeidos === 1 ? '' : 's'}{chat.ctx.archivosLeidos < chat.ctx.archivosTotal ? ' (el resto no es legible o excede el límite)' : ''}</p>
+                  <p className="text-[11px] text-[#9ca3af]">Contexto: {chat.ctx.archivosLeidos} de {chat.ctx.archivosTotal} archivo{chat.ctx.archivosTotal === 1 ? '' : 's'} adjunto{chat.ctx.archivosTotal === 1 ? '' : 's'} leído{chat.ctx.archivosLeidos === 1 ? '' : 's'}{chat.ctx.archivosLeidos < chat.ctx.archivosTotal ? ' (el resto no es legible o excede el límite)' : ''}</p>
                 )}
 
                 {chat.mensajes.length === 0 && !chat.cargando && !chat.listo && chat.modo === 'mejorar' && (
@@ -283,7 +283,7 @@ export default function LeadAiPanel({
                   </div>
                 )}
                 {ultimo?.role === 'assistant' && ultimo.opciones && ultimo.opciones.length > 0 && !chat.cargando
-                  ? <p className="px-6 pt-2 text-[10px] text-[#9ca3af]">O escribe tu propia respuesta:</p> : null}
+                  ? <p className="px-6 pt-2 text-[11px] text-[#9ca3af]">O escribe tu propia respuesta:</p> : null}
                 <div className="px-6 py-3 flex items-center gap-2">
                   <input type="text" value={input} onChange={e => setInput(e.target.value)} disabled={chat.cargando}
                     onKeyDown={e => { if (e.key === 'Enter') enviar(input) }}

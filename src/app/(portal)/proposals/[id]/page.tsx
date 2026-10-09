@@ -272,7 +272,7 @@ export default function ProposalDetailPage() {
   );
 
   if (!proposal) return (
-    <div className="p-8 text-center text-gray-500">Propuesta no encontrada.</div>
+    <div className="p-8 text-center text-[#7f8a9c]">Propuesta no encontrada.</div>
   );
 
   const taskProgress = proposal.tasks.length > 0
@@ -340,7 +340,7 @@ export default function ProposalDetailPage() {
           const currentIdx = getLeadStageIndex(lead.status);
           return (
         <div className="mt-5 pt-4 border-t border-gray-800">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pipeline del Lead — {lead.companyName} <span className="text-gray-600 ml-1">(click en una fase)</span></p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Pipeline del Lead — {lead.companyName} <span className="text-[#7f8a9c] ml-1">(click en una fase)</span></p>
           <div className="flex items-center overflow-x-auto pb-2">
             {LEAD_STAGES.map((stage, i, arr) => {
               // WON/LOST ya no son fases separadas del enum — son el
@@ -365,17 +365,17 @@ export default function ProposalDetailPage() {
                         isLost ? 'bg-red-600 text-white hover:bg-red-500' :
                         isCompleted ? 'bg-green-600 text-white hover:bg-green-500' :
                         isCurrent ? 'bg-orange-500 text-white ring-2 ring-orange-500/30 hover:bg-orange-400' :
-                        'bg-gray-700 text-gray-500 hover:bg-gray-600 hover:text-white'
+                        'bg-gray-700 text-[#7f8a9c] hover:bg-gray-600 hover:text-white'
                       }`}
                       title={`${stage.label} — Click para ver/agregar documentos`}
                     >
                       {isCompleted && !isCurrent ? '✓' : isLost ? '✗' : i + 1}
                     </button>
-                    <span className={`text-[10px] mt-1 text-center leading-tight ${
+                    <span className={`text-[11px] mt-1 text-center leading-tight ${
                       isLost ? 'text-red-400' :
                       isCompleted ? 'text-green-400' :
                       isCurrent ? 'text-orange-400 font-semibold' :
-                      'text-gray-600'
+                      'text-[#7f8a9c]'
                     }`}>{stage.label}</span>
                   </div>
                   {i < arr.length - 1 && (
@@ -398,7 +398,7 @@ export default function ProposalDetailPage() {
               <h3 className="text-sm font-semibold text-white">
                 📋 Fase: <span className="text-orange-400">{LEAD_STAGES.find(s => s.key === selectedStage)?.label}</span>
               </h3>
-              <button onClick={() => setSelectedStage(null)} className="text-gray-500 hover:text-white">×</button>
+              <button onClick={() => setSelectedStage(null)} className="text-[#7f8a9c] hover:text-white">×</button>
             </div>
             {/* Upload new doc to stage */}
             <div className="flex gap-2 flex-wrap mb-4">
@@ -433,7 +433,7 @@ export default function ProposalDetailPage() {
             {loadingStageDocs ? (
               <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500" /></div>
             ) : stageDocs.length === 0 ? (
-              <p className="text-gray-500 text-xs py-2">Sin documentos en esta fase. Agrega actas, presentaciones, correos, etc.</p>
+              <p className="text-[#7f8a9c] text-xs py-2">Sin documentos en esta fase. Agrega actas, presentaciones, correos, etc.</p>
             ) : (
               <div className="space-y-2">
                 {stageDocs.map(doc => (
@@ -448,7 +448,7 @@ export default function ProposalDetailPage() {
                     <span className="flex-1 text-xs text-white truncate">{doc.name}</span>
                     <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-xs text-orange-400 hover:text-orange-300">Abrir</a>
                     <button onClick={() => { fetch(`/api/proposals/${proposal.id}/documents`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ docId: doc.id }) }).then(() => handleStageClick(selectedStage)); }}
-                      className="text-gray-600 hover:text-red-400 text-xs">×</button>
+                      className="text-[#7f8a9c] hover:text-red-400 text-xs">×</button>
                   </div>
                 ))}
               </div>
@@ -497,15 +497,15 @@ export default function ProposalDetailPage() {
                 <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-4 pb-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold text-orange-400">{translateActivityType(a.type)}</span>
-                    <span className="text-xs text-gray-500">· {new Date(a.createdAt).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-xs text-[#7f8a9c]">· {new Date(a.createdAt).toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <p className="text-sm text-white">{a.description}</p>
-                  <p className="text-xs text-gray-500 mt-1">{a.user.name}</p>
+                  <p className="text-xs text-[#7f8a9c] mt-1">{a.user.name}</p>
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-[#7f8a9c]">
               <p className="text-lg mb-1">Sin actividad aún</p>
               <p className="text-sm">Agrega una nota para empezar el historial.</p>
             </div>
@@ -528,7 +528,7 @@ export default function ProposalDetailPage() {
           </div>
 
           {proposal.tasks.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-[#7f8a9c]">
               <p className="text-lg mb-1">Sin tareas</p>
               <p className="text-sm">Agrega tareas para hacer seguimiento del avance.</p>
             </div>
@@ -541,8 +541,8 @@ export default function ProposalDetailPage() {
                   }`}>
                   {task.completed && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </button>
-                <span className={`flex-1 text-sm ${task.completed ? 'line-through text-gray-500' : 'text-white'}`}>{task.title}</span>
-                <button onClick={() => handleDeleteTask(task.id)} className="text-gray-600 hover:text-red-400 transition-colors text-xs">×</button>
+                <span className={`flex-1 text-sm ${task.completed ? 'line-through text-[#7f8a9c]' : 'text-white'}`}>{task.title}</span>
+                <button onClick={() => handleDeleteTask(task.id)} className="text-[#7f8a9c] hover:text-red-400 transition-colors text-xs">×</button>
               </div>
             ))
           )}
@@ -566,7 +566,7 @@ export default function ProposalDetailPage() {
           </div>
 
           {proposal.documents.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-[#7f8a9c]">
               <p className="text-lg mb-1">Sin documentos</p>
               <p className="text-sm">Agrega enlaces a documentos relacionados: propuestas PDF, contratos, specs técnicas, etc.</p>
             </div>
@@ -579,14 +579,14 @@ export default function ProposalDetailPage() {
                   </svg>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{doc.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{doc.url}</p>
+                    <p className="text-xs text-[#7f8a9c] truncate">{doc.url}</p>
                   </div>
                   <a href={doc.url} target="_blank" rel="noopener noreferrer"
                     className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition-colors">
                     Abrir
                   </a>
                   <button onClick={() => handleDeleteDocument(doc.id)}
-                    className="text-gray-600 hover:text-red-400 transition-colors text-xs px-2">×</button>
+                    className="text-[#7f8a9c] hover:text-red-400 transition-colors text-xs px-2">×</button>
                 </div>
               ))}
             </div>

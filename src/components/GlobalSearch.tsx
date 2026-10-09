@@ -88,16 +88,16 @@ export default function GlobalSearch() {
             className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none text-sm"
           />
           {loading && <div className="w-4 h-4 border-2 border-orange-500/40 border-t-orange-500 rounded-full animate-spin flex-shrink-0" />}
-          <kbd className="hidden sm:inline-flex px-2 py-0.5 text-xs text-gray-500 border border-gray-700 rounded">Esc</kbd>
+          <kbd className="hidden sm:inline-flex px-2 py-0.5 text-xs text-[#7f8a9c] border border-gray-700 rounded">Esc</kbd>
         </div>
 
         {/* Resultados */}
         <div className="max-h-96 overflow-y-auto">
           {query.length < 2 && (
-            <p className="text-center text-gray-500 text-sm py-8">Escribe al menos 2 caracteres para buscar</p>
+            <p className="text-center text-[#7f8a9c] text-sm py-8">Escribe al menos 2 caracteres para buscar</p>
           )}
           {query.length >= 2 && !loading && total === 0 && (
-            <p className="text-center text-gray-500 text-sm py-8">Sin resultados para &ldquo;{query}&rdquo;</p>
+            <p className="text-center text-[#7f8a9c] text-sm py-8">Sin resultados para &ldquo;{query}&rdquo;</p>
           )}
           {results && total > 0 && (
             <div className="p-2">
@@ -161,10 +161,10 @@ export default function GlobalSearch() {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-800 flex items-center gap-4 text-xs text-gray-600">
-          <span><kbd className="px-1.5 py-0.5 border border-gray-700 rounded text-gray-500">↑↓</kbd> navegar</span>
-          <span><kbd className="px-1.5 py-0.5 border border-gray-700 rounded text-gray-500">↵</kbd> abrir</span>
-          <span><kbd className="px-1.5 py-0.5 border border-gray-700 rounded text-gray-500">Esc</kbd> cerrar</span>
+        <div className="px-5 py-3 border-t border-gray-800 flex items-center gap-4 text-xs text-[#7f8a9c]">
+          <span><kbd className="px-1.5 py-0.5 border border-gray-700 rounded text-[#7f8a9c]">↑↓</kbd> navegar</span>
+          <span><kbd className="px-1.5 py-0.5 border border-gray-700 rounded text-[#7f8a9c]">↵</kbd> abrir</span>
+          <span><kbd className="px-1.5 py-0.5 border border-gray-700 rounded text-[#7f8a9c]">Esc</kbd> cerrar</span>
           <span className="ml-auto">Ctrl+K</span>
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function GlobalSearch() {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-2">
-      <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</p>
+      <p className="px-3 py-1 text-xs font-semibold text-[#7f8a9c] uppercase tracking-wider">{label}</p>
       {children}
     </div>
   );
@@ -199,7 +199,7 @@ function Result({ title, sub, badge, color, onClick }: {
     >
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white font-medium truncate">{title}</p>
-        <p className="text-xs text-gray-500 truncate">{sub}</p>
+        <p className="text-xs text-[#7f8a9c] truncate">{sub}</p>
       </div>
       <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${colorMap[color]}`}>{badge}</span>
     </button>

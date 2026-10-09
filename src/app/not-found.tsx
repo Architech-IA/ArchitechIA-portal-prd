@@ -9,7 +9,7 @@ export default function NotFound() {
         </div>
         <h1 className="text-7xl font-black text-white mb-3">404</h1>
         <p className="text-xl text-gray-400 mb-2">Página no encontrada</p>
-        <p className="text-gray-600 mb-8">La ruta que buscas no existe en el portal.</p>
+        <p className="text-[#7f8a9c] mb-8">La ruta que buscas no existe en el portal.</p>
         <Link
           href="/"
           className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors font-medium"

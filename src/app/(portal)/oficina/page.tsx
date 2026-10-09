@@ -207,7 +207,7 @@ function OficinaPageInner() {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center h-full text-gray-500 gap-2">
+    <div className="flex items-center justify-center h-full text-[#7f8a9c] gap-2">
       <Loader2 size={16} className="animate-spin" />
       <span className="text-sm">Cargando oficina virtual...</span>
     </div>
@@ -232,7 +232,7 @@ function OficinaPageInner() {
         <div className="overflow-y-auto overflow-x-hidden">
           <button onClick={() => setRoomsOpen(o => !o)}
             className="w-full flex items-center justify-between px-3 pt-4 pb-2 group hover:bg-white/5 transition-colors rounded-lg">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">Rooms</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#7f8a9c] group-hover:text-gray-400 transition-colors">Rooms</span>
             <ChevronRight size={11} className="transition-transform flex-shrink-0"
               style={{ color: roomsOpen ? '#6366f1' : '#4b5563', transform: roomsOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
@@ -243,16 +243,16 @@ function OficinaPageInner() {
                 className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-left group hover:bg-white/5"
                 style={sideView === 'rooms' && selectedId === area.id
                   ? { background: area.color+'22', color: area.color }
-                  : { color: '#6b7280' }}>
+                  : { color: '#7f8a9c' }}>
                 <span className="text-[12px] font-semibold flex-1 truncate group-hover:text-gray-300 transition-colors">{area.name}</span>
                 {area.slug === 'consejo' ? (
                   councilBadge.total > 0 && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
                           style={{ background: councilBadge.escalated > 0 ? '#ef444430' : '#f59e0b30', color: councilBadge.escalated > 0 ? '#ef4444' : '#f59e0b' }}>{councilBadge.total}</span>
                   )
                 ) : (
                   area.activeItems > 0 && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
                           style={{ background: area.color+'30', color: area.color }}>{area.activeItems}</span>
                   )
                 )}
@@ -263,10 +263,10 @@ function OficinaPageInner() {
                   className="w-full flex items-center gap-2 pl-7 pr-3 py-1 rounded-lg transition-all text-left group hover:bg-white/5"
                   style={sideView === 'rooms' && selectedId === sub.id
                     ? { background: sub.color+'18', color: sub.color }
-                    : { color: '#4b5563' }}>
+                    : { color: '#7f8a9c' }}>
                   <span className="text-[11px] flex-1 truncate group-hover:text-gray-400 transition-colors">{sub.name}</span>
                   {sub.activeItems > 0 && (
-                    <span className="text-[9px] px-1 rounded-full flex-shrink-0"
+                    <span className="text-[10px] px-1 rounded-full flex-shrink-0"
                           style={{ background: sub.color+'25', color: sub.color }}>{sub.activeItems}</span>
                   )}
                 </button>
@@ -279,42 +279,42 @@ function OficinaPageInner() {
         <div className="flex-shrink-0 border-t border-white/5 pt-1 pb-2">
           <button onClick={() => setConfigOpen(o => !o)}
             className="w-full flex items-center justify-between px-3 pt-2 pb-1 group hover:bg-white/5 transition-colors rounded-lg">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-gray-400 transition-colors">Config</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#7f8a9c] group-hover:text-gray-400 transition-colors">Config</span>
             <ChevronRight size={11} className="transition-transform flex-shrink-0"
               style={{ color: configOpen ? '#6366f1' : '#4b5563', transform: configOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
           {configOpen && <button
             onClick={() => setSideView('agentes')}
             className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'agentes' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            style={sideView === 'agentes' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
             <Bot size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Agents</span>
           </button>}
           {configOpen && <button
             onClick={() => setSideView('directory')}
             className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'directory' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            style={sideView === 'directory' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
             <Network size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Directory</span>
           </button>}
           {configOpen && <button
             onClick={() => setSideView('backlog')}
             className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'backlog' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            style={sideView === 'backlog' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
             <LayoutGrid size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Backlog</span>
           </button>}
           {configOpen && <button
             onClick={() => setSideView('solutions')}
             className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'solutions' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            style={sideView === 'solutions' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
             <Package size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Solutions</span>
           </button>}
           {configOpen && <button
             onClick={() => setSideView('proyectos')}
             className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
-            style={sideView === 'proyectos' ? { color: '#a78bfa' } : { color: '#4b5563' }}>
+            style={sideView === 'proyectos' ? { color: '#a78bfa' } : { color: '#7f8a9c' }}>
             <FolderKanban size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
             <span className="text-[11px] group-hover:text-gray-400 transition-colors">Proyectos</span>
           </button>}
@@ -343,8 +343,8 @@ function OficinaPageInner() {
             <div className="w-52 flex-shrink-0 border-r border-white/5 overflow-y-auto"
                  style={{ background: 'rgba(5,5,14,0.5)' }}>
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.6)' }}>Agentes</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono" style={{ background: 'rgba(139,92,246,0.12)', color: 'rgba(167,139,250,0.5)' }}>
+                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.6)' }}>Agentes</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ background: 'rgba(139,92,246,0.12)', color: 'rgba(167,139,250,0.5)' }}>
                   {agents.length}
                 </span>
               </div>
@@ -372,7 +372,7 @@ function OficinaPageInner() {
                       style={{ color: isSelected ? '#e2e8f0' : 'rgba(255,255,255,0.5)' }}>
                       {a.name}
                     </div>
-                    <div className="text-[10px] truncate transition-colors duration-150"
+                    <div className="text-[11px] truncate transition-colors duration-150"
                       style={{ color: isSelected ? 'rgba(167,139,250,0.6)' : 'rgba(255,255,255,0.2)' }}>
                       {a.role}
                     </div>
@@ -397,7 +397,7 @@ function OficinaPageInner() {
                     </div>
                     <div>
                       <p className="text-[13px] font-bold text-white leading-none">{selAgent.name}</p>
-                      <p className="text-[10px] font-mono mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{selAgent.slug}</p>
+                      <p className="text-[11px] font-mono mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{selAgent.slug}</p>
                     </div>
                   </div>
                   <button onClick={saveAgent} disabled={saving}
@@ -418,12 +418,12 @@ function OficinaPageInner() {
                   <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(139,92,246,0.04)' }}>
                       <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#a78bfa' }} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.8)' }}>Identidad</span>
+                      <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.8)' }}>Identidad</span>
                     </div>
                     <div className="p-4 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Nombre</label>
+                          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Nombre</label>
                           <input value={form.name ?? ''}
                             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                             className="w-full rounded-xl px-3 py-2.5 text-[13px] font-medium text-white outline-none transition-all duration-200"
@@ -432,7 +432,7 @@ function OficinaPageInner() {
                             onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Estado</label>
+                          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Estado</label>
                           <select value={form.status ?? 'ACTIVE'}
                             onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
                             className="w-full rounded-xl px-3 py-2.5 text-[13px] font-semibold outline-none transition-all duration-200 cursor-pointer"
@@ -442,14 +442,14 @@ function OficinaPageInner() {
                               color: form.status === 'ACTIVE' ? '#34d399' : form.status === 'STANDBY' ? '#fbbf24' : '#6b7280'
                             }}>
                             <option value="ACTIVE" style={{ background: '#0d0d1a', color: '#34d399' }}>● ACTIVE</option>
-                            <option value="INACTIVE" style={{ background: '#0d0d1a', color: '#6b7280' }}>● INACTIVE</option>
+                            <option value="INACTIVE" style={{ background: '#0d0d1a', color: '#7f8a9c' }}>● INACTIVE</option>
                             <option value="STANDBY" style={{ background: '#0d0d1a', color: '#fbbf24' }}>● STANDBY</option>
                           </select>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Rol</label>
+                          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Rol</label>
                           <input value={form.role ?? ''}
                             onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                             className="w-full rounded-xl px-3 py-2.5 text-[13px] text-white outline-none transition-all duration-200"
@@ -458,7 +458,7 @@ function OficinaPageInner() {
                             onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Área</label>
+                          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Área</label>
                           <input value={form.area ?? ''}
                             onChange={e => setForm(f => ({ ...f, area: e.target.value }))}
                             className="w-full rounded-xl px-3 py-2.5 text-[13px] text-white outline-none transition-all duration-200"
@@ -474,11 +474,11 @@ function OficinaPageInner() {
                   <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(99,102,241,0.04)' }}>
                       <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#818cf8' }} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(129,140,248,0.8)' }}>Comportamiento</span>
+                      <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(129,140,248,0.8)' }}>Comportamiento</span>
                     </div>
                     <div className="p-4 space-y-3">
                       <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Personalidad</label>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Personalidad</label>
                         <textarea value={form.personality ?? ''}
                           onChange={e => setForm(f => ({ ...f, personality: e.target.value }))}
                           rows={3}
@@ -489,8 +489,8 @@ function OficinaPageInner() {
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
-                          <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>System Prompt</label>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md" style={{ background: 'rgba(99,102,241,0.1)', color: 'rgba(129,140,248,0.7)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                          <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>System Prompt</label>
+                          <span className="text-[11px] font-mono px-2 py-0.5 rounded-md" style={{ background: 'rgba(99,102,241,0.1)', color: 'rgba(129,140,248,0.7)', border: '1px solid rgba(99,102,241,0.15)' }}>
                             {(form.systemPrompt ?? '').length} chars
                           </span>
                         </div>
@@ -510,9 +510,9 @@ function OficinaPageInner() {
                     <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(5,150,105,0.04)' }}>
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#34d399' }} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(52,211,153,0.8)' }}>Modelo LLM</span>
+                        <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(52,211,153,0.8)' }}>Modelo LLM</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(5,150,105,0.1)', color: 'rgba(52,211,153,0.7)', border: '1px solid rgba(5,150,105,0.2)' }}>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(5,150,105,0.1)', color: 'rgba(52,211,153,0.7)', border: '1px solid rgba(5,150,105,0.2)' }}>
                         {form.llmModel ? (form.llmModel.startsWith('opencode-go/') ? 'OpenCode GO' : form.llmModel.startsWith('opencode/') ? 'OpenCode' : 'Claude CLI') : 'Default'}
                       </span>
                     </div>
@@ -548,7 +548,7 @@ function OficinaPageInner() {
                           <option value="opencode-go/gpt-5.6-luna" style={{ background: '#080812' }}>GPT-5.6 Luna</option>
                           <option value="opencode-go/hy3" style={{ background: '#080812' }}>Hy3</option>
                         </optgroup>
-                        <optgroup label="— OpenCode (general) —" style={{ background: '#080812', color: '#6b7280' }}>
+                        <optgroup label="— OpenCode (general) —" style={{ background: '#080812', color: '#7f8a9c' }}>
                           <option value="opencode/claude-opus-5" style={{ background: '#080812' }}>Claude Opus 5</option>
                           <option value="opencode/claude-sonnet-5" style={{ background: '#080812' }}>Claude Sonnet 5</option>
                           <option value="opencode/gpt-5" style={{ background: '#080812' }}>GPT-5</option>
@@ -563,7 +563,7 @@ function OficinaPageInner() {
                           <option value="opencode/qwen3.5-plus" style={{ background: '#080812' }}>Qwen 3.5 Plus</option>
                         </optgroup>
                       </select>
-                      <p className="text-[10px] mt-2" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                      <p className="text-[11px] mt-2" style={{ color: 'rgba(255,255,255,0.25)' }}>
                         Usado por el motor de debate del Council al evaluar propuestas con este agente.
                       </p>
                     </div>
@@ -573,12 +573,12 @@ function OficinaPageInner() {
                   <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(251,191,36,0.03)' }}>
                       <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#fbbf24' }} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(251,191,36,0.7)' }}>Integraciones</span>
+                      <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'rgba(251,191,36,0.7)' }}>Integraciones</span>
                     </div>
                     <div className="p-4 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Discord User ID</label>
+                          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Discord User ID</label>
                           <input value={form.discordUserId ?? ''}
                             onChange={e => setForm(f => ({ ...f, discordUserId: e.target.value || null }))}
                             placeholder="123456789"
@@ -588,7 +588,7 @@ function OficinaPageInner() {
                             onBlur={e => { e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'; e.currentTarget.style.boxShadow = 'none' }} />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Vault Path</label>
+                          <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>Vault Path</label>
                           <input value={form.vaultPath ?? ''}
                             onChange={e => setForm(f => ({ ...f, vaultPath: e.target.value || null }))}
                             placeholder="/agents/slug/"
@@ -599,7 +599,7 @@ function OficinaPageInner() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
                           Task Types <span className="normal-case font-normal opacity-60">(separados por coma)</span>
                         </label>
                         <input value={(form.taskTypes ?? []).join(', ')}
@@ -634,19 +634,19 @@ function OficinaPageInner() {
                 {/* Chat header */}
                 <div className="flex items-center gap-2.5 px-4 py-3 flex-shrink-0"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(139,92,246,0.05)' }}>
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black"
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black"
                     style={{ background: 'rgba(139,92,246,0.2)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}>
                     {selAgent.name[0]}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-semibold text-white leading-none">Chat con {selAgent.name}</p>
-                    <p className="text-[9px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       {selAgent.llmModel ? selAgent.llmModel.split('/').pop() : 'Claude Sonnet 5'}
                     </p>
                   </div>
                   {chatMsgs.length > 0 && (
                     <button onClick={() => setChatMsgs([])}
-                      className="text-[9px] px-2 py-1 rounded-lg transition-colors hover:bg-white/5"
+                      className="text-[10px] px-2 py-1 rounded-lg transition-colors hover:bg-white/5"
                       style={{ color: 'rgba(255,255,255,0.25)' }}>
                       Limpiar
                     </button>
@@ -664,7 +664,7 @@ function OficinaPageInner() {
                       <p className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
                         Hablá con {selAgent.name}
                       </p>
-                      <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.15)' }}>
+                      <p className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.15)' }}>
                         Usará su system prompt y modelo configurado
                       </p>
                     </div>
@@ -676,7 +676,7 @@ function OficinaPageInner() {
                           ? { background: 'rgba(139,92,246,0.2)', color: '#e2e8f0', borderBottomRightRadius: '4px', border: '1px solid rgba(139,92,246,0.25)' }
                           : { background: 'rgba(255,255,255,0.05)', color: '#d1d5db', borderBottomLeftRadius: '4px', border: '1px solid rgba(255,255,255,0.07)' }}>
                         {msg.role === 'agent' && (
-                          <p className="text-[9px] font-bold mb-1" style={{ color: 'rgba(167,139,250,0.7)' }}>{selAgent.name}</p>
+                          <p className="text-[10px] font-bold mb-1" style={{ color: 'rgba(167,139,250,0.7)' }}>{selAgent.name}</p>
                         )}
                         <p className="whitespace-pre-wrap">{msg.content}</p>
                       </div>
@@ -717,12 +717,12 @@ function OficinaPageInner() {
                       {chatLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
                     </button>
                   </div>
-                  <p className="text-[9px] mt-1.5" style={{ color: 'rgba(255,255,255,0.15)' }}>Enter para enviar · Shift+Enter para nueva línea</p>
+                  <p className="text-[10px] mt-1.5" style={{ color: 'rgba(255,255,255,0.15)' }}>Enter para enviar · Shift+Enter para nueva línea</p>
                 </div>
               </div>
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-700 text-sm">
+              <div className="flex-1 flex items-center justify-center text-[#7f8a9c] text-sm">
                 Seleccioná un agente
               </div>
             )}
@@ -785,17 +785,17 @@ function OficinaPageInner() {
                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <button onClick={() => setCouncilMode('chat')}
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"
-                          style={councilMode === 'chat' ? { background: 'rgba(99,102,241,0.2)', color: '#818cf8' } : { color: '#6b7280' }}>
+                          style={councilMode === 'chat' ? { background: 'rgba(99,102,241,0.2)', color: '#818cf8' } : { color: '#7f8a9c' }}>
                           Kickoff
                         </button>
                         <button onClick={() => setCouncilMode('proposals')}
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"
-                          style={councilMode === 'proposals' ? { background: 'rgba(99,102,241,0.2)', color: '#818cf8' } : { color: '#6b7280' }}>
+                          style={councilMode === 'proposals' ? { background: 'rgba(99,102,241,0.2)', color: '#818cf8' } : { color: '#7f8a9c' }}>
                           Council
                         </button>
                         <button onClick={() => setCouncilMode('document')}
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-white/[0.06]"
-                          style={councilMode === 'document' ? { background: 'rgba(59,130,246,0.2)', color: '#60a5fa' } : { color: '#6b7280' }}>
+                          style={councilMode === 'document' ? { background: 'rgba(59,130,246,0.2)', color: '#60a5fa' } : { color: '#7f8a9c' }}>
                           Documento
                         </button>
                       </div>
@@ -813,22 +813,22 @@ function OficinaPageInner() {
                     {selected.activeItems > 0 && (
                       <div className="flex items-center gap-1 px-2 h-full border-r border-white/6">
                         <span className="text-[12px] font-black leading-none" style={{ color: selected.color }}>{selected.activeItems}</span>
-                        <span className="text-[8px] text-gray-600 uppercase tracking-wide">act</span>
+                        <span className="text-[10px] text-[#7f8a9c] uppercase tracking-wide">act</span>
                       </div>
                     )}
                     {selected.inProgressItems > 0 && (
                       <div className="flex items-center gap-1 px-2 h-full border-r border-white/6">
                         <span className="text-[12px] font-black text-blue-400 leading-none">{selected.inProgressItems}</span>
-                        <span className="text-[8px] text-gray-600 uppercase tracking-wide">wip</span>
+                        <span className="text-[10px] text-[#7f8a9c] uppercase tracking-wide">wip</span>
                       </div>
                     )}
 
                     {/* Icon buttons */}
                     <button className="flex items-center justify-center w-7 h-full hover:bg-white/8 rounded-lg transition-colors group" title="Configuración">
-                      <SlidersHorizontal size={13} className="text-gray-500 group-hover:text-gray-300 transition-colors" />
+                      <SlidersHorizontal size={13} className="text-[#7f8a9c] group-hover:text-gray-300 transition-colors" />
                     </button>
                     <button className="flex items-center justify-center w-7 h-full hover:bg-white/8 rounded-lg transition-colors group" title="Notificaciones">
-                      <Bell size={13} className="text-gray-500 group-hover:text-gray-300 transition-colors" />
+                      <Bell size={13} className="text-[#7f8a9c] group-hover:text-gray-300 transition-colors" />
                     </button>
                     <button onClick={() => setMembersOpen(o => !o)}
                       className="flex items-center justify-center w-7 h-full hover:bg-white/8 rounded-lg transition-colors group"
@@ -870,12 +870,12 @@ function OficinaPageInner() {
                   <div className="flex-1 flex flex-col overflow-hidden">
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
                       {msgLoading && (
-                        <div className="flex items-center gap-2 text-gray-600 text-xs py-6 justify-center">
+                        <div className="flex items-center gap-2 text-[#7f8a9c] text-xs py-6 justify-center">
                           <Loader2 size={12} className="animate-spin" /> Cargando mensajes...
                         </div>
                       )}
                       {!msgLoading && messages.length === 0 && (
-                        <div className="text-center text-gray-700 text-xs py-10">
+                        <div className="text-center text-[#7f8a9c] text-xs py-10">
                           <div className="text-3xl mb-2">📭</div>
                           Orión aún no ha registrado actividad.<br/>
                           Asigná una tarea a Orión para que comience a narrar.
@@ -894,7 +894,7 @@ function OficinaPageInner() {
                             {!sameDay && (
                               <div className="flex items-center gap-2 my-2">
                                 <div className="h-px flex-1 bg-white/10" />
-                                <span className="text-[9px] text-gray-500 uppercase tracking-widest">
+                                <span className="text-[10px] text-[#7f8a9c] uppercase tracking-widest">
                                   {new Date(msg.createdAt).toLocaleDateString('es', { weekday:'long', day:'2-digit', month:'long' })}
                                 </span>
                                 <div className="h-px flex-1 bg-white/10" />
@@ -917,20 +917,20 @@ function OficinaPageInner() {
                                       : 'LOG'
                                     return (
                                       <div className="flex items-center gap-1 flex-shrink-0">
-                                        <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: accentColor, opacity: 0.6 }}>{from}</span>
-                                        <span className="text-[10px] font-black mx-0.5" style={{ color: accentColor }}>→</span>
-                                        <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: accentColor }}>{to}</span>
+                                        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: accentColor, opacity: 0.6 }}>{from}</span>
+                                        <span className="text-[11px] font-black mx-0.5" style={{ color: accentColor }}>→</span>
+                                        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: accentColor }}>{to}</span>
                                       </div>
                                     )
                                   })()}
                                   {msg.backlogItemTitle && (
                                     <div className="flex items-center gap-1.5 min-w-0 border-l pl-1.5" style={{ borderColor: accentColor + '30' }}>
-                                      <span className="text-[9px] font-black tracking-widest uppercase flex-shrink-0" style={{ color: accentColor, opacity: 0.5 }}>
+                                      <span className="text-[10px] font-black tracking-widest uppercase flex-shrink-0" style={{ color: accentColor, opacity: 0.5 }}>
                                         {msg.actionType === 'SPRINT_ASSIGNED' ? 'Sprint:' : 'Task:'}
                                       </span>
-                                      <span className="text-[10px] font-semibold truncate" style={{ color: accentColor + 'cc' }}>{msg.backlogItemTitle}</span>
+                                      <span className="text-[11px] font-semibold truncate" style={{ color: accentColor + 'cc' }}>{msg.backlogItemTitle}</span>
                                       {msg.backlogItemCode && (
-                                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
+                                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
                                               style={{ background: accentColor + '15', color: accentColor }}>
                                           {msg.backlogItemCode}
                                         </span>
@@ -938,7 +938,7 @@ function OficinaPageInner() {
                                     </div>
                                   )}
                                 </div>
-                                <span className="text-[9px] text-gray-600 flex-shrink-0 ml-2">{formatDate(msg.createdAt)}</span>
+                                <span className="text-[10px] text-[#7f8a9c] flex-shrink-0 ml-2">{formatDate(msg.createdAt)}</span>
                               </div>
                               <div className="px-3 py-2.5">
                                 <p className="text-[11px] text-gray-300 leading-relaxed"
@@ -951,7 +951,7 @@ function OficinaPageInner() {
                       <div ref={chatEndRef} />
                     </div>
                     <div className="px-4 py-3 border-t border-white/5 flex-shrink-0">
-                      <div className="rounded-xl px-3 py-2 text-[12px] text-gray-600 border border-white/5"
+                      <div className="rounded-xl px-3 py-2 text-[12px] text-[#7f8a9c] border border-white/5"
                            style={{ background: 'rgba(255,255,255,0.03)' }}>
                         Los mensajes de Orión se generan automáticamente al asignar tareas...
                       </div>
@@ -966,29 +966,29 @@ function OficinaPageInner() {
                         {areaMessages.length === 0 && !actLoading && (
                           <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-12">
                             <span className="text-2xl opacity-20">📭</span>
-                            <p className="text-[11px] text-gray-700">Sin mensajes de Orión para este room.</p>
+                            <p className="text-[11px] text-[#7f8a9c]">Sin mensajes de Orión para este room.</p>
                           </div>
                         )}
                         {areaMessages.map(msg => (
                           <div key={msg.id} className="rounded-xl border px-3 py-2.5"
                                style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}>
                             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                              <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b', opacity: 0.6 }}>ORIÓN</span>
-                              <span className="text-[10px] font-black mx-0.5" style={{ color: '#f59e0b' }}>→</span>
-                              <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>{selected?.name?.toUpperCase()}</span>
+                              <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#f59e0b', opacity: 0.6 }}>ORIÓN</span>
+                              <span className="text-[11px] font-black mx-0.5" style={{ color: '#f59e0b' }}>→</span>
+                              <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#f59e0b' }}>{selected?.name?.toUpperCase()}</span>
                               {msg.backlogItemTitle && (
                                 <div className="flex items-center gap-1.5 min-w-0 border-l pl-1.5 ml-0.5" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
-                                  <span className="text-[9px] font-black tracking-widest uppercase flex-shrink-0" style={{ color: '#f59e0b', opacity: 0.5 }}>Task:</span>
-                                  <span className="text-[10px] font-semibold truncate" style={{ color: 'rgba(245,158,11,0.8)' }}>{msg.backlogItemTitle}</span>
+                                  <span className="text-[10px] font-black tracking-widest uppercase flex-shrink-0" style={{ color: '#f59e0b', opacity: 0.5 }}>Task:</span>
+                                  <span className="text-[11px] font-semibold truncate" style={{ color: 'rgba(245,158,11,0.8)' }}>{msg.backlogItemTitle}</span>
                                   {msg.backlogItemCode && (
-                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
+                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
                                           style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
                                       {msg.backlogItemCode}
                                     </span>
                                   )}
                                 </div>
                               )}
-                              <span className="text-[9px] text-gray-600 flex-shrink-0 ml-auto">{new Date(msg.createdAt).toLocaleString('es', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
+                              <span className="text-[10px] text-[#7f8a9c] flex-shrink-0 ml-auto">{new Date(msg.createdAt).toLocaleString('es', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
                             </div>
                             <p className="text-[11px] text-gray-300 leading-relaxed"
                                dangerouslySetInnerHTML={{ __html: msg.message.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }} />
@@ -1001,15 +1001,15 @@ function OficinaPageInner() {
                     <div className="w-56 flex-shrink-0 flex flex-col divide-y divide-white/5 overflow-y-auto">
                       {/* Widget 1: En Progreso */}
                       <div className="p-3">
-                        <div className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-2.5">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-[#7f8a9c] mb-2.5">
                           En progreso{activeTasks.length > 0 ? ` · ${activeTasks.length}` : ''}
                         </div>
                         {actLoading ? (
-                          <div className="flex items-center gap-1.5 text-gray-700 text-[10px] py-2">
+                          <div className="flex items-center gap-1.5 text-[#7f8a9c] text-[11px] py-2">
                             <Loader2 size={10} className="animate-spin" /> Cargando...
                           </div>
                         ) : activeTasks.length === 0 ? (
-                          <p className="text-[10px] text-gray-700 py-1">Sin tareas activas.</p>
+                          <p className="text-[11px] text-[#7f8a9c] py-1">Sin tareas activas.</p>
                         ) : (
                           <div className="space-y-1.5">
                             {activeTasks.map(t => (
@@ -1019,16 +1019,16 @@ function OficinaPageInner() {
                                   <div className="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0"
                                        style={{ background: PRIORITY_DOT[t.priority] ?? '#6b7280' }} />
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-[10px] font-semibold text-orange-300 leading-snug line-clamp-2">{t.title}</div>
+                                    <div className="text-[11px] font-semibold text-orange-300 leading-snug line-clamp-2">{t.title}</div>
                                     {t.assigneeName && (
-                                      <div className="text-[9px] text-gray-500 mt-0.5 truncate">{t.assigneeName}</div>
+                                      <div className="text-[10px] text-[#7f8a9c] mt-0.5 truncate">{t.assigneeName}</div>
                                     )}
                                     {t.sprint && (
-                                      <div className="text-[9px] text-gray-700 mt-0.5 truncate">{t.sprint}</div>
+                                      <div className="text-[10px] text-[#7f8a9c] mt-0.5 truncate">{t.sprint}</div>
                                     )}
                                   </div>
                                 </div>
-                                <div className="text-[9px] text-gray-700 mt-1 text-right">{timeAgo(t.timestamp)}</div>
+                                <div className="text-[10px] text-[#7f8a9c] mt-1 text-right">{timeAgo(t.timestamp)}</div>
                               </div>
                             ))}
                           </div>
@@ -1037,23 +1037,23 @@ function OficinaPageInner() {
 
                       {/* Widget 2: Actividad Reciente */}
                       <div className="p-3 flex-1">
-                        <div className="text-[9px] font-bold uppercase tracking-widest text-gray-600 mb-2.5">Actividad reciente</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-[#7f8a9c] mb-2.5">Actividad reciente</div>
                         {actLoading ? (
-                          <div className="flex items-center gap-1.5 text-gray-700 text-[10px] py-2">
+                          <div className="flex items-center gap-1.5 text-[#7f8a9c] text-[11px] py-2">
                             <Loader2 size={10} className="animate-spin" /> Cargando...
                           </div>
                         ) : activity.length === 0 ? (
-                          <p className="text-[10px] text-gray-700 py-1">Sin actividad.</p>
+                          <p className="text-[11px] text-[#7f8a9c] py-1">Sin actividad.</p>
                         ) : (
                           <div className="space-y-0.5">
                             {activity.slice(0, 15).map(e => (
                               <div key={e.id + e.timestamp} className="flex items-start gap-1.5 py-1.5 border-b border-white/[0.03]">
                                 <span className="text-[11px] flex-shrink-0 mt-0.5 leading-none">{EVENT_ICON[e.type] ?? '📌'}</span>
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-[9px] font-semibold mr-1" style={{ color: STATUS_COLOR[e.status] ?? '#6b7280' }}>{e.label}</span>
-                                  <span className="text-[10px] text-gray-400 leading-snug line-clamp-2">{e.title}</span>
+                                  <span className="text-[10px] font-semibold mr-1" style={{ color: STATUS_COLOR[e.status] ?? '#6b7280' }}>{e.label}</span>
+                                  <span className="text-[11px] text-gray-400 leading-snug line-clamp-2">{e.title}</span>
                                 </div>
-                                <span className="text-[9px] text-gray-700 flex-shrink-0 mt-0.5">{timeAgo(e.timestamp)}</span>
+                                <span className="text-[10px] text-[#7f8a9c] flex-shrink-0 mt-0.5">{timeAgo(e.timestamp)}</span>
                               </div>
                             ))}
                           </div>
@@ -1064,7 +1064,7 @@ function OficinaPageInner() {
                 )}
               </>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-600 text-sm">Seleccioná un room</div>
+              <div className="flex items-center justify-center h-full text-[#7f8a9c] text-sm">Seleccioná un room</div>
             )}
           </>
         )}
@@ -1075,7 +1075,7 @@ function OficinaPageInner() {
            style={{ background: 'rgba(0,0,0,0.15)', width: membersOpen ? '12rem' : '0', overflow: 'hidden' }}>
         {membersOpen && (
           <div className="px-3 pt-3 pb-1 flex-shrink-0">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Members</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Members</span>
           </div>
         )}
           <div className="px-3 pb-4">
@@ -1085,14 +1085,14 @@ function OficinaPageInner() {
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 ${selected.agentStatus === 'ACTIVE' ? 'bg-green-400' : 'bg-gray-600'}`} />
                   <span className="text-[12px] font-bold text-gray-300">{selected.agentName}</span>
                 </div>
-                <div className="text-[10px] text-gray-600 ml-4">{selected.agentStatus === 'ACTIVE' ? '🟢 Activo' : '⚫ Idle'}</div>
+                <div className="text-[11px] text-[#7f8a9c] ml-4">{selected.agentStatus === 'ACTIVE' ? '🟢 Activo' : '⚫ Idle'}</div>
                 <div className="mt-2 ml-4 space-y-1">
-                  <div className="flex justify-between text-[10px]">
-                    <span className="text-gray-600">En progreso</span>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-[#7f8a9c]">En progreso</span>
                     <span className="text-orange-400 font-bold">{selected.inProgressItems}</span>
                   </div>
-                  <div className="flex justify-between text-[10px]">
-                    <span className="text-gray-600">Activas</span>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-[#7f8a9c]">Activas</span>
                     <span style={{ color: selected.color }} className="font-bold">{selected.activeItems}</span>
                   </div>
                 </div>
@@ -1100,14 +1100,14 @@ function OficinaPageInner() {
             )}
             {subAgents.length > 0 && (
               <>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-700 mb-2 mt-1">Sub-agentes</div>
+                <div className="text-[11px] font-bold uppercase tracking-widest text-[#7f8a9c] mb-2 mt-1">Sub-agentes</div>
                 <div className="space-y-2">
                   {subAgents.map(sub => (
                     <div key={sub.id} className="flex items-center gap-2">
                       <span className="text-sm">{sub.icon}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-[11px] font-semibold truncate" style={{ color: sub.color }}>{sub.agentName}</div>
-                        <div className="text-[9px] text-gray-600">{sub.name}</div>
+                        <div className="text-[10px] text-[#7f8a9c]">{sub.name}</div>
                       </div>
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sub.agentStatus === 'ACTIVE' ? 'bg-green-400' : 'bg-gray-700'}`} />
                     </div>
@@ -1116,7 +1116,7 @@ function OficinaPageInner() {
               </>
             )}
             {!selected?.agentName && subAgents.length === 0 && (
-              <div className="text-[11px] text-gray-700">Sin agente asignado</div>
+              <div className="text-[11px] text-[#7f8a9c]">Sin agente asignado</div>
             )}
           </div>
       </div>

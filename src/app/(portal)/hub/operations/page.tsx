@@ -212,7 +212,7 @@ function TimeAxis({ points, intervalSec = 30, customLabels }: { points: number; 
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 2px 0', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>
       {labels.map((l, i) => (
-        <span key={i} style={{ fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{l}</span>
+        <span key={i} style={{ fontSize: '10px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>{l}</span>
       ))}
     </div>
   );
@@ -235,7 +235,7 @@ function CircleGauge({ pct, color, label, sub }: { pct: number; color: string; l
         <text x={cx} y={cy + 5} textAnchor="middle" fontSize="13" fontWeight="800" fill={color}>{pct.toFixed(0)}%</text>
       </svg>
       <p style={{ margin: '4px 0 1px', fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>{label}</p>
-      <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{sub}</p>
+      <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{sub}</p>
     </div>
   );
 }
@@ -252,7 +252,7 @@ function UsageBar({ pct, color, label, val }: { pct: number; color: string; labe
         <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: '3px', background: color, transition: 'width 0.6s ease' }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '3px' }}>
-        <span style={{ fontSize: '10px', color: '#334155' }}>{pct.toFixed(1)}%</span>
+        <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{pct.toFixed(1)}%</span>
       </div>
     </div>
   );
@@ -268,21 +268,21 @@ function NotConfigured() {
         </svg>
       </div>
       <h3 style={{ margin: '0 0 10px', fontSize: '17px', fontWeight: 700, color: '#e2e8f0' }}>Monitor no configurado</h3>
-      <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
+      <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#7f8a9c', lineHeight: 1.6 }}>
         Para activar el monitor de la VPS configurá las variables de entorno en Vercel y desplegá el agente en tu servidor Hostinger.
       </p>
       <div style={{ ...G.panel, textAlign: 'left', marginBottom: '12px' }}>
-        <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>1 — Variables en Vercel</p>
+        <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>1 — Variables en Vercel</p>
         <pre style={{ margin: 0, fontSize: '11px', color: '#34d399', background: 'rgba(52,211,153,0.05)', padding: '8px 10px', borderRadius: '6px', overflowX: 'auto' }}>
 {`VPS_METRICS_URL=http://<IP_VPS>:9100
 VPS_METRICS_TOKEN=<token_secreto>`}</pre>
       </div>
       <div style={{ ...G.panel, textAlign: 'left' }}>
-        <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>2 — Agente en la VPS</p>
+        <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>2 — Agente en la VPS</p>
         <pre style={{ margin: 0, fontSize: '11px', color: '#60a5fa', background: 'rgba(96,165,250,0.05)', padding: '8px 10px', borderRadius: '6px', overflowX: 'auto' }}>
 {`pip install psutil
 METRICS_TOKEN=<token> python3 metrics_agent.py`}</pre>
-        <p style={{ margin: '8px 0 0', fontSize: '11px', color: '#334155' }}>
+        <p style={{ margin: '8px 0 0', fontSize: '11px', color: '#7f8a9c' }}>
           El archivo <code style={{ color: '#a78bfa' }}>vps-agent/metrics_agent.py</code> está en el repo.
         </p>
       </div>
@@ -318,9 +318,9 @@ function CpuCoreHeatmap({ perCore, onOpen }: { perCore: number[]; onOpen?: () =>
   const cols = perCore.length <= 4 ? 2 : 4;
   return (
     <div style={{ ...G.card, cursor: 'pointer' }} onClick={onOpen}>
-      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CPU · Por núcleo</p>
+      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CPU · Por núcleo</p>
       {perCore.length === 0 ? (
-        <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de núcleos</p>
+        <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '16px' }}>Sin datos de núcleos</p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '6px' }}>
           {perCore.map((pct, i) => {
@@ -328,7 +328,7 @@ function CpuCoreHeatmap({ perCore, onOpen }: { perCore: number[]; onOpen?: () =>
             const bg = pct < 10 ? '18' : pct < 30 ? '28' : pct < 60 ? '42' : pct < 85 ? '68' : 'bb';
             return (
               <div key={i} title={`Core ${i}: ${pct}%`} style={{ borderRadius: '7px', background: `${color}${bg}`, border: `1px solid ${color}40`, padding: '7px 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', transition: 'background 0.5s' }}>
-                <span style={{ fontSize: '9px', color: '#475569', fontWeight: 600 }}>C{i}</span>
+                <span style={{ fontSize: '10px', color: '#7f8a9c', fontWeight: 600 }}>C{i}</span>
                 <span style={{ fontSize: '11px', fontWeight: 800, color }}>{pct}%</span>
               </div>
             );
@@ -346,17 +346,17 @@ function DiskIOChart({ readHist, writeHist, currentRead, currentWrite, onOpen }:
   const RC = '#fb923c', WC = '#f472b6';
   return (
     <div style={{ ...G.card, cursor: 'pointer' }} onClick={onOpen}>
-      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Disco I/O</p>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Disco I/O</p>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
         {[{ color: RC, label: '↓ Lectura', val: currentRead, peak: maxVal(readHist) },
           { color: WC, label: '↑ Escritura', val: currentWrite, peak: maxVal(writeHist) }].map(s => (
           <div key={s.label} style={{ flex: 1, ...G.panel, padding: '8px 10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '3px' }}>
               <div style={{ width: '10px', height: '3px', borderRadius: '2px', background: s.color }} />
-              <span style={{ fontSize: '10px', color: '#475569' }}>{s.label}</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{s.label}</span>
             </div>
-            <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: s.color }}>{s.val} <span style={{ fontSize: '10px', fontWeight: 400 }}>MB/s</span></p>
-            <p style={{ margin: '1px 0 0', fontSize: '9px', color: '#334155' }}>pico: {s.peak.toFixed(2)}</p>
+            <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: s.color }}>{s.val} <span style={{ fontSize: '11px', fontWeight: 400 }}>MB/s</span></p>
+            <p style={{ margin: '1px 0 0', fontSize: '10px', color: '#7f8a9c' }}>pico: {s.peak.toFixed(2)}</p>
           </div>
         ))}
       </div>
@@ -383,9 +383,9 @@ function DiskCategoryDonut({ categories, usedGb, totalGb, onOpen }: { categories
   const diskColor = statusColor(diskPct);
   return (
     <div style={{ ...G.card, display: 'flex', flexDirection: 'column', cursor: 'pointer' }} onClick={onOpen}>
-      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Disco · Categorías</p>
+      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>Disco · Categorías</p>
       {items.length === 0 ? (
-        <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de categorías</p>
+        <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '16px' }}>Sin datos de categorías</p>
       ) : (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '14px' }}>
           <svg viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ width: SIZE, height: SIZE, flexShrink: 0 }}>
@@ -408,7 +408,7 @@ function DiskCategoryDonut({ categories, usedGb, totalGb, onOpen }: { categories
                 <div style={{ width: '9px', height: '9px', borderRadius: '3px', background: s.color, flexShrink: 0, boxShadow: `0 0 6px ${s.color}90` }} />
                 <span style={{ fontSize: '11px', color: '#94a3b8', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</span>
                 <span style={{ fontSize: '11px', fontWeight: 800, color: s.color, flexShrink: 0 }}>{s.used_gb.toFixed(1)} GB</span>
-                <span style={{ fontSize: '9px', color: '#334155', width: '28px', textAlign: 'right', flexShrink: 0 }}>{(s.pct * 100).toFixed(0)}%</span>
+                <span style={{ fontSize: '10px', color: '#7f8a9c', width: '28px', textAlign: 'right', flexShrink: 0 }}>{(s.pct * 100).toFixed(0)}%</span>
               </div>
             ))}
           </div>
@@ -423,24 +423,24 @@ function TcpConnChart({ history, current, listening, onOpen }: { history: number
   const color = '#34d399';
   return (
     <div style={{ ...G.card, cursor: 'pointer' }} onClick={onOpen}>
-      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Conexiones TCP</p>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Conexiones TCP</p>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div>
           <p style={{ margin: 0, fontSize: '30px', fontWeight: 900, color, lineHeight: 1 }}>{current}</p>
-          <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#475569' }}>establecidas</p>
+          <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#7f8a9c' }}>establecidas</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <div style={{ ...G.panel, padding: '5px 10px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#60a5fa' }}>{listening}</p>
-            <p style={{ margin: 0, fontSize: '9px', color: '#334155' }}>listen</p>
+            <p style={{ margin: 0, fontSize: '10px', color: '#7f8a9c' }}>listen</p>
           </div>
         </div>
       </div>
       <Sparkline history={history} color={color} height={48} />
       {history.length > 1 && (
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-          <span style={{ fontSize: '10px', color: '#334155' }}>pico <strong style={{ color: '#e2e8f0' }}>{maxVal(history)}</strong></span>
-          <span style={{ fontSize: '10px', color: '#334155' }}>avg <strong style={{ color: '#e2e8f0' }}>{avg(history).toFixed(0)}</strong></span>
+          <span style={{ fontSize: '11px', color: '#7f8a9c' }}>pico <strong style={{ color: '#e2e8f0' }}>{maxVal(history)}</strong></span>
+          <span style={{ fontSize: '11px', color: '#7f8a9c' }}>avg <strong style={{ color: '#e2e8f0' }}>{avg(history).toFixed(0)}</strong></span>
         </div>
       )}
     </div>
@@ -485,10 +485,10 @@ function ModalShell({ onClose, title, sub, icon, color, children, maxWidth = '52
             </div>
             <div>
               <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#f1f5f9' }}>{title}</p>
-              <p style={{ margin: 0, fontSize: '11px', color: '#475569' }}>{sub}</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{sub}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#7f8a9c', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: '18px 22px', overflowY: 'auto', flex: 1 }}>{children}</div>
         <div style={{ padding: '12px 22px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
@@ -508,13 +508,13 @@ function CpuModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '20px' }}>
         <CircleGauge pct={data.cpu.percent} color={color} label="CPU" sub={`${data.cpu.count}c`} />
         <div style={{ flex: 1 }}>
-          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Load average</p>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Load average</p>
           {['1 min', '5 min', '15 min'].map((t, i) => {
             const sc = statusColor(loads[i].pct);
             return (
               <div key={t} style={{ marginBottom: i < 2 ? '8px' : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                  <span style={{ fontSize: '11px', color: '#475569' }}>{t}</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{t}</span>
                   <span style={{ fontSize: '12px', fontWeight: 800, color: sc }}>{loads[i].val.toFixed(2)}</span>
                 </div>
                 <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
@@ -528,14 +528,14 @@ function CpuModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
       {/* Per-core */}
       {data.cpu.per_core && data.cpu.per_core.length > 0 && (
         <>
-          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Por núcleo</p>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Por núcleo</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px', marginBottom: '20px' }}>
             {data.cpu.per_core.map((pct, i) => {
               const sc = statusColor(pct);
               return (
                 <div key={i}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                    <span style={{ fontSize: '11px', color: '#475569' }}>Core {i}</span>
+                    <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Core {i}</span>
                     <span style={{ fontSize: '11px', fontWeight: 800, color: sc }}>{pct}%</span>
                   </div>
                   <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
@@ -550,14 +550,14 @@ function CpuModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
       {/* Top procesos */}
       {data.top_procs.length > 0 && (
         <>
-          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos por CPU</p>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos por CPU</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {data.top_procs.map(p => (
               <div key={p.pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <span style={{ fontSize: '10px', color: '#334155', width: '36px', flexShrink: 0 }}>#{p.pid}</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c', width: '36px', flexShrink: 0 }}>#{p.pid}</span>
                 <span style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
                 <span style={{ fontSize: '11px', fontWeight: 800, color: statusColor(p.cpu), flexShrink: 0 }}>{p.cpu}% CPU</span>
-                <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>{p.mem.toFixed(1)}% MEM</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c', flexShrink: 0 }}>{p.mem.toFixed(1)}% MEM</span>
               </div>
             ))}
           </div>
@@ -578,7 +578,7 @@ function RamModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '20px' }}>
         <CircleGauge pct={ram.percent} color={color} label="RAM" sub={`${toGB(ram.avail_mb)}GB libre`} />
         <div style={{ flex: 1 }}>
-          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Desglose</p>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Desglose</p>
           {[
             { label: 'Total',      val: `${toGB(ram.total_mb)} GB`, pct: 100,     clr: '#94a3b8' },
             { label: 'Usado',      val: `${toGB(ram.used_mb)} GB`,  pct: usedPct,  clr: color },
@@ -586,7 +586,7 @@ function RamModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
           ].map((r, i) => (
             <div key={r.label} style={{ marginBottom: i < 2 ? '8px' : 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                <span style={{ fontSize: '11px', color: '#475569' }}>{r.label}</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{r.label}</span>
                 <span style={{ fontSize: '12px', fontWeight: 800, color: r.clr }}>{r.val}</span>
               </div>
               <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
@@ -597,7 +597,7 @@ function RamModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
         </div>
       </div>
       {/* En MB */}
-      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>En detalle</p>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>En detalle</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '16px' }}>
         {[
           { label: 'Total',      val: `${ram.total_mb} MB`, clr: '#94a3b8' },
@@ -606,14 +606,14 @@ function RamModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
         ].map(r => (
           <div key={r.label} style={{ textAlign: 'center', padding: '10px 8px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
             <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: r.clr }}>{r.val}</p>
-            <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#334155' }}>{r.label}</p>
+            <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{r.label}</p>
           </div>
         ))}
       </div>
       {/* Swap */}
       {data.swap && data.swap.total_mb > 0 && (
         <>
-          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Swap</p>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Swap</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
             {[
               { label: 'Total',  val: `${data.swap.total_mb} MB`, clr: '#94a3b8' },
@@ -622,7 +622,7 @@ function RamModal({ data, color, onClose }: { data: VpsMetrics; color: string; o
             ].map(r => (
               <div key={r.label} style={{ textAlign: 'center', padding: '10px 8px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: r.clr }}>{r.val}</p>
-                <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#334155' }}>{r.label}</p>
+                <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{r.label}</p>
               </div>
             ))}
           </div>
@@ -645,7 +645,7 @@ function DiskModal({ disk, color, onClose }: { disk: VpsMetrics['disk']; color: 
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px' }}>
         <DiskDonut used={disk.used_gb} total={disk.total_gb} color={color} size={110} />
         <div style={{ flex: 1 }}>
-          <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen global</p>
+          <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen global</p>
           {[
             { label: 'Total',      val: `${disk.total_gb} GB`, clr: '#94a3b8' },
             { label: 'Usado',      val: `${disk.used_gb} GB`,  clr: color },
@@ -654,7 +654,7 @@ function DiskModal({ disk, color, onClose }: { disk: VpsMetrics['disk']; color: 
             <div key={r.label}>
               {i > 0 && <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '5px 0' }} />}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#475569' }}>{r.label}</span>
+                <span style={{ fontSize: '12px', color: '#7f8a9c' }}>{r.label}</span>
                 <span style={{ fontSize: '14px', fontWeight: 800, color: r.clr }}>{r.val}</span>
               </div>
             </div>
@@ -664,13 +664,13 @@ function DiskModal({ disk, color, onClose }: { disk: VpsMetrics['disk']; color: 
             <span style={{ fontSize: '11px', fontWeight: 700, color }}>
               {disk.percent < 60 ? 'Espacio saludable' : disk.percent < 85 ? 'Espacio moderado' : '¡Espacio crítico!'}
             </span>
-            <span style={{ fontSize: '11px', color: '#475569', marginLeft: 'auto' }}>{disk.percent.toFixed(1)}%</span>
+            <span style={{ fontSize: '11px', color: '#7f8a9c', marginLeft: 'auto' }}>{disk.percent.toFixed(1)}%</span>
           </div>
         </div>
       </div>
       {allCats.length > 0 && (
         <>
-          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Qué ocupa el espacio</p>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Qué ocupa el espacio</p>
           <div style={{ display: 'flex', height: '12px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(255,255,255,0.06)', marginBottom: '12px', gap: '1px' }}>
             {allCats.map((cat, i) => {
               const pct = disk.used_gb > 0 ? (cat.used_gb / disk.used_gb) * 100 : 0;
@@ -682,7 +682,7 @@ function DiskModal({ disk, color, onClose }: { disk: VpsMetrics['disk']; color: 
         </>
       )}
       {allCats.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#334155', fontSize: '12px' }}>
+        <div style={{ textAlign: 'center', padding: '20px', color: '#7f8a9c', fontSize: '12px' }}>
           Reiniciá el agente en la VPS para ver el desglose por categoría.
         </div>
       )}
@@ -880,12 +880,12 @@ function HistDetailModal({ label, history, timestamps, color, val, unit, subtitl
       icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
       color={color}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '14px' }}>
-        <span style={{ fontSize: '11px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Actual</span>
+        <span style={{ fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Actual</span>
         <span style={{ fontSize: '22px', fontWeight: 900, color }}>{val}</span>
       </div>
       <div style={{ marginBottom: '6px', borderRadius: '12px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.05)', padding: '12px 10px 4px' }}>
         {history.length === 0 ? (
-          <p style={{ fontSize: '12px', color: '#475569', textAlign: 'center', padding: '30px 0' }}>
+          <p style={{ fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '30px 0' }}>
             Todavía no hay suficientes datos para este rango.
           </p>
         ) : (
@@ -893,7 +893,7 @@ function HistDetailModal({ label, history, timestamps, color, val, unit, subtitl
         )}
       </div>
       {history.length > 1 && (
-        <p style={{ margin: '0 0 16px', fontSize: '10px', color: '#334155', textAlign: 'center' }}>
+        <p style={{ margin: '0 0 16px', fontSize: '11px', color: '#7f8a9c', textAlign: 'center' }}>
           Pasá el mouse para recorrer los puntos · hacé click para fijar la hora exacta
         </p>
       )}
@@ -906,7 +906,7 @@ function HistDetailModal({ label, history, timestamps, color, val, unit, subtitl
           ].map(r => (
             <div key={r.label} style={{ textAlign: 'center', padding: '10px 8px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color }}>{r.v.toFixed(unit === '%' ? 1 : 3)}{unit}</p>
-              <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#334155' }}>{r.label}</p>
+              <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{r.label}</p>
             </div>
           ))}
         </div>
@@ -935,7 +935,7 @@ function NetModal({ rxHist, txHist, data, onClose }: {
           {[{ color: RX, label: '↓ RX recibido' }, { color: TX, label: '↑ TX enviado' }].map(l => (
             <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <div style={{ width: '14px', height: '3px', borderRadius: '2px', background: l.color }} />
-              <span style={{ fontSize: '11px', color: '#475569' }}>{l.label}</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{l.label}</span>
             </div>
           ))}
         </div>
@@ -944,14 +944,14 @@ function NetModal({ rxHist, txHist, data, onClose }: {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
         {stats.map(s => (
           <div key={s.label} style={{ ...G.panel, padding: '10px 12px' }}>
-            <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{s.label}</p>
+            <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{s.label}</p>
             <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800, color: s.color }}>{s.val}</p>
           </div>
         ))}
       </div>
       {data.connections && (
         <>
-          <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Conexiones TCP activas</p>
+          <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Conexiones TCP activas</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
             {[
               { label: 'Establecidas', val: data.connections.established, color: '#34d399' },
@@ -960,7 +960,7 @@ function NetModal({ rxHist, txHist, data, onClose }: {
             ].map(c => (
               <div key={c.label} style={{ ...G.panel, textAlign: 'center', padding: '10px 8px' }}>
                 <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: c.color }}>{c.val}</p>
-                <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#475569' }}>{c.label}</p>
+                <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{c.label}</p>
               </div>
             ))}
           </div>
@@ -1024,7 +1024,7 @@ function CatRows({ cats, diskUsed, colors }: { cats: DiskCategory[]; diskUsed: n
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                     <span style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0' }}>{cat.label}</span>
-                    <span style={{ fontSize: '10px', color: '#334155', fontFamily: 'monospace' }}>{cat.path}</span>
+                    <span style={{ fontSize: '11px', color: '#7f8a9c', fontFamily: 'monospace' }}>{cat.path}</span>
                     {hasChildren && (
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2.5} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
@@ -1037,7 +1037,7 @@ function CatRows({ cats, diskUsed, colors }: { cats: DiskCategory[]; diskUsed: n
                   <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: '2px', background: c, transition: 'width 0.5s ease' }} />
                 </div>
               </div>
-              <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0, width: '36px', textAlign: 'right' }}>{pct.toFixed(1)}%</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c', flexShrink: 0, width: '36px', textAlign: 'right' }}>{pct.toFixed(1)}%</span>
             </div>
 
             {/* Subdirectorios expandidos */}
@@ -1050,13 +1050,13 @@ function CatRows({ cats, diskUsed, colors }: { cats: DiskCategory[]; diskUsed: n
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                           <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{child.name}</span>
-                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', flexShrink: 0, marginLeft: '8px' }}>{child.used_gb} GB</span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#7f8a9c', flexShrink: 0, marginLeft: '8px' }}>{child.used_gb} GB</span>
                         </div>
                         <div style={{ height: '3px', borderRadius: '2px', background: 'rgba(255,255,255,0.05)' }}>
                           <div style={{ height: '100%', width: `${Math.min(100, childPct)}%`, borderRadius: '2px', background: `${c}80` }} />
                         </div>
                       </div>
-                      <span style={{ fontSize: '10px', color: '#334155', flexShrink: 0, width: '36px', textAlign: 'right' }}>{childPct.toFixed(1)}%</span>
+                      <span style={{ fontSize: '11px', color: '#7f8a9c', flexShrink: 0, width: '36px', textAlign: 'right' }}>{childPct.toFixed(1)}%</span>
                     </div>
                   );
                 })}
@@ -1086,10 +1086,10 @@ function TopDiskConsumers({ disk }: { disk: VpsMetrics['disk'] }) {
 
   return (
     <div style={{ ...G.card, display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
-      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top apps/componentes (disco)</p>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top apps/componentes (disco)</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
         {items.length === 0 && (
-          <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de desglose de disco</p>
+          <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '16px' }}>Sin datos de desglose de disco</p>
         )}
         {items.map((item, i) => {
           const pct = totalUsed > 0 ? (item.used_gb / totalUsed) * 100 : 0;
@@ -1097,9 +1097,9 @@ function TopDiskConsumers({ disk }: { disk: VpsMetrics['disk'] }) {
             <div key={item.path}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#334155', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#7f8a9c', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
-                  <span style={{ fontSize: '10px', color: '#475569', flexShrink: 0 }}>{item.category}</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c', flexShrink: 0 }}>{item.category}</span>
                 </div>
                 <span style={{ fontSize: '12px', fontWeight: 800, color: item.catColor, flexShrink: 0, marginLeft: '8px' }}>{item.used_gb} GB</span>
               </div>
@@ -1107,7 +1107,7 @@ function TopDiskConsumers({ disk }: { disk: VpsMetrics['disk'] }) {
                 <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: '3px', background: item.catColor, transition: 'width 0.6s ease' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
-                <span style={{ fontSize: '10px', color: '#334155' }}>{pct.toFixed(1)}% del uso total</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{pct.toFixed(1)}% del uso total</span>
               </div>
             </div>
           );
@@ -1122,21 +1122,21 @@ function TopRamProcesses({ procs }: { procs: VpsMetrics['top_procs'] }) {
   const items = [...procs].sort((a, b) => b.mem - a.mem).slice(0, 5);
   return (
     <div style={{ ...G.card, alignSelf: 'start' }}>
-      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos (RAM)</p>
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos (RAM)</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {items.length === 0 && (
-          <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de procesos</p>
+          <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '16px' }}>Sin datos de procesos</p>
         )}
         {items.map((proc, i) => (
           <div key={proc.pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', background: i === 0 ? 'rgba(168,85,247,0.05)' : 'rgba(255,255,255,0.02)' }}>
-            <span style={{ fontSize: '10px', fontWeight: 800, color: '#334155', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#7f8a9c', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
             <div style={{ flex: 1, overflow: 'hidden' }}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proc.name}</p>
-              <p style={{ margin: 0, fontSize: '10px', color: '#334155' }}>PID {proc.pid}</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>PID {proc.pid}</p>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: statusColor(proc.mem) }}>{proc.mem}% RAM</p>
-              <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{proc.cpu}% CPU</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{proc.cpu}% CPU</p>
             </div>
           </div>
         ))}
@@ -1150,21 +1150,21 @@ function TopProcsToggle({ procs }: { procs: VpsMetrics['top_procs'] }) {
   const sorted = [...procs].sort((a, b) => b.cpu - a.cpu).slice(0, 10);
   return (
     <div style={{ ...G.card, display: 'flex', flexDirection: 'column' }}>
-      <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos (CPU)</p>
+      <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top procesos (CPU)</p>
       <div className="vps-docker-scroll" style={{ overflowY: 'auto', maxHeight: '220px', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px', flex: 1 }}>
         {sorted.length === 0 && (
-          <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin datos de procesos</p>
+          <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '16px' }}>Sin datos de procesos</p>
         )}
         {sorted.map((proc, i) => (
           <div key={proc.pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', background: i === 0 ? `${ORANGE}08` : 'rgba(255,255,255,0.02)', flexShrink: 0 }}>
-            <span style={{ fontSize: '10px', fontWeight: 800, color: '#334155', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#7f8a9c', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
             <div style={{ flex: 1, overflow: 'hidden' }}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proc.name}</p>
-              <p style={{ margin: 0, fontSize: '10px', color: '#334155' }}>PID {proc.pid}</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>PID {proc.pid}</p>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: statusColor(proc.cpu) }}>{proc.cpu}% CPU</p>
-              <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{proc.mem}% RAM</p>
+              <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{proc.mem}% RAM</p>
             </div>
           </div>
         ))}
@@ -1198,7 +1198,7 @@ function TrendBadge({ current, previous }: { current: number; previous: number }
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 800, color, marginLeft: '5px' }}>
       {icon}
-      <span style={{ fontSize: '10px', color: '#475569' }}>{Math.abs(delta).toFixed(1)}</span>
+      <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{Math.abs(delta).toFixed(1)}</span>
     </span>
   );
 }
@@ -1215,20 +1215,20 @@ function TenMinSummary({ cpuHist, ramHist, rxHist, txHist, data }: {
   ];
   return (
     <div style={{ ...G.card }}>
-      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen últimos 10 min</p>
+      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resumen últimos 10 min</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         {sections.map(s => (
           <div key={s.label} style={{ ...G.panel, padding: '10px 12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569' }}>{s.label}</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#7f8a9c' }}>{s.label}</span>
               <span style={{ fontSize: '13px', fontWeight: 800, color: s.color }}>{s.current.toFixed(1)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '10px', color: '#64748b' }}>avg</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>avg</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>{avg(s.hist).toFixed(1)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '10px', color: '#64748b' }}>max</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>max</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>{maxVal(s.hist).toFixed(1)}</span>
             </div>
           </div>
@@ -1245,32 +1245,32 @@ function DiskPrediction({ diskHist, totalGb, currentPct }: { diskHist: number[];
   const isStable = hours === null;
   return (
     <div style={{ ...G.card }}>
-      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Predicción de disco</p>
+      <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Predicción de disco</p>
       {diskHist.length < 5 ? (
-        <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '20px' }}>Recolectando datos...</p>
+        <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '20px' }}>Recolectando datos...</p>
       ) : isStable ? (
         <div style={{ textAlign: 'center', padding: '14px', borderRadius: '10px', background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.12)' }}>
           <p style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#34d399' }}>Estable</p>
-          <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#475569' }}>Sin crecimiento significativo</p>
-          <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#334155' }}>{currentPct.toFixed(1)}% usado · {growthGbPerHour.toFixed(3)} GB/h</p>
+          <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Sin crecimiento significativo</p>
+          <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{currentPct.toFixed(1)}% usado · {growthGbPerHour.toFixed(3)} GB/h</p>
         </div>
       ) : (
         <>
           <div style={{ textAlign: 'center', padding: '14px', borderRadius: '10px', background: `${statusColor(currentPct)}10`, border: `1px solid ${statusColor(currentPct)}25`, marginBottom: '12px' }}>
-            <p style={{ margin: 0, fontSize: '13px', color: '#475569' }}>Tiempo estimado hasta llenarse</p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#7f8a9c' }}>Tiempo estimado hasta llenarse</p>
             <p style={{ margin: '6px 0 0', fontSize: '26px', fontWeight: 900, color: statusColor(currentPct) }}>{hours!.toFixed(1)}h</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>Crecimiento</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Crecimiento</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>{growthPctPerHour.toFixed(2)}% / h</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>Equivalente</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Equivalente</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>{growthGbPerHour.toFixed(2)} GB / h</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>Usado ahora</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Usado ahora</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: statusColor(currentPct) }}>{currentPct.toFixed(1)}%</span>
             </div>
           </div>
@@ -1314,9 +1314,9 @@ function LogsPanel() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Logs del agente</p>
-          {open && busy && <span style={{ fontSize: '10px', color: '#334155' }}>actualizando...</span>}
-          {open && !busy && <span style={{ fontSize: '10px', color: '#334155' }}>· cada 10s</span>}
+          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Logs del agente</p>
+          {open && busy && <span style={{ fontSize: '11px', color: '#7f8a9c' }}>actualizando...</span>}
+          {open && !busy && <span style={{ fontSize: '11px', color: '#7f8a9c' }}>· cada 10s</span>}
         </div>
         <button onClick={() => setOpen(o => !o)}
           style={{ padding: '4px 12px', borderRadius: '7px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.04)', color: '#94a3b8', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
@@ -1326,7 +1326,7 @@ function LogsPanel() {
 
       {open && (
         <div style={{ marginTop: '12px', background: '#060612', borderRadius: '8px', padding: '10px 14px', height: '220px', overflowY: 'auto', fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.7, border: '1px solid rgba(255,255,255,0.06)' }}>
-          {lines.length === 0 && <span style={{ color: '#334155' }}>Sin logs disponibles — asegurate que el agente esté corriendo.</span>}
+          {lines.length === 0 && <span style={{ color: '#7f8a9c' }}>Sin logs disponibles — asegurate que el agente esté corriendo.</span>}
           {lines.map((line, i) => (
             <div key={i} style={{ color: lineColor(line), whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{line}</div>
           ))}
@@ -1427,13 +1427,13 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
           <div key={k.label} style={{ ...G.card, padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 90% 10%, ${k.color}10, transparent 60%)`, pointerEvents: 'none' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-              <p style={{ margin: 0, fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
+              <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k.label}</p>
             </div>
             <p style={{ margin: 0, fontSize: '22px', fontWeight: 900, color: k.color, letterSpacing: '-0.03em', lineHeight: 1 }}>
               {k.val}
               {'prev' in k && <TrendBadge current={parseFloat(k.val)} previous={k.prev as number} />}
             </p>
-            <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#334155' }}>{k.sub}</p>
+            <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -1441,7 +1441,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       {/* Gauges + Historial */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', marginBottom: '12px' }}>
         <div style={{ ...G.card }}>
-          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Uso actual · <span style={{ color: '#334155', fontWeight: 400, textTransform: 'none' }}>click para detalle</span></p>
+          <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Uso actual · <span style={{ color: '#7f8a9c', fontWeight: 400, textTransform: 'none' }}>click para detalle</span></p>
           <GaugeSection data={data} cpuColor={cpuColor} ramColor={ramColor} diskColor={diskColor} />
         </div>
         {(() => {
@@ -1477,8 +1477,8 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             <div style={{ ...G.card }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Historial</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>{subtitle}</p>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Historial</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{subtitle}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px' }}>
                   {RANGES.map(r => (
@@ -1501,13 +1501,13 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)'; }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
-                          {s.label}<span style={{ marginLeft: '4px', fontSize: '10px', color: '#334155' }}>· ver →</span>
+                        <span style={{ fontSize: '11px', color: '#7f8a9c', fontWeight: 600 }}>
+                          {s.label}<span style={{ marginLeft: '4px', fontSize: '11px', color: '#7f8a9c' }}>· ver →</span>
                         </span>
                         <span style={{ fontSize: '11px', fontWeight: 800, color: s.color }}>{s.val}</span>
                       </div>
                       {!isLive && s.history.length === 0
-                        ? <p style={{ margin: 0, fontSize: '10px', color: '#334155', textAlign: 'center', padding: '8px 0' }}>Recolectando...</p>
+                        ? <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c', textAlign: 'center', padding: '8px 0' }}>Recolectando...</p>
                         : <Sparkline history={s.history} color={s.color} height={38} />
                       }
                     </div>
@@ -1524,18 +1524,18 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
 
         {/* CPU & Sistema */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CPU & Sistema</p>
+          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CPU & Sistema</p>
 
           {/* Load average — clickeable */}
           <div onClick={() => setLoadAvgModal(true)} style={{ cursor: 'pointer', borderRadius: '8px', padding: '6px', margin: '-6px', transition: 'background 0.15s' }}
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)') }
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Load average <span style={{ fontSize: '9px', color: '#334155', fontWeight: 400, textTransform: 'none' }}>· ver detalle →</span></p>
+            <p style={{ margin: '0 0 5px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>Load average <span style={{ fontSize: '10px', color: '#7f8a9c', fontWeight: 400, textTransform: 'none' }}>· ver detalle →</span></p>
             <div style={{ display: 'flex', gap: '6px' }}>
               {['1m', '5m', '15m'].map((t, i) => (
                 <div key={t} style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: statusColor((data.cpu.load_avg[i] / data.cpu.count) * 100) }}>{data.cpu.load_avg[i]}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>{t}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{t}</p>
                 </div>
               ))}
             </div>
@@ -1546,15 +1546,15 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             <div onClick={() => setProcsModal(true)} style={{ cursor: 'pointer', borderRadius: '8px', padding: '6px', margin: '-6px', transition: 'background 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Procesos <span style={{ fontSize: '9px', color: '#334155', fontWeight: 400, textTransform: 'none' }}>· ver detalle →</span></p>
+              <p style={{ margin: '0 0 5px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>Procesos <span style={{ fontSize: '10px', color: '#7f8a9c', fontWeight: 400, textTransform: 'none' }}>· ver detalle →</span></p>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#94a3b8' }}>{data.procs.total}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Total</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Total</p>
                 </div>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: data.procs.zombies > 0 ? '#f87171' : '#34d399' }}>{data.procs.zombies}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Zombies</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Zombies</p>
                 </div>
               </div>
             </div>
@@ -1566,29 +1566,29 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
               onMouseLeave={e => (e.currentTarget.style.background = (G.panel as React.CSSProperties).background as string)}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: '#34d399' }}>{fmtUptime(data.uptime_s)}</p>
-              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Uptime ↗</p>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Uptime ↗</p>
             </div>
             <div onClick={() => setSvcsModal(true)} style={{ ...G.panel, textAlign: 'center', padding: '8px 4px', cursor: 'pointer', transition: 'background 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
               onMouseLeave={e => (e.currentTarget.style.background = (G.panel as React.CSSProperties).background as string)}>
               <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: allOk ? '#34d399' : '#f87171' }}>{activeServices}/{totalServices}</p>
-              <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Servicios ↗</p>
+              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Servicios ↗</p>
             </div>
           </div>
         </div>
 
         {/* Memoria & Swap */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Memoria</p>
+          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Memoria</p>
           <div>
-            <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>RAM</p>
+            <p style={{ margin: '0 0 5px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>RAM</p>
             {[
               { label: 'Usado',      val: `${(data.ram.used_mb / 1024).toFixed(2)} GB`, pct: (data.ram.used_mb / data.ram.total_mb) * 100,  clr: ramColor },
               { label: 'Disponible', val: `${(data.ram.avail_mb / 1024).toFixed(2)} GB`, pct: (data.ram.avail_mb / data.ram.total_mb) * 100, clr: '#34d399' },
             ].map(r => (
               <div key={r.label} style={{ marginBottom: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                  <span style={{ fontSize: '11px', color: '#475569' }}>{r.label}</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{r.label}</span>
                   <span style={{ fontSize: '11px', fontWeight: 700, color: r.clr }}>{r.val}</span>
                 </div>
                 <div style={{ height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
@@ -1596,47 +1596,47 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                 </div>
               </div>
             ))}
-            <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#334155' }}>Total: {(data.ram.total_mb / 1024).toFixed(2)} GB</p>
+            <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Total: {(data.ram.total_mb / 1024).toFixed(2)} GB</p>
           </div>
           {data.swap && data.swap.total_mb > 0 && (
             <div>
-              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Swap</p>
+              <p style={{ margin: '0 0 5px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>Swap</p>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: statusColor(data.swap.percent) }}>{data.swap.percent.toFixed(1)}%</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Uso</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Uso</p>
                 </div>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#22d3ee' }}>{data.swap.used_mb}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB usados</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>MB usados</p>
                 </div>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#94a3b8' }}>{data.swap.total_mb}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB total</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>MB total</p>
                 </div>
               </div>
             </div>
           )}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <p style={{ margin: 0, fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Top procesos por RAM</p>
+              <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>Top procesos por RAM</p>
               <button onClick={() => setRamProcsModal(true)}
                 title="Ver top 10"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#475569', display: 'flex', alignItems: 'center', borderRadius: '4px' }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#7f8a9c', display: 'flex', alignItems: 'center', borderRadius: '4px' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" /></svg>
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {[...data.top_procs].sort((a, b) => b.mem - a.mem).slice(0, 3).map((proc, i) => (
                 <div key={proc.pid} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '8px', background: i === 0 ? 'rgba(168,85,247,0.05)' : 'rgba(255,255,255,0.02)' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#334155', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: '#7f8a9c', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
                   <div style={{ flex: 1, overflow: 'hidden' }}>
                     <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proc.name}</p>
-                    <p style={{ margin: 0, fontSize: '10px', color: '#334155' }}>PID {proc.pid}</p>
+                    <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>PID {proc.pid}</p>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: statusColor(proc.mem) }}>{proc.mem}% RAM</p>
-                    <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{proc.cpu}% CPU</p>
+                    <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{proc.cpu}% CPU</p>
                   </div>
                 </div>
               ))}
@@ -1646,50 +1646,50 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
 
         {/* Red & I/O */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Red & I/O</p>
+          <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Red & I/O</p>
           <div>
-            <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Tráfico de red</p>
+            <p style={{ margin: '0 0 5px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>Tráfico de red</p>
             <div style={{ display: 'flex', gap: '6px' }}>
               <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                 <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#60a5fa' }}>↓ {data.net.rx_mbps}</p>
-                <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s RX</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>MB/s RX</p>
               </div>
               <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                 <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#a78bfa' }}>↑ {data.net.tx_mbps}</p>
-                <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s TX</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>MB/s TX</p>
               </div>
             </div>
           </div>
           {data.connections && (
             <div>
-              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Conexiones TCP</p>
+              <p style={{ margin: '0 0 5px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>Conexiones TCP</p>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#34d399' }}>{data.connections.established}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Activas</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Activas</p>
                 </div>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#60a5fa' }}>{data.connections.listening}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Listen</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Listen</p>
                 </div>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#94a3b8' }}>{data.connections.total}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>Total</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>Total</p>
                 </div>
               </div>
             </div>
           )}
           {data.disk_io && (
             <div>
-              <p style={{ margin: '0 0 5px', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Disco I/O</p>
+              <p style={{ margin: '0 0 5px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>Disco I/O</p>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#fb923c' }}>↓ {data.disk_io.read_mbps}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s R</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>MB/s R</p>
                 </div>
                 <div style={{ flex: 1, ...G.panel, textAlign: 'center', padding: '8px 4px' }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#f472b6' }}>↑ {data.disk_io.write_mbps}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#334155' }}>MB/s W</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>MB/s W</p>
                 </div>
               </div>
             </div>
@@ -1721,15 +1721,15 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         {/* Fila 1 col 2: Docker */}
         <div style={{ ...G.card, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Docker</p>
+            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Docker</p>
             {data.docker && (
-              <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: '5px', background: (data.docker.filter(c => c.status.toLowerCase().startsWith('up')).length > 0) ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.04)', color: (data.docker.filter(c => c.status.toLowerCase().startsWith('up')).length > 0) ? '#34d399' : '#475569' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 7px', borderRadius: '5px', background: (data.docker.filter(c => c.status.toLowerCase().startsWith('up')).length > 0) ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.04)', color: (data.docker.filter(c => c.status.toLowerCase().startsWith('up')).length > 0) ? '#34d399' : '#475569' }}>
                 {data.docker.filter(c => c.status.toLowerCase().startsWith('up')).length}/{data.docker.length} activos
               </span>
             )}
           </div>
           {(!data.docker || data.docker.length === 0) ? (
-            <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin contenedores detectados</p>
+            <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '16px' }}>Sin contenedores detectados</p>
           ) : (
             <div className="vps-docker-scroll" style={{ overflowY: 'auto', maxHeight: '300px', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
               {data.docker.map(c => {
@@ -1739,9 +1739,9 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                     <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: isUp ? '#34d399' : '#f87171', flexShrink: 0, boxShadow: `0 0 5px ${isUp ? '#34d399' : '#f87171'}` }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: isUp ? '#e2e8f0' : '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
-                      <p style={{ margin: 0, fontSize: '10px', color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.image}</p>
+                      <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.image}</p>
                     </div>
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: isUp ? '#34d399' : '#f87171', flexShrink: 0 }}>{isUp ? 'up' : 'down'}</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: isUp ? '#34d399' : '#f87171', flexShrink: 0 }}>{isUp ? 'up' : 'down'}</span>
                   </div>
                 );
               })}
@@ -1755,23 +1755,23 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
         {/* Fila 2 col 2: Servicios */}
         <div style={{ ...G.card }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Servicios</p>
+            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Servicios</p>
             <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: allOk ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', color: allOk ? '#34d399' : '#f87171' }}>
               {totalServices === 0 ? '—' : allOk ? 'Todos OK' : `${totalServices - activeServices} caído(s)`}
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {data.services.length === 0 && (
-              <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '16px' }}>Sin servicios configurados en el agente</p>
+              <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '16px' }}>Sin servicios configurados en el agente</p>
             )}
             {data.services.map(svc => (
               <div key={svc.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '9px', background: svc.active ? 'rgba(52,211,153,0.04)' : 'rgba(248,113,113,0.06)', border: `1px solid ${svc.active ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.2)'}` }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: svc.active ? '#34d399' : '#f87171', boxShadow: `0 0 6px ${svc.active ? '#34d399' : '#f87171'}`, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: svc.active ? '#e2e8f0' : '#f87171' }}>{svc.name}</p>
-                  <p style={{ margin: 0, fontSize: '10px', color: '#334155' }}>{svc.status}</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{svc.status}</p>
                 </div>
-                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: svc.active ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', color: svc.active ? '#34d399' : '#f87171' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: svc.active ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', color: svc.active ? '#34d399' : '#f87171' }}>
                   {svc.active ? 'active' : 'down'}
                 </span>
               </div>
@@ -1785,7 +1785,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
 
       <LogsPanel />
 
-      <p style={{ margin: '10px 0 0', fontSize: '10px', color: '#1e293b', textAlign: 'right' }}>
+      <p style={{ margin: '10px 0 0', fontSize: '11px', color: '#1e293b', textAlign: 'right' }}>
         Datos de la VPS al {new Date(data.ts).toLocaleString('es-ES')}
       </p>
 
@@ -1811,7 +1811,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               const c = statusColor(pct);
               return (
                 <div key={i} style={{ borderRadius: '10px', background: `${c}15`, border: `1px solid ${c}40`, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>Core {i}</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c', fontWeight: 700, textTransform: 'uppercase' }}>Core {i}</span>
                   <span style={{ fontSize: '22px', fontWeight: 900, color: c, lineHeight: 1 }}>{pct}%</span>
                   <div style={{ width: '100%', height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)' }}>
                     <div style={{ height: '100%', width: `${pct}%`, borderRadius: '3px', background: c, transition: 'width 0.5s' }} />
@@ -1828,7 +1828,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             ].map(r => (
               <div key={r.label} style={{ textAlign: 'center', padding: '14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <p style={{ margin: 0, fontSize: '24px', fontWeight: 900, color: r.color }}>{r.val}</p>
-                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
               </div>
             ))}
           </div>
@@ -1874,11 +1874,11 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <div style={{ width: '12px', height: '3px', background: RC, borderRadius: '2px' }} />
-                  <span style={{ fontSize: '11px', color: '#475569' }}>Lectura</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Lectura</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <div style={{ width: '12px', height: '3px', background: WC, borderRadius: '2px' }} />
-                  <span style={{ fontSize: '11px', color: '#475569' }}>Escritura</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c' }}>Escritura</span>
                 </div>
               </div>
             </div>
@@ -1886,7 +1886,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               {stats.map(s => (
                 <div key={s.label} style={{ padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
                   <p style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: s.color }}>{s.val}</p>
-                  <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>{s.label}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c', fontWeight: 700, textTransform: 'uppercase' }}>{s.label}</p>
                 </div>
               ))}
             </div>
@@ -1909,9 +1909,9 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                       <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: color, boxShadow: `0 0 6px ${color}80`, flexShrink: 0 }} />
                       <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', flex: 1 }}>{cat.label}</span>
-                      <span style={{ fontSize: '11px', color: '#475569' }}>{cat.path}</span>
+                      <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{cat.path}</span>
                       <span style={{ fontSize: '13px', fontWeight: 900, color }}>{cat.used_gb.toFixed(2)} GB</span>
-                      <span style={{ fontSize: '11px', color: '#475569', width: '36px', textAlign: 'right' }}>{pct.toFixed(1)}%</span>
+                      <span style={{ fontSize: '11px', color: '#7f8a9c', width: '36px', textAlign: 'right' }}>{pct.toFixed(1)}%</span>
                     </div>
                     <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', marginBottom: cat.children?.length ? '8px' : '4px' }}>
                       <div style={{ height: '100%', width: `${pct}%`, borderRadius: '3px', background: color, boxShadow: `0 0 8px ${color}60`, transition: 'width 0.6s' }} />
@@ -1919,7 +1919,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                     {cat.children && cat.children.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px', paddingLeft: '20px' }}>
                         {cat.children.slice(0, 6).map(child => (
-                          <div key={child.path} style={{ padding: '3px 8px', borderRadius: '5px', background: `${color}12`, border: `1px solid ${color}30`, fontSize: '10px', color: '#94a3b8' }}>
+                          <div key={child.path} style={{ padding: '3px 8px', borderRadius: '5px', background: `${color}12`, border: `1px solid ${color}30`, fontSize: '11px', color: '#94a3b8' }}>
                             <span style={{ fontWeight: 700, color }}>{child.name}</span> · {child.used_gb} GB
                           </div>
                         ))}
@@ -1960,7 +1960,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                 ].map(r => (
                   <div key={r.label} style={{ textAlign: 'center', padding: '12px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <p style={{ margin: 0, fontSize: '26px', fontWeight: 900, color: r.color }}>{r.val}</p>
-                    <p style={{ margin: '4px 0 0', fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{r.label}</p>
+                    <p style={{ margin: '4px 0 0', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>{r.label}</p>
                   </div>
                 ))}
               </div>
@@ -1981,7 +1981,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                 ].map(r => (
                   <div key={r.label} style={{ textAlign: 'center', padding: '10px', borderRadius: '8px', background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.15)' }}>
                     <p style={{ margin: 0, fontSize: '18px', fontWeight: 900, color: '#34d399' }}>{r.val}</p>
-                    <p style={{ margin: '3px 0 0', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
+                    <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
                   </div>
                 ))}
               </div>
@@ -1993,7 +1993,7 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       {/* Load Average modal */}
       {loadAvgModal && (
         <ModalShell onClose={() => setLoadAvgModal(false)} title="Load Average" sub={`${data.cpu.count} núcleos lógicos`} icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" color={cpuColor}>
-          <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#475569', lineHeight: 1.6 }}>
+          <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#7f8a9c', lineHeight: 1.6 }}>
             Promedio de procesos en espera de CPU. Un valor igual a <strong style={{ color: '#e2e8f0' }}>{data.cpu.count}</strong> = 100% de carga.
             Por encima de {data.cpu.count} indica saturación.
           </p>
@@ -2007,14 +2007,14 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <div>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{label}</span>
-                    <span style={{ marginLeft: '8px', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: `${sc}18`, color: sc }}>{state}</span>
+                    <span style={{ marginLeft: '8px', fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: `${sc}18`, color: sc }}>{state}</span>
                   </div>
                   <span style={{ fontSize: '18px', fontWeight: 900, color: sc }}>{val.toFixed(2)}</span>
                 </div>
                 <div style={{ height: '6px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)' }}>
                   <div style={{ height: '100%', width: `${pct}%`, borderRadius: '4px', background: sc, transition: 'width 0.5s' }} />
                 </div>
-                <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#334155' }}>{pct.toFixed(1)}% de capacidad · umbral crítico: {data.cpu.count.toFixed(1)}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{pct.toFixed(1)}% de capacidad · umbral crítico: {data.cpu.count.toFixed(1)}</p>
               </div>
             );
           })}
@@ -2031,26 +2031,26 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
             ].map(r => (
               <div key={r.label} style={{ textAlign: 'center', padding: '16px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <p style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: r.clr }}>{r.val}</p>
-                <p style={{ margin: '4px 0 0', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>{r.label}</p>
-                <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#334155' }}>{r.desc}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase' }}>{r.label}</p>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{r.desc}</p>
               </div>
             ))}
           </div>
           {data.procs.zombies > 0 && (
             <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)' }}>
               <p style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 700, color: '#f87171' }}>¿Qué son los procesos zombie?</p>
-              <p style={{ margin: 0, fontSize: '11px', color: '#475569', lineHeight: 1.6 }}>
+              <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c', lineHeight: 1.6 }}>
                 Procesos que terminaron pero cuyo proceso padre no recogió su estado de salida. No consumen CPU pero sí una entrada en la tabla de procesos. En general son inofensivos salvo que sean muchos.
               </p>
             </div>
           )}
-          <p style={{ margin: '16px 0 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top por CPU ahora</p>
+          <p style={{ margin: '16px 0 8px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top por CPU ahora</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {[...data.top_procs].sort((a, b) => b.cpu - a.cpu).slice(0, 5).map((p, i) => (
               <div key={p.pid} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontSize: '10px', color: '#334155', width: '18px', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c', width: '18px', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
                 <span style={{ flex: 1, fontSize: '12px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                <span style={{ fontSize: '10px', color: '#334155', flexShrink: 0 }}>PID {p.pid}</span>
+                <span style={{ fontSize: '11px', color: '#7f8a9c', flexShrink: 0 }}>PID {p.pid}</span>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: statusColor(p.cpu), flexShrink: 0 }}>{p.cpu}% CPU</span>
               </div>
             ))}
@@ -2072,20 +2072,20 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
               {[{ label: 'Días', val: d }, { label: 'Horas', val: h }, { label: 'Minutos', val: m }].map(r => (
                 <div key={r.label} style={{ textAlign: 'center', padding: '16px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <p style={{ margin: 0, fontSize: '32px', fontWeight: 900, color: '#34d399' }}>{r.val}</p>
-                  <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', fontWeight: 700 }}>{r.label}</p>
                 </div>
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <p style={{ margin: '0 0 4px', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>Inicio del servidor</p>
+                <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', fontWeight: 700 }}>Inicio del servidor</p>
                 <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>{bootDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>{bootDate.toLocaleTimeString('es-ES')}</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{bootDate.toLocaleTimeString('es-ES')}</p>
               </div>
               <div style={{ padding: '12px 14px', borderRadius: '10px', background: `${stabColor}0d`, border: `1px solid ${stabColor}25` }}>
-                <p style={{ margin: '0 0 4px', fontSize: '10px', color: '#475569', textTransform: 'uppercase', fontWeight: 700 }}>Estabilidad</p>
+                <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', fontWeight: 700 }}>Estabilidad</p>
                 <p style={{ margin: 0, fontSize: '18px', fontWeight: 900, color: stabColor }}>{stability}</p>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>{data.uptime_s.toLocaleString('es-ES')} segundos</p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{data.uptime_s.toLocaleString('es-ES')} segundos</p>
               </div>
             </div>
           </ModalShell>
@@ -2096,13 +2096,13 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
       {svcsModal && (
         <ModalShell onClose={() => setSvcsModal(false)} title="Servicios" sub={allOk ? 'Todos operativos' : `${totalServices - activeServices} servicio(s) caído(s)`} icon="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" color={allOk ? '#34d399' : '#f87171'}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {data.services.length === 0 && <p style={{ margin: 0, fontSize: '12px', color: '#334155', textAlign: 'center', padding: '20px' }}>Sin servicios configurados en el agente</p>}
+            {data.services.length === 0 && <p style={{ margin: 0, fontSize: '12px', color: '#7f8a9c', textAlign: 'center', padding: '20px' }}>Sin servicios configurados en el agente</p>}
             {data.services.map(svc => (
               <div key={svc.name} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', background: svc.active ? 'rgba(52,211,153,0.04)' : 'rgba(248,113,113,0.06)', border: `1px solid ${svc.active ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.2)'}` }}>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: svc.active ? '#34d399' : '#f87171', boxShadow: `0 0 8px ${svc.active ? '#34d399' : '#f87171'}`, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: svc.active ? '#e2e8f0' : '#f87171' }}>{svc.name}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#475569' }}>{svc.status}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#7f8a9c' }}>{svc.status}</p>
                 </div>
                 <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '6px', background: svc.active ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)', color: svc.active ? '#34d399' : '#f87171' }}>
                   {svc.active ? 'active' : 'down'}
@@ -2123,16 +2123,16 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
                   <span style={{ fontSize: '11px', fontWeight: 800, color: i < 3 ? clr : '#334155', width: '18px', textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
                   <div style={{ flex: 1, overflow: 'hidden' }}>
                     <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proc.name}</p>
-                    <p style={{ margin: 0, fontSize: '10px', color: '#334155' }}>PID {proc.pid}</p>
+                    <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>PID {proc.pid}</p>
                   </div>
                   <div style={{ display: 'flex', gap: '16px', flexShrink: 0 }}>
                     <div style={{ textAlign: 'right' }}>
                       <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: clr }}>{proc.mem.toFixed(1)}%</p>
-                      <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>{memMb} MB</p>
+                      <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>{memMb} MB</p>
                     </div>
                     <div style={{ textAlign: 'right', minWidth: '52px' }}>
                       <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: statusColor(proc.cpu) }}>{proc.cpu.toFixed(1)}%</p>
-                      <p style={{ margin: 0, fontSize: '10px', color: '#475569' }}>CPU</p>
+                      <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>CPU</p>
                     </div>
                   </div>
                 </div>
@@ -2188,9 +2188,9 @@ function ContainerRow({ ct }: { ct: DockerContainer }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
       <div style={{ width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0, background: up ? '#34d399' : '#f87171', boxShadow: up ? '0 0 5px #34d39980' : 'none' }} />
       <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1', minWidth: '160px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ct.name}</span>
-      <span style={{ fontSize: '10px', color: '#334155', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ct.image}</span>
-      {port && <span style={{ fontSize: '10px', color: '#475569', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{port}</span>}
-      <span style={{ fontSize: '10px', color: up ? '#34d399' : '#f87171', whiteSpace: 'nowrap', marginLeft: 'auto' }}>{ct.status}</span>
+      <span style={{ fontSize: '11px', color: '#7f8a9c', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ct.image}</span>
+      {port && <span style={{ fontSize: '11px', color: '#7f8a9c', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{port}</span>}
+      <span style={{ fontSize: '11px', color: up ? '#34d399' : '#f87171', whiteSpace: 'nowrap', marginLeft: 'auto' }}>{ct.status}</span>
     </div>
   );
 }
@@ -2201,8 +2201,8 @@ function CategoryBlock({ icon, label, color, items }: { icon: React.ReactNode; l
     <div style={{ marginBottom: '12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
         {icon}
-        <span style={{ fontSize: '10px', fontWeight: 700, color, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
-        <span style={{ fontSize: '10px', color: '#334155' }}>({items.length})</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
+        <span style={{ fontSize: '11px', color: '#7f8a9c' }}>({items.length})</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '8px', borderLeft: '2px solid ' + color + '30' }}>
         {items.map(ct => <ContainerRow key={ct.id} ct={ct} />)}
@@ -2230,12 +2230,12 @@ function AgentsPanel({ agents }: { agents: AgentDef[] }) {
     <div style={{ marginBottom: '28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth={1.5}><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><circle cx="19" cy="8" r="2" fill="#60a5fa"/><circle cx="5" cy="8" r="2" fill="#60a5fa"/></svg>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Agentes IA</span>
-        <span style={{ fontSize: '10px', color: '#334155' }}>({filtered.length})</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Agentes IA</span>
+        <span style={{ fontSize: '11px', color: '#7f8a9c' }}>({filtered.length})</span>
       </div>
       {Object.entries(byProject).map(([proj, agts]) => (
         <div key={proj} style={{ marginBottom: '14px' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.05em', marginBottom: '7px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.05em', marginBottom: '7px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2}><path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/></svg>
             {proj}
           </div>
@@ -2246,8 +2246,8 @@ function AgentsPanel({ agents }: { agents: AgentDef[] }) {
                 <div key={a.file} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0, background: col, boxShadow: '0 0 5px '+col+'80', display: 'inline-block' }} />
                   <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', minWidth: '130px' }}>{a.name}</span>
-                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: col+'15', color: col, border: '1px solid '+col+'25' }}>{a.area}</span>
-                  {a.desc && a.desc !== a.name && <span style={{ fontSize: '10px', color: '#334155', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.desc}>{a.desc}</span>}
+                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: col+'15', color: col, border: '1px solid '+col+'25' }}>{a.area}</span>
+                  {a.desc && a.desc !== a.name && <span style={{ fontSize: '11px', color: '#7f8a9c', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.desc}>{a.desc}</span>}
                 </div>
               );
             })}
@@ -2275,12 +2275,12 @@ function AgentSkillsPanel({ agentSkills }: { agentSkills: AgentSkill[] }) {
     <div style={{ marginBottom: '32px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e879f9" strokeWidth={1.5}><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 5a3 3 0 1 1-3 3 3 3 0 0 1 3-3zm0 13a7.93 7.93 0 0 1-6-2.75C6.16 15.56 9.31 14 12 14s5.84 1.56 6 3.25A7.93 7.93 0 0 1 12 20z"/></svg>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Skills de Agentes IA</span>
-        <span style={{ fontSize: '10px', color: '#334155' }}>({agentSkills.length})</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Skills de Agentes IA</span>
+        <span style={{ fontSize: '11px', color: '#7f8a9c' }}>({agentSkills.length})</span>
       </div>
       {Object.entries(byProject).map(([proj, skills]) => (
         <div key={proj} style={{ marginBottom: '14px' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.05em', marginBottom: '7px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.05em', marginBottom: '7px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2}><path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/></svg>
             {proj}
           </div>
@@ -2288,7 +2288,7 @@ function AgentSkillsPanel({ agentSkills }: { agentSkills: AgentSkill[] }) {
             {skills.map(s => {
               const col = SKILL_COLORS_MAP[s.name] ?? '#64748b';
               return (
-                <span key={s.name} style={{ fontSize: '10px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', background: col+'12', color: col, border: '1px solid '+col+'25', cursor: 'default' }} title={s.title}>
+                <span key={s.name} style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px', background: col+'12', color: col, border: '1px solid '+col+'25', cursor: 'default' }} title={s.title}>
                   {s.name.replace(/-/g, ' ')}
                 </span>
               );
@@ -2306,15 +2306,15 @@ function ServerServicePanel({ vpsLabel, containers, skills, agentSkills, agents,
     <div style={{ marginBottom: '28px' }}>
       <div style={{ marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b' }}>{vpsLabel}</span>
-          <span style={{ fontSize: '10px', color: loading ? '#f59e0b' : error ? '#f87171' : '#334155' }}>{loading ? 'cargando...' : error ? 'Error: '+error : containers.length+' contenedores'}</span>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: '#7f8a9c' }}>{vpsLabel}</span>
+          <span style={{ fontSize: '11px', color: loading ? '#f59e0b' : error ? '#f87171' : '#334155' }}>{loading ? 'cargando...' : error ? 'Error: '+error : containers.length+' contenedores'}</span>
         </div>
         {skills.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
             {skills.map(s => {
               const colors: Record<string,string> = { Python:'#3b82f6', 'Node.js':'#84cc16', npm:'#c084fc', Docker:'#38bdf8', nginx:'#34d399', Git:'#fb923c', pip:'#94a3b8', PostgreSQL:'#818cf8', Redis:'#f87171', Java:'#fbbf24', Go:'#22d3ee', Rust:'#f97316' };
               const col = colors[s.name] ?? '#64748b';
-              return <span key={s.name} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: col+'15', color: col, border: '1px solid '+col+'30', letterSpacing: '0.03em' }}>{s.name} {s.version}</span>;
+              return <span key={s.name} style={{ fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', background: col+'15', color: col, border: '1px solid '+col+'30', letterSpacing: '0.03em' }}>{s.name} {s.version}</span>;
             })}
           </div>
         )}
@@ -2328,7 +2328,7 @@ function ServerServicePanel({ vpsLabel, containers, skills, agentSkills, agents,
           <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth={2}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>} label="Webhooks" color="#fb923c" items={cats.webhooks} />
           <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth={2}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>} label="Apps & Frontends" color="#94a3b8" items={cats.apps} />
           <CategoryBlock icon={<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={2}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>} label="Admin & Herramientas" color="#34d399" items={cats.admin} />
-          {containers.length === 0 && <p style={{ margin: 0, fontSize: '11px', color: '#334155' }}>Sin contenedores</p>}
+          {containers.length === 0 && <p style={{ margin: 0, fontSize: '11px', color: '#7f8a9c' }}>Sin contenedores</p>}
           <AgentsPanel agents={agents} />
           <AgentSkillsPanel agentSkills={agentSkills} />
         </div>
@@ -2388,20 +2388,20 @@ function RepoCard({ r }: { r: GhRepo }) {
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-          {r.private && <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>PRIV</span>}
+          {r.private && <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>PRIV</span>}
           <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
         </div>
         {wf && (
-          <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: col + '18', color: col, border: '1px solid ' + col + '30' }}>
+          <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: col + '18', color: col, border: '1px solid ' + col + '30' }}>
             {wfLabel(wf.conclusion, wf.status)}
           </span>
         )}
       </div>
-      {r.description && <p style={{ margin: '0 0 10px', fontSize: '11px', color: '#64748b', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.description}</p>}
+      {r.description && <p style={{ margin: '0 0 10px', fontSize: '11px', color: '#7f8a9c', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.description}</p>}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-        {r.language && <span style={{ fontSize: '10px', fontWeight: 600, color: langColor(r.language) }}>● {r.language}</span>}
-        {r.last_commit && <span style={{ fontSize: '10px', color: '#334155', maxWidth: '160px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.last_commit.message}>{r.last_commit.sha} · {r.last_commit.message}</span>}
-        <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#334155' }}>{timeAgo(r.updated_at)}</span>
+        {r.language && <span style={{ fontSize: '11px', fontWeight: 600, color: langColor(r.language) }}>● {r.language}</span>}
+        {r.last_commit && <span style={{ fontSize: '11px', color: '#7f8a9c', maxWidth: '160px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.last_commit.message}>{r.last_commit.sha} · {r.last_commit.message}</span>}
+        <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#7f8a9c' }}>{timeAgo(r.updated_at)}</span>
       </div>
     </a>
   );
@@ -2450,8 +2450,8 @@ function ServerMiniCard({ vps, metrics, metricsLoading, docker, onSelect }: {
           <span style={{ fontSize: '11px', color: vps.color, fontFamily: 'monospace', fontWeight: 600 }}>{vps.ip}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end' }}>
-          <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: vps.color + '15', color: vps.color, border: '1px solid ' + vps.color + '30' }}>{upCount} servicios</span>
-          {metrics && <span style={{ fontSize: '10px', color: '#475569' }}>↑ {fmtUptime(metrics.uptime_s)}</span>}
+          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: vps.color + '15', color: vps.color, border: '1px solid ' + vps.color + '30' }}>{upCount} servicios</span>
+          {metrics && <span style={{ fontSize: '11px', color: '#7f8a9c' }}>↑ {fmtUptime(metrics.uptime_s)}</span>}
         </div>
       </div>
 
@@ -2471,7 +2471,7 @@ function ServerMiniCard({ vps, metrics, metricsLoading, docker, onSelect }: {
             return (
               <div key={m.label}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '10px', color: '#475569', fontWeight: 600 }}>{m.label}</span>
+                  <span style={{ fontSize: '11px', color: '#7f8a9c', fontWeight: 600 }}>{m.label}</span>
                   <span style={{ fontSize: '11px', fontWeight: 800, color: col }}>{m.pct.toFixed(1)}%</span>
                 </div>
                 <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.06)' }}>
@@ -2517,12 +2517,12 @@ function AgentModal({ agent, onClose }: { agent: AgentWithServer; onClose: () =>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, color: '#f1f5f9' }}>{agent.name}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', color: '#475569' }}>{agent.project}</span>
+              <span style={{ fontSize: '11px', color: '#7f8a9c' }}>{agent.project}</span>
               <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#334155', display: 'inline-block' }} />
               <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 7px', borderRadius: '4px', background: agent.serverColor + '18', color: agent.serverColor, border: '1px solid ' + agent.serverColor + '30' }}>{agent.server}</span>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', cursor: 'pointer', color: '#64748b', fontSize: '14px', lineHeight: 1, padding: '6px 8px', flexShrink: 0 }}>&#x2715;</button>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', cursor: 'pointer', color: '#7f8a9c', fontSize: '14px', lineHeight: 1, padding: '6px 8px', flexShrink: 0 }}>&#x2715;</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {([
@@ -2531,7 +2531,7 @@ function AgentModal({ agent, onClose }: { agent: AgentWithServer; onClose: () =>
             { label: 'Descripcion', value: agent.desc || 'Sin descripcion' },
           ] as { label: string; value: string }[]).map(row => (
             <div key={row.label} style={{ display: 'flex', gap: '12px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', width: '80px', flexShrink: 0, paddingTop: '1px' }}>{row.label}</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#7f8a9c', width: '80px', flexShrink: 0, paddingTop: '1px' }}>{row.label}</span>
               <span style={{ fontSize: '11px', color: '#94a3b8', wordBreak: 'break-all' }}>{row.value}</span>
             </div>
           ))}
@@ -2549,8 +2549,8 @@ function OverviewAppsGrid({ apps, onOpen }: { apps: AppResumen[]; onOpen: () => 
   return (
     <div style={{ marginTop: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '14px' }}>
-        <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          Aplicaciones <span style={{ color: '#334155', fontWeight: 500 }}>&middot; {apps.length} monitoreadas</span>
+        <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          Aplicaciones <span style={{ color: '#7f8a9c', fontWeight: 500 }}>&middot; {apps.length} monitoreadas</span>
         </p>
         <button onClick={onOpen} style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 600, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer' }}>Ver todo →</button>
       </div>
@@ -2568,7 +2568,7 @@ function OverviewAppsGrid({ apps, onOpen }: { apps: AppResumen[]; onOpen: () => 
             <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 5px #34d39980', flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.appSlug}</p>
-              <p style={{ margin: 0, fontSize: '9px', color: '#475569' }}>{a.count} eventos &middot; última {timeAgo(a.last)}</p>
+              <p style={{ margin: 0, fontSize: '10px', color: '#7f8a9c' }}>{a.count} eventos &middot; última {timeAgo(a.last)}</p>
             </div>
           </div>
         ))}
@@ -2612,10 +2612,10 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
   });
 
   if (loading) {
-    return <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Cargando...</p>;
+    return <p style={{ fontSize: '13px', color: '#7f8a9c', marginTop: '40px', textAlign: 'center' }}>Cargando...</p>;
   }
   if (apps.length === 0) {
-    return <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Ninguna app ha reportado eventos todavía</p>;
+    return <p style={{ fontSize: '13px', color: '#7f8a9c', marginTop: '40px', textAlign: 'center' }}>Ninguna app ha reportado eventos todavía</p>;
   }
 
   return (
@@ -2641,7 +2641,7 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
       <div style={{ display: 'flex', gap: '8px', marginBottom: '18px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setSelectedTipo(null)}
-          style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (selectedTipo === null ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'), background: selectedTipo === null ? 'rgba(255,255,255,0.06)' : 'transparent', color: selectedTipo === null ? '#e2e8f0' : '#64748b' }}
+          style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (selectedTipo === null ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)'), background: selectedTipo === null ? 'rgba(255,255,255,0.06)' : 'transparent', color: selectedTipo === null ? '#e2e8f0' : '#64748b' }}
         >
           Todos los tipos
         </button>
@@ -2652,7 +2652,7 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
             <button
               key={t}
               onClick={() => setSelectedTipo(activo ? null : t)}
-              style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (activo ? col + '50' : 'rgba(255,255,255,0.06)'), background: activo ? col + '18' : 'transparent', color: activo ? col : '#64748b' }}
+              style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (activo ? col + '50' : 'rgba(255,255,255,0.06)'), background: activo ? col + '18' : 'transparent', color: activo ? col : '#64748b' }}
             >
               {t}
             </button>
@@ -2672,7 +2672,7 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
               <button
                 key={o.k}
                 onClick={() => setSelectedOrigen(o.k)}
-                style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (activo ? '#fbbf2450' : 'rgba(255,255,255,0.06)'), background: activo ? '#fbbf2418' : 'transparent', color: activo ? '#fbbf24' : '#64748b' }}
+                style={{ padding: '4px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', border: '1px solid ' + (activo ? '#fbbf2450' : 'rgba(255,255,255,0.06)'), background: activo ? '#fbbf2418' : 'transparent', color: activo ? '#fbbf24' : '#64748b' }}
               >
                 {o.label}
               </button>
@@ -2682,7 +2682,7 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
       )}
 
       {filtrados.length === 0 ? (
-        <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Sin eventos</p>
+        <p style={{ fontSize: '13px', color: '#7f8a9c', marginTop: '40px', textAlign: 'center' }}>Sin eventos</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {filtrados.map(ev => {
@@ -2690,11 +2690,11 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
             const deAgente = esDeAgente(ev.userAgent);
             return (
               <div key={ev.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '9px 4px', borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: deAgente ? 0.7 : 1 }}>
-                <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: col + '18', color: col, border: '1px solid ' + col + '30', width: '58px', textAlign: 'center' }}>{ev.tipo}</span>
-                <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, color: '#e2e8f0', width: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.appSlug}</span>
+                <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: col + '18', color: col, border: '1px solid ' + col + '30', width: '58px', textAlign: 'center' }}>{ev.tipo}</span>
+                <span style={{ flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0', width: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.appSlug}</span>
                 <span style={{ flex: 1, minWidth: 0, fontSize: '11px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {deAgente && (
-                    <span title="Detectado por user-agent: tráfico de herramienta de agente/automatización, no de una persona" style={{ marginRight: '5px', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '5px', background: '#fbbf2418', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
+                    <span title="Detectado por user-agent: tráfico de herramienta de agente/automatización, no de una persona" style={{ marginRight: '5px', fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '5px', background: '#fbbf2418', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
                     🤖 AGENTE IA
                   </span>
                   )}
@@ -2704,13 +2704,13 @@ function AppsPanel({ eventos, apps, loading }: { eventos: AppEvento[]; apps: App
                 </span>
                 <span
                   title={ev.ip ? `IP: ${ev.ip}` : undefined}
-                  style={{ flexShrink: 0, fontSize: '9px', color: ev.ubicacion ? '#94a3b8' : '#334155', width: '130px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  style={{ flexShrink: 0, fontSize: '10px', color: ev.ubicacion ? '#94a3b8' : '#334155', width: '130px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 >
                   &#x1F4CD; {ev.ubicacion ?? 'Ubicación desconocida'}
                 </span>
                 <span style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
-                  <span style={{ fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{timeAgo(ev.creadoEn)}</span>
-                  <span style={{ fontSize: '9px', color: '#475569', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{fechaExacta(ev.creadoEn)}</span>
+                  <span style={{ fontSize: '10px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>{timeAgo(ev.creadoEn)}</span>
+                  <span style={{ fontSize: '10px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{fechaExacta(ev.creadoEn)}</span>
                 </span>
               </div>
             );
@@ -2732,8 +2732,8 @@ function OverviewAgentsGrid({ agents1, agents2 }: { agents1: AgentDef[]; agents2
   return (
     <div>
       {selected && <AgentModal agent={selected} onClose={() => setSelected(null)} />}
-      <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        Agentes IA <span style={{ color: '#334155', fontWeight: 500 }}>&middot; {all.length} activos</span>
+      <p style={{ margin: '0 0 14px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        Agentes IA <span style={{ color: '#7f8a9c', fontWeight: 500 }}>&middot; {all.length} activos</span>
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
         {all.map(a => {
@@ -2749,9 +2749,9 @@ function OverviewAgentsGrid({ agents1, agents2 }: { agents1: AgentDef[]; agents2
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: col, boxShadow: '0 0 5px ' + col + '80', flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</p>
-                <p style={{ margin: 0, fontSize: '9px', color: '#475569' }}>{a.project}</p>
+                <p style={{ margin: 0, fontSize: '10px', color: '#7f8a9c' }}>{a.project}</p>
               </div>
-              <span style={{ flexShrink: 0, fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: a.serverColor + '18', color: a.serverColor, border: '1px solid ' + a.serverColor + '30' }}>{a.server}</span>
+              <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: a.serverColor + '18', color: a.serverColor, border: '1px solid ' + a.serverColor + '30' }}>{a.server}</span>
             </div>
           );
         })}
@@ -2784,7 +2784,7 @@ function RightPanel({ m1, m2, events }: {
     <>
       {/* Server health */}
       <div style={{ marginBottom: '24px' }}>
-        <p style={{ margin: '0 0 12px', fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Estado Servidores</p>
+        <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Estado Servidores</p>
         {([
           { label: 'KVM2', ip: '177.7.46.87', color: ORANGE, m: m1 },
           { label: 'KVM1', ip: '2.25.201.131', color: '#60a5fa', m: m2 },
@@ -2793,7 +2793,7 @@ function RightPanel({ m1, m2, events }: {
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: s.m ? '9px' : 0 }}>
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 5px #34d399', flexShrink: 0 }} />
               <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', flex: 1 }}>{s.label}</span>
-              <span style={{ fontSize: '10px', color: s.color, fontFamily: 'monospace' }}>{s.ip}</span>
+              <span style={{ fontSize: '11px', color: s.color, fontFamily: 'monospace' }}>{s.ip}</span>
             </div>
             {s.m ? (
               <div style={{ display: 'flex', gap: '5px' }}>
@@ -2802,7 +2802,7 @@ function RightPanel({ m1, m2, events }: {
                   return (
                     <div key={x.k} style={{ flex: 1, textAlign: 'center', padding: '5px 2px', borderRadius: '7px', background: c + '12', border: '1px solid ' + c + '25' }}>
                       <p style={{ margin: 0, fontSize: '12px', fontWeight: 800, color: c }}>{x.v.toFixed(0)}%</p>
-                      <p style={{ margin: 0, fontSize: '8px', color: '#475569', fontWeight: 700, letterSpacing: '0.03em' }}>{x.k}</p>
+                      <p style={{ margin: 0, fontSize: '10px', color: '#7f8a9c', fontWeight: 700, letterSpacing: '0.03em' }}>{x.k}</p>
                     </div>
                   );
                 })}
@@ -2816,7 +2816,7 @@ function RightPanel({ m1, m2, events }: {
 
       {/* Alerts */}
       <div style={{ marginBottom: '24px' }}>
-        <p style={{ margin: '0 0 12px', fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Alertas</p>
+        <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Alertas</p>
         {alerts.length === 0 ? (
           <div style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.15)', display: 'flex', alignItems: 'center', gap: '7px' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -2827,7 +2827,7 @@ function RightPanel({ m1, m2, events }: {
             {alerts.map((a, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', background: a.color + '08', border: '1px solid ' + a.color + '28' }}>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
-                <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: a.color + '18', color: a.color, flexShrink: 0 }}>{a.server}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 5px', borderRadius: '4px', background: a.color + '18', color: a.color, flexShrink: 0 }}>{a.server}</span>
                 <span style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: 600 }}>{a.msg}</span>
               </div>
             ))}
@@ -2837,9 +2837,9 @@ function RightPanel({ m1, m2, events }: {
 
       {/* Event timeline */}
       <div>
-        <p style={{ margin: '0 0 12px', fontSize: '10px', fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Eventos Recientes</p>
+        <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Eventos Recientes</p>
         {events.length === 0 ? (
-          <p style={{ fontSize: '11px', color: '#334155', margin: 0 }}>Esperando datos...</p>
+          <p style={{ fontSize: '11px', color: '#7f8a9c', margin: 0 }}>Esperando datos...</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {events.slice(0, 25).map((ev, i) => {
@@ -2849,7 +2849,7 @@ function RightPanel({ m1, m2, events }: {
                   <div style={{ flexShrink: 0, width: '3px', borderRadius: '2px', background: col, alignSelf: 'stretch', minHeight: '16px' }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: 1.3 }}>{ev.msg}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '9px', color: '#334155', fontVariantNumeric: 'tabular-nums' }}>{ev.ts.toLocaleTimeString('es-ES')}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>{ev.ts.toLocaleTimeString('es-ES')}</p>
                   </div>
                 </div>
               );
@@ -3015,8 +3015,8 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
             </button>
           ))}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '1px' }}>
-            {m1 && <span style={{ fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>KVM2 <span style={{ color: statusColor(m1.cpu), fontWeight: 700 }}>{m1.cpu.toFixed(0)}%</span> CPU</span>}
-            {m2 && <span style={{ fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>KVM1 <span style={{ color: statusColor(m2.cpu), fontWeight: 700 }}>{m2.cpu.toFixed(0)}%</span> CPU</span>}
+            {m1 && <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>KVM2 <span style={{ color: statusColor(m1.cpu), fontWeight: 700 }}>{m1.cpu.toFixed(0)}%</span> CPU</span>}
+            {m2 && <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>KVM1 <span style={{ color: statusColor(m2.cpu), fontWeight: 700 }}>{m2.cpu.toFixed(0)}%</span> CPU</span>}
           </div>
         </div>
 
@@ -3040,7 +3040,7 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
                 ] as { label: string; val: number; color: string }[]).map(s => (
                   <div key={s.label} style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
                     <p style={{ margin: 0, fontSize: '30px', fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.val}</p>
-                    <p style={{ margin: '6px 0 0', fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>{s.label}</p>
+                    <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#7f8a9c', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -3077,7 +3077,7 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
                 </div>
               )}
               {agents1.length === 0 && agents2.length === 0 && (
-                <p style={{ fontSize: '13px', color: '#475569', marginTop: '40px', textAlign: 'center' }}>Sin agentes detectados</p>
+                <p style={{ fontSize: '13px', color: '#7f8a9c', marginTop: '40px', textAlign: 'center' }}>Sin agentes detectados</p>
               )}
             </div>
           )}
@@ -3241,10 +3241,10 @@ export default function OperationsPage() {
               VPS sin respuesta
               {errorSince && ` — hace ${Math.floor((now.getTime() - errorSince.getTime()) / 60000)}m ${Math.floor(((now.getTime() - errorSince.getTime()) % 60000) / 1000)}s`}
             </p>
-            <span style={{ fontSize: '11px', color: '#475569', marginLeft: 'auto' }}>Reintentando en {nextIn}s</span>
+            <span style={{ fontSize: '11px', color: '#7f8a9c', marginLeft: 'auto' }}>Reintentando en {nextIn}s</span>
           </div>
           {lastFetch && (
-            <p style={{ margin: '6px 0 0 26px', fontSize: '11px', color: '#334155' }}>
+            <p style={{ margin: '6px 0 0 26px', fontSize: '11px', color: '#7f8a9c' }}>
               Último dato recibido: {lastFetch.toLocaleTimeString('es-ES')}
               {data && ` · CPU ${data.cpu.percent}% · RAM ${data.ram.percent}% · Disco ${data.disk.percent}%`}
             </p>
@@ -3286,21 +3286,21 @@ function PageHeader({ loading, lastFetch, nextIn, latencyMs, onRefresh, activeVp
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', color: '#475569', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6"/></svg>Servidores</button>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', color: '#7f8a9c', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6"/></svg>Servidores</button>
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 8px #34d399' }} />
         <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#f1f5f9', letterSpacing: '-0.02em' }}>VPS Monitor</h1>
         <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '3px' }}>
           {VPS_TABS.map(t => (
             <button key={t.key} onClick={() => onSelectVps(t.key)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '5px 12px', borderRadius: '7px', border: 'none', cursor: 'pointer', background: activeVps === t.key ? 'rgba(249,115,22,0.15)' : 'transparent', transition: 'background 0.15s' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: activeVps === t.key ? ORANGE : '#64748b', letterSpacing: '0.02em' }}>{t.label}</span>
-              <span style={{ fontSize: '9px', color: activeVps === t.key ? 'rgba(249,115,22,0.7)' : '#334155', fontFamily: 'monospace' }}>{t.sub}</span>
+              <span style={{ fontSize: '10px', color: activeVps === t.key ? 'rgba(249,115,22,0.7)' : '#334155', fontFamily: 'monospace' }}>{t.sub}</span>
             </button>
           ))}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {lastFetch && (
-          <span style={{ fontSize: '11px', color: '#334155' }}>
+          <span style={{ fontSize: '11px', color: '#7f8a9c' }}>
             {lastFetch.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · hace {freshness}s · {latencyMs !== null ? `${latencyMs}ms` : '—'}
           </span>
         )}

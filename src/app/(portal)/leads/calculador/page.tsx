@@ -96,7 +96,7 @@ export default function CalculadorPage() {
                 <button onClick={() => setIntegrations(Math.max(0, integrations - 1))} className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 text-white text-lg hover:bg-gray-700">−</button>
                 <span className="text-2xl font-bold text-white w-8 text-center">{integrations}</span>
                 <button onClick={() => setIntegrations(integrations + 1)} className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 text-white text-lg hover:bg-gray-700">+</button>
-                <span className="text-sm text-gray-500">x ${INTEGRATIONS_COST.toLocaleString()} c/u</span>
+                <span className="text-sm text-[#7f8a9c]">x ${INTEGRATIONS_COST.toLocaleString()} c/u</span>
               </div>
             </div>
             <div className="flex gap-3 pt-4">

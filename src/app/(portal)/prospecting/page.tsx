@@ -83,7 +83,7 @@ const RADIUS_OPTIONS = [
 ]
 
 function Stars({ rating }: { rating: number | null }) {
-  if (!rating) return <span className="text-xs text-gray-500">Sin calificación</span>
+  if (!rating) return <span className="text-xs text-[#7f8a9c]">Sin calificación</span>
   return (
     <div className="flex items-center gap-1">
       <Star size={11} className="text-yellow-400 fill-yellow-400" />
@@ -267,7 +267,7 @@ export default function ProspectingPage() {
                 key={n}
                 onClick={() => setMaxResults(n)}
                 className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
-                  maxResults === n ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'border-gray-700 text-gray-500 hover:text-gray-300'
+                  maxResults === n ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'border-gray-700 text-[#7f8a9c] hover:text-gray-300'
                 }`}
               >
                 {n}
@@ -298,7 +298,7 @@ export default function ProspectingPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-white">{places.length} resultados</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Búsqueda: "{query}"</p>
+              <p className="text-xs text-[#7f8a9c] mt-0.5">Búsqueda: "{query}"</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -334,7 +334,7 @@ export default function ProspectingPage() {
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-start gap-2">
                     <div className="mt-0.5 flex-shrink-0 text-blue-400">
-                      {selected.has(place.placeId) ? <CheckSquare size={16} /> : <Square size={16} className="text-gray-600" />}
+                      {selected.has(place.placeId) ? <CheckSquare size={16} /> : <Square size={16} className="text-[#7f8a9c]" />}
                     </div>
                     <h3 className="text-sm font-semibold text-white leading-tight">{place.name}</h3>
                   </div>
@@ -344,19 +344,19 @@ export default function ProspectingPage() {
                 <div className="ml-6 space-y-1.5">
                   {place.address && (
                     <div className="flex items-start gap-1.5 text-xs text-gray-400">
-                      <MapPin size={11} className="mt-0.5 flex-shrink-0 text-gray-600" />
+                      <MapPin size={11} className="mt-0.5 flex-shrink-0 text-[#7f8a9c]" />
                       <span className="line-clamp-2">{place.address}</span>
                     </div>
                   )}
                   {place.phone && (
                     <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                      <Phone size={11} className="text-gray-600" />
+                      <Phone size={11} className="text-[#7f8a9c]" />
                       <span>{place.phone}</span>
                     </div>
                   )}
                   {place.website && (
                     <div className="flex items-center gap-1.5 text-xs">
-                      <Globe size={11} className="text-gray-600" />
+                      <Globe size={11} className="text-[#7f8a9c]" />
                       <a
                         href={place.website}
                         target="_blank"
@@ -371,7 +371,7 @@ export default function ProspectingPage() {
                   {place.types.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-1">
                       {place.types.slice(0, 3).map(t => (
-                        <span key={t} className="text-[10px] bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">
+                        <span key={t} className="text-[11px] bg-gray-800 text-[#7f8a9c] px-2 py-0.5 rounded-full">
                           {t.replace(/_/g, ' ')}
                         </span>
                       ))}
@@ -380,7 +380,7 @@ export default function ProspectingPage() {
                 </div>
 
                 {selected.has(place.placeId) && (
-                  <div className="ml-6 mt-2 flex items-center gap-1 text-[10px] text-blue-400">
+                  <div className="ml-6 mt-2 flex items-center gap-1 text-[11px] text-blue-400">
                     <ArrowRight size={10} /> Se convertirá en lead
                   </div>
                 )}
@@ -391,7 +391,7 @@ export default function ProspectingPage() {
       )}
 
       {!loading && places.length === 0 && query && (
-        <div className="text-center py-16 text-gray-600">
+        <div className="text-center py-16 text-[#7f8a9c]">
           <Search size={32} className="mx-auto mb-3 opacity-20" />
           <p className="text-sm">Sin resultados para "{query}"</p>
           <p className="text-xs mt-1">Prueba con otro término o amplía el radio</p>

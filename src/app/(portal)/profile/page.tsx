@@ -200,7 +200,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-white">{u.name}</p>
                       {u.role === 'SUPERADMIN' && (
-                        <span className="text-[10px] bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-1.5 py-0.5 rounded-full">★ Super Admin</span>
+                        <span className="text-[11px] bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-1.5 py-0.5 rounded-full">★ Super Admin</span>
                       )}
                     </div>
                     <p className="text-xs text-gray-400">
@@ -213,7 +213,7 @@ export default function ProfilePage() {
               <div className="flex gap-1">
                 {u.role === 'SUPERADMIN' ? (
                   // SUPERADMIN no se puede editar ni eliminar desde aquí
-                  <span className="text-[10px] text-gray-600 px-3 py-1">Protegido</span>
+                  <span className="text-[11px] text-gray-600 px-3 py-1">Protegido</span>
                 ) : editingUser === u.id ? (
                   <>
                     <button onClick={async () => {

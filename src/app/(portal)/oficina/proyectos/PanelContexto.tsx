@@ -8,8 +8,8 @@ const COLOR: Record<string, { punto: string; txt: string; label: string }> = {
   incluida: { punto: '#34d399', txt: 'text-emerald-300', label: 'Incluida' },
   recortada: { punto: '#fbbf24', txt: 'text-amber-300', label: 'Recortada' },
   omitida: { punto: '#f87171', txt: 'text-red-300', label: 'Omitida' },
-  vacia: { punto: '#4b5563', txt: 'text-gray-500', label: 'Vacía' },
-  excluida: { punto: '#4b5563', txt: 'text-gray-500', label: 'Excluida' },
+  vacia: { punto: '#4b5563', txt: 'text-[#7f8a9c]', label: 'Vacía' },
+  excluida: { punto: '#4b5563', txt: 'text-[#7f8a9c]', label: 'Excluida' },
 }
 
 // «Contexto exacto»: muestra qué fuentes recibiría la IA AHORA en esta sesión (leídas vivas de la
@@ -56,7 +56,7 @@ export default function PanelContexto({ proyectoId, sesion, onSesion }: {
       </div>
 
       <div>
-        <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+        <div className="flex items-center justify-between text-[11px] text-[#7f8a9c] mb-1">
           <span>{total.toLocaleString('es-CO')} de {presupuesto.toLocaleString('es-CO')} caracteres</span>
           <button onClick={() => void cargar()} className="hover:text-gray-200 flex items-center gap-1"><RefreshCw size={10} className={cargando ? 'animate-spin' : ''} /> Actualizar</button>
         </div>
@@ -66,7 +66,7 @@ export default function PanelContexto({ proyectoId, sesion, onSesion }: {
       </div>
 
       {error && <p className="text-[11px] text-red-400">{error}</p>}
-      {cargando && fuentes.length === 0 && <div className="flex justify-center py-6 text-gray-500"><Loader2 size={16} className="animate-spin" /></div>}
+      {cargando && fuentes.length === 0 && <div className="flex justify-center py-6 text-[#7f8a9c]"><Loader2 size={16} className="animate-spin" /></div>}
 
       <ul className="space-y-1">
         {fuentes.map(f => {
@@ -77,10 +77,10 @@ export default function PanelContexto({ proyectoId, sesion, onSesion }: {
               <span className="mt-1.5 w-2 h-2 rounded-full flex-shrink-0" style={{ background: c.punto }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={`text-[11px] font-medium truncate ${excl || f.estado === 'vacia' ? 'text-gray-500' : 'text-gray-200'}`}>{f.etiqueta}</span>
-                  <span className={`text-[9px] ${c.txt}`}>{c.label}</span>
+                  <span className={`text-[11px] font-medium truncate ${excl || f.estado === 'vacia' ? 'text-[#7f8a9c]' : 'text-gray-200'}`}>{f.etiqueta}</span>
+                  <span className={`text-[10px] ${c.txt}`}>{c.label}</span>
                 </div>
-                <p className="text-[10px] text-gray-600">
+                <p className="text-[11px] text-[#7f8a9c]">
                   {f.chars > 0 ? `${f.chars.toLocaleString('es-CO')} car.` : '—'}
                   {f.actualizado ? ` · act. ${hace(f.actualizado)}` : ''}
                   {f.nota ? ` · ${f.nota}` : ''}
@@ -88,7 +88,7 @@ export default function PanelContexto({ proyectoId, sesion, onSesion }: {
               </div>
               {sesion && f.clave !== 'ficha' && (
                 <button onClick={() => void alternar(f.clave)} disabled={guardando === f.clave} title={excl ? 'Incluir en el contexto' : 'Excluir de esta sesión'}
-                  className="flex-shrink-0 text-gray-500 hover:text-gray-200 mt-0.5 disabled:opacity-40">
+                  className="flex-shrink-0 text-[#7f8a9c] hover:text-gray-200 mt-0.5 disabled:opacity-40">
                   {guardando === f.clave ? <Loader2 size={12} className="animate-spin" /> : excl ? <EyeOff size={13} /> : <Eye size={13} />}
                 </button>)}
             </li>)

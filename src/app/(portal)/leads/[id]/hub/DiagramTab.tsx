@@ -451,7 +451,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
     : false
 
   if (!loaded) return (
-    <div className="flex items-center justify-center h-64 text-gray-500 gap-2">
+    <div className="flex items-center justify-center h-64 text-[#7f8a9c] gap-2">
       <Loader2 size={18} className="animate-spin" /> Cargando...
     </div>
   )
@@ -472,7 +472,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
             {/* Info tooltip */}
             <div className="relative group shrink-0">
               <button aria-label="Atajos del diagrama"
-                className="w-6 h-6 flex items-center justify-center rounded-full text-gray-600 hover:text-gray-300 hover:bg-gray-800 transition-all">
+                className="w-6 h-6 flex items-center justify-center rounded-full text-[#7f8a9c] hover:text-gray-300 hover:bg-gray-800 transition-all">
                 <Info size={13} />
               </button>
               <div className="absolute left-1/2 -translate-x-1/2 top-8 z-20 hidden group-hover:flex flex-col gap-1
@@ -546,7 +546,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               { icon: <Maximize2 size={12} />, fn: fitView, label: 'Ajustar vista' },
             ].map((b, i) => (
               <button key={i} onClick={b.fn} aria-label={b.label}
-                className="w-7 h-7 flex items-center justify-center bg-gray-900/80 border border-gray-800 rounded-lg text-gray-500 hover:text-white hover:border-gray-600 transition-all">
+                className="w-7 h-7 flex items-center justify-center bg-gray-900/80 border border-gray-800 rounded-lg text-[#7f8a9c] hover:text-white hover:border-gray-600 transition-all">
                 {b.icon}
               </button>
             ))}
@@ -579,7 +579,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           {!generating && diag.nodes.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
               <p className="text-sm text-gray-400">Sin diagrama</p>
-              <p className="text-xs text-gray-500">Generá o hacé doble click para agregar componentes</p>
+              <p className="text-xs text-[#7f8a9c]">Generá o hacé doble click para agregar componentes</p>
             </div>
           )}
 
@@ -764,24 +764,24 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           <div className="w-56 shrink-0 bg-gray-900 rounded-2xl border border-gray-800 p-4 flex flex-col gap-3 self-start">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-orange-400 truncate">{selNode.label}</span>
-              <button onClick={() => setSelected(null)} aria-label="Cerrar panel" className="text-gray-600 hover:text-gray-300"><X size={12} /></button>
+              <button onClick={() => setSelected(null)} aria-label="Cerrar panel" className="text-[#7f8a9c] hover:text-gray-300"><X size={12} /></button>
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="node-label" className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Nombre</label>
+              <label htmlFor="node-label" className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium">Nombre</label>
               <input id="node-label" value={selNode.label}
                 onChange={e => setDiag(p => ({ ...p, nodes: p.nodes.map(n => n.id === selNode.id ? { ...n, label: e.target.value } : n) }))}
                 className="bg-gray-800 text-white text-sm px-2.5 py-1.5 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 w-full"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="node-desc" className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Descripción</label>
+              <label htmlFor="node-desc" className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium">Descripción</label>
               <input id="node-desc" value={selNode.description ?? ''}
                 onChange={e => setDiag(p => ({ ...p, nodes: p.nodes.map(n => n.id === selNode.id ? { ...n, description: e.target.value } : n) }))}
                 className="bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 w-full"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="node-type" className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Tipo</label>
+              <label htmlFor="node-type" className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium">Tipo</label>
               <select id="node-type" value={selNode.type ?? ''}
                 onChange={e => setDiag(p => ({ ...p, nodes: p.nodes.map(n => n.id === selNode.id ? { ...n, type: e.target.value || undefined } : n) }))}
                 className="bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg border border-gray-700/50 focus:outline-none focus:border-orange-500/50 w-full">
@@ -798,18 +798,18 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               const candidatos = diag.nodes.filter(n => n.id !== selNode.id && !conectados.has(n.id))
               return (
                 <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-800">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Conexiones</p>
-                  {edges.length === 0 && <p className="text-[11px] text-gray-600 italic">Sin conexiones.</p>}
+                  <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wider font-medium">Conexiones</p>
+                  {edges.length === 0 && <p className="text-[11px] text-[#7f8a9c] italic">Sin conexiones.</p>}
                   {edges.map(edge => {
                     const other = diag.nodes.find(n => n.id === (edge.from === selNode.id ? edge.to : edge.from))
                     return (
                       <div key={edge.id} className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                        <span className="text-gray-600">—</span>
+                        <span className="text-[#7f8a9c]">—</span>
                         <span className="flex-1 truncate">{other?.label}</span>
                         <button onClick={() => removeEdge(edge.id)}
                           aria-label={`Eliminar conexión con ${other?.label}`}
                           title="Eliminar conexión"
-                          className="w-5 h-5 flex items-center justify-center rounded text-gray-500 hover:text-red-400 hover:bg-red-500/10"><X size={11} /></button>
+                          className="w-5 h-5 flex items-center justify-center rounded text-[#7f8a9c] hover:text-red-400 hover:bg-red-500/10"><X size={11} /></button>
                       </div>
                     )
                   })}
@@ -840,7 +840,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           <div key={t} className="flex items-center gap-1.5 text-xs text-gray-400">
             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: TYPE_COLOR[t] }} />
             <span className="font-medium" style={{ color: TYPE_COLOR[t] }}>{TYPE_ABBR[t]}</span>
-            <span className="text-gray-500">{t}</span>
+            <span className="text-[#7f8a9c]">{t}</span>
           </div>
         ))}
       </div>
@@ -854,7 +854,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
           <div className={`fixed top-0 right-0 z-[61] h-full w-full sm:w-[420px] bg-gray-950 border-l border-gray-800 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${chatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-gray-800">
               <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-orange-400 font-semibold">Asistente IA · Diagrama</p>
+                <p className="text-[11px] uppercase tracking-wide text-orange-400 font-semibold">Asistente IA · Diagrama</p>
                 <h3 className="text-base font-bold text-white truncate">{diag.title || 'Debatir el diagrama'}</h3>
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -862,7 +862,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                   className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] text-gray-400 hover:text-white hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent">
                   <Undo2 size={13} /> Deshacer
                 </button>
-                <button onClick={() => setChatOpen(false)} aria-label="Cerrar chat" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-gray-800"><X size={16} /></button>
+                <button onClick={() => setChatOpen(false)} aria-label="Cerrar chat" className="w-8 h-8 flex items-center justify-center rounded-lg text-[#7f8a9c] hover:text-white hover:bg-gray-800"><X size={16} /></button>
               </div>
             </div>
 
@@ -889,7 +889,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                   </div>
                   {m.propuesta && (
                     <div className="mt-2 max-w-[92%] rounded-xl border border-gray-700 bg-gray-900/60 p-3">
-                      <p className="text-[10px] uppercase tracking-wide text-gray-500 font-semibold mb-1">Propuesta de cambio</p>
+                      <p className="text-[11px] uppercase tracking-wide text-[#7f8a9c] font-semibold mb-1">Propuesta de cambio</p>
                       <p className="text-xs text-gray-200 mb-1.5">{m.propuesta.descripcion}</p>
                       <ul className="text-[11px] text-gray-400 space-y-0.5 mb-2">
                         {resumenPropuesta(m.propuesta, diag.nodes).map((l, k) => (
@@ -900,10 +900,10 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
                         <div className="flex items-center gap-2">
                           <button onClick={() => aplicarMsg(i)} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-green-600 hover:bg-green-500 text-white">Aplicar</button>
                           <button onClick={() => descartarMsg(i)} className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-gray-700 text-gray-300 hover:bg-gray-800">Descartar</button>
-                          <span className="text-[10px] text-gray-500">Previsualizada en el lienzo</span>
+                          <span className="text-[11px] text-[#7f8a9c]">Previsualizada en el lienzo</span>
                         </div>
                       ) : (
-                        <span className={`text-[11px] font-medium ${m.estado === 'aplicada' ? 'text-green-400' : 'text-gray-500'}`}>
+                        <span className={`text-[11px] font-medium ${m.estado === 'aplicada' ? 'text-green-400' : 'text-[#7f8a9c]'}`}>
                           {m.estado === 'aplicada' ? '✓ Aplicada al diagrama (recordá Guardar)' : 'Descartada'}
                         </span>
                       )}
@@ -913,7 +913,7 @@ export default function DiagramTab({ leadId }: { leadId: string }) {
               ))}
 
               {chatLoading && (
-                <div className="flex items-center gap-2 text-xs text-gray-500"><Loader2 size={13} className="animate-spin" /> Pensando…</div>
+                <div className="flex items-center gap-2 text-xs text-[#7f8a9c]"><Loader2 size={13} className="animate-spin" /> Pensando…</div>
               )}
               {chatError && (
                 <div className="flex items-start gap-2 bg-red-950/40 border border-red-900/50 text-red-400 text-xs px-3 py-2 rounded-lg">

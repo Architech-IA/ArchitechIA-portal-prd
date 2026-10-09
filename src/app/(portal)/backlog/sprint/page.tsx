@@ -75,8 +75,8 @@ function CustomSelect({ value, onChange, options, placeholder }: { value: string
   return (
     <div ref={ref} className="relative w-full">
       <button ref={btnRef} type="button" onClick={handleOpen} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-white focus:outline-none transition-all" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
-        <span className={`flex-1 min-w-0 truncate text-left text-sm ${selected ? 'text-white' : 'text-gray-500'}`}>{selected ? selected.label : (placeholder ?? 'Seleccionar...')}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
+        <span className={`flex-1 min-w-0 truncate text-left text-sm ${selected ? 'text-white' : 'text-[#7f8a9c]'}`}>{selected ? selected.label : (placeholder ?? 'Seleccionar...')}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f8a9c] flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && typeof window !== 'undefined' && (
         <div style={{ position: 'fixed', bottom: pos.bottom, left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '300px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 -8px 40px rgba(0,0,0,0.7)' }}>
@@ -112,8 +112,8 @@ function AreaMultiSelect({ selected, onChange, areas, placeholder }: { selected:
   return (
     <div ref={ref} className="relative w-full">
       <button ref={btnRef} type="button" onClick={handleOpen} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm focus:outline-none transition-all" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
-        <span className={`flex-1 min-w-0 truncate text-left text-sm ${selected.length ? 'text-white' : 'text-gray-500'}`}>{label}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
+        <span className={`flex-1 min-w-0 truncate text-left text-sm ${selected.length ? 'text-white' : 'text-[#7f8a9c]'}`}>{label}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f8a9c] flex-shrink-0 ml-2 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && typeof window !== 'undefined' && (
         <div style={{ position: 'fixed', bottom: pos.bottom, left: pos.left, width: pos.width, background: 'rgba(12,14,28,0.98)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', maxHeight: '300px', overflowY: 'auto', zIndex: 9999, borderRadius: '10px', boxShadow: '0 -8px 40px rgba(0,0,0,0.7)' }}>
@@ -174,7 +174,7 @@ export default function SprintPage() {
   useEffect(() => {
     setActions(
       <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all" style={{ color: '#6b7280' }}
+        <Link href="/backlog" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(249,115,22,0.08)'; (e.currentTarget as HTMLElement).style.color = '#d1d5db' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           Backlog
@@ -184,18 +184,18 @@ export default function SprintPage() {
           <Rocket size={10}/> Sprint
         </Link>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/epics" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(29,147,117,0.08)'; (e.currentTarget as HTMLElement).style.color = '#1D9375' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Layers size={10}/> Épicas
         </Link>
-        <Link href="/backlog/solution" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/solution" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(127,119,221,0.08)'; (e.currentTarget as HTMLElement).style.color = '#7F77DD' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <MapIcon size={10}/> Solution
         </Link>
         <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }}/>
-        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#6b7280' }}
+        <Link href="/backlog/control" className="px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1" style={{ color: '#7f8a9c' }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)'; (e.currentTarget as HTMLElement).style.color = '#3b82f6' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#6b7280' }}>
           <Play size={10}/> Sala de Control
@@ -304,15 +304,15 @@ export default function SprintPage() {
                       <div className="flex items-center gap-3">
                         <span className="text-[13px] font-mono font-bold tracking-wider" style={{ color: '#10b981' }}>{activeSprint.sprintCode ?? 'SP-???'}</span>
                         {activeSprint.epic && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold border" style={{ color: activeSprint.epic.color, background: `${activeSprint.epic.color}15`, borderColor: `${activeSprint.epic.color}30` }}>
+                          <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold border" style={{ color: activeSprint.epic.color, background: `${activeSprint.epic.color}15`, borderColor: `${activeSprint.epic.color}30` }}>
                             {activeSprint.epic.name}
                           </span>
                         )}
                         <span className="w-px h-3" style={{ background: 'rgba(255,255,255,0.12)' }}/>
-                        <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: activeSprint.status === 'ACTIVE' ? 'rgba(16,185,129,0.2)' : activeSprint.status === 'PLANNED' ? 'rgba(251,191,36,0.2)' : activeSprint.status === 'DONE' ? 'rgba(99,102,241,0.2)' : 'rgba(107,114,128,0.2)', color: activeSprint.status === 'ACTIVE' ? '#10b981' : activeSprint.status === 'PLANNED' ? '#fbbf24' : activeSprint.status === 'DONE' ? '#818cf8' : '#9ca3af' }}>
+                        <span className="text-[11px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: activeSprint.status === 'ACTIVE' ? 'rgba(16,185,129,0.2)' : activeSprint.status === 'PLANNED' ? 'rgba(251,191,36,0.2)' : activeSprint.status === 'DONE' ? 'rgba(99,102,241,0.2)' : 'rgba(107,114,128,0.2)', color: activeSprint.status === 'ACTIVE' ? '#10b981' : activeSprint.status === 'PLANNED' ? '#fbbf24' : activeSprint.status === 'DONE' ? '#818cf8' : '#9ca3af' }}>
                           {activeSprint.status === 'ACTIVE' ? 'Activo' : activeSprint.status === 'PLANNED' ? 'Planificado' : activeSprint.status === 'DONE' ? 'Completado' : 'Cerrado'}
                         </span>
-                        {fmtDate(activeSprint.startDate) && <span className="text-[11px] text-gray-600">{fmtDate(activeSprint.startDate)} → {fmtDate(activeSprint.endDate) ?? '?'}</span>}
+                        {fmtDate(activeSprint.startDate) && <span className="text-[11px] text-[#7f8a9c]">{fmtDate(activeSprint.startDate)} → {fmtDate(activeSprint.endDate) ?? '?'}</span>}
                       </div>
                       <div className="flex items-center gap-1.5">
                         {activeSprint.status === 'PLANNED' && (
@@ -321,13 +321,13 @@ export default function SprintPage() {
                         {activeSprint.status === 'ACTIVE' && (
                           <button onClick={() => { setClosingSprintId(activeSprint.id); setCloseResultado('') }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', color: '#10b981' }}>✓ Completar Sprint</button>
                         )}
-                        <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '', solucionId: activeSprint.solucion?.id ?? '', responsibleId: activeSprint.responsibleId ?? '', responsibleName: activeSprint.responsibleName ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#6b7280' }}>✎ Editar</button>
+                        <button onClick={() => { setSprintEditForm({ name: activeSprint.name, goal: activeSprint.goal ?? '', startDate: activeSprint.startDate ? activeSprint.startDate.slice(0,10) : '', endDate: activeSprint.endDate ? activeSprint.endDate.slice(0,10) : '', epicId: activeSprint.epicId ?? '', solucionId: activeSprint.solucion?.id ?? '', responsibleId: activeSprint.responsibleId ?? '', responsibleName: activeSprint.responsibleName ?? '' }); setEditingSprint(activeSprint) }} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', color: '#7f8a9c' }}>✎ Editar</button>
                       </div>
                     </div>
                     {/* Sprint body */}
                     <div className="px-5 py-4">
                       <h2 className="text-base font-bold text-white leading-snug mb-1">{activeSprint.name}</h2>
-                      {activeSprint.goal && <p className="text-[12px] text-gray-500 leading-relaxed mb-3" style={{ whiteSpace: 'pre-line', maxHeight: '60px', overflow: 'hidden' }}>{activeSprint.goal}</p>}
+                      {activeSprint.goal && <p className="text-[12px] text-[#7f8a9c] leading-relaxed mb-3" style={{ whiteSpace: 'pre-line', maxHeight: '60px', overflow: 'hidden' }}>{activeSprint.goal}</p>}
                       {/* Progress */}
                       <div className="flex items-center gap-3 mb-4">
                         <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
@@ -342,7 +342,7 @@ export default function SprintPage() {
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: !expandedSprints[activeSprint.id] ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
                             Actividades ({sprintItems.length})
                           </button>
-                          <button onClick={() => setShowAddItems(v => ({ ...v, [activeSprint.id]: !v[activeSprint.id] }))} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all" style={{ background: showAddItems[activeSprint.id] ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)', border: showAddItems[activeSprint.id] ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.1)', color: showAddItems[activeSprint.id] ? '#f97316' : '#9ca3af' }}>
+                          <button onClick={() => setShowAddItems(v => ({ ...v, [activeSprint.id]: !v[activeSprint.id] }))} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all" style={{ background: showAddItems[activeSprint.id] ? 'rgba(249,115,22,0.15)' : 'rgba(255,255,255,0.05)', border: showAddItems[activeSprint.id] ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.1)', color: showAddItems[activeSprint.id] ? '#f97316' : '#9ca3af' }}>
                             <Plus size={10}/> Gestionar
                           </button>
                         </div>
@@ -363,16 +363,16 @@ export default function SprintPage() {
                                 <input value={sprintQuickAdd.title} onChange={e => setSprintQuickAdd(f => ({ ...f, title: e.target.value }))}
                                   onKeyDown={e => { if (e.key !== 'Enter' || !sprintQuickAdd.title.trim()) return; setPendingSprintId(activeSprint.id); setForm({ ...EMPTY_FORM, title: sprintQuickAdd.title, type: sprintQuickAdd.type, priority: sprintQuickAdd.priority, assigneeName: userName }); setEditItem(null); setSprintQuickAdd(f => ({ ...f, title: '' })); setShowModal(true) }}
                                   placeholder="Nueva actividad..." className="flex-1 text-[12px] text-white placeholder-gray-600 focus:outline-none bg-transparent min-w-0"/>
-                                <select value={sprintQuickAdd.type} onChange={e => setSprintQuickAdd(f => ({ ...f, type: e.target.value }))} className="text-[10px] rounded px-1.5 py-1 text-gray-400 focus:outline-none flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                <select value={sprintQuickAdd.type} onChange={e => setSprintQuickAdd(f => ({ ...f, type: e.target.value }))} className="text-[11px] rounded px-1.5 py-1 text-gray-400 focus:outline-none flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                                   {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
                                 </select>
-                                <button onClick={() => { if (!sprintQuickAdd.title.trim()) return; setPendingSprintId(activeSprint.id); setForm({ ...EMPTY_FORM, title: sprintQuickAdd.title, type: sprintQuickAdd.type, priority: sprintQuickAdd.priority, assigneeName: userName }); setEditItem(null); setSprintQuickAdd(f => ({ ...f, title: '' })); setShowModal(true) }} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white flex-shrink-0" style={{ background: 'rgba(249,115,22,0.3)', border: '1px solid rgba(249,115,22,0.5)' }}>
+                                <button onClick={() => { if (!sprintQuickAdd.title.trim()) return; setPendingSprintId(activeSprint.id); setForm({ ...EMPTY_FORM, title: sprintQuickAdd.title, type: sprintQuickAdd.type, priority: sprintQuickAdd.priority, assigneeName: userName }); setEditItem(null); setSprintQuickAdd(f => ({ ...f, title: '' })); setShowModal(true) }} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white flex-shrink-0" style={{ background: 'rgba(249,115,22,0.3)', border: '1px solid rgba(249,115,22,0.5)' }}>
                                   <Plus size={10}/> Agregar
                                 </button>
                               </div>
                               {availableItems.length > 0 && (
                                 <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
-                                  <div className="px-3 py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}><p className="text-[10px] text-gray-600 uppercase tracking-wide font-semibold">Agregar del backlog</p></div>
+                                  <div className="px-3 py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}><p className="text-[11px] text-[#7f8a9c] uppercase tracking-wide font-semibold">Agregar del backlog</p></div>
                                   {availableItems.map(item => (
                                     <button key={item.id} onClick={() => addToSprint(item)} className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-white/[0.04]" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                       <Plus size={9} className="text-emerald-400 flex-shrink-0"/>
@@ -383,7 +383,7 @@ export default function SprintPage() {
                               )}
                               {sprintItems.length > 0 && (
                                 <div style={{ maxHeight: '140px', overflowY: 'auto' }}>
-                                  <div className="px-3 py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}><p className="text-[10px] text-gray-600 uppercase tracking-wide font-semibold">Quitar del sprint</p></div>
+                                  <div className="px-3 py-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}><p className="text-[11px] text-[#7f8a9c] uppercase tracking-wide font-semibold">Quitar del sprint</p></div>
                                   {sprintItems.map(item => (
                                     <button key={item.id} onClick={() => removeFromSprint(item)} className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-white/[0.04]" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                       <X size={9} className="text-red-400 flex-shrink-0"/>
@@ -422,18 +422,18 @@ export default function SprintPage() {
                           return (
                             <>
                               <div className="flex items-center justify-between flex-shrink-0 mb-2">
-                                <span className="text-[11px] text-gray-600">{sprintItems.length} item{sprintItems.length !== 1 ? 's' : ''} en este sprint</span>
+                                <span className="text-[11px] text-[#7f8a9c]">{sprintItems.length} item{sprintItems.length !== 1 ? 's' : ''} en este sprint</span>
                                 {hasReordered && (
                                   <div className="flex items-center gap-1.5">
-                                    <button onClick={() => setDragOrder(prev => { const n = { ...prev }; delete n[activeSprint.id]; return n })} className="text-[10px] px-2 py-1 rounded-lg text-gray-500 hover:text-gray-300 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>Cancelar</button>
-                                    <button onClick={confirmOrder} disabled={savingOrder[activeSprint.id]} className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg font-semibold transition-all disabled:opacity-50" style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981' }}>
+                                    <button onClick={() => setDragOrder(prev => { const n = { ...prev }; delete n[activeSprint.id]; return n })} className="text-[11px] px-2 py-1 rounded-lg text-[#7f8a9c] hover:text-gray-300 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>Cancelar</button>
+                                    <button onClick={confirmOrder} disabled={savingOrder[activeSprint.id]} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-all disabled:opacity-50" style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981' }}>
                                       {savingOrder[activeSprint.id] ? <Loader2 size={9} className="animate-spin"/> : '↕'} Confirmar orden
                                     </button>
                                   </div>
                                 )}
                               </div>
                               {expandedSprints[activeSprint.id] && (orderedItems.length === 0 ? (
-                                <p className="text-[11px] text-gray-700 py-1">Sin actividades — abrí Gestionar para agregar.</p>
+                                <p className="text-[11px] text-[#7f8a9c] py-1">Sin actividades — abrí Gestionar para agregar.</p>
                               ) : (
                                 <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
                                   {orderedItems.map((item, idx) => {
@@ -466,17 +466,17 @@ export default function SprintPage() {
                                         style={{ borderBottom: idx < orderedItems.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', cursor: 'grab' }}
                                         onClick={() => setViewItem(item)}
                                       >
-                                        <span className="text-gray-600 flex-shrink-0 select-none" style={{ fontSize: '10px', cursor: 'grab' }}>⠿</span>
+                                        <span className="text-[#7f8a9c] flex-shrink-0 select-none" style={{ fontSize: '11px', cursor: 'grab' }}>⠿</span>
                                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusMeta?.color ?? 'bg-gray-500'}`}/>
-                                        {item.taskCode && <span className="text-[9px] font-bold flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
+                                        {item.taskCode && <span className="text-[10px] font-bold flex-shrink-0 px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>{item.taskCode}</span>}
                                         <span className="text-[12px] text-gray-200 flex-1 truncate">{item.title}</span>
                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                          {TypeIcon && <span className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium ${typeMeta?.color}`}><TypeIcon size={9}/></span>}
+                                          {TypeIcon && <span className={`flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded font-medium ${typeMeta?.color}`}><TypeIcon size={9}/></span>}
                                           <PriorityDot priority={item.priority}/>
-                                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: item.status === 'DONE' ? 'rgba(16,185,129,0.15)' : item.status === 'IN_PROGRESS' ? 'rgba(59,130,246,0.15)' : item.status === 'BLOCKED' ? 'rgba(239,68,68,0.15)' : 'rgba(107,114,128,0.15)', color: item.status === 'DONE' ? '#10b981' : item.status === 'IN_PROGRESS' ? '#60a5fa' : item.status === 'BLOCKED' ? '#f87171' : '#9ca3af' }}>
+                                          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded" style={{ background: item.status === 'DONE' ? 'rgba(16,185,129,0.15)' : item.status === 'IN_PROGRESS' ? 'rgba(59,130,246,0.15)' : item.status === 'BLOCKED' ? 'rgba(239,68,68,0.15)' : 'rgba(107,114,128,0.15)', color: item.status === 'DONE' ? '#10b981' : item.status === 'IN_PROGRESS' ? '#60a5fa' : item.status === 'BLOCKED' ? '#f87171' : '#9ca3af' }}>
                                             {statusMeta?.label ?? item.status}
                                           </span>
-                                          {item.assigneeName && <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-black flex-shrink-0" style={{ background: 'linear-gradient(135deg,#f97316,#fb923c)' }} title={item.assigneeName}>{item.assigneeName.split(' ').map((w: string) => w[0]).slice(0,2).join('')}</div>}
+                                          {item.assigneeName && <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-black flex-shrink-0" style={{ background: 'linear-gradient(135deg,#f97316,#fb923c)' }} title={item.assigneeName}>{item.assigneeName.split(' ').map((w: string) => w[0]).slice(0,2).join('')}</div>}
                                         </div>
                                       </div>
                                     )
@@ -521,7 +521,7 @@ export default function SprintPage() {
             <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c44)' }}/>
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <h2 className="text-base font-semibold text-white">Nueva tarea</h2>
-              <button onClick={() => setShowModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
+              <button onClick={() => setShowModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7f8a9c] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
             </div>
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
@@ -566,9 +566,9 @@ export default function SprintPage() {
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)' }}><Rocket size={14} className="text-emerald-400"/></div>
-                <div><h2 className="text-sm font-semibold text-white">Editar Sprint</h2><p className="text-[11px] text-gray-500 mt-0.5">Modifica los detalles del sprint</p></div>
+                <div><h2 className="text-sm font-semibold text-white">Editar Sprint</h2><p className="text-[11px] text-[#7f8a9c] mt-0.5">Modifica los detalles del sprint</p></div>
               </div>
-              <button onClick={() => setEditingSprint(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
+              <button onClick={() => setEditingSprint(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7f8a9c] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
             </div>
             <div className="px-6 py-5 flex flex-col gap-4 overflow-visible">
               <div className="grid grid-cols-2 gap-3">
@@ -635,9 +635,9 @@ export default function SprintPage() {
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)' }}><Rocket size={15} className="text-emerald-400"/></div>
-                <div><h2 className="text-sm font-semibold text-white">Nuevo Sprint</h2><p className="text-[11px] text-gray-500 mt-0.5">Agrupa items del backlog en un ciclo</p></div>
+                <div><h2 className="text-sm font-semibold text-white">Nuevo Sprint</h2><p className="text-[11px] text-[#7f8a9c] mt-0.5">Agrupa items del backlog en un ciclo</p></div>
               </div>
-              <button onClick={() => setShowSprintModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
+              <button onClick={() => setShowSprintModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7f8a9c] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
             </div>
             <div className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
@@ -723,11 +723,11 @@ export default function SprintPage() {
                     <CheckSquare size={16} className="text-emerald-400"/>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-mono">{sp.sprintCode}</p>
+                    <p className="text-xs text-[#7f8a9c] font-mono">{sp.sprintCode}</p>
                     <h3 className="text-sm font-bold text-white leading-tight">{sp.name}</h3>
                   </div>
                 </div>
-                <button onClick={() => setClosingSprintId(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
+                <button onClick={() => setClosingSprintId(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#7f8a9c] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.05)' }}><X size={14}/></button>
               </div>
               <div className="px-6 py-5 flex flex-col gap-4">
                 {unfinished.length > 0 && (
@@ -736,7 +736,7 @@ export default function SprintPage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">Resultado del sprint <span className="text-gray-600 font-normal">(opcional)</span></label>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">Resultado del sprint <span className="text-[#7f8a9c] font-normal">(opcional)</span></label>
                   <textarea
                     value={closeResultado}
                     onChange={e => setCloseResultado(e.target.value)}

@@ -100,7 +100,7 @@ function DatePicker({ value, onChange, required: req }: { value: string; onChang
     <div className="relative" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
       <button type="button" onClick={() => setOpen((o: boolean) => !o)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-all" style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}>
         <svg className="w-4 h-4 flex-shrink-0 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-        <span className={display ? 'text-white' : 'text-gray-500'}>{display || 'Seleccionar fecha...'}</span>
+        <span className={display ? 'text-white' : 'text-[#7f8a9c]'}>{display || 'Seleccionar fecha...'}</span>
       </button>
       {open && (
         <div className="absolute z-50 mt-2 left-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', minWidth: '280px', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}>
@@ -132,7 +132,7 @@ function DatePicker({ value, onChange, required: req }: { value: string; onChang
             })}
           </div>
           <div className="px-4 py-2.5 border-t flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            <button type="button" onClick={() => { onChange(''); setOpen(false); }} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Borrar</button>
+            <button type="button" onClick={() => { onChange(''); setOpen(false); }} className="text-xs text-[#7f8a9c] hover:text-red-400 transition-colors">Borrar</button>
             <button type="button" onClick={() => { onChange(todayStr); setVm(today.getMonth()); setVy(today.getFullYear()); setOpen(false); }} className="text-xs font-medium text-orange-400 hover:text-orange-300 transition-colors">Hoy</button>
           </div>
         </div>
@@ -176,7 +176,7 @@ function TimePicker({ hour, minute, onHourChange, onMinuteChange, showLabel = tr
         style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', color: '#fff', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}
       >
         {value}
-        <svg className="w-3 h-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+        <svg className="w-3 h-3 text-[#7f8a9c] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
       </button>
       {open && (
         <div className="absolute z-50 mt-1 left-0 rounded-xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 16px 40px rgba(0,0,0,0.7)', width: '72px', maxHeight: '200px', overflowY: 'auto' }}>
@@ -202,9 +202,9 @@ function TimePicker({ hour, minute, onHourChange, onMinuteChange, showLabel = tr
   return (
     <div className="flex items-center gap-1.5">
       <DropDown open={openH} setOpen={setOpenH} value={hour} options={HOURS} onChange={onHourChange} />
-      <span className="text-gray-500 font-bold text-base select-none">:</span>
+      <span className="text-[#7f8a9c] font-bold text-base select-none">:</span>
       <DropDown open={openM} setOpen={setOpenM} value={minute} options={MINS} onChange={onMinuteChange} />
-      {showLabel && <span className="text-xs text-gray-500 ml-1">hrs</span>}
+      {showLabel && <span className="text-xs text-[#7f8a9c] ml-1">hrs</span>}
     </div>
   );
 }
@@ -234,7 +234,7 @@ function Select({ value, onChange, options, placeholder }: {
         style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', color: value ? '#fff' : 'rgba(156,163,175,1)', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}
       >
         <span>{label}</span>
-        <svg className="w-4 h-4 flex-shrink-0 text-gray-500 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+        <svg className="w-4 h-4 flex-shrink-0 text-[#7f8a9c] transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
       </button>
       {open && (
         <div className="absolute z-50 mt-1 left-0 right-0 rounded-xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 16px 40px rgba(0,0,0,0.7)' }}>
@@ -441,13 +441,13 @@ export default function MeetingsPage() {
           <button onClick={() => setTab('semana')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${tab === 'semana' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
             Semana
             {thisWeekMeetings.length > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${tab === 'semana' ? 'bg-white/20 text-white' : 'bg-orange-600/80 text-white'}`}>{thisWeekMeetings.length}</span>
+              <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full leading-none ${tab === 'semana' ? 'bg-white/20 text-white' : 'bg-orange-600/80 text-white'}`}>{thisWeekMeetings.length}</span>
             )}
           </button>
           <button onClick={() => setTab('registros')} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${tab === 'registros' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
             Registros
             {meetings.length > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${tab === 'registros' ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'}`}>{meetings.length}</span>
+              <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full leading-none ${tab === 'registros' ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'}`}>{meetings.length}</span>
             )}
           </button>
         </div>
@@ -474,7 +474,7 @@ export default function MeetingsPage() {
             </div>
             <div className="grid grid-cols-7 text-center border-b border-white/[0.06]">
               {DAYS.map(d => (
-                <div key={d} className="py-2 text-xs font-medium text-gray-500">{d}</div>
+                <div key={d} className="py-2 text-xs font-medium text-[#7f8a9c]">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7">
@@ -500,13 +500,13 @@ export default function MeetingsPage() {
                           </div>
                         ))}
                         {d.meetings.length > 3 && (
-                          <span className="text-xs text-gray-600">+{d.meetings.length - 3}</span>
+                          <span className="text-xs text-[#7f8a9c]">+{d.meetings.length - 3}</span>
                         )}
                       </div>
                       {d.meetings.length === 0 && (
                         <button
                           onClick={e => { e.stopPropagation(); setSelectedDay(d.date); openNew(); }}
-                          className="absolute bottom-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-white hover:bg-orange-600/60"
+                          className="absolute bottom-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[#7f8a9c] hover:text-white hover:bg-orange-600/60"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
                         </button>
@@ -528,9 +528,9 @@ export default function MeetingsPage() {
                 {dayMeetings.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-8 gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      <svg className="w-5 h-5 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
-                    <p className="text-gray-600 text-xs text-center">Sin eventos</p>
+                    <p className="text-[#7f8a9c] text-xs text-center">Sin eventos</p>
                     <button onClick={openNew} className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       Agregar evento
@@ -552,7 +552,7 @@ export default function MeetingsPage() {
                         </p>
                         {m.location && (
                           <p className="flex items-center gap-1.5">
-                            <svg className="w-3 h-3 flex-shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <svg className="w-3 h-3 flex-shrink-0 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             {m.location}
                           </p>
                         )}
@@ -564,13 +564,13 @@ export default function MeetingsPage() {
                         )}
                         {m.attendees && (
                           <p className="flex items-start gap-1.5">
-                            <svg className="w-3 h-3 flex-shrink-0 mt-0.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <svg className="w-3 h-3 flex-shrink-0 mt-0.5 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             {resolveAttendees(m.attendees, users)}
                           </p>
                         )}
                         {m.notes && (
-                          <p className="flex items-start gap-1.5 text-gray-500 mt-1 italic border-t border-white/[0.06] pt-1">
-                            <svg className="w-3 h-3 flex-shrink-0 mt-0.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                          <p className="flex items-start gap-1.5 text-[#7f8a9c] mt-1 italic border-t border-white/[0.06] pt-1">
+                            <svg className="w-3 h-3 flex-shrink-0 mt-0.5 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             {m.notes.slice(0, 150)}{m.notes.length > 150 ? '...' : ''}
                           </p>
                         )}
@@ -584,7 +584,7 @@ export default function MeetingsPage() {
                       <div className="flex gap-2 mt-2">
                         <button onClick={() => setHubMeetingId(m.id)} className="text-xs font-semibold text-orange-400 hover:text-orange-300">Abrir hub</button>
                         <button onClick={() => openEdit(m)} className="text-xs text-gray-400 hover:text-white">Editar</button>
-                        <button onClick={() => handleStatusToggle(m)} className={`text-xs transition-colors ${m.status === 'COMPLETED' ? 'text-gray-600 hover:text-blue-400' : 'text-green-400 hover:text-green-300'}`}>
+                        <button onClick={() => handleStatusToggle(m)} className={`text-xs transition-colors ${m.status === 'COMPLETED' ? 'text-[#7f8a9c] hover:text-blue-400' : 'text-green-400 hover:text-green-300'}`}>
                           {m.status === 'COMPLETED' ? 'Reabrir' : 'Completar'}
                         </button>
                       </div>
@@ -596,7 +596,7 @@ export default function MeetingsPage() {
               <>
                 <h3 className="text-sm font-semibold text-orange-400 uppercase tracking-wider mb-4">Esta Semana</h3>
                 {thisWeekMeetings.length === 0 ? (
-                  <p className="text-gray-500 text-sm">Sin eventos esta semana.</p>
+                  <p className="text-[#7f8a9c] text-sm">Sin eventos esta semana.</p>
                 ) : (
                   <div className="space-y-4">
                     {(function () {
@@ -608,7 +608,7 @@ export default function MeetingsPage() {
                       }
                       return Array.from(grouped.entries()).map(([dateStr, dayMts]) => (
                         <div key={dateStr}>
-                          <h4 className="text-xs font-semibold text-gray-500 mb-2 uppercase">
+                          <h4 className="text-xs font-semibold text-[#7f8a9c] mb-2 uppercase">
                             {new Date(dateStr + 'T12:00:00-05:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Bogota' })}
                           </h4>
                           <div className="space-y-2">
@@ -626,14 +626,14 @@ export default function MeetingsPage() {
                                   </div>
                                 </div>
                                 {m.attendees && (
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-[#7f8a9c] mt-1 flex items-center gap-1">
                     <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     {resolveAttendees(m.attendees, users)}
                   </p>
                 )}
                                 <div className="flex gap-2 mt-2">
                                   <button onClick={() => setHubMeetingId(m.id)} className="text-xs font-semibold text-orange-400 hover:text-orange-300">Abrir hub</button>
-                                  <button onClick={() => openEdit(m)} className="text-xs text-gray-500 hover:text-gray-300">Editar</button>
+                                  <button onClick={() => openEdit(m)} className="text-xs text-[#7f8a9c] hover:text-gray-300">Editar</button>
                                   <button onClick={() => handleStatusToggle(m)} className={`text-xs ${m.status === 'COMPLETED' ? 'text-blue-400 hover:text-blue-300' : 'text-green-400 hover:text-green-300'}`}>
                                     {m.status === 'COMPLETED' ? 'Reabrir' : 'Completar'}
                                   </button>
@@ -705,7 +705,7 @@ export default function MeetingsPage() {
                   <div className="h-10 border-b border-white/[0.06]" />
                   {HOURS.map(h => (
                     <div key={h} style={{ height: '56px' }} className="relative flex items-start justify-end pr-2 pt-1">
-                      <span className="text-[10px] text-gray-600 tabular-nums">{String(h).padStart(2,'0')}:00</span>
+                      <span className="text-[11px] text-[#7f8a9c] tabular-nums">{String(h).padStart(2,'0')}:00</span>
                     </div>
                   ))}
                 </div>
@@ -724,7 +724,7 @@ export default function MeetingsPage() {
                     <div key={di} className="flex-1 border-r border-white/[0.06] last:border-r-0 min-w-0">
                       {/* Header día */}
                       <div className={`h-10 border-b border-white/[0.06] flex flex-col items-center justify-center ${isToday ? 'bg-orange-500/10' : ''}`}>
-                        <span className="text-[10px] text-gray-500">{WEEK_DAYS[di]}</span>
+                        <span className="text-[11px] text-[#7f8a9c]">{WEEK_DAYS[di]}</span>
                         <span className={`text-sm font-semibold ${isToday ? 'text-orange-400' : 'text-gray-300'}`}>{date.getDate()}</span>
                       </div>
 
@@ -769,9 +769,9 @@ export default function MeetingsPage() {
                               className={`absolute inset-x-0.5 rounded px-1.5 py-0.5 border-l-2 cursor-pointer overflow-hidden ${cls} ${m.status === 'COMPLETED' ? 'opacity-50' : ''} hover:brightness-110 transition-all`}
                               title={m.title}
                             >
-                              <p className="text-[10px] text-white font-medium leading-tight truncate">{m.title}</p>
+                              <p className="text-[11px] text-white font-medium leading-tight truncate">{m.title}</p>
                               {height > 30 && (
-                                <p className="text-[9px] text-white/70 leading-tight">
+                                <p className="text-[10px] text-white/70 leading-tight">
                                   {getTimeStrUTC5(m.date)}{m.endDate ? `–${getTimeStrUTC5(m.endDate)}` : ''}
                                 </p>
                               )}
@@ -815,7 +815,7 @@ export default function MeetingsPage() {
                 <div key={s.label} className="card p-4 flex items-center gap-3">
                   <div className={`${s.color} opacity-60`}>{s.icon}</div>
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">{s.label}</p>
+                    <p className="text-[11px] text-[#7f8a9c] uppercase tracking-wide">{s.label}</p>
                     <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
                   </div>
                 </div>
@@ -837,7 +837,7 @@ export default function MeetingsPage() {
 
             {/* Registros agrupados por mes */}
             {Object.keys(byMonth).length === 0 ? (
-              <div className="text-center py-16 text-gray-500">
+              <div className="text-center py-16 text-[#7f8a9c]">
                 <p>Sin registros.</p>
               </div>
             ) : (
@@ -846,14 +846,14 @@ export default function MeetingsPage() {
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest capitalize">{monthLabel(monthKey)}</h3>
                     <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                    <span className="text-[10px] text-gray-600">{monthMeetings.length} eventos</span>
+                    <span className="text-[11px] text-[#7f8a9c]">{monthMeetings.length} eventos</span>
                   </div>
                   <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
                     {monthMeetings.map((m, idx) => (
                       <div key={m.id} className={`flex items-center gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors ${idx > 0 ? 'border-t border-white/[0.04]' : ''}`}>
                         {/* Fecha */}
                         <div className="w-12 flex-shrink-0 text-center">
-                          <p className="text-[10px] text-gray-600 uppercase">{new Date(m.date + (m.date.length === 10 ? 'T12:00:00-05:00' : '')).toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'America/Bogota' })}</p>
+                          <p className="text-[11px] text-[#7f8a9c] uppercase">{new Date(m.date + (m.date.length === 10 ? 'T12:00:00-05:00' : '')).toLocaleDateString('es-ES', { weekday: 'short', timeZone: 'America/Bogota' })}</p>
                           <p className="text-lg font-bold text-gray-300 leading-none">{getDayUTC5(m.date)}</p>
                         </div>
                         {/* Barra de tipo */}
@@ -862,22 +862,22 @@ export default function MeetingsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white truncate">{m.title}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] text-gray-500">{getTimeStrUTC5(m.date)}{m.endDate ? ` — ${getTimeStrUTC5(m.endDate)}` : ''}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${TYPE_COLORS[m.type] || TYPE_COLORS.OTHER}`}>{TYPE_SHORT[m.type] || m.type}</span>
+                            <span className="text-[11px] text-[#7f8a9c]">{getTimeStrUTC5(m.date)}{m.endDate ? ` — ${getTimeStrUTC5(m.endDate)}` : ''}</span>
+                            <span className={`text-[11px] px-1.5 py-0.5 rounded border ${TYPE_COLORS[m.type] || TYPE_COLORS.OTHER}`}>{TYPE_SHORT[m.type] || m.type}</span>
                           </div>
                         </div>
                         {/* Asistentes */}
                         {m.attendees && (
-                          <p className="hidden md:block text-xs text-gray-500 max-w-[180px] truncate flex-shrink-0">{resolveAttendees(m.attendees, users)}</p>
+                          <p className="hidden md:block text-xs text-[#7f8a9c] max-w-[180px] truncate flex-shrink-0">{resolveAttendees(m.attendees, users)}</p>
                         )}
                         {/* Estado + acciones */}
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[m.status]}`}>{translateStatus(m.status)}</span>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[m.status]}`}>{translateStatus(m.status)}</span>
                           <button onClick={() => setHubMeetingId(m.id)} title="Abrir hub de la reunión" className="px-2 py-1 text-[11px] font-semibold text-orange-400 hover:text-orange-300 transition-colors rounded hover:bg-white/[0.05]">Hub</button>
-                          <button onClick={() => openEdit(m)} title="Editar datos" className="p-1.5 text-gray-600 hover:text-gray-300 transition-colors rounded hover:bg-white/[0.05]">
+                          <button onClick={() => openEdit(m)} title="Editar datos" className="p-1.5 text-[#7f8a9c] hover:text-gray-300 transition-colors rounded hover:bg-white/[0.05]">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </button>
-                          <button onClick={() => setConfirmDel(m)} className="p-1.5 text-gray-700 hover:text-red-400 transition-colors rounded hover:bg-red-900/20">
+                          <button onClick={() => setConfirmDel(m)} className="p-1.5 text-[#7f8a9c] hover:text-red-400 transition-colors rounded hover:bg-red-900/20">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         </div>
@@ -1235,7 +1235,7 @@ export default function MeetingsPage() {
                             </span>
                             <div className="min-w-0">
                               <p className="text-sm text-white truncate">{u.name}</p>
-                              <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                              <p className="text-xs text-[#7f8a9c] truncate">{u.email}</p>
                             </div>
                           </button>
                         ))}

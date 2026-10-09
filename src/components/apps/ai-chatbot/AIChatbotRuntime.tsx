@@ -126,7 +126,7 @@ export default function AIChatbotRuntime({ app }: { app: AppInstance }) {
       {/* Suggested questions */}
       {suggestedQuestions.length > 0 && (
         <div className="border-t border-gray-800 bg-gray-900/40 px-6 py-3">
-          <p className="mb-2 text-xs text-gray-500">Preguntas sugeridas</p>
+          <p className="mb-2 text-xs text-[#7f8a9c]">Preguntas sugeridas</p>
           <div className="flex flex-wrap gap-2">
             {suggestedQuestions.map((q, i) => (
               <button

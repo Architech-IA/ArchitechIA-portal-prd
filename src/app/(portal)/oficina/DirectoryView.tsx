@@ -23,7 +23,7 @@ function AreaNode({ data }: NodeProps) {
            style={{ background: data.color + '18', border: `1.5px solid ${data.color}40` }}>
         <div className="text-[11px] font-black tracking-wide uppercase" style={{ color: data.color }}>{data.label}</div>
         {data.count > 0 && (
-          <div className="text-[9px] mt-0.5 font-mono" style={{ color: data.color + 'aa' }}>{data.count} activas</div>
+          <div className="text-[10px] mt-0.5 font-mono" style={{ color: data.color + 'aa' }}>{data.count} activas</div>
         )}
       </div>
     </>
@@ -38,7 +38,7 @@ function SubAreaNode({ data }: NodeProps) {
       <Handle type="source" position={Position.Bottom} style={{ background: data.color, border: 'none', width: 5, height: 5 }} />
       <div className="rounded-lg px-3 py-2 text-center min-w-[110px]"
            style={{ background: data.color + '12', border: `1px solid ${data.color}30` }}>
-        <div className="text-[10px] font-bold" style={{ color: data.color + 'cc' }}>{data.label}</div>
+        <div className="text-[11px] font-bold" style={{ color: data.color + 'cc' }}>{data.label}</div>
       </div>
     </>
   )
@@ -54,9 +54,9 @@ function AgentNode({ data }: NodeProps) {
            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-1.5 mb-0.5">
           <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-green-400' : 'bg-gray-600'}`} />
-          <div className="text-[10px] font-bold text-gray-200 truncate">{data.label}</div>
+          <div className="text-[11px] font-bold text-gray-200 truncate">{data.label}</div>
         </div>
-        <div className="text-[9px] text-gray-600 truncate pl-3">{data.role}</div>
+        <div className="text-[10px] text-[#7f8a9c] truncate pl-3">{data.role}</div>
       </div>
     </>
   )
@@ -70,7 +70,7 @@ function CeoNode({ data }: NodeProps) {
       <div className="rounded-2xl px-6 py-3 text-center"
            style={{ background: 'rgba(245,158,11,0.12)', border: '2px solid rgba(245,158,11,0.5)', minWidth: 160 }}>
         <div className="text-[13px] font-black tracking-widest uppercase text-amber-400">{data.label}</div>
-        <div className="text-[9px] text-amber-600 mt-0.5 uppercase tracking-wider font-bold">{data.role}</div>
+        <div className="text-[10px] text-amber-600 mt-0.5 uppercase tracking-wider font-bold">{data.role}</div>
       </div>
     </>
   )

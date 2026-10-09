@@ -258,7 +258,7 @@ export default function NicheGraph({
         )}
       </svg>
 
-      <p className="text-xs text-gray-600 mt-2 text-center">
+      <p className="text-xs text-[#7f8a9c] mt-2 text-center">
         Shift+Click nodo para conectar · Arrastra nodos · Click para ver detalles
       </p>
     </div>
