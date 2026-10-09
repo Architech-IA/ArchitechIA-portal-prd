@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useMemo, Suspense, type ComponentType } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid, Package, FolderKanban } from 'lucide-react'
+import { Loader2, ChevronRight, Settings, Bot, Save, Circle, Network, Users, Bell, Search, SlidersHorizontal, Send, MessageSquare, Vote, FileText, PanelRight, LayoutGrid, Package, FolderKanban, Gauge } from 'lucide-react'
 import DirectoryView from './DirectoryView'
 import { usePageTitleOverride } from '@/lib/pageTitleContext'
 import CouncilView from './CouncilView'
 import ProyectosView from './proyectos/ProyectosView'
+import MotorView from './motor/MotorView'
 // Migrado desde /backlog (antes item propio del sidebar principal) a
 // subpage de Oficina — se reusa el componente real tal cual, sin duplicar
 // logica ni perder ninguna funcion.
@@ -100,9 +101,9 @@ const ETIQUETA_SOL: Record<(typeof TABS_SOLUTIONS)[number], string> = { producto
 const TABS_BACKLOG = ['sprint', 'epics', 'solution', 'control'] as const
 const ETIQUETA_TAB: Record<(typeof TABS_BACKLOG)[number], string> = { sprint: 'Sprint', epics: 'Épicas', solution: 'Solution', control: 'Sala de Control' }
 
-type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos'
-const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos'] as const
-const ETIQUETA_VISTA: Record<(typeof VISTAS)[number], string> = { agentes: 'Agents', directory: 'Directory', backlog: 'Backlog', solutions: 'Solutions', proyectos: 'Proyectos' }
+type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos' | 'motor'
+const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos', 'motor'] as const
+const ETIQUETA_VISTA: Record<(typeof VISTAS)[number], string> = { agentes: 'Agents', directory: 'Directory', backlog: 'Backlog', solutions: 'Solutions', proyectos: 'Proyectos', motor: 'Motor' }
 /** La vista elegida vive en la URL (?view=backlog…): se puede recargar, compartir el enlace y volver con "Atrás". */
 const vistaDeUrl = (v: string | null): Vista => ((VISTAS as readonly string[]).includes(v ?? '') ? (v as Vista) : 'rooms')
 
@@ -363,6 +364,7 @@ function OficinaPageInner() {
             <ChevronRight size={11} className="transition-transform flex-shrink-0"
               style={{ color: workOpen ? '#6366f1' : '#7f8a9c', transform: workOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
+          {workOpen && itemVista('motor', Gauge)}
           {workOpen && itemVista('backlog', LayoutGrid)}
           {workOpen && itemVista('solutions', Package)}
           {workOpen && itemVista('proyectos', FolderKanban)}
@@ -814,6 +816,12 @@ function OficinaPageInner() {
               {tabBacklog === 'control' && (searchParams.get('multi') ? <ControlMultiPage /> : sprintSel ? <ControlSprintPage params={paramsSprint} /> : <ControlIndexPage />)}
             </div>
           )
+
+        ) : sideView === 'motor' ? (
+          /* ── MOTOR ── portada del motor agéntico: cartera, aprobaciones, agentes y costo */
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <MotorView />
+          </div>
 
         ) : sideView === 'proyectos' ? (
           /* ── PROYECTOS VIEW ── sesiones persistentes por proyecto (= Solución) */
