@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link, { useDestinoBacklog } from '@/lib/BacklogLink'
 import { useRouter } from 'next/navigation'
 import {
   Handshake, CheckCircle2, ArrowRight, TrendingUp, Network,
@@ -40,6 +40,7 @@ const idealPartners = [
 
 export default function PartnershipSolutionPage() {
   const router = useRouter()
+  const destinoBacklog = useDestinoBacklog()
   return (
     <div className="p-4 md:p-8 space-y-8">
       {/* Hero */}
@@ -137,7 +138,7 @@ export default function PartnershipSolutionPage() {
       {/* Soluciones asociadas */}
       <SolucionesList
         tipo="PARTNERSHIP" color="violet" title="Partnerships activos"
-        onSelect={s => router.push(`/solutions/pilots/${s.id}`)}
+        onSelect={s => router.push(destinoBacklog(`/solutions/pilots/${s.id}`))}
       />
 
       {/* CTA */}

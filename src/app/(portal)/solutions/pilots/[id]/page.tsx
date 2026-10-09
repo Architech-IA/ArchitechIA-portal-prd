@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, use } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useRouter } from 'next/navigation'
+import { useDestinoBacklog } from '@/lib/BacklogLink'
 import {
   Sliders, LayoutGrid, FileText, Calendar, Code2,
   Loader2, FolderGit2, ExternalLink, Upload, Eye, Code, Wand2, List, BarChart3,
@@ -703,10 +704,13 @@ const AI_SUGERENCIAS_MEJORA = [
 
 type AiChatMsg = { role: 'user' | 'assistant'; content: string; opciones?: string[] }
 
-export default function SolucionDetailPage() {
+/** En su ruta (/solutions/pilots/<id>) el id sale de la URL; dentro de la Oficina (?view=solutions&tab=pilots&id=…) llega por `params`. */
+export default function SolucionDetailPage({ params: paramsProp }: { params?: Promise<{ id: string }> } = {}) {
   const params = useParams()
   const router = useRouter()
-  const id = String(params.id)
+  const destinoBacklog = useDestinoBacklog()
+  const dePropiedad = paramsProp ? use(paramsProp) : null
+  const id = String(dePropiedad?.id ?? params?.id)
 
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -1511,7 +1515,7 @@ export default function SolucionDetailPage() {
     try {
       const res = await fetch(`/api/soluciones/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
-      router.push('/soluciones/pilotos')
+      router.push(destinoBacklog('/solutions/pilots'))
     } catch {
       setError('No se pudo eliminar la Solución.')
       setDeleting(false)

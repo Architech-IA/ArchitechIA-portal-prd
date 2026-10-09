@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link, { useDestinoBacklog } from '@/lib/BacklogLink'
 import { useRouter } from 'next/navigation'
 import {
   FolderKanban, CheckCircle2, ArrowRight, Clock, Shield,
@@ -40,6 +40,7 @@ const process = [
 
 export default function ProjectsSolutionPage() {
   const router = useRouter()
+  const destinoBacklog = useDestinoBacklog()
   return (
     <div className="p-4 md:p-8 space-y-8">
       {/* Hero */}
@@ -137,7 +138,7 @@ export default function ProjectsSolutionPage() {
           desde el portal. */}
       <SolucionesList
         tipo="PROJECT" color="orange" title="Projects activos"
-        onSelect={s => router.push(`/solutions/pilots/${s.id}`)}
+        onSelect={s => router.push(destinoBacklog(`/solutions/pilots/${s.id}`))}
       />
 
       {/* CTA */}

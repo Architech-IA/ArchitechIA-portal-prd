@@ -88,6 +88,15 @@ const SolutionPage = dynamic(() => import('../backlog/solution/page'), { loading
 const ControlIndexPage = dynamic(() => import('../backlog/control/page'), { loading: CargandoVista })
 const ControlSprintPage = dynamic(() => import('../backlog/control/[sprintId]/page'), { loading: CargandoVista })
 const ControlMultiPage = dynamic(() => import('../backlog/control/multi/page'), { loading: CargandoVista })
+const ProductosPage = dynamic(() => import('../solutions/productos/page'), { loading: CargandoVista })
+const ProjectsSolutionPage = dynamic(() => import('../solutions/projects/page'), { loading: CargandoVista })
+const PilotsListPage = dynamic(() => import('../solutions/pilots/page'), { loading: CargandoVista })
+const PartnershipPage = dynamic(() => import('../solutions/partnership/page'), { loading: CargandoVista })
+const InternPage = dynamic(() => import('../solutions/intern/page'), { loading: CargandoVista })
+const IniciativasPage = dynamic(() => import('../solutions/iniciativas/page'), { loading: CargandoVista })
+const SolucionDetailPage = dynamic(() => import('../solutions/pilots/[id]/page'), { loading: CargandoVista })
+const TABS_SOLUTIONS = ['productos', 'projects', 'pilots', 'partnership', 'intern', 'iniciativas'] as const
+const ETIQUETA_SOL: Record<(typeof TABS_SOLUTIONS)[number], string> = { productos: 'Productos', projects: 'Projects', pilots: 'Pilots', partnership: 'Partnership', intern: 'Intern', iniciativas: 'Iniciativas' }
 const TABS_BACKLOG = ['sprint', 'epics', 'solution', 'control'] as const
 const ETIQUETA_TAB: Record<(typeof TABS_BACKLOG)[number], string> = { sprint: 'Sprint', epics: 'Épicas', solution: 'Solution', control: 'Sala de Control' }
 
@@ -192,9 +201,16 @@ function OficinaPageInner() {
   const tabBacklog = (TABS_BACKLOG as readonly string[]).includes(tabParam ?? '') ? (tabParam as (typeof TABS_BACKLOG)[number]) : null
   const sprintSel = searchParams.get('sprint') ?? ''
   const paramsSprint = useMemo(() => Promise.resolve({ sprintId: sprintSel }), [sprintSel])
+  // Pestaña de Solutions (?view=solutions&tab=pilots[&id=<solución>]): Productos, Projects, Pilots, Partnership, Intern,
+  // Iniciativas y el detalle de una solución se abren aquí dentro.
+  const tabSol = sideView === 'solutions' && (TABS_SOLUTIONS as readonly string[]).includes(tabParam ?? '') ? (tabParam as (typeof TABS_SOLUTIONS)[number]) : null
+  const idSolucion = searchParams.get('id') ?? ''
+  const paramsSolucion = useMemo(() => Promise.resolve({ id: idSolucion }), [idSolucion])
   const etiquetaVista = sideView === 'rooms'
     ? selected?.name
-    : sideView === 'backlog' && tabBacklog ? `Backlog · ${ETIQUETA_TAB[tabBacklog]}` : ETIQUETA_VISTA[sideView]
+    : sideView === 'backlog' && tabBacklog ? `Backlog · ${ETIQUETA_TAB[tabBacklog]}`
+    : sideView === 'solutions' && tabSol ? `Solutions · ${tabSol === 'pilots' && idSolucion ? 'Detalle' : ETIQUETA_SOL[tabSol]}`
+    : ETIQUETA_VISTA[sideView]
   useEffect(() => {
     setTitle(etiquetaVista ? `Oficina Virtual · ${etiquetaVista}` : null)
     return () => setTitle(null)
@@ -813,8 +829,14 @@ function OficinaPageInner() {
              compartido de acciones de pagina (misma barra que ya se ve al
              entrar directo a /solutions). */
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <SolutionsTabs />
-            <SolutionsIndexPage />
+            {!(tabSol === 'pilots' && idSolucion) && <SolutionsTabs tabActivo={tabSol ?? 'indice'} />}
+            {tabSol === null && <SolutionsIndexPage />}
+            {tabSol === 'productos' && <ProductosPage />}
+            {tabSol === 'projects' && <ProjectsSolutionPage />}
+            {tabSol === 'pilots' && (idSolucion ? <SolucionDetailPage params={paramsSolucion} /> : <PilotsListPage />)}
+            {tabSol === 'partnership' && <PartnershipPage />}
+            {tabSol === 'intern' && <InternPage />}
+            {tabSol === 'iniciativas' && <IniciativasPage />}
           </div>
 
         ) : (

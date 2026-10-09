@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link';
+import Link from '@/lib/BacklogLink';
 import { FolderKanban, FlaskConical, Handshake, Building2, ArrowRight } from 'lucide-react';
 
 interface Producto {

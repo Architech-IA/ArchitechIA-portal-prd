@@ -5,6 +5,7 @@ import {
   Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
+import Link from '@/lib/BacklogLink'
 import { api, post, hace, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
 import ChatSesion from './ChatSesion'
 import PanelContexto from './PanelContexto'
@@ -141,7 +142,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
                 <span className="flex-1" />
-                <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución"><ExternalLink size={11} /> Hub de la solución</a>
+                <Link href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución"><ExternalLink size={11} /> Hub de la solución</Link>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
               <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">

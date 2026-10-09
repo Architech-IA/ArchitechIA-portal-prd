@@ -1,13 +1,14 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/lib/BacklogLink'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Package, Lightbulb, FolderKanban, FlaskConical, Handshake, Building2 } from 'lucide-react'
 import { usePageActions } from '@/lib/pageActionsContext'
 
-export default function SolutionsTabs() {
+/** `tabActivo`: dentro de la Oficina la pestaña activa viene de ?tab= (no de la ruta). */
+export default function SolutionsTabs({ tabActivo }: { tabActivo?: string } = {}) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const isSuperAdmin = (session?.user as { role?: string })?.role === 'SUPERADMIN'
@@ -37,7 +38,7 @@ export default function SolutionsTabs() {
     setActions(
       <nav className="flex items-center gap-0.5">
         {tabs.map(t => {
-          const active = t.exact ? pathname === t.href : pathname.startsWith(t.href)
+          const active = tabActivo !== undefined ? tabActivo === t.href.split('/').pop() : t.exact ? pathname === t.href : pathname.startsWith(t.href)
           const Icon = t.icon
           return (
             <Link
@@ -88,7 +89,7 @@ export default function SolutionsTabs() {
       </nav>
     )
     return () => setActions(null)
-  }, [pathname, isSuperAdmin, pending])
+  }, [pathname, isSuperAdmin, pending, tabActivo])
 
   return null
 }

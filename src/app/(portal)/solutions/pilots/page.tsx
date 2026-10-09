@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useDestinoBacklog } from '@/lib/BacklogLink'
 import {
   Plus, X, Loader2, FlaskConical, Pencil, Wrench, CheckCircle,
   DollarSign, Clock, TrendingUp, CalendarRange,
@@ -78,6 +79,7 @@ const ESTADO_COLOR: Record<string, { bg: string; text: string }> = {
 
 export default function PocSolutionPage() {
   const router = useRouter()
+  const destinoBacklog = useDestinoBacklog()
   const [pocs, setPocs]             = useState<Solucion[]>([])
   const [loading, setLoading]       = useState(true)
   const [filter, setFilter]         = useState<'todos' | 'activos' | 'completados'>('todos')
@@ -167,7 +169,7 @@ export default function PocSolutionPage() {
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Error al crear.')
       const created = await res.json()
       setShowModal(false)
-      router.push(`/solutions/pilots/${created.id}`)
+      router.push(destinoBacklog(`/solutions/pilots/${created.id}`))
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error inesperado.')
       setSaving(false)
@@ -230,7 +232,7 @@ export default function PocSolutionPage() {
             {ganttPocs.map(p => (
               <div key={p.id} className="flex items-center gap-3">
                 <p className="text-xs text-gray-300 w-36 flex-shrink-0 truncate cursor-pointer hover:text-white"
-                  onClick={() => router.push(`/solutions/pilots/${p.id}`)}>
+                  onClick={() => router.push(destinoBacklog(`/solutions/pilots/${p.id}`))}>
                   {p.nombre}
                 </p>
                 <div className="flex-1 relative h-5 rounded-md overflow-hidden"
@@ -320,7 +322,7 @@ export default function PocSolutionPage() {
                 <div key={p.id}
                   className="px-5 py-4 flex items-center gap-4 cursor-pointer transition-colors"
                   style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                  onClick={() => router.push(`/solutions/pilots/${p.id}`)}
+                  onClick={() => router.push(destinoBacklog(`/solutions/pilots/${p.id}`))}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                 >

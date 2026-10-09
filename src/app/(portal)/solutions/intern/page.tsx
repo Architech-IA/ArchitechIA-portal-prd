@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import Link, { useDestinoBacklog } from '@/lib/BacklogLink'
 import { useRouter } from 'next/navigation'
 import {
   Building2, CheckCircle2, ArrowRight, Shield,
@@ -58,6 +58,7 @@ const defaultForm: FormState = {
 
 export default function InternSolutionPage() {
   const router = useRouter()
+  const destinoBacklog = useDestinoBacklog()
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<FormState>(defaultForm)
   const [saving, setSaving] = useState(false)
@@ -191,7 +192,7 @@ export default function InternSolutionPage() {
         title="Soluciones internas"
         refreshKey={refreshKey}
         headerAction={addButton}
-        onSelect={s => router.push(`/solutions/pilots/${s.id}`)}
+        onSelect={s => router.push(destinoBacklog(`/solutions/pilots/${s.id}`))}
       />
 
       {/* CTA */}
