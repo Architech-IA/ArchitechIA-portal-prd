@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag } from 'lucide-react'
+import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network } from 'lucide-react'
 import Link from '@/lib/BacklogLink'
 import { post, hace, type FasesRes, type FaseVista, type RecursoFase } from './api'
 
@@ -23,7 +23,7 @@ const NIVEL: Record<string, { color: string; fondo: string }> = {
   vacio: { color: '#9ca3af', fondo: 'rgba(255,255,255,0.07)' }, aviso: { color: '#fdba74', fondo: 'rgba(249,115,22,0.14)' },
 }
 const ICONO: Record<string, typeof Folder> = {
-  LEAD_HUB: Users, PROPUESTAS: FileText, HUB_PRD: FileText, HUB_DISENO: FileText, HUB_PLAN: ListChecks, HUB_CODIGO: Folder, HUB_DESPLIEGUE: Rocket,
+  LEAD_HUB: Users, PROPUESTAS: FileText, HUB_PRD: FileText, HUB_DISENO: FileText, HUB_ARQUITECTURA: Network, HUB_PLAN: ListChecks, HUB_CODIGO: Folder, HUB_DESPLIEGUE: Rocket,
   BACKLOG: ListChecks, SALA_CONTROL: Rocket, REUNIONES: Users, ADJUNTOS: Paperclip,
 }
 const externo = (href: string) => /^\/(leads|proposals|meetings)\b/.test(href)
