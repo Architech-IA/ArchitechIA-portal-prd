@@ -2,13 +2,13 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { prisma } from '@/lib/prisma'
-import { dispatchTask } from '@/lib/executor/taskDispatcher'
 import { sprintWorktreePath, sprintBranchName } from '@/lib/executor/gitWorktree'
 
 // Evals del Motor Agéntico SDD (tareas de código con resultado verificable), MASD-0023-0006-014.
-// Corre el pipeline REAL de principio a fin: dispatchTask -> cola del Harness -> worker (masd_worker.py,
-// ya corriendo como proceso aparte) -> finalizeExecution (tsc --noEmit real + verificador semántico Sigma
-// + merge a la rama de integración del sprint). No se simula nada de eso.
+// Corre el pipeline REAL de principio a fin: POST /api/executor/dispatch (portalhub, Rust) -> cola del Harness ->
+// worker (masd_worker.py, ya corriendo como proceso aparte) -> cierre en portalhub (tsc --noEmit real + verificador
+// semántico Sigma + merge a la rama de integración del sprint). No se simula nada de eso.
+// (Hasta el 09/10/2026 despachaba con el código viejo de Next; ahora prueba el Motor que de verdad está en producción.)
 //
 // Corre contra un repo AISLADO, solo local (/root/repos/zz-eval-motor, sin "origin" configurado a
 // propósito): la Solución de este eval tiene repositorio='zz-eval-motor', así que resolveRepoConfig
@@ -22,11 +22,28 @@ const REPO_SLUG = 'zz-eval-motor'
 const AREA_DEV = '947ca771-fe9e-4c3f-bfea-2ef2e27986c6'
 const TIMEOUT_MS = 8 * 60_000 // por tarea: el agente de código puede usar hasta 20 rondas de herramientas
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+const RS = process.env.PARITY_RS || 'http://127.0.0.1:3100'
+
+/** Despacha una tarea por el Motor en Rust (clave interna; mismo camino que usa el portal). */
+async function dispatchTask(taskId: string): Promise<{ agentName: string; strategy: string }> {
+  const r = await fetch(RS + '/api/executor/dispatch', {
+    method: 'POST',
+    headers: { 'x-api-key': process.env.INTERNAL_API_KEY ?? '', 'content-type': 'application/json' },
+    body: JSON.stringify({ taskId }),
+  })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(`dispatch ${r.status}: ${JSON.stringify(j)}`)
+  return j as { agentName: string; strategy: string }
+}
 
 interface Caso {
   id: string
   titulo: string
   descripcion: string
+  /** Módulo compilado (dist/<modulo>.js) sobre el que corre chequeoRuntime; por defecto mathUtils. */
+  modulo?: string
+  /** Si es true, el caso exige modificar el archivo con edit_file (se informa si lo usó, no hace fallar el caso). */
+  esperaEdit?: boolean
   // Corre en Node contra el .js compilado del archivo tocado, DESPUÉS del merge al sprint — es el
   // único chequeo de este set que ejecuta la lógica de verdad (ni tsc ni el verificador semántico
   // corren el código, ver hallazgo en el reporte).
@@ -69,6 +86,32 @@ const CASOS: Caso[] = [
       const rPar = m.mediana(par)
       const ok = rImpar === 3 && rPar === 2.5 && noMuto
       return { ok, detalle: `mediana([5,1,3])=${rImpar} (esp. 3), mediana([4,1,3,2])=${rPar} (esp. 2.5), no mutó=${noMuto}` }
+    },
+  },
+  {
+    // Archivo LARGO (21 KB, 552 líneas; read_file solo muestra ~6.000 caracteres de una vez): el agente tiene que ubicar la
+    // función por nombre, leer ese trozo por rango y cambiarla con edit_file SIN reescribir ni romper las otras 40 funciones.
+    id: 'archivo-grande-descuento',
+    titulo: 'Cambiar la regla de descuento de totalConDescuento en src/inventario.ts',
+    descripcion: 'En src/inventario.ts (un archivo largo) la función totalConDescuento aplica hoy 10 % de descuento a partir de 100 unidades. Cambiá la regla: el descuento del 10 % debe empezar desde 50 unidades, y agregá un descuento del 15 % a partir de 200 unidades (con menos de 50 unidades no hay descuento). No modifiques ninguna otra función del archivo ni cambies ninguna firma: las funciones calcNN las usan otros módulos y deben seguir devolviendo exactamente lo mismo.',
+    modulo: 'inventario',
+    esperaEdit: true,
+    chequeoRuntime: (m) => {
+      if (typeof m.totalConDescuento !== 'function') return { ok: false, detalle: 'no exporta totalConDescuento' }
+      const t = (c: number) => m.totalConDescuento(c, 10)
+      const casi = (a: number, b: number) => Math.abs(a - b) < 1e-6   // coma flotante: 1990 * 0.9 no es exacto
+      const reglaOk = casi(t(49), 490) && casi(t(50), 450) && casi(t(99), 891) && casi(t(100), 900) && casi(t(199), 1791) && casi(t(200), 1700)
+      // las 40 funciones auxiliares siguen existiendo y devolviendo x * (NN + 1) + NN
+      const rotas: string[] = []
+      for (let i = 0; i < 40; i++) {
+        const nombre = `calc${String(i).padStart(2, '0')}`
+        if (typeof m[nombre] !== 'function' || m[nombre](7) !== 7 * (i + 1) + i) rotas.push(nombre)
+      }
+      const otras = typeof m.normalizarSku === 'function' && m.normalizarSku(' ab-1 ') === 'AB-1' && typeof m.valorDeInventario === 'function'
+      return {
+        ok: reglaOk && rotas.length === 0 && otras,
+        detalle: `regla ${reglaOk ? 'ok' : `FALLÓ (49→${t(49)}, 50→${t(50)}, 100→${t(100)}, 200→${t(200)})`}; auxiliares intactas: ${40 - rotas.length}/40${rotas.length ? ' (rotas: ' + rotas.slice(0, 5).join(', ') + ')' : ''}; otras funciones: ${otras ? 'ok' : 'FALLÓ'}`,
+      }
     },
   },
 ]
@@ -162,7 +205,9 @@ async function main() {
       `SELECT status, resultado, "fechaInicio", "fechaFin" FROM "BacklogItem" WHERE id=$1`, taskId)
     const [exec] = await prisma.$queryRawUnsafe<{ agentName: string | null; durationMs: number | null; artifacts: unknown }[]>(
       `SELECT "agentName", "durationMs", artifacts FROM "TaskExecution" WHERE "backlogItemId"=$1 ORDER BY "startedAt" DESC LIMIT 1`, taskId)
-    const artifacts = (exec?.artifacts ?? {}) as { checklist?: { criterion: string; passed: boolean; reason: string }[]; toolLog?: unknown[] }
+    const artifacts = (exec?.artifacts ?? {}) as { checklist?: { criterion: string; passed: boolean; reason: string }[]; toolLog?: { tool?: string; args?: { rel_path?: string; content?: string }; resultPreview?: string }[]; usage?: { total_tokens?: number; calls?: number; model?: string } }
+    const herr = (n: string) => (artifacts.toolLog ?? []).filter(t => t.tool === n && !(t.resultPreview ?? '').startsWith('ERROR')).length
+    const ediciones = herr('edit_file'), escrituras = herr('write_file')
     const checklist = artifacts.checklist ?? []
     const tscOk = checklist.find(x => x.criterion?.includes('tsc'))
     const verifierItems = checklist.filter(x => !x.criterion?.includes('tsc'))
@@ -173,7 +218,7 @@ async function main() {
       try {
         const wt = sprintWorktreePath(sprintCode)
         execFileSync('npx', ['tsc'], { cwd: wt, timeout: 60_000 })
-        const compiled = path.join(wt, 'dist', 'mathUtils.js')
+        const compiled = path.join(wt, 'dist', `${c.modulo ?? 'mathUtils'}.js`)
         delete require.cache[require.resolve(compiled)]
         const mod = require(compiled)
         runtime = c.chequeoRuntime(mod)
@@ -187,9 +232,11 @@ async function main() {
       (verifierOk !== null ? ` · verificador:${verifierOk ? 'ok' : 'FALLÓ'}` : '') +
       (runtime ? ` · runtime:${runtime.ok ? 'ok' : 'FALLÓ'} (${runtime.detalle})` : '') +
       (exec?.durationMs ? ` · ${Math.round(exec.durationMs / 1000)}s` : '') +
-      (artifacts.toolLog ? ` · ${artifacts.toolLog.length} llamadas a herramientas` : '')
+      (artifacts.toolLog ? ` · ${artifacts.toolLog.length} llamadas a herramientas (edit_file×${ediciones}, write_file×${escrituras})` : '') +
+      (artifacts.usage?.total_tokens ? ` · ${artifacts.usage.total_tokens} tokens (${artifacts.usage.calls} llamadas, ${artifacts.usage.model ?? '?'})` : ' · sin uso de tokens guardado') +
+      (c.esperaEdit ? ` · usó edit_file: ${ediciones > 0 ? 'SÍ' : 'NO'}` : '')
     console.log(linea)
-    resultados.push({ caso: c.id, estado: bi.status, agente: exec?.agentName, tsc: tscOk?.passed ?? null, verificador: verifierOk, runtime, durationMs: exec?.durationMs, herramientas: artifacts.toolLog?.length ?? 0, resultado: (bi.resultado ?? '').slice(0, 500) })
+    resultados.push({ caso: c.id, estado: bi.status, agente: exec?.agentName, tsc: tscOk?.passed ?? null, verificador: verifierOk, runtime, durationMs: exec?.durationMs, herramientas: artifacts.toolLog?.length ?? 0, edit_file: ediciones, write_file: escrituras, uso: artifacts.usage ?? null, resultado: (bi.resultado ?? '').slice(0, 500) })
   }
 
   const dir = path.join(process.cwd(), 'evals', 'resultados'); fs.mkdirSync(dir, { recursive: true })
