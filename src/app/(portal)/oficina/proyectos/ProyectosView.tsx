@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Flag, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import Link from '@/lib/BacklogLink'
@@ -14,8 +14,9 @@ import PanelAdjuntos from './PanelAdjuntos'
 import PanelBuscar from './PanelBuscar'
 import PanelAuto from './PanelAuto'
 import PanelEjecucion from './PanelEjecucion'
+import PanelFases from './PanelFases'
 
-type Panel = 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
+type Panel = 'fases' | 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
 const TIPOS_NUEVOS: TipoSesion[] = ['KICKOFF', 'PLANIFICACION', 'REVISION', 'LIBRE']
 const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: '#6366f1', REVISION: '#10b981', LIBRE: '#94a3b8', BITACORA: '#06b6d4' }
 
@@ -30,7 +31,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const [cargandoDet, setCargandoDet] = useState(false)
   const [sid, setSid] = useState<string | null>(null)
   const [sesionFull, setSesionFull] = useState<SesionFull | null>(null)
-  const [panel, setPanel] = useState<Panel>('contexto')
+  const [panel, setPanel] = useState<Panel>('fases')
   const [panelAbierto, setPanelAbierto] = useState(true)
   const [nueva, setNueva] = useState(false)
   const [tipoNueva, setTipoNueva] = useState<TipoSesion>('LIBRE')
@@ -89,6 +90,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const proyecto = lista.find(p => p.id === pid)
 
   const TABS: { k: Panel; icono: typeof Layers; txt: string; badge?: number }[] = [
+    { k: 'fases', icono: Flag, txt: 'Fases' },
     { k: 'contexto', icono: Layers, txt: 'Contexto' },
     { k: 'memoria', icono: Brain, txt: 'Memoria', badge: det?.propuestasPendientes },
     { k: 'adjuntos', icono: Paperclip, txt: 'Adjuntos', badge: det?.adjuntos },
@@ -206,6 +208,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
               </button>))}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
+            {panel === 'fases' && <PanelFases proyectoId={pid} onCambio={() => { void cargarLista() }} />}
             {panel === 'contexto' && <PanelContexto proyectoId={pid} sesion={sesionFull && sesionFull.id === sid ? sesionFull : null} onSesion={setSesionFull} />}
             {panel === 'memoria' && <PanelMemoria proyectoId={pid} onCambio={refrescar} />}
             {panel === 'adjuntos' && <PanelAdjuntos proyectoId={pid} onCambio={refrescar} />}

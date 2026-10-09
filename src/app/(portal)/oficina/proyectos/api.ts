@@ -57,6 +57,27 @@ export interface ResultadoBusqueda {
   titulo: string; fragmento: string; rank: number; fecha: string
 }
 
+// Motor de fases
+export interface FaseCriterio { texto: string; ok: boolean; por: string | null; en: string | null }
+export interface FaseActividadVista { clave: string; titulo: string; tipo: 'AGENTE' | 'HUMANA'; area: string; creada: boolean; backlogItemId: string | null; taskCode: string | null; status: string | null; assigneeName: string | null }
+export interface FaseVista {
+  clave: string; numero: number; bloque: 'PREVENTA' | 'EJECUCION'; nombre: string; objetivo: string
+  estado: 'HECHA' | 'ACTUAL' | 'PENDIENTE' | 'CERRADA'; entregables: string[]
+  puerta: { aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; criterios: FaseCriterio[]; cumplida: boolean }
+  actividades: { total: number; hechas: number; items: FaseActividadVista[] }
+}
+export interface FasesRes {
+  iniciado: boolean
+  solucion: { id: string; nombre: string; tipo: string; leadId: string | null }
+  lead: { id: string; companyName: string; status: string; outcome: string | null; lostReason: string | null } | null
+  puedeAprobar: boolean; esSuperadmin?: boolean
+  faseSugerida?: string
+  plantilla?: { codigo: string; nombre: string; descripcion?: string; fases?: number; version?: number }
+  estado?: 'EN_CURSO' | 'CERRADO_PERDIDO' | 'COMPLETADO'; faseActual?: string
+  fases?: FaseVista[]; ventaConfirmada?: boolean
+  historial?: { fase: string; accion: string; usuarioNombre: string | null; nota: string | null; createdAt: string }[]
+}
+
 export class ErrorApi extends Error {
   status: number
   data: Record<string, unknown>
