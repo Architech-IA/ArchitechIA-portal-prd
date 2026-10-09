@@ -65,11 +65,13 @@ export interface ResultadoBusqueda {
 // Motor de fases
 export interface FaseCriterio { texto: string; ok: boolean; por: string | null; en: string | null }
 export interface FaseActividadVista { clave: string; titulo: string; tipo: 'AGENTE' | 'HUMANA'; area: string; creada: boolean; backlogItemId: string | null; taskCode: string | null; status: string | null; assigneeName: string | null }
+export interface RecursoFase { tipo: string; etiqueta: string; descripcion: string; estado: string; nivel: 'ok' | 'medio' | 'vacio' | 'aviso'; href: string | null; panel: string | null }
 export interface FaseVista {
   clave: string; numero: number; bloque: 'PREVENTA' | 'EJECUCION'; nombre: string; objetivo: string
   estado: 'HECHA' | 'ACTUAL' | 'PENDIENTE' | 'CERRADA'; entregables: string[]
   puerta: { aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; criterios: FaseCriterio[]; cumplida: boolean }
   actividades: { total: number; hechas: number; items: FaseActividadVista[] }
+  recursos: RecursoFase[]
 }
 export interface FasesRes {
   iniciado: boolean

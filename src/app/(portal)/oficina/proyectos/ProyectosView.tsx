@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Flag, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import Link from '@/lib/BacklogLink'
-import { api, post, hace, type FaseLista, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
+import { api, post, hace, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
 import ChatSesion from './ChatSesion'
 import PanelContexto from './PanelContexto'
 import PanelMemoria from './PanelMemoria'
@@ -14,9 +14,9 @@ import PanelAdjuntos from './PanelAdjuntos'
 import PanelBuscar from './PanelBuscar'
 import PanelAuto from './PanelAuto'
 import PanelEjecucion from './PanelEjecucion'
-import PanelFases from './PanelFases'
+import VistaFase from './VistaFase'
 
-type Panel = 'fases' | 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
+type Panel = 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
 type FiltroFase = 'todos' | 'preventa' | 'ejecucion' | 'aprobar' | 'sin'
 type Orden = 'actividad' | 'fase' | 'nombre'
 const FILTROS: { k: FiltroFase; txt: string }[] = [
@@ -42,9 +42,11 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const [cargandoDet, setCargandoDet] = useState(false)
   const [sid, setSid] = useState<string | null>(null)
   const [sesionFull, setSesionFull] = useState<SesionFull | null>(null)
-  const [panel, setPanel] = useState<Panel>('fases')
+  const [panel, setPanel] = useState<Panel>('contexto')
   const [panelAbierto, setPanelAbierto] = useState(true)
   const [nueva, setNueva] = useState(false)
+  const [vista, setVista] = useState<string>('asistente')
+  const [fasesRes, setFasesRes] = useState<FasesRes | null>(null)
   const [tipoNueva, setTipoNueva] = useState<TipoSesion>('LIBRE')
   const [privadaNueva, setPrivadaNueva] = useState(false)
   const [creando, setCreando] = useState(false)
@@ -71,15 +73,25 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
 
   useEffect(() => { void cargarLista() }, [cargarLista])
 
+  // Fases del proyecto elegido (una pestaña por fase). Al abrir un proyecto con motor se muestra su fase actual.
+  const cargarFases = useCallback(async (id: string, primera = false) => {
+    try {
+      const r = await api<FasesRes>(`/api/proyectos/${id}/fases`)
+      if (pidRef.current !== id) return
+      setFasesRes(r)
+      if (primera) setVista(r.iniciado && r.estado === 'EN_CURSO' && r.faseActual ? r.faseActual : 'asistente')
+    } catch (e) { if (pidRef.current === id) setError(e instanceof Error ? e.message : 'No se pudieron cargar las fases') }
+  }, [])
+
   function elegirProyecto(id: string) {
     if (id === pid) return
-    setPid(id); pidRef.current = id; setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null); setCargandoDet(true)
+    setPid(id); pidRef.current = id; setFasesRes(null); setVista('asistente'); void cargarFases(id, true); setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null); setCargandoDet(true)
     void cargarDetalle(id)
   }
   // Proyecto recibido por URL (?p=…)
   useEffect(() => { if (initialProyectoId && !pid) elegirProyecto(initialProyectoId) }, [initialProyectoId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const refrescar = useCallback(() => { if (pidRef.current) void cargarDetalle(pidRef.current); void cargarLista() }, [cargarDetalle, cargarLista])
+  const refrescar = useCallback(() => { if (pidRef.current) { void cargarDetalle(pidRef.current); void cargarFases(pidRef.current) } void cargarLista() }, [cargarDetalle, cargarFases, cargarLista])
 
   async function crearSesion(tipo: TipoSesion) {
     if (!pid || creando) return
@@ -116,7 +128,6 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const proyecto = lista.find(p => p.id === pid)
 
   const TABS: { k: Panel; icono: typeof Layers; txt: string; badge?: number }[] = [
-    { k: 'fases', icono: Flag, txt: 'Fases' },
     { k: 'contexto', icono: Layers, txt: 'Contexto' },
     { k: 'memoria', icono: Brain, txt: 'Memoria', badge: det?.propuestasPendientes },
     { k: 'adjuntos', icono: Paperclip, txt: 'Adjuntos', badge: det?.adjuntos },
@@ -188,20 +199,29 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                 <Link href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución"><ExternalLink size={11} /> Hub de la solución</Link>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
-              {proyecto?.fase && (
-                <button onClick={() => { setPanel('fases'); setPanelAbierto(true) }} title="Abrir las fases del proyecto" className="w-full flex items-center gap-3 px-4 pb-1.5 pt-0.5 text-left">
-                  <span className="flex gap-0.5 w-[220px] flex-shrink-0">{Array.from({ length: proyecto.fase.totalFases }, (_, i) => {
-                    const num = i + 1
-                    const f = proyecto.fase as FaseLista
-                    const hecha = f.estadoMotor === 'COMPLETADO' || num < f.numero
-                    const actual = num === f.numero && f.estadoMotor !== 'COMPLETADO'
-                    return <span key={i} className="h-1.5 flex-1 rounded-full" style={{ background: hecha ? '#10b981' : actual ? (f.estadoMotor === 'CERRADO_PERDIDO' ? '#ef4444' : '#6366f1') : 'rgba(255,255,255,0.12)' }} />
-                  })}</span>
-                  <span className="text-[10px] truncate" style={{ color: colorFase(proyecto.fase) }}>{textoFase(proyecto.fase)}
-                    <span className="text-[#7f8a9c]"> · {proyecto.fase.estadoMotor === 'EN_CURSO' && proyecto.fase.puerta.total > 0 ? `puerta ${proyecto.fase.puerta.ok}/${proyecto.fase.puerta.total}${proyecto.fase.puerta.lista ? ' · lista para aprobar' : ''}` : proyecto.fase.bloque === 'PREVENTA' ? 'preventa' : 'ejecución'}</span></span>
-                </button>)}
-              {!proyecto?.fase && det && <p className="px-4 pb-1 text-[10px] text-[#6b7280]">Sin motor de fases. Se inicia desde la pestaña Fases.</p>}
-              <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
+              {/* Una pestaña por fase: el asistente (sesiones de IA) y las 12 fases del proyecto */}
+              <div className="flex items-center gap-1 px-4 py-1.5 overflow-x-auto border-t border-white/5">
+                <button onClick={() => setVista('asistente')} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 transition-colors"
+                  style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
+                  <MessageSquare size={11} /> Asistente</button>
+                {!fasesRes && <Loader2 size={12} className="animate-spin text-[#7f8a9c] mx-2" />}
+                {(fasesRes?.fases ?? []).map((f, i, todas) => {
+                  const activa = vista === f.clave
+                  const color = !fasesRes?.iniciado ? '#6b7280' : f.estado === 'HECHA' ? '#6ee7b7' : f.estado === 'ACTUAL' ? '#a5b4fc' : f.estado === 'CERRADA' ? '#fca5a5' : '#6b7280'
+                  const lista = fasesRes?.iniciado && f.estado === 'ACTUAL' && f.puerta.cumplida
+                  return (
+                    <span key={f.clave} className="flex items-center gap-1 flex-shrink-0">
+                      {(i === 0 || todas[i - 1].bloque !== f.bloque) && <span className="text-[9px] uppercase tracking-wider text-[#6b7280] ml-1.5 mr-0.5">{f.bloque === 'PREVENTA' ? 'Preventa' : 'Ejecución'}</span>}
+                      <button onClick={() => setVista(f.clave)} title={f.objetivo} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] transition-colors"
+                        style={activa ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.55)', color: '#fff' } : { background: f.estado === 'ACTUAL' && fasesRes?.iniciado ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.03)', border: f.estado === 'ACTUAL' && fasesRes?.iniciado ? '1px solid rgba(99,102,241,0.35)' : '1px solid rgba(255,255,255,0.06)', color }}>
+                        {fasesRes?.iniciado && f.estado === 'HECHA' ? <Check size={10} /> : <span className="text-[10px] opacity-70">{f.numero}</span>}
+                        {f.nombre}
+                        {lista && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="La puerta está completa: espera aprobación" />}
+                      </button>
+                    </span>)
+                })}
+              </div>
+              {vista === 'asistente' && <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
                 {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-[#7f8a9c]" />}
                 {det?.sesiones.map(s => (
                   <button key={s.id} onClick={() => { setSid(s.id); setNueva(false) }} title={`${ETIQUETA_TIPO[s.tipo as TipoSesion] ?? s.tipo} · ${s.creadaPorNombre} · ${s.mensajes} mensajes`}
@@ -212,9 +232,9 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                     {s.privada && <Lock size={9} className="text-amber-400 flex-shrink-0" />}
                   </button>))}
                 <button onClick={() => setNueva(o => !o)} disabled={!det} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 text-indigo-200 disabled:opacity-40" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}><Plus size={11} /> Nueva sesión</button>
-              </div>
+              </div>}
 
-              {nueva && (
+              {vista === 'asistente' && nueva && (
                 <div className="mx-4 mb-3 rounded-xl p-3 space-y-2" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex items-center justify-between"><span className="text-[11px] font-semibold text-gray-200">¿Qué tipo de sesión?</span><button onClick={() => setNueva(false)} className="text-[#7f8a9c] hover:text-gray-200"><X size={13} /></button></div>
                   <div className="grid grid-cols-2 gap-2">
@@ -234,7 +254,12 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
 
             {error && <p className="px-4 py-2 text-[11px] text-red-400">{error}</p>}
 
-            <div className="flex-1 min-h-0">
+            {vista !== 'asistente' && fasesRes?.fases && (() => {
+              const f = fasesRes.fases.find(x => x.clave === vista)
+              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} /></div> : null
+            })()}
+
+            {vista === 'asistente' && <div className="flex-1 min-h-0">
               {det && sesion && det.yo && (
                 <ChatSesion key={sesion.id} proyectoId={pid} sesion={sesion} yo={det.yo} onCambio={refrescar}
                   onAbrirSesion={id => { if (id) setSid(id); else void cargarDetalle(pid) }}
@@ -246,7 +271,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                   <p className="text-[12px] text-[#7f8a9c] max-w-md">Empieza una: la IA ya conoce la ficha, el PRD, el diseño, el backlog y todo lo que agregues a la memoria y los adjuntos.</p>
                   <button onClick={() => setNueva(true)} className="px-4 py-2 rounded-lg text-[12px] font-semibold text-white" style={{ background: 'rgba(99,102,241,0.85)' }}>Crear la primera sesión</button>
                 </div>)}
-            </div>
+            </div>}
           </>)}
       </div>
 
@@ -262,7 +287,6 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
               </button>))}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
-            {panel === 'fases' && <PanelFases proyectoId={pid} onCambio={() => { void cargarLista() }} />}
             {panel === 'contexto' && <PanelContexto proyectoId={pid} sesion={sesionFull && sesionFull.id === sid ? sesionFull : null} onSesion={setSesionFull} />}
             {panel === 'memoria' && <PanelMemoria proyectoId={pid} onCambio={refrescar} />}
             {panel === 'adjuntos' && <PanelAdjuntos proyectoId={pid} onCambio={refrescar} />}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, use } from 'react'
 import { createPortal } from 'react-dom'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useDestinoBacklog } from '@/lib/BacklogLink'
 import {
   Sliders, LayoutGrid, FileText, Calendar, Code2,
@@ -716,7 +716,11 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
   const [notFound, setNotFound] = useState(false)
   // Popup de edicion de la informacion de la solucion (antes era el tab General)
   const [editOpen, setEditOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<TabKey>('arquitectura')
+  // ?seccion=prd|diseno|plan-ejec|codigo… abre el hub en esa pestaña (lo usan los enlaces "dónde está" de las fases del proyecto)
+  const seccionUrl = useSearchParams().get('seccion')
+  const seccionValida = TABS.some(x => x.key === seccionUrl) ? (seccionUrl as TabKey) : null
+  const [activeTab, setActiveTab] = useState<TabKey>(seccionValida ?? 'arquitectura')
+  useEffect(() => { if (seccionValida) setActiveTab(seccionValida) }, [seccionValida])
   const [form, setForm] = useState<FormState>(emptyForm)
   const [archNodes, setArchNodes] = useState<ArchNode[]>([])
   const [archConnections, setArchConnections] = useState<ArchConnection[]>([])
