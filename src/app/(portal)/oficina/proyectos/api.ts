@@ -2,7 +2,12 @@ import type { FuenteCtx } from '@/lib/proyectos/tipos'
 
 export type { FuenteCtx }
 
+export interface FaseLista {
+  numero: number; nombre: string; bloque: 'PREVENTA' | 'EJECUCION'; estadoMotor: 'EN_CURSO' | 'CERRADO_PERDIDO' | 'COMPLETADO'; totalFases: number
+  puerta: { ok: number; total: number; lista: boolean; aprobador: string; tipo: 'NORMAL' | 'RESULTADO' }; leadId: string | null; cliente: string | null
+}
 export interface ProyectoLista {
+  fase: FaseLista | null
   id: string; nombre: string; tipo: string; estado: string; codigo: string | null
   sesiones: number; ultimaActividad: string | null; memoriaVersion: number; propuestasPendientes: number; adjuntos: number
 }

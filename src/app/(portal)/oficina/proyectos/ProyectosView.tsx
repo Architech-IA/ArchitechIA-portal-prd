@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import Link from '@/lib/BacklogLink'
-import { api, post, hace, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
+import { api, post, hace, type FaseLista, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
 import ChatSesion from './ChatSesion'
 import PanelContexto from './PanelContexto'
 import PanelMemoria from './PanelMemoria'
@@ -17,6 +17,15 @@ import PanelEjecucion from './PanelEjecucion'
 import PanelFases from './PanelFases'
 
 type Panel = 'fases' | 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
+type FiltroFase = 'todos' | 'preventa' | 'ejecucion' | 'aprobar' | 'sin'
+type Orden = 'actividad' | 'fase' | 'nombre'
+const FILTROS: { k: FiltroFase; txt: string }[] = [
+  { k: 'todos', txt: 'Todos' }, { k: 'preventa', txt: 'Preventa' }, { k: 'ejecucion', txt: 'Ejecución' }, { k: 'aprobar', txt: 'Por aprobar' }, { k: 'sin', txt: 'Sin motor' },
+]
+const ORDENES: { k: Orden; txt: string }[] = [{ k: 'actividad', txt: 'Actividad' }, { k: 'fase', txt: 'Fase' }, { k: 'nombre', txt: 'Nombre' }]
+const esperaAprobacion = (f: FaseLista | null) => !!f && f.estadoMotor === 'EN_CURSO' && f.puerta.total > 0 && f.puerta.lista
+const colorFase = (f: FaseLista) => (f.estadoMotor === 'CERRADO_PERDIDO' ? '#fca5a5' : f.estadoMotor === 'COMPLETADO' ? '#6ee7b7' : f.bloque === 'PREVENTA' ? '#a5b4fc' : '#5eead4')
+const textoFase = (f: FaseLista) => (f.estadoMotor === 'COMPLETADO' ? 'Completado' : f.estadoMotor === 'CERRADO_PERDIDO' ? `Perdido · ${f.nombre}` : `${f.numero}·${f.nombre}`)
 const TIPOS_NUEVOS: TipoSesion[] = ['KICKOFF', 'PLANIFICACION', 'REVISION', 'LIBRE']
 const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: '#6366f1', REVISION: '#10b981', LIBRE: '#94a3b8', BITACORA: '#06b6d4' }
 
@@ -26,6 +35,8 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const [lista, setLista] = useState<ProyectoLista[]>([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
+  const [filtroFase, setFiltroFase] = useState<FiltroFase>('todos')
+  const [orden, setOrden] = useState<Orden>('actividad')
   const [pid, setPid] = useState<string | null>(null)
   const [det, setDet] = useState<DetalleProyecto | null>(null)
   const [cargandoDet, setCargandoDet] = useState(false)
@@ -80,10 +91,25 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la sesión') } finally { setCreando(false) }
   }
 
+  const conteo = useMemo(() => ({
+    todos: lista.length,
+    preventa: lista.filter(p => p.fase?.bloque === 'PREVENTA' && p.fase.estadoMotor === 'EN_CURSO').length,
+    ejecucion: lista.filter(p => p.fase?.bloque === 'EJECUCION' && p.fase.estadoMotor === 'EN_CURSO').length,
+    aprobar: lista.filter(p => esperaAprobacion(p.fase)).length,
+    sin: lista.filter(p => !p.fase).length,
+  }), [lista])
+
   const filtrada = useMemo(() => {
     const t = filtro.trim().toLowerCase()
-    return t ? lista.filter(p => p.nombre.toLowerCase().includes(t) || (p.codigo ?? '').toLowerCase().includes(t)) : lista
-  }, [lista, filtro])
+    let r = t ? lista.filter(p => p.nombre.toLowerCase().includes(t) || (p.codigo ?? '').toLowerCase().includes(t)) : lista
+    if (filtroFase === 'preventa') r = r.filter(p => p.fase?.bloque === 'PREVENTA' && p.fase.estadoMotor === 'EN_CURSO')
+    else if (filtroFase === 'ejecucion') r = r.filter(p => p.fase?.bloque === 'EJECUCION' && p.fase.estadoMotor === 'EN_CURSO')
+    else if (filtroFase === 'aprobar') r = r.filter(p => esperaAprobacion(p.fase))
+    else if (filtroFase === 'sin') r = r.filter(p => !p.fase)
+    if (orden === 'nombre') r = [...r].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    else if (orden === 'fase') r = [...r].sort((a, b) => (a.fase ? a.fase.numero : 99) - (b.fase ? b.fase.numero : 99) || a.nombre.localeCompare(b.nombre, 'es'))
+    return r
+  }, [lista, filtro, filtroFase, orden])
 
   const sesion = det?.sesiones.find(s => s.id === sid) ?? null
   const bitacora = det?.sesiones.find(s => s.tipo === 'BITACORA') ?? null
@@ -109,6 +135,17 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
             <Search size={11} className="absolute left-2 top-2 text-[#7f8a9c]" />
             <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Filtrar…" className="w-full rounded-lg pl-7 pr-2 py-1.5 text-[11px] text-gray-300 outline-none border border-white/10 focus:border-indigo-500/40 placeholder-gray-600" style={{ background: 'rgba(255,255,255,0.04)' }} />
           </div>
+          <div className="flex flex-wrap gap-1 mt-2">
+            {FILTROS.map(f => (
+              <button key={f.k} onClick={() => setFiltroFase(f.k)} className="px-2 py-0.5 rounded-full text-[10px] transition-colors"
+                style={filtroFase === f.k ? { background: 'rgba(99,102,241,0.28)', color: '#e0e7ff', border: '1px solid rgba(99,102,241,0.5)' } : { background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.07)' }}>
+                {f.txt}{conteo[f.k] > 0 || f.k === 'todos' ? ` ${conteo[f.k]}` : ''}</button>))}
+          </div>
+          <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-[#7f8a9c]">
+            <span>Orden</span>
+            <select value={orden} onChange={e => setOrden(e.target.value as Orden)} className="rounded px-1 py-0.5 text-[10px] text-gray-300 bg-black/30 border border-white/10 outline-none">
+              {ORDENES.map(o => <option key={o.k} value={o.k}>{o.txt}</option>)}</select>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-1">
           {cargandoLista && <div className="flex justify-center py-6 text-[#7f8a9c]"><Loader2 size={14} className="animate-spin" /></div>}
@@ -117,8 +154,12 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
               style={p.id === pid ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.35)' } : { background: 'rgba(255,255,255,0.02)', border: '1px solid transparent' }}>
               <div className="flex items-center gap-1.5">
                 <span className={`text-[11px] font-medium truncate flex-1 ${p.id === pid ? 'text-white' : 'text-gray-300'}`}>{p.nombre}</span>
+                {esperaAprobacion(p.fase) && <span title="La puerta de la fase está completa: espera aprobación" className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />}
                 {p.propuestasPendientes > 0 && <span title="Propuestas de memoria pendientes" className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
               </div>
+              {p.fase
+                ? <p className="text-[10px] mt-0.5 truncate font-medium" style={{ color: colorFase(p.fase) }}>{textoFase(p.fase)}<span className="font-normal text-[#7f8a9c]"> · {p.fase.bloque === 'PREVENTA' ? 'preventa' : 'ejecución'}{p.fase.estadoMotor === 'EN_CURSO' && p.fase.puerta.total > 0 ? ` · puerta ${p.fase.puerta.ok}/${p.fase.puerta.total}` : ''}</span></p>
+                : <p className="text-[10px] mt-0.5 text-[#6b7280]">Sin motor de fases</p>}
               <p className="text-[10px] text-[#7f8a9c] mt-0.5 truncate">
                 {p.codigo ? `${p.codigo} · ` : ''}{p.sesiones} sesión{p.sesiones === 1 ? '' : 'es'}{p.ultimaActividad ? ` · ${hace(p.ultimaActividad)}` : ''}
               </p>
@@ -147,6 +188,19 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                 <Link href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución"><ExternalLink size={11} /> Hub de la solución</Link>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
+              {proyecto?.fase && (
+                <button onClick={() => { setPanel('fases'); setPanelAbierto(true) }} title="Abrir las fases del proyecto" className="w-full flex items-center gap-3 px-4 pb-1.5 pt-0.5 text-left">
+                  <span className="flex gap-0.5 w-[220px] flex-shrink-0">{Array.from({ length: proyecto.fase.totalFases }, (_, i) => {
+                    const num = i + 1
+                    const f = proyecto.fase as FaseLista
+                    const hecha = f.estadoMotor === 'COMPLETADO' || num < f.numero
+                    const actual = num === f.numero && f.estadoMotor !== 'COMPLETADO'
+                    return <span key={i} className="h-1.5 flex-1 rounded-full" style={{ background: hecha ? '#10b981' : actual ? (f.estadoMotor === 'CERRADO_PERDIDO' ? '#ef4444' : '#6366f1') : 'rgba(255,255,255,0.12)' }} />
+                  })}</span>
+                  <span className="text-[10px] truncate" style={{ color: colorFase(proyecto.fase) }}>{textoFase(proyecto.fase)}
+                    <span className="text-[#7f8a9c]"> · {proyecto.fase.estadoMotor === 'EN_CURSO' && proyecto.fase.puerta.total > 0 ? `puerta ${proyecto.fase.puerta.ok}/${proyecto.fase.puerta.total}${proyecto.fase.puerta.lista ? ' · lista para aprobar' : ''}` : proyecto.fase.bloque === 'PREVENTA' ? 'preventa' : 'ejecución'}</span></span>
+                </button>)}
+              {!proyecto?.fase && det && <p className="px-4 pb-1 text-[10px] text-[#6b7280]">Sin motor de fases. Se inicia desde la pestaña Fases.</p>}
               <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
                 {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-[#7f8a9c]" />}
                 {det?.sesiones.map(s => (
