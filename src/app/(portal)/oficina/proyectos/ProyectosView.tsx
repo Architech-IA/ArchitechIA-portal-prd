@@ -17,12 +17,8 @@ import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 
 type Panel = 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
-type FiltroFase = 'todos' | 'preventa' | 'definicion' | 'ejecucion' | 'aprobar' | 'sin'
 type FiltroNat = 'todas' | Naturaleza
 type Orden = 'actividad' | 'fase' | 'nombre'
-const FILTROS: { k: FiltroFase; txt: string }[] = [
-  { k: 'todos', txt: 'Todos' }, { k: 'preventa', txt: 'Preventa' }, { k: 'definicion', txt: 'Definición' }, { k: 'ejecucion', txt: 'Ejecución' }, { k: 'aprobar', txt: 'Por aprobar' }, { k: 'sin', txt: 'Sin motor' },
-]
 const ORDENES: { k: Orden; txt: string }[] = [{ k: 'actividad', txt: 'Actividad' }, { k: 'fase', txt: 'Fase' }, { k: 'nombre', txt: 'Nombre' }]
 const esperaAprobacion = (f: FaseLista | null) => !!f && f.estadoMotor === 'EN_CURSO' && f.puerta.total > 0 && f.puerta.lista
 const colorFase = (f: FaseLista) => (f.estadoMotor === 'CERRADO_PERDIDO' ? '#fca5a5' : f.estadoMotor === 'COMPLETADO' ? '#6ee7b7' : f.bloque !== 'EJECUCION' ? '#a5b4fc' : '#5eead4')
@@ -36,7 +32,6 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const [lista, setLista] = useState<ProyectoLista[]>([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
-  const [filtroFase, setFiltroFase] = useState<FiltroFase>('todos')
   const [filtroNat, setFiltroNat] = useState<FiltroNat>('todas')
   const [orden, setOrden] = useState<Orden>('actividad')
   const [pid, setPid] = useState<string | null>(null)
@@ -105,28 +100,14 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la sesión') } finally { setCreando(false) }
   }
 
-  const conteo = useMemo(() => ({
-    todos: lista.length,
-    preventa: lista.filter(p => p.fase?.bloque === 'PREVENTA' && p.fase.estadoMotor === 'EN_CURSO').length,
-    definicion: lista.filter(p => p.fase?.bloque === 'DEFINICION' && p.fase.estadoMotor === 'EN_CURSO').length,
-    ejecucion: lista.filter(p => p.fase?.bloque === 'EJECUCION' && p.fase.estadoMotor === 'EN_CURSO').length,
-    aprobar: lista.filter(p => esperaAprobacion(p.fase)).length,
-    sin: lista.filter(p => !p.fase).length,
-  }), [lista])
-
   const filtrada = useMemo(() => {
     const t = filtro.trim().toLowerCase()
     let r = t ? lista.filter(p => p.nombre.toLowerCase().includes(t) || (p.codigo ?? '').toLowerCase().includes(t)) : lista
     if (filtroNat !== 'todas') r = r.filter(p => p.naturaleza === filtroNat)
-    if (filtroFase === 'definicion') r = r.filter(p => p.fase?.bloque === 'DEFINICION' && p.fase.estadoMotor === 'EN_CURSO')
-    if (filtroFase === 'preventa') r = r.filter(p => p.fase?.bloque === 'PREVENTA' && p.fase.estadoMotor === 'EN_CURSO')
-    else if (filtroFase === 'ejecucion') r = r.filter(p => p.fase?.bloque === 'EJECUCION' && p.fase.estadoMotor === 'EN_CURSO')
-    else if (filtroFase === 'aprobar') r = r.filter(p => esperaAprobacion(p.fase))
-    else if (filtroFase === 'sin') r = r.filter(p => !p.fase)
     if (orden === 'nombre') r = [...r].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
     else if (orden === 'fase') r = [...r].sort((a, b) => (a.fase ? a.fase.numero : 99) - (b.fase ? b.fase.numero : 99) || a.nombre.localeCompare(b.nombre, 'es'))
     return r
-  }, [lista, filtro, filtroFase, filtroNat, orden])
+  }, [lista, filtro, filtroNat, orden])
 
   const sesion = det?.sesiones.find(s => s.id === sid) ?? null
   const bitacora = det?.sesiones.find(s => s.tipo === 'BITACORA') ?? null
@@ -156,12 +137,6 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
               <button key={k} onClick={() => setFiltroNat(k)} className="flex-1 px-1.5 py-0.5 rounded-md text-[10px] transition-colors"
                 style={filtroNat === k ? { background: 'rgba(168,85,247,0.25)', color: '#f3e8ff', border: '1px solid rgba(168,85,247,0.5)' } : { background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.07)' }}>
                 {txt} {k === 'todas' ? lista.length : lista.filter(p => p.naturaleza === k).length}</button>))}
-          </div>
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {FILTROS.map(f => (
-              <button key={f.k} onClick={() => setFiltroFase(f.k)} className="px-2 py-0.5 rounded-full text-[10px] transition-colors"
-                style={filtroFase === f.k ? { background: 'rgba(99,102,241,0.28)', color: '#e0e7ff', border: '1px solid rgba(99,102,241,0.5)' } : { background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.07)' }}>
-                {f.txt}{conteo[f.k] > 0 || f.k === 'todos' ? ` ${conteo[f.k]}` : ''}</button>))}
           </div>
           <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-[#7f8a9c]">
             <span>Orden</span>
