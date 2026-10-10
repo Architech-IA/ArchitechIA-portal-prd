@@ -121,7 +121,8 @@ async function main() {
       `SELECT "resultSummary", "durationMs", artifacts FROM "TaskExecution" WHERE "backlogItemId"=$1 ORDER BY "startedAt" DESC LIMIT 1`, ids[c.id])
     const traza = await prisma.$queryRawUnsafe<{ message: string }[]>(`SELECT message FROM "TaskExecutionEvent" WHERE "taskId"=$1 ORDER BY "createdAt"`, ids[c.id]).catch(() => [])
     const marca = /CAMBIO DE DISEÑO:/.test(ex?.resultSummary ?? '')
-    const avisoTraza = traza.some(t => t.message.includes('declaró un cambio de diseño'))
+    const avisoTraza = traza.some(t => /cambio de diseño|desviación del diseño/i.test(t.message))
+    const avisoRevisor = traza.some(t => /desviación del diseño/i.test(t.message))
     const bloque = (ex?.artifacts as any)?.checklist?.some((x: any) => /dise[ñn]o t[eé]cnico documentado/.test(x.criterion ?? ''))
     let runtime: { ok: boolean; detalle: string } | null = null
     if (bi.status === 'DONE' || bi.status === 'FAILED') {
@@ -133,7 +134,7 @@ async function main() {
         runtime = c.chequeo(require(compiled))
       } catch (e) { runtime = { ok: false, detalle: `no se pudo ejecutar: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}` } }
     }
-    console.log(`  ${runtime?.ok ? '✔' : '✘'} ${c.id}: ${bi.status} · runtime:${runtime?.ok ? 'ok' : 'FALLÓ'} (${runtime?.detalle}) · criterio de diseño en el verificador:${bloque ? 'sí' : 'no'} · marca «CAMBIO DE DISEÑO» en el resumen:${marca ? 'sí' : 'no'}${c.exigeMarca ? (marca ? ' (esperada)' : ' (FALTA)') : ''} · aviso en la traza:${avisoTraza ? 'sí' : 'no'}${ex?.artifacts?.usage?.total_tokens ? ` · ${ex.artifacts.usage.total_tokens} tokens` : ''}`)
+    console.log(`  ${runtime?.ok ? '✔' : '✘'} ${c.id}: ${bi.status} · runtime:${runtime?.ok ? 'ok' : 'FALLÓ'} (${runtime?.detalle}) · criterio de diseño en el verificador:${bloque ? 'sí' : 'no'} · marca «CAMBIO DE DISEÑO» en el resumen:${marca ? 'sí' : 'no'}${c.exigeMarca ? (marca ? ' (esperada)' : ' (FALTA)') : ''} · aviso en la traza:${avisoTraza ? 'sí' : 'no'} (revisor:${avisoRevisor ? 'sí' : 'no'})${ex?.artifacts?.usage?.total_tokens ? ` · ${ex.artifacts.usage.total_tokens} tokens` : ''}`)
     console.log(`      resumen: ${(ex?.resultSummary ?? '').replace(/\s+/g, ' ').slice(0, 260)}`)
     resultados.push({ caso: c.id, estado: bi.status, runtime, marca, avisoTraza, criterioDiseno: !!bloque, resumen: ex?.resultSummary })
   }
