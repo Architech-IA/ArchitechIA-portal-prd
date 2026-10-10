@@ -54,25 +54,25 @@ export default function Riesgos({ solucionId }: { solucionId: string }) {
   return (
     <div className="space-y-3">
       {error && <p className="text-xs text-red-400 flex items-center gap-1.5"><AlertTriangle size={13} /> {error} <button type="button" onClick={() => setError('')} className="ml-1 text-gray-500 hover:text-gray-300"><X size={12} /></button></p>}
-      {riesgos.length === 0 && <p className="text-gray-600 text-sm text-center py-4">Sin riesgos registrados todavía.</p>}
+      {riesgos.length === 0 && <p className="text-gray-500 text-sm text-center py-4">Sin riesgos registrados todavía.</p>}
       <div className="space-y-3">
         {riesgos.map(r => (
           <div key={r.id} className={`bg-gray-950 border rounded-xl p-3 space-y-2 ${SEVERIDAD_COLOR[r.severidad] ?? 'border-gray-700'}`}>
             <div className="flex items-center gap-2">
               <input type="text" value={r.titulo} onChange={e => editar(r.id, { titulo: e.target.value })} placeholder="Título del riesgo"
-                className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors" />
+                className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors" />
               <button type="button" onClick={() => void quitar(r.id)} className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors"><Trash2 size={14} /></button>
             </div>
             <textarea value={r.descripcion ?? ''} onChange={e => editar(r.id, { descripcion: e.target.value })} placeholder="Descripción del riesgo" rows={2}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-y" />
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-y" />
             <div className="grid grid-cols-4 gap-2">
               <select value={r.severidad} onChange={e => editar(r.id, { severidad: e.target.value })} title="Severidad" className={campo + ' cursor-pointer'}>{SEVERIDADES.map(s => <option key={s} value={s}>{s}</option>)}</select>
               <select value={r.probabilidad} onChange={e => editar(r.id, { probabilidad: e.target.value })} title="Probabilidad" className={campo + ' cursor-pointer'}>{PROBABILIDADES.map(p => <option key={p} value={p}>{p}</option>)}</select>
               <select value={r.estado} onChange={e => editar(r.id, { estado: e.target.value })} title="Estado" className={campo + ' cursor-pointer'}>{ESTADOS_RIESGO.map(s => <option key={s} value={s}>{s}</option>)}</select>
-              <input type="text" value={r.responsable ?? ''} onChange={e => editar(r.id, { responsable: e.target.value })} placeholder="Responsable" className={campo + ' placeholder-gray-600'} />
+              <input type="text" value={r.responsable ?? ''} onChange={e => editar(r.id, { responsable: e.target.value })} placeholder="Responsable" className={campo + ' placeholder-gray-500'} />
             </div>
             <input type="text" value={r.mitigacion ?? ''} onChange={e => editar(r.id, { mitigacion: e.target.value })} placeholder="Mitigación propuesta"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
           </div>
         ))}
       </div>

@@ -38,7 +38,7 @@ export default function Versiones({ solucionId, onRestaurar, onCerrar }: { soluc
           {(lista ?? []).map(v => (
             <li key={v.version} className="flex items-center gap-3 py-2 text-xs">
               <span className="w-8 text-gray-500">v{v.version}</span>
-              <span className="flex-1 min-w-0"><span className="block text-gray-300 truncate">{v.motivo ?? 'Versión guardada'}</span><span className="text-gray-600">{fechaCorta(v.createdAt)} · {Math.round(v.chars / 1000)} mil caracteres</span></span>
+              <span className="flex-1 min-w-0"><span className="block text-gray-300 truncate">{v.motivo ?? 'Versión guardada'}</span><span className="text-gray-500">{fechaCorta(v.createdAt)} · {Math.round(v.chars / 1000)} mil caracteres</span></span>
               <button type="button" onClick={() => void traer(v)} disabled={trayendo !== null} className="px-2.5 py-1 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:bg-white/5 disabled:opacity-50">{trayendo === v.version ? '…' : 'Traer al editor'}</button>
             </li>
           ))}

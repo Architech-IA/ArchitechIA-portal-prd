@@ -21,6 +21,7 @@ export default function Entrega({ solucionId, nombre, esAdmin, tokenCliente, onT
   const [error, setError] = useState('')
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
+  const [nuevaSnap, setNuevaSnap] = useState<{ tipo: 'LINEA_BASE' | 'AS_BUILT' | 'MANUAL'; etiqueta: string } | null>(null)
   const [adicional, setAdicional] = useState({ nombre: '', tipo: 'PROJECT', valorEstimado: '' })
   const [hijas, setHijas] = useState<{ id: string; nombre: string }[]>([])
   const [padre, setPadre] = useState<{ id: string; nombre: string } | null>(null)
@@ -58,11 +59,13 @@ export default function Entrega({ solucionId, nombre, esAdmin, tokenCliente, onT
     finally { setOcupado(null) }
   }
 
-  async function congelar(tipo: 'LINEA_BASE' | 'AS_BUILT' | 'MANUAL') {
-    const etiqueta = window.prompt(tipo === 'AS_BUILT' ? 'Etiqueta del as-built (queda congelado tal como está guardado hoy):' : 'Etiqueta de la fotografía:', tipo === 'AS_BUILT' ? 'As-built (entrega)' : tipo === 'LINEA_BASE' ? 'Línea base' : 'Fotografía manual')
-    if (etiqueta === null) return
-    setError(''); setOcupado(tipo)
-    try { await apiJson(`/api/soluciones/${solucionId}/snapshots`, { method: 'POST', body: JSON.stringify({ tipo, etiqueta }) }); await cargar() }
+  function pedirSnap(tipo: 'LINEA_BASE' | 'AS_BUILT' | 'MANUAL') {
+    setNuevaSnap({ tipo, etiqueta: tipo === 'AS_BUILT' ? 'As-built (entrega)' : tipo === 'LINEA_BASE' ? 'Línea base' : 'Fotografía manual' })
+  }
+  async function congelar() {
+    if (!nuevaSnap) return
+    setError(''); setOcupado(nuevaSnap.tipo)
+    try { await apiJson(`/api/soluciones/${solucionId}/snapshots`, { method: 'POST', body: JSON.stringify({ tipo: nuevaSnap.tipo, etiqueta: nuevaSnap.etiqueta.trim() || undefined }) }); setNuevaSnap(null); await cargar() }
     catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la fotografía') }
     finally { setOcupado(null) }
   }
@@ -112,11 +115,20 @@ export default function Entrega({ solucionId, nombre, esAdmin, tokenCliente, onT
         <h3 className="text-sm font-semibold text-gray-200">Fotografías del proyecto</h3>
         <p className="text-xs text-gray-500 leading-relaxed">Copia congelada de todos los documentos, hitos, riesgos y cambios. La <b className="text-gray-400">línea base</b> se crea sola cuando PRD y diseño quedan aprobados; el <b className="text-gray-400">as-built</b> lo congela un administrador al entregar.</p>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void congelar('LINEA_BASE')} disabled={ocupado !== null} className={btn}><Camera size={12} /> Línea base</button>
-          {esAdmin && <button type="button" onClick={() => void congelar('AS_BUILT')} disabled={ocupado !== null} className={btn}><Camera size={12} /> Congelar as-built</button>}
-          <button type="button" onClick={() => void congelar('MANUAL')} disabled={ocupado !== null} className={btn}><Camera size={12} /> Otra fotografía</button>
+          <button type="button" onClick={() => pedirSnap('LINEA_BASE')} disabled={ocupado !== null} className={btn}><Camera size={12} /> Línea base</button>
+          {esAdmin && <button type="button" onClick={() => pedirSnap('AS_BUILT')} disabled={ocupado !== null} className={btn}><Camera size={12} /> Congelar as-built</button>}
+          <button type="button" onClick={() => pedirSnap('MANUAL')} disabled={ocupado !== null} className={btn}><Camera size={12} /> Otra fotografía</button>
         </div>
-        {snaps.length === 0 ? <p className="text-xs text-gray-600">Aún no hay fotografías.</p> : (
+        {nuevaSnap && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700 p-2">
+            <input value={nuevaSnap.etiqueta} onChange={e => setNuevaSnap({ ...nuevaSnap, etiqueta: e.target.value })} placeholder="Etiqueta"
+              className="flex-1 min-w-[200px] bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500" />
+            <span className="text-[11px] text-gray-500">{nuevaSnap.tipo === 'AS_BUILT' ? 'Queda congelado tal como está guardado hoy.' : 'Copia de lo guardado hoy.'}</span>
+            <button type="button" onClick={() => void congelar()} disabled={ocupado !== null} className={btn}>{ocupado === nuevaSnap.tipo ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />} Crear</button>
+            <button type="button" onClick={() => setNuevaSnap(null)} className="px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 text-xs">Cancelar</button>
+          </div>
+        )}
+        {snaps.length === 0 ? <p className="text-xs text-gray-500">Aún no hay fotografías.</p> : (
           <ul className="divide-y divide-white/5">
             {snaps.map(s => (
               <li key={s.id} className="flex items-center gap-2 py-1.5 text-xs">
@@ -146,7 +158,7 @@ export default function Entrega({ solucionId, nombre, esAdmin, tokenCliente, onT
           </div>
         ) : esAdmin ? (
           <button type="button" onClick={() => void enlace('crear')} disabled={ocupado !== null} className={btn}><Link2 size={12} /> Crear enlace para el cliente</button>
-        ) : <p className="text-xs text-gray-600">No hay enlace creado (lo crea un administrador).</p>}
+        ) : <p className="text-xs text-gray-500">No hay enlace creado (lo crea un administrador).</p>}
       </div>
 
       <div className={caja}>
@@ -155,9 +167,9 @@ export default function Entrega({ solucionId, nombre, esAdmin, tokenCliente, onT
         {hijas.length > 0 && <p className="text-xs text-gray-400">Adicionales: {hijas.map((h, i) => <span key={h.id}>{i > 0 && ', '}<button type="button" onClick={() => irASolucion(h.id)} className="text-orange-300 hover:underline">{h.nombre}</button></span>)}</p>}
         <p className="text-xs text-gray-500 leading-relaxed">Un lead solo puede tener una Solución. Para otra fase del mismo cliente se crea un adicional ligado a esta solución: tiene su propio PRD, plan, hitos y motor de fases, y comparte el cliente.</p>
         <div className="flex flex-wrap gap-2">
-          <input value={adicional.nombre} onChange={e => setAdicional({ ...adicional, nombre: e.target.value })} placeholder="Nombre (p. ej. Fase 2 — módulo de reportes)" className="flex-1 min-w-[220px] bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500" />
+          <input value={adicional.nombre} onChange={e => setAdicional({ ...adicional, nombre: e.target.value })} placeholder="Nombre (p. ej. Fase 2 — módulo de reportes)" className="flex-1 min-w-[220px] bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500" />
           <select value={adicional.tipo} onChange={e => setAdicional({ ...adicional, tipo: e.target.value })} className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs"><option value="PROJECT">Project</option><option value="DEMO">Demo</option><option value="PARTNERSHIP">Partnership</option></select>
-          <input type="number" min="0" value={adicional.valorEstimado} onChange={e => setAdicional({ ...adicional, valorEstimado: e.target.value })} placeholder="Valor" className="w-28 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-600 text-xs" />
+          <input type="number" min="0" value={adicional.valorEstimado} onChange={e => setAdicional({ ...adicional, valorEstimado: e.target.value })} placeholder="Valor" className="w-28 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-500 text-xs" />
           <button type="button" onClick={() => void crearAdicional()} disabled={ocupado !== null || !adicional.nombre.trim()} className={btn}>{ocupado === 'adicional' ? <Loader2 size={12} className="animate-spin" /> : <PackagePlus size={12} />} Crear</button>
         </div>
       </div>

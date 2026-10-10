@@ -44,7 +44,7 @@ export function MermaidView({ codigo }: { codigo: string }) {
     return () => { vivo = false; clearTimeout(t) }
   }, [codigo])
   if (error) return <p className="text-xs text-amber-400 flex items-start gap-1.5"><AlertTriangle size={13} className="mt-0.5 flex-shrink-0" /> No se pudo dibujar: {error}</p>
-  if (!svg) return <p className="text-xs text-gray-600">{codigo.trim() ? 'Dibujando…' : 'Sin código todavía.'}</p>
+  if (!svg) return <p className="text-xs text-gray-500">{codigo.trim() ? 'Dibujando…' : 'Sin código todavía.'}</p>
   return <div className="overflow-auto rounded-lg bg-gray-950/60 border border-gray-800 p-3 [&_svg]:max-w-full [&_svg]:h-auto" dangerouslySetInnerHTML={{ __html: svg }} />
 }
 
@@ -99,7 +99,7 @@ export default function Diagramas({ solucionId, diagramas, onChange, guardarAnte
         <div className="flex-1 min-w-[200px]">
           <label className="block text-[11px] text-gray-500 mb-1">Instrucción para la IA (opcional; en secuencia y flujo, describe qué proceso)</label>
           <input value={instruccion} onChange={e => setInstruccion(e.target.value)} placeholder="Ej.: el flujo de cotización desde que el vendedor crea la oportunidad hasta que el cliente la aprueba"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500" />
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500" />
         </div>
         <button type="button" onClick={() => void generar()} disabled={generando !== null}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 text-xs font-semibold disabled:opacity-50">
@@ -110,7 +110,7 @@ export default function Diagramas({ solucionId, diagramas, onChange, guardarAnte
         </button>
       </div>
       {error && <p className="text-xs text-red-400">{error}</p>}
-      {diagramas.length === 0 && <p className="text-gray-600 text-sm text-center py-6">Sin diagramas todavía.</p>}
+      {diagramas.length === 0 && <p className="text-gray-500 text-sm text-center py-6">Sin diagramas todavía.</p>}
       {diagramas.map(d => (
         <div key={d.id} className="bg-gray-950 border border-gray-800 rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2">

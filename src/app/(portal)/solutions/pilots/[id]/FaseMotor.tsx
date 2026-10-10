@@ -27,7 +27,7 @@ export default function FaseMotor({ solucionId, esAdmin, glass }: { solucionId: 
   return (
     <div className="rounded-2xl p-4" style={glass}>
       <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Fase del proyecto</p>
-      {!d && !error && <Loader2 size={14} className="animate-spin text-gray-600" />}
+      {!d && !error && <Loader2 size={14} className="animate-spin text-gray-500" />}
       {error && <p className="text-[11px] text-red-400">{error}</p>}
       {d && !d.iniciado && (
         <div className="space-y-2">

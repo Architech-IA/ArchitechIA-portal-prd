@@ -75,7 +75,7 @@ export default function Revision({ solucionId, hayCambios, onIr, tienePropuestas
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 text-xs font-semibold disabled:opacity-50">
           {cruzando ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} {cruzando ? 'Comparando…' : 'Comparar con la propuesta'}
         </button>
-        {!tienePropuestas && <p className="text-[11px] text-gray-600">No hay propuestas asociadas al lead de esta solución.</p>}
+        {!tienePropuestas && <p className="text-[11px] text-gray-500">No hay propuestas asociadas al lead de esta solución.</p>}
         {errorCruce && <p className="text-xs text-red-400">{errorCruce}</p>}
         {cruce && (
           <div className="space-y-3 text-xs">
@@ -92,7 +92,7 @@ export default function Revision({ solucionId, hayCambios, onIr, tienePropuestas
                 <ul className="space-y-1.5">{cruce.extras.map((f, i) => <li key={i} className="rounded-lg border border-amber-900/40 bg-amber-950/10 px-3 py-1.5"><b className="text-gray-200">{f.requisito}</b><br /><span className="text-gray-500">{f.motivo}</span></li>)}</ul>
               )}
             </div>
-            <p className="text-[11px] text-gray-600">Es una ayuda de la IA: confirma cada hallazgo antes de actuar.</p>
+            <p className="text-[11px] text-gray-500">Es una ayuda de la IA: confirma cada hallazgo antes de actuar.</p>
           </div>
         )}
       </div>

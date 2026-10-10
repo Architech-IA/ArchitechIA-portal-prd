@@ -120,7 +120,7 @@ export default function Cumplimiento({ solucionId, esAdmin, refrescarClave }: { 
         </div>
       )}
       {error && <p className="text-xs text-red-400 flex items-center gap-1.5"><AlertTriangle size={13} /> {error} <button type="button" onClick={() => setError('')} className="ml-1 text-gray-500 hover:text-gray-300"><X size={12} /></button></p>}
-      {hitos.length === 0 && <p className="text-gray-600 text-sm text-center py-4">Sin hitos registrados todavía.</p>}
+      {hitos.length === 0 && <p className="text-gray-500 text-sm text-center py-4">Sin hitos registrados todavía.</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {hitos.map(h => {
           const vencido = h.estado === 'PENDIENTE' && !!h.fechaComprometida && h.fechaComprometida.slice(0, 10) < hoy
@@ -129,11 +129,11 @@ export default function Cumplimiento({ solucionId, esAdmin, refrescarClave }: { 
             <div key={h.id} className={`bg-gray-950 border rounded-xl p-3 space-y-2 ${vencido ? 'border-red-700/60' : COLOR_HITO[h.estado] ?? 'border-gray-700'}`}>
               <div className="flex items-center gap-2">
                 <input type="text" value={h.titulo} onChange={e => editar(h.id, { titulo: e.target.value })} placeholder="Título del hito / entregable"
-                  className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm font-medium focus:outline-none focus:border-cyan-500" />
+                  className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 text-sm font-medium focus:outline-none focus:border-cyan-500" />
                 <button type="button" onClick={() => void quitar(h.id)} className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center"><Trash2 size={14} /></button>
               </div>
               <input type="text" value={h.descripcion ?? ''} onChange={e => editar(h.id, { descripcion: e.target.value })} placeholder="Descripción (opcional)"
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500" />
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500" />
               <div className="grid grid-cols-3 gap-2">
                 <input type="date" value={h.fechaComprometida ? h.fechaComprometida.slice(0, 10) : ''} onChange={e => editar(h.id, { fechaComprometida: e.target.value || null })} title="Fecha comprometida"
                   className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500" />
@@ -145,11 +145,11 @@ export default function Cumplimiento({ solucionId, esAdmin, refrescarClave }: { 
               </div>
               {vencido && <p className="text-[11px] text-red-400 flex items-center gap-1"><AlertTriangle size={11} /> Vencido: la fecha comprometida ya pasó y sigue pendiente.</p>}
               <div className="grid grid-cols-2 gap-2">
-                <label className="text-[11px] text-gray-500">Monto del hito {pct !== null && <span className="text-gray-600">({pct}% del valor)</span>}
+                <label className="text-[11px] text-gray-500">Monto del hito {pct !== null && <span className="text-gray-500">({pct}% del valor)</span>}
                   <input type="number" min="0" step="any" value={h.monto || ''} onChange={e => editar(h.id, { monto: Number(e.target.value) || 0 })} placeholder="0"
                     className="mt-0.5 w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500" />
                 </label>
-                <label className="text-[11px] text-gray-500">Pago {!esAdmin && <span className="text-gray-600">(solo administradores)</span>}
+                <label className="text-[11px] text-gray-500">Pago {!esAdmin && <span className="text-gray-500">(solo administradores)</span>}
                   <select value={h.estadoPago} disabled={!esAdmin} onChange={e => void accion(h.id, { estadoPago: e.target.value })}
                     className={`mt-0.5 w-full bg-gray-900 border rounded-lg px-2 py-1.5 text-xs focus:outline-none cursor-pointer disabled:opacity-60 ${COLOR_PAGO[h.estadoPago] ?? 'text-white border-gray-700'}`}>
                     {ESTADOS_PAGO.map(p => <option key={p} value={p}>{p}</option>)}
@@ -178,9 +178,9 @@ export default function Cumplimiento({ solucionId, esAdmin, refrescarClave }: { 
               ) : aceptando === h.id ? (
                 <div className="space-y-1.5 rounded-lg border border-gray-700 p-2">
                   <input value={aceptNombre} onChange={e => setAceptNombre(e.target.value)} placeholder="Quién del cliente acepta (nombre y cargo)"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500" />
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500" />
                   <input value={aceptNota} onChange={e => setAceptNota(e.target.value)} placeholder="Nota o referencia (correo, acta…)"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500" />
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-cyan-500" />
                   <div className="flex gap-2">
                     <button type="button" disabled={!aceptNombre.trim()} onClick={() => { void accion(h.id, { aceptar: { nombre: aceptNombre.trim(), nota: aceptNota.trim() || undefined } }); setAceptando(null); setAceptNombre(''); setAceptNota('') }}
                       className="flex-1 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold disabled:opacity-40">Registrar aceptación</button>
@@ -193,7 +193,7 @@ export default function Cumplimiento({ solucionId, esAdmin, refrescarClave }: { 
                   <CheckCircle2 size={12} /> Registrar aceptación del cliente
                 </button>
               ) : (
-                <p className="text-[11px] text-gray-600">Sin aceptación del cliente registrada.</p>
+                <p className="text-[11px] text-gray-500">Sin aceptación del cliente registrada.</p>
               )}
             </div>
           )
