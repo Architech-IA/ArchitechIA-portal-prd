@@ -304,10 +304,11 @@ function OficinaPageInner() {
     <div className="flex h-full overflow-hidden">
 
       {/* ── Left: Sidebar ── */}
-      <div className="relative flex-shrink-0 flex transition-all duration-300 ease-in-out"
-           style={{ width: sidebarOpen ? '224px' : '0px' }}>
+      <div className="relative flex-shrink-0 flex overflow-hidden transition-all duration-300 ease-in-out"
+           style={{ width: sidebarOpen ? '224px' : '0px' }}
+           aria-hidden={!sidebarOpen} inert={!sidebarOpen}>
         <div className="w-56 flex-shrink-0 flex flex-col border-r border-white/5 overflow-hidden"
-             style={{ background: 'rgba(0,0,0,0.25)', opacity: sidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>
+             style={{ background: 'rgba(0,0,0,0.25)', opacity: sidebarOpen ? 1 : 0, visibility: sidebarOpen ? 'visible' : 'hidden', pointerEvents: sidebarOpen ? 'auto' : 'none', transition: sidebarOpen ? 'opacity 0.2s' : 'opacity 0.2s, visibility 0s 0.3s' }}>
 
         {/* Rooms section */}
         <div className="overflow-y-auto overflow-x-hidden">
