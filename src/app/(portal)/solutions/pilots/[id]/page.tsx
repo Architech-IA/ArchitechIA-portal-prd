@@ -16,6 +16,17 @@ import PlanVisualView from '@/components/PlanVisualView'
 import CronogramaTimeline from '@/components/CronogramaTimeline'
 import { extractStepsFromPlan } from '@/lib/planUtils'
 import { useSetPageTitle } from '@/lib/pageTitleContext'
+import { useSession } from 'next-auth/react'
+import { apiJson } from './hubApi'
+import { sanitizarHtml } from './sanitizar'
+import Cumplimiento from './Cumplimiento'
+import Riesgos from './Riesgos'
+import Cambios from './Cambios'
+import Revision from './Revision'
+import Entrega from './Entrega'
+import Diagramas, { type Diagrama } from './Diagramas'
+import FaseMotor from './FaseMotor'
+import Versiones from './Versiones'
 
 const ESTADOS = ['ACTIVO', 'EN_DESARROLLO', 'PENDIENTE', 'PAUSADO', 'FINALIZADO']
 const ESTADOS_FASE = ['PENDIENTE', 'EN_CURSO', 'COMPLETADA']
@@ -38,6 +49,8 @@ interface FaseCronograma {
   fechaEjecucion?: string
   horaEjecucion?: string
   horaFin?: string
+  // Otra fase del cronograma que debe terminar antes de que esta empiece
+  dependeDe?: string
 }
 
 const ESTADO_A_BACKLOG: Record<string, string> = {
@@ -114,6 +127,8 @@ interface Requisito {
   // Presente una vez que "Generar backlog desde PRD" crea la tarea real
   // asociada — evita duplicar la misma tarea si se aprieta el boton de nuevo.
   backlogItemId?: string
+  // De dónde sale: lo prometió la propuesta, lo dijo el cliente en preventa, o lo infirió la IA
+  fuente?: string
 }
 interface ItemTexto { id: string; texto: string }
 interface Persona { id: string; rol: string; necesidad: string }
@@ -200,6 +215,7 @@ function migrarPrd(raw: Record<string, unknown>): PrdData {
           prioridad: r.prioridad ?? 'SHOULD',
           estado: r.estado ?? 'PROPUESTO',
           backlogItemId: r.backlogItemId,
+          fuente: r.fuente,
         }))
       : [],
     requisitosNoFuncionales: Array.isArray(raw.requisitosNoFuncionales)
@@ -246,17 +262,22 @@ const emptyForm: FormState = {
   nombre: '', descripcion: '', tipo: 'PROJECT', estado: 'ACTIVO', valorEstimado: '0', leadId: '', repositorio: '', planTrabajo: '',
 }
 
-type TabKey = 'arquitectura' | 'plan' | 'prd' | 'diseno' | 'plan-ejec' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'codigo'
+type TabKey = 'arquitectura' | 'diagramas' | 'plan' | 'prd' | 'diseno' | 'plan-ejec' | 'cronograma' | 'riesgos' | 'cumplimiento' | 'cambios' | 'revision' | 'entrega' | 'codigo'
+type DocMeta = { aprobacion?: { porNombre?: string; en?: string }; reabierto?: { porNombre?: string; en?: string; motivo?: string } } | null
 
 const TABS: { key: TabKey; label: string; icon: typeof Sliders }[] = [
   { key: 'arquitectura', label: 'Arquitectura', icon: LayoutGrid },
   { key: 'prd', label: 'PRD', icon: ClipboardList },
   { key: 'diseno', label: 'Diseño Técnico', icon: Boxes },
+  { key: 'diagramas', label: 'Diagramas', icon: LayoutGrid },
   { key: 'plan', label: 'Plan de Trabajo', icon: FileText },
   { key: 'plan-ejec', label: 'Plan de Ejecución', icon: ClipboardCheck },
   { key: 'cronograma', label: 'Cronograma', icon: Calendar },
   { key: 'riesgos', label: 'Riesgos', icon: AlertTriangle },
   { key: 'cumplimiento', label: 'Cumplimiento', icon: Flag },
+  { key: 'cambios', label: 'Cambios', icon: Flag },
+  { key: 'revision', label: 'Revisión', icon: CheckCircle2 },
+  { key: 'entrega', label: 'Entrega', icon: Upload },
   { key: 'codigo', label: 'Código fuente', icon: Code2 },
 ]
 
@@ -487,9 +508,6 @@ function calcularFases(prd: PrdData, diseno: DisenoData, plan: PlanEjecData, arc
     { key: 'plan-ejec', label: 'Plan de ejecución', estado: estadoPlan, tab: 'plan-ejec', hint: 'Hecho cuando el Plan de Ejecución (QA, ambientes, RACI, cambios, comunicación) está en estado Aprobado.' },
     { key: 'backlog', label: 'Backlog', estado: estadoBacklog, tab: 'prd', hint: 'Requisitos del PRD convertidos en tareas reales del backlog.' },
     { key: 'ejecucion', label: 'Ejecución', estado: estadoEjec, tab: 'prd', hint: 'Tareas del backlog generadas desde este PRD (en curso / terminadas).' },
-    { key: 'qa', label: 'QA / Aceptación', estado: 'proximamente', hint: 'Próximamente: aceptación formal del cliente.' },
-    { key: 'despliegue', label: 'Despliegue', estado: 'proximamente', hint: 'Próximamente: registro de despliegues por ambiente.' },
-    { key: 'cierre', label: 'Cierre', estado: 'proximamente', hint: 'Próximamente: snapshot as-built y resumen final.' },
   ]
 }
 
@@ -609,7 +627,7 @@ function RichTextField({ value, onChange, placeholder, className }: {
     // IA") — nunca mientras el usuario esta escribiendo, o el cursor
     // saltaria al principio del campo en cada tecla.
     if (lastPushed.current === null || (value !== lastPushed.current && el.innerHTML !== value)) {
-      el.innerHTML = value
+      el.innerHTML = sanitizarHtml(value)
     }
     lastPushed.current = value
   }, [value])
@@ -781,6 +799,26 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
   const [leads, setLeads] = useState<LeadOption[]>([])
   const [loadingLeads, setLoadingLeads] = useState(true)
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
+  const { data: session } = useSession()
+  const esAdmin = ['ADMIN', 'SUPERADMIN'].includes((session?.user as { role?: string })?.role ?? '')
+  // Los documentos como estaban en el servidor al abrir (o al guardar la última vez): sirven para enviar solo lo que cambió
+  // y para que el servidor detecte que otra persona o proceso los modificó mientras tanto.
+  const baseRaw = useRef<Record<string, string | null>>({})
+  const formSaved = useRef<FormState>(emptyForm)
+  const archSavedSnapshot = useRef<string>('')
+  const cronoSavedSnapshot = useRef<string>('')
+  const htmlSavedSnapshot = useRef<string>('')
+  const diagramasSavedSnapshot = useRef<string>('[]')
+  const [diagramas, setDiagramas] = useState<Diagrama[]>([])
+  const [tokenCliente, setTokenCliente] = useState<string | null>(null)
+  const [parentId, setParentId] = useState<string | null>(null)
+  const [docMeta, setDocMeta] = useState<Record<'prd' | 'diseno' | 'plan', DocMeta>>({ prd: null, diseno: null, plan: null })
+  const [conflicto, setConflicto] = useState<{ campos: string[]; vigente: Record<string, string> } | null>(null)
+  const [refrescoValor, setRefrescoValor] = useState(0)
+  const [verVersiones, setVerVersiones] = useState(false)
+  const [tareasPorId, setTareasPorId] = useState<Record<string, TareaBacklog>>({})
+  const [otrosDirty, setOtrosDirty] = useState(false)
+  const [guardarAuto, setGuardarAuto] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -806,10 +844,6 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
   // dentro de Solucion como el Cronograma — se persisten al toque (crear/
   // editar/borrar pega directo a su API), no dependen del boton Guardar
   // grande de esta pagina.
-  const [riesgos, setRiesgos] = useState<Riesgo[]>([])
-  const [loadingRiesgos, setLoadingRiesgos] = useState(true)
-  const [hitos, setHitos] = useState<Hito[]>([])
-  const [loadingHitos, setLoadingHitos] = useState(true)
   const [generandoPrd, setGenerandoPrd] = useState(false)
   const [prdGenError, setPrdGenError] = useState('')
   const [generandoBacklogPrd, setGenerandoBacklogPrd] = useState(false)
@@ -830,51 +864,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
         if (res.status === 404) { if (!cancelled) { setNotFound(true); setLoading(false) }; return }
         const s = await res.json()
         if (cancelled) return
-        setForm({
-          nombre: s.nombre,
-          descripcion: s.descripcion || '',
-          tipo: s.tipo,
-          estado: s.estado,
-          valorEstimado: String(s.valorEstimado ?? 0),
-          leadId: s.leadId || '',
-          repositorio: s.repositorio || '',
-          planTrabajo: s.planTrabajo || '',
-        })
-        setCurrentLeadId(s.leadId || null)
-        setCreadaEn(typeof s.createdAt === 'string' ? s.createdAt : null)
-        setArquitecturaHtml(s.arquitecturaHtml || null)
-        try {
-          const parsedArch = s.arquitectura ? JSON.parse(s.arquitectura) : null
-          if (Array.isArray(parsedArch)) {
-            setArchNodes(parsedArch)
-            setArchConnections([])
-          } else if (parsedArch && typeof parsedArch === 'object') {
-            setArchNodes(Array.isArray(parsedArch.nodes) ? parsedArch.nodes : [])
-            setArchConnections(Array.isArray(parsedArch.connections) ? parsedArch.connections : [])
-          } else {
-            setArchNodes([])
-            setArchConnections([])
-          }
-        } catch { setArchNodes([]); setArchConnections([]) }
-        try { setFases(s.cronograma ? JSON.parse(s.cronograma) : []) } catch { setFases([]) }
-        try {
-          const parsedPrd = s.prd ? JSON.parse(s.prd) : null
-          const cargado = parsedPrd && typeof parsedPrd === 'object' ? migrarPrd(parsedPrd) : emptyPrd
-          setPrd(cargado)
-          prdSavedSnapshot.current = JSON.stringify(cargado)
-        } catch { setPrd(emptyPrd); prdSavedSnapshot.current = JSON.stringify(emptyPrd) }
-        try {
-          const parsedDt = s.disenoTecnico ? JSON.parse(s.disenoTecnico) : null
-          const cargadoDt = parsedDt && typeof parsedDt === 'object' ? migrarDiseno(parsedDt) : emptyDiseno
-          setDiseno(cargadoDt)
-          disenoSavedSnapshot.current = JSON.stringify(cargadoDt)
-        } catch { setDiseno(emptyDiseno); disenoSavedSnapshot.current = JSON.stringify(emptyDiseno) }
-        try {
-          const parsedPe = s.planEjecucion ? JSON.parse(s.planEjecucion) : null
-          const cargadoPe = parsedPe && typeof parsedPe === 'object' ? migrarPlanEj(parsedPe) : emptyPlanEj
-          setPlanEj(cargadoPe)
-          planEjSavedSnapshot.current = JSON.stringify(cargadoPe)
-        } catch { setPlanEj(emptyPlanEj); planEjSavedSnapshot.current = JSON.stringify(emptyPlanEj) }
+        aplicarSolucion(s)
       } catch {
         setNotFound(true)
       } finally {
@@ -892,51 +882,110 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
         if (!cancelled) setLoadingLeads(false)
       }
     }
-    async function loadRiesgos() {
-      try {
-        const res = await fetch(`/api/riesgos?solucionId=${id}`)
-        const data = await res.json()
-        if (!cancelled) setRiesgos(Array.isArray(data) ? data : [])
-      } catch {
-        if (!cancelled) setRiesgos([])
-      } finally {
-        if (!cancelled) setLoadingRiesgos(false)
-      }
-    }
-    async function loadHitos() {
-      try {
-        const res = await fetch(`/api/hitos?solucionId=${id}`)
-        const data = await res.json()
-        if (!cancelled) setHitos(Array.isArray(data) ? data : [])
-      } catch {
-        if (!cancelled) setHitos([])
-      } finally {
-        if (!cancelled) setLoadingHitos(false)
-      }
-    }
     async function loadTareasBacklog() {
       try {
-        const res = await fetch('/api/backlog')
+        const res = await fetch(`/api/backlog?ligero=1&solucionId=${id}`)
         const data = await res.json()
         // Solo tareas que nacieron de ESTE PRD (prdRequisitoId real) — no
         // todo el historial de la Solucion. El widget muestra "que genero
         // este documento", no "toda la actividad de este proyecto" (eso ya
         // esta en Oficina > Backlog); mostrar tareas viejas sin relacion al
         // PRD actual confundia mas de lo que ayudaba.
-        if (!cancelled) setTareasBacklog(Array.isArray(data) ? data.filter((t: { solucionId?: string; prdRequisitoId?: string | null }) => t.solucionId === id && !!t.prdRequisitoId) : [])
+        if (!cancelled) guardarTareas(data)
       } catch {
-        if (!cancelled) setTareasBacklog([])
+        if (!cancelled) guardarTareas([])
       } finally {
         if (!cancelled) setLoadingTareasBacklog(false)
       }
     }
     load()
     loadLeads()
-    loadRiesgos()
-    loadHitos()
     loadTareasBacklog()
     return () => { cancelled = true }
   }, [id])
+
+  /** Carga en pantalla lo que devolvió el servidor (al abrir y tras guardar) y recuerda cómo estaba para detectar cambios y ediciones simultáneas. */
+  function aplicarSolucion(s: Record<string, any>, solo?: string[]) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const quiere = (k: string) => !solo || solo.includes(k)
+    if (!solo) {
+      const f: FormState = {
+        nombre: s.nombre, descripcion: s.descripcion || '', tipo: s.tipo, estado: s.estado, valorEstimado: String(s.valorEstimado ?? 0),
+        leadId: s.leadId || '', repositorio: s.repositorio || '', planTrabajo: s.planTrabajo || '',
+      }
+      setForm(f); formSaved.current = f
+      setCurrentLeadId(s.leadId || null)
+      setCreadaEn(typeof s.createdAt === 'string' ? s.createdAt : null)
+      setTokenCliente(s.tokenCliente || null)
+      setParentId(s.parentId || null)
+    } else if (quiere('planTrabajo')) {
+      setForm(f => ({ ...f, planTrabajo: s.planTrabajo || '' }))
+      formSaved.current = { ...formSaved.current, planTrabajo: s.planTrabajo || '' }
+    }
+    const meta = (raw: unknown): DocMeta => {
+      try { const o = typeof raw === 'string' ? JSON.parse(raw) : null; return o && (o.aprobacion || o.reabierto) ? { aprobacion: o.aprobacion, reabierto: o.reabierto } : null } catch { return null }
+    }
+    if (quiere('arquitecturaHtml')) { setArquitecturaHtml(s.arquitecturaHtml || null); htmlSavedSnapshot.current = s.arquitecturaHtml || '' }
+    if (quiere('arquitectura')) {
+      let nodes: ArchNode[] = []
+      let conns: ArchConnection[] = []
+      try {
+        const p = s.arquitectura ? JSON.parse(s.arquitectura) : null
+        if (Array.isArray(p)) nodes = p
+        else if (p && typeof p === 'object') { nodes = Array.isArray(p.nodes) ? p.nodes : []; conns = Array.isArray(p.connections) ? p.connections : [] }
+      } catch { /* arquitectura vacía o inválida */ }
+      setArchNodes(nodes); setArchConnections(conns)
+      archSavedSnapshot.current = JSON.stringify({ nodes, connections: conns })
+    }
+    if (quiere('cronograma')) {
+      let fs: FaseCronograma[] = []
+      try { fs = s.cronograma ? JSON.parse(s.cronograma) : [] } catch { fs = [] }
+      setFases(fs); cronoSavedSnapshot.current = JSON.stringify(fs)
+    }
+    if (quiere('prd')) {
+      let cargado = emptyPrd
+      try { const p = s.prd ? JSON.parse(s.prd) : null; if (p && typeof p === 'object') cargado = migrarPrd(p) } catch { /* PRD vacío o inválido */ }
+      setPrd(cargado); prdSavedSnapshot.current = JSON.stringify(cargado)
+      setDocMeta(m => ({ ...m, prd: meta(s.prd) }))
+    }
+    if (quiere('disenoTecnico')) {
+      let cargado = emptyDiseno
+      try { const p = s.disenoTecnico ? JSON.parse(s.disenoTecnico) : null; if (p && typeof p === 'object') cargado = migrarDiseno(p) } catch { /* vacío o inválido */ }
+      setDiseno(cargado); disenoSavedSnapshot.current = JSON.stringify(cargado)
+      setDocMeta(m => ({ ...m, diseno: meta(s.disenoTecnico) }))
+    }
+    if (quiere('planEjecucion')) {
+      let cargado = emptyPlanEj
+      try { const p = s.planEjecucion ? JSON.parse(s.planEjecucion) : null; if (p && typeof p === 'object') cargado = migrarPlanEj(p) } catch { /* vacío o inválido */ }
+      setPlanEj(cargado); planEjSavedSnapshot.current = JSON.stringify(cargado)
+      setDocMeta(m => ({ ...m, plan: meta(s.planEjecucion) }))
+    }
+    if (quiere('diagramas')) {
+      let d: Diagrama[] = []
+      try { const p = s.diagramas ? JSON.parse(s.diagramas) : []; if (Array.isArray(p)) d = p } catch { /* vacío o inválido */ }
+      setDiagramas(d); diagramasSavedSnapshot.current = JSON.stringify(d)
+    }
+    const claves = ['arquitectura', 'arquitecturaHtml', 'planTrabajo', 'cronograma', 'prd', 'disenoTecnico', 'planEjecucion', 'diagramas']
+    baseRaw.current = { ...baseRaw.current, ...Object.fromEntries(claves.filter(quiere).map(k => [k, (s[k] as string | null | undefined) ?? null])) }
+  }
+
+  function guardarTareas(data: unknown) {
+    const arr = (Array.isArray(data) ? data : []) as TareaBacklog[]
+    setTareasPorId(Object.fromEntries(arr.map(t => [t.id, t])))
+    setTareasBacklog(arr.filter(t => !!t.prdRequisitoId))
+  }
+  async function recargarTareas() {
+    try { guardarTareas(await apiJson(`/api/backlog?ligero=1&solucionId=${id}`)) } catch { /* se queda la lista que había */ }
+  }
+  /** Trae el valor vigente (un cambio aprobado lo modifica en el servidor) sin tocar lo demás que se esté editando. */
+  async function refrescarValor() {
+    try {
+      const s = await apiJson<Record<string, any>>(`/api/soluciones/${id}`) // eslint-disable-line @typescript-eslint/no-explicit-any
+      const v = String(s.valorEstimado ?? 0)
+      setForm(f => ({ ...f, valorEstimado: v }))
+      formSaved.current = { ...formSaved.current, valorEstimado: v }
+      setRefrescoValor(n => n + 1)
+    } catch { /* se queda como estaba */ }
+  }
 
   async function dispatchTarea(taskId: string) {
     setDispatchingTareaId(taskId)
@@ -975,6 +1024,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
     )) return
     setArchGenerando(true); setArchError(null)
     try {
+      if (hayCambios && !(await handleSave({ silencioso: true }))) { setArchError('No se pudo guardar antes de generar: revisa el aviso de guardado.'); return }
       // La IA lee lo GUARDADO en base de datos: si hay cambios recientes en el PRD,
       // el diseño técnico o el lienzo, hay que guardarlos antes para que cuenten.
       const res = await fetch(`/api/soluciones/${id}/arquitectura-generate`, { method: 'POST' })
@@ -1317,6 +1367,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || 'No se pudo generar el borrador.')
       const draft = migrarPrd((data.prd ?? {}) as Record<string, unknown>)
+      if (Array.isArray(data.avisos) && data.avisos.length > 0) setPrdGenError(data.avisos.join(' '))
       setPrd(prev => ({
         estadoDocumento: prev.estadoDocumento,
         resumenEjecutivo: prev.resumenEjecutivo.trim() ? prev.resumenEjecutivo : draft.resumenEjecutivo,
@@ -1358,27 +1409,18 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
       setBacklogPrdError('El PRD y el Diseño Técnico deben estar en estado "Aprobado" antes de generar backlog.')
       return
     }
+    if (prdDirty || disenoDirty) {
+      setBacklogPrdError('Guarda los cambios del PRD y del diseño antes de generar el backlog: se genera desde lo guardado.')
+      return
+    }
     setGenerandoBacklogPrd(true)
     setBacklogPrdError('')
     try {
-      const pendientes = prd.requisitos.filter(r => !r.backlogItemId)
-      for (const r of pendientes) {
-        const res = await fetch('/api/backlog', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: htmlAPlano(r.texto).replace(/\s+/g, ' ').slice(0, 120) || 'Requisito sin título',
-            description: `${r.tipo === 'historia' ? 'Historia de usuario' : 'Caso de uso'}: ${htmlAPlano(r.texto)}\n\nCriterio de aceptación: ${htmlAPlano(r.criterioAceptacion)}`,
-            type: 'TASK',
-            priority: PRIORIDAD_A_BACKLOG[r.prioridad] ?? 'MEDIUM',
-            solucionId: id,
-            prdRequisitoId: r.id,
-          }),
-        })
-        if (!res.ok) throw new Error('No se pudo crear la tarea para un requisito.')
-        const created = await res.json()
-        updateRequisito(r.id, { backlogItemId: created.id })
-      }
+      const r = await apiJson<{ creadas: number; omitidas: number }>(`/api/soluciones/${id}/backlog-desde-prd`, { method: 'POST' })
+      const sol = await apiJson<Record<string, any>>(`/api/soluciones/${id}`) // eslint-disable-line @typescript-eslint/no-explicit-any
+      aplicarSolucion(sol, ['prd'])
+      await recargarTareas()
+      if (r.creadas === 0) setBacklogPrdError('Todos los requisitos ya tenían su tarea en el backlog.')
     } catch (err: unknown) {
       setBacklogPrdError(err instanceof Error ? err.message : 'Error inesperado generando el backlog.')
     } finally {
@@ -1386,43 +1428,6 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
     }
   }
 
-  async function addRiesgo() {
-    const res = await fetch('/api/riesgos', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ solucionId: id, titulo: 'Nuevo riesgo' }),
-    })
-    if (res.ok) { const nuevo = await res.json(); setRiesgos(prev => [...prev, nuevo]) }
-  }
-  async function updateRiesgo(rid: string, patch: Partial<Riesgo>) {
-    setRiesgos(prev => prev.map(r => r.id === rid ? { ...r, ...patch } : r))
-    await fetch(`/api/riesgos/${rid}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
-    })
-  }
-  async function removeRiesgo(rid: string) {
-    if (!window.confirm('¿Eliminar este riesgo?')) return
-    setRiesgos(prev => prev.filter(r => r.id !== rid))
-    await fetch(`/api/riesgos/${rid}`, { method: 'DELETE' })
-  }
-
-  async function addHito() {
-    const res = await fetch('/api/hitos', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ solucionId: id, titulo: 'Nuevo hito' }),
-    })
-    if (res.ok) { const nuevo = await res.json(); setHitos(prev => [...prev, nuevo]) }
-  }
-  async function updateHito(hid: string, patch: Partial<Hito>) {
-    setHitos(prev => prev.map(h => h.id === hid ? { ...h, ...patch } : h))
-    await fetch(`/api/hitos/${hid}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
-    })
-  }
-  async function removeHito(hid: string) {
-    if (!window.confirm('¿Eliminar este hito?')) return
-    setHitos(prev => prev.filter(h => h.id !== hid))
-    await fetch(`/api/hitos/${hid}`, { method: 'DELETE' })
-  }
   function generarCronogramaDesdePlan() {
     const steps = extractStepsFromPlan(form.planTrabajo)
     if (steps.length === 0) {
@@ -1447,7 +1452,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: f.fase || 'Sin nombre',
-            solutionId: id,
+            solucionId: id,
             type: 'TASK',
             priority: 'MEDIUM',
             status: ESTADO_A_BACKLOG[f.estado] || 'BACKLOG',
@@ -1461,6 +1466,9 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
       setError('Hubo un error cargando algunas fases al backlog.')
     } finally {
       setCargandoBacklogMasivo(false)
+      // El vínculo fase → tarea vive en el cronograma: se guarda de inmediato para no duplicar tareas si se cierra la pantalla.
+      setGuardarAuto(true)
+      void recargarTareas()
     }
   }
 
@@ -1468,46 +1476,57 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
     setForm(f => ({ ...f, leadId }))
   }
 
-  async function handleSave() {
-    if (!form.leadId) { setError('Selecciona un lead asociado.'); setEditOpen(true); return }
-    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); setEditOpen(true); return }
+  /**
+   * Guarda SOLO lo que cambió, cada documento con la base con la que se abrió: si otra persona o un proceso lo modificó
+   * mientras tanto, el servidor responde 409 y aquí se pregunta qué hacer en vez de pisar su trabajo.
+   */
+  async function handleSave(opts?: { forzar?: boolean; silencioso?: boolean }): Promise<boolean> {
+    if (!form.nombre.trim()) { setError('El nombre es obligatorio.'); setEditOpen(true); return false }
+    const cambios: Record<string, unknown> = {}
+    const base: Record<string, string | null> = {}
+    const doc = (clave: string, actual: string, guardado: string) => {
+      if (actual !== guardado) { cambios[clave] = actual; base[clave] = baseRaw.current[clave] ?? null }
+    }
+    doc('prd', JSON.stringify(prd), prdSavedSnapshot.current)
+    doc('disenoTecnico', JSON.stringify(diseno), disenoSavedSnapshot.current)
+    doc('planEjecucion', JSON.stringify(planEj), planEjSavedSnapshot.current)
+    doc('arquitectura', JSON.stringify({ nodes: archNodes, connections: archConnections }), archSavedSnapshot.current)
+    doc('cronograma', JSON.stringify(fases), cronoSavedSnapshot.current)
+    doc('diagramas', JSON.stringify(diagramas), diagramasSavedSnapshot.current)
+    doc('arquitecturaHtml', arquitecturaHtml || '', htmlSavedSnapshot.current)
+    doc('planTrabajo', form.planTrabajo.trim(), formSaved.current.planTrabajo.trim())
+    const f0 = formSaved.current
+    if (form.nombre.trim() !== f0.nombre) cambios.nombre = form.nombre.trim()
+    if (form.descripcion.trim() !== f0.descripcion.trim()) cambios.descripcion = form.descripcion.trim() || null
+    if (form.tipo !== f0.tipo) cambios.tipo = form.tipo
+    if (form.estado !== f0.estado) cambios.estado = form.estado
+    if (form.valorEstimado !== f0.valorEstimado) cambios.valorEstimado = parseFloat(form.valorEstimado) || 0
+    if (form.leadId !== f0.leadId) cambios.leadId = form.leadId || null
+    if (form.repositorio.trim() !== f0.repositorio.trim()) cambios.repositorio = form.repositorio.trim() || null
+    if (Object.keys(cambios).length === 0) {
+      if (!opts?.silencioso) setSavedAt(Date.now())
+      return true
+    }
     setSaving(true)
     setError('')
     try {
-      const res = await fetch(`/api/soluciones/${id}`, {
+      const sol = await apiJson<Record<string, any>>(`/api/soluciones/${id}`, { // eslint-disable-line @typescript-eslint/no-explicit-any
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: form.nombre.trim(),
-          descripcion: form.descripcion.trim() || null,
-          tipo: form.tipo,
-          estado: form.estado,
-          valorEstimado: parseFloat(form.valorEstimado) || 0,
-          leadId: form.leadId,
-          repositorio: form.repositorio.trim() || null,
-          arquitectura: JSON.stringify({ nodes: archNodes, connections: archConnections }),
-          arquitecturaHtml: arquitecturaHtml || null,
-          planTrabajo: form.planTrabajo.trim() || null,
-          cronograma: JSON.stringify(fases),
-          prd: JSON.stringify(prd),
-          disenoTecnico: JSON.stringify(diseno),
-          planEjecucion: JSON.stringify(planEj),
-        }),
+        body: JSON.stringify({ ...cambios, base, ...(opts?.forzar ? { forzar: true } : {}) }),
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || 'Error al guardar.')
-      }
-      setCurrentLeadId(form.leadId)
+      aplicarSolucion(sol)
+      setConflicto(null)
       setSavedAt(Date.now())
-      prdSavedSnapshot.current = JSON.stringify(prd)
-      setPrdDirty(false)
-      disenoSavedSnapshot.current = JSON.stringify(diseno)
-      setDisenoDirty(false)
-      planEjSavedSnapshot.current = JSON.stringify(planEj)
-      setPlanEjDirty(false)
+      setRefrescoValor(n => n + 1)
+      return true
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error inesperado.')
+      const e = err as { status?: number; data?: { conflictos?: string[]; vigente?: Record<string, string> } }
+      if (e?.status === 409 && e.data?.conflictos?.length) {
+        setConflicto({ campos: e.data.conflictos, vigente: e.data.vigente ?? {} })
+      } else {
+        setError(err instanceof Error ? err.message : 'Error inesperado.')
+      }
+      return false
     } finally {
       setSaving(false)
     }
@@ -1517,14 +1536,47 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
     if (!window.confirm('¿Eliminar esta Solución? Esta acción no se puede deshacer.')) return
     setDeleting(true)
     try {
-      const res = await fetch(`/api/soluciones/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error()
+      let res = await fetch(`/api/soluciones/${id}`, { method: 'DELETE' })
+      if (res.status === 409) {
+        const d = await res.json().catch(() => ({}))
+        const c = d?.cuentas ?? {}
+        if (!window.confirm(`Esta solución tiene ${c.backlog ?? 0} tarea(s) de backlog y ${c.sprints ?? 0} sprint(s) que quedarán sin proyecto. ¿Eliminarla de todos modos?`)) { setDeleting(false); return }
+        res = await fetch(`/api/soluciones/${id}?forzar=1`, { method: 'DELETE' })
+      }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d?.error || 'No se pudo eliminar la Solución.')
+      }
       router.push(destinoBacklog('/solutions/pilots'))
-    } catch {
-      setError('No se pudo eliminar la Solución.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar la Solución.')
       setDeleting(false)
     }
   }
+
+  const hayCambios = prdDirty || disenoDirty || planEjDirty || otrosDirty
+  useEffect(() => {
+    setOtrosDirty(
+      JSON.stringify({ nodes: archNodes, connections: archConnections }) !== archSavedSnapshot.current
+      || JSON.stringify(fases) !== cronoSavedSnapshot.current
+      || JSON.stringify(diagramas) !== diagramasSavedSnapshot.current
+      || (arquitecturaHtml || '') !== htmlSavedSnapshot.current
+      || form.planTrabajo.trim() !== formSaved.current.planTrabajo.trim()
+      || form.nombre.trim() !== formSaved.current.nombre || form.descripcion.trim() !== formSaved.current.descripcion.trim()
+      || form.tipo !== formSaved.current.tipo || form.estado !== formSaved.current.estado || form.valorEstimado !== formSaved.current.valorEstimado
+      || form.leadId !== formSaved.current.leadId || form.repositorio.trim() !== formSaved.current.repositorio.trim(),
+    )
+  }, [archNodes, archConnections, fases, diagramas, arquitecturaHtml, form, savedAt])
+  useEffect(() => {
+    if (guardarAuto) { setGuardarAuto(false); void handleSave({ silencioso: true }) }
+  }, [guardarAuto])  // eslint-disable-line react-hooks/exhaustive-deps
+  // Aviso del navegador si se intenta salir con cambios sin guardar
+  useEffect(() => {
+    if (!hayCambios) return
+    const f = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', f)
+    return () => window.removeEventListener('beforeunload', f)
+  }, [hayCambios])
 
   const availableLeads = leads.filter(l => !l.solucion || l.id === currentLeadId || l.id === form.leadId)
 
@@ -1549,6 +1601,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
 
   // Panel izquierdo persistente (mismo esquema que el Hub de Lead): info de la
   // solucion + mapa de fases. Todo derivado de datos ya cargados en la pagina.
+  const hoyStr = new Date().toISOString().slice(0, 10)
   const leadSel = leads.find(l => l.id === (form.leadId || currentLeadId))
   const fasesPanel = calcularFases(prd, diseno, planEj, archNodes.length, tareasBacklog)
   const valorTxt = '$' + (Number(form.valorEstimado) || 0).toLocaleString('es-CO')
@@ -1736,7 +1789,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
               <p className="text-xs text-gray-400 mb-2">
                 {aiPanel?.itemId ? 'Elegí qué querés hacer con este requisito.' : 'Elegí qué querés que la IA haga con esta sección.'}
               </p>
-              {(aiPanel?.itemId ? AI_OPCIONES_ITEM : AI_OPCIONES_SECCION).map(op => (
+              {((aiPanel?.itemId ? AI_OPCIONES_ITEM : AI_OPCIONES_SECCION) as readonly (typeof AI_OPCIONES_SECCION[number] | typeof AI_OPCIONES_ITEM[number])[]).filter(op => 'accion' in op && op.accion).map(op => (
                 <button key={op.id} type="button"
                   onClick={() => {
                     if ('accion' in op && op.accion && aiPanel) {
@@ -1775,9 +1828,6 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                   </span>
                 </button>
               ))}
-              {!aiPanel?.itemId && (
-                <p className="text-[11px] text-gray-300 text-center pt-2">Las demás opciones son un adelanto visual — todavía sin conectar</p>
-              )}
             </div>
           </div>
         )}
@@ -1796,6 +1846,32 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
 
 
 
+      {verVersiones && (
+        <Versiones solucionId={id} onCerrar={() => setVerVersiones(false)}
+          onRestaurar={(contenido) => { try { setPrd(migrarPrd(JSON.parse(contenido))); setError('') } catch { setError('No se pudo leer esa versión del PRD.') } }} />
+      )}
+
+      {conflicto && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+          <div className="w-full max-w-lg rounded-2xl p-5 bg-[#0e0a1c] border border-amber-500/40 space-y-3">
+            <h3 className="text-sm font-semibold text-amber-300 flex items-center gap-2"><AlertTriangle size={15} /> Alguien más cambió esto mientras lo editabas</h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Estos documentos se modificaron en el servidor (otra persona, una sesión de IA o el motor) después de que los abriste:{' '}
+              <b className="text-gray-200">{conflicto.campos.map(c => ({ prd: 'PRD', disenoTecnico: 'Diseño técnico', planEjecucion: 'Plan de ejecución', arquitectura: 'Arquitectura', cronograma: 'Cronograma', planTrabajo: 'Plan de trabajo', diagramas: 'Diagramas', arquitecturaHtml: 'Arquitectura (HTML)' } as Record<string, string>)[c] ?? c).join(', ')}</b>.
+              Guardar ahora borraría esos cambios.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button type="button" onClick={() => { void (async () => { const sol = await apiJson<Record<string, any>>(`/api/soluciones/${id}`); aplicarSolucion(sol, conflicto.campos); setConflicto(null) })().catch(e => setError(e instanceof Error ? e.message : 'No se pudo cargar')) }}
+                className="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-semibold text-left">Cargar la versión vigente <span className="font-normal opacity-80">— descarta mis cambios solo en esos documentos; lo demás que edité se conserva</span></button>
+              <button type="button" onClick={() => void handleSave({ forzar: true })}
+                className="px-3 py-2 rounded-lg border border-red-500/40 text-red-300 hover:bg-red-950/30 text-xs font-semibold text-left">Guardar encima <span className="font-normal opacity-80">— sobrescribe lo que cambió el otro (queda el PRD anterior en el historial)</span></button>
+              <button type="button" onClick={() => setConflicto(null)} className="px-3 py-2 rounded-lg border border-gray-700 text-gray-400 text-xs text-left">Cancelar y seguir editando</button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
       {editOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setEditOpen(false)}>
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-5" onClick={e => e.stopPropagation()}
@@ -1808,7 +1884,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                    Lead asociado <span className="text-cyan-400">*</span>
+                    Lead asociado <span className="text-gray-600 font-normal">(opcional)</span>
                   </label>
                   {loadingLeads ? (
                     <div className="flex items-center gap-2 text-gray-500 text-sm py-3">
@@ -1819,10 +1895,9 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                       value={form.leadId}
                       onChange={e => handleLeadChange(e.target.value)}
                       disabled={saving}
-                      required
                       className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-colors disabled:opacity-60 appearance-none cursor-pointer"
                     >
-                      <option value="" disabled>Selecciona un lead…</option>
+                      <option value="">Sin lead (iniciativa interna o solución adicional)</option>
                       {availableLeads.map(l => (
                         <option key={l.id} value={l.id}>{l.companyName} – {l.contactName}</option>
                       ))}
@@ -1915,7 +1990,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
             <div className="mt-5 flex items-center justify-end gap-3">
               {savedAt && !saving && <p className="text-emerald-400 text-xs">Guardado {new Date(savedAt).toLocaleTimeString('es-CO')}</p>}
               <button type="button" onClick={() => setEditOpen(false)} className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:text-white">Cerrar</button>
-              <button type="button" onClick={handleSave} disabled={saving || deleting}
+              <button type="button" onClick={() => void handleSave()} disabled={saving || deleting}
                 className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-sm font-semibold transition-colors">
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 {saving ? 'Guardando…' : 'Guardar cambios'}
@@ -1953,11 +2028,13 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
           </a>
         </div>
 
+        <FaseMotor solucionId={id} esAdmin={esAdmin} glass={glassCard} />
+
         <div className="rounded-2xl p-4" style={glassCard}>
-          <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Fases</p>
+          <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Documentos</p>
           <ol className="relative">
             {fasesPanel.map((f, i) => {
-              const clickable = !!f.tab && f.estado !== 'proximamente'
+              const clickable = !!f.tab
               return (
                 <li key={f.key} className="relative">
                   {i < fasesPanel.length - 1 && <span className="absolute left-[13px] top-7 bottom-0 w-px bg-white/10" aria-hidden />}
@@ -1967,7 +2044,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                       {f.estado === 'hecho' ? <CheckCircle2 size={13} /> : i + 1}
                     </span>
                     <span className="min-w-0">
-                      <span className={'block text-[13px] font-semibold truncate ' + (f.estado === 'proximamente' ? 'text-gray-600' : 'text-gray-200 group-hover:text-orange-300')}>{f.label}</span>
+                      <span className="block text-[13px] font-semibold truncate text-gray-200 group-hover:text-orange-300">{f.label}</span>
                       <span className={'block text-[11px] ' + (f.estado === 'hecho' ? 'text-emerald-400/80' : f.estado === 'progreso' ? 'text-orange-300/80' : 'text-gray-600')}>{faseTxt[f.estado]}</span>
                     </span>
                   </button>
@@ -2265,8 +2342,10 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                         className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[prd.estadoDocumento]}`}>
                         <option value="BORRADOR">Borrador</option>
                         <option value="EN_REVISION">En revisión</option>
-                        <option value="APROBADO">Aprobado</option>
+                        <option value="APROBADO" disabled={!esAdmin}>Aprobado{!esAdmin ? ' (solo administradores)' : ''}</option>
                       </select>
+                      {docMeta.prd?.aprobacion && <span className="text-[11px] text-green-400/80">Aprobado por {docMeta.prd.aprobacion.porNombre} · {docMeta.prd.aprobacion.en ? new Date(docMeta.prd.aprobacion.en).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>}
+                      {docMeta.prd?.reabierto && !docMeta.prd?.aprobacion && <span className="text-[11px] text-yellow-400/80" title={docMeta.prd.reabierto.motivo}>Volvió a revisión por una edición ({docMeta.prd.reabierto.porNombre})</span>}
                     </div>
                     {/* Indicador de cambios sin guardar en ESTE documento — el
                         guardado real sigue siendo el boton grande de toda la
@@ -2278,6 +2357,11 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                   </div>
                   <div className="flex items-center gap-2">
                     <RichToolbar />
+                    <button type="button" onClick={() => setVerVersiones(true)}
+                      title="Versiones anteriores del PRD"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
+                      Historial
+                    </button>
                     <button type="button" onClick={() => window.print()}
                       title="Imprimir / Exportar a PDF"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
@@ -2294,7 +2378,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                         el final de una pagina larga cada vez que edita el
                         PRD. El boton de abajo se deja igual, sigue
                         funcionando en todos los tabs. */}
-                    <button type="button" onClick={handleSave} disabled={saving || deleting}
+                    <button type="button" onClick={() => void handleSave()} disabled={saving || deleting}
                       title={savedAt && !saving ? `Guardado ${new Date(savedAt).toLocaleTimeString('es-CO')}` : undefined}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-xs font-semibold transition-colors">
                       {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
@@ -2471,6 +2555,12 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                           {r.backlogItemId && (
                             <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
                               En backlog
+                            </span>
+                          )}
+                          {r.fuente && (
+                            <span title={r.fuente === 'inferido' ? 'La IA lo dedujo; nadie lo pidió expresamente: confírmalo con el cliente' : r.fuente === 'propuesta' ? 'Lo promete la propuesta comercial' : 'Sale de las notas de preventa del cliente'}
+                              className={`text-[11px] rounded-full px-2 py-0.5 border ${r.fuente === 'inferido' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-sky-700 bg-sky-50 border-sky-200'}`}>
+                              {r.fuente === 'inferido' ? 'Inferido por la IA' : r.fuente === 'propuesta' ? 'De la propuesta' : 'De la preventa'}
                             </span>
                           )}
                           <button type="button"
@@ -2663,8 +2753,10 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                         className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[diseno.estadoDocumento]}`}>
                         <option value="BORRADOR">Borrador</option>
                         <option value="EN_REVISION">En revisión</option>
-                        <option value="APROBADO">Aprobado</option>
+                        <option value="APROBADO" disabled={!esAdmin}>Aprobado{!esAdmin ? ' (solo administradores)' : ''}</option>
                       </select>
+                      {docMeta.diseno?.aprobacion && <span className="text-[11px] text-green-400/80">Aprobado por {docMeta.diseno.aprobacion.porNombre} · {docMeta.diseno.aprobacion.en ? new Date(docMeta.diseno.aprobacion.en).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>}
+                      {docMeta.diseno?.reabierto && !docMeta.diseno?.aprobacion && <span className="text-[11px] text-yellow-400/80" title={docMeta.diseno.reabierto.motivo}>Volvió a revisión por una edición ({docMeta.diseno.reabierto.porNombre})</span>}
                     </div>
                     <span className={`text-[11px] flex items-center gap-1 ${disenoDirty ? 'text-orange-400' : 'text-gray-600'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${disenoDirty ? 'bg-orange-400' : 'bg-gray-600'}`} />
@@ -2678,7 +2770,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
                       <Printer size={12} /> Imprimir / PDF
                     </button>
-                    <button type="button" onClick={handleSave} disabled={saving || deleting}
+                    <button type="button" onClick={() => void handleSave()} disabled={saving || deleting}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-xs font-semibold transition-colors">
                       {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                       {saving ? 'Guardando...' : 'Guardar cambios'}
@@ -2863,8 +2955,10 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                         className={`text-xs font-semibold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${ESTADO_DOC_COLOR[planEj.estadoDocumento]}`}>
                         <option value="BORRADOR">Borrador</option>
                         <option value="EN_REVISION">En revisión</option>
-                        <option value="APROBADO">Aprobado</option>
+                        <option value="APROBADO" disabled={!esAdmin}>Aprobado{!esAdmin ? ' (solo administradores)' : ''}</option>
                       </select>
+                      {docMeta.plan?.aprobacion && <span className="text-[11px] text-green-400/80">Aprobado por {docMeta.plan.aprobacion.porNombre} · {docMeta.plan.aprobacion.en ? new Date(docMeta.plan.aprobacion.en).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>}
+                      {docMeta.plan?.reabierto && !docMeta.plan?.aprobacion && <span className="text-[11px] text-yellow-400/80" title={docMeta.plan.reabierto.motivo}>Volvió a revisión por una edición ({docMeta.plan.reabierto.porNombre})</span>}
                     </div>
                     <span className={`text-[11px] flex items-center gap-1 ${planEjDirty ? 'text-orange-400' : 'text-gray-600'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${planEjDirty ? 'bg-orange-400' : 'bg-gray-600'}`} />
@@ -2878,7 +2972,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
                       <Printer size={12} /> Imprimir / PDF
                     </button>
-                    <button type="button" onClick={handleSave} disabled={saving || deleting}
+                    <button type="button" onClick={() => void handleSave()} disabled={saving || deleting}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-xs font-semibold transition-colors">
                       {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                       {saving ? 'Guardando...' : 'Guardar cambios'}
@@ -2988,6 +3082,31 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                             {ESTADOS_FASE.map(es => <option key={es} value={es}>{es}</option>)}
                           </select>
                         </div>
+                        {(() => {
+                          const t = f.backlogItemId ? tareasPorId[f.backlogItemId] : undefined
+                          const dep = f.dependeDe ? fases.find(x => x.id === f.dependeDe) : undefined
+                          const vencida = !!f.fechaFin && f.fechaFin < hoyStr && f.estado !== 'COMPLETADA'
+                          const choque = !!dep && !!dep.fechaFin && !!f.fechaInicio && f.fechaInicio < dep.fechaFin
+                          return (
+                            <div className="space-y-1">
+                              <label className="flex items-center gap-2 text-[11px] text-gray-500">Depende de
+                                <select value={f.dependeDe ?? ''} onChange={e => updateFase(f.id, { dependeDe: e.target.value || undefined })} disabled={saving}
+                                  className="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-cyan-500 cursor-pointer">
+                                  <option value="">— ninguna —</option>
+                                  {fases.filter(x => x.id !== f.id).map(x => <option key={x.id} value={x.id}>{x.fase || 'Sin nombre'}</option>)}
+                                </select>
+                              </label>
+                              {t && (
+                                <p className="text-[11px] text-gray-500 flex items-center gap-2 flex-wrap">
+                                  Tarea en el backlog: <span className={`font-semibold px-1.5 rounded border ${ESTADO_TAREA_COLOR[t.status] ?? 'text-gray-400 border-gray-700'}`}>{t.status}</span>
+                                  {t.status === 'DONE' && f.estado !== 'COMPLETADA' && <button type="button" onClick={() => updateFase(f.id, { estado: 'COMPLETADA' })} className="text-cyan-400 hover:underline">Marcar la fase completada</button>}
+                                </p>
+                              )}
+                              {vencida && <p className="text-[11px] text-red-400">Pasó su fecha de fin sin completarse.</p>}
+                              {choque && <p className="text-[11px] text-amber-300">Empieza antes de que termine «{dep?.fase}».</p>}
+                            </div>
+                          )
+                        })()}
                       </div>
                     ))}
                   </div>
@@ -3000,110 +3119,17 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
             </div>
           )}
 
-          {/* Tab: Riesgos */}
-          {activeTab === 'riesgos' && (
-            <div className="space-y-3">
-              {loadingRiesgos ? (
-                <div className="flex justify-center py-8"><Loader2 className="text-cyan-500 animate-spin" size={22} /></div>
-              ) : (
-                <>
-                  {riesgos.length === 0 && (
-                    <p className="text-gray-600 text-sm text-center py-4">Sin riesgos registrados todavía.</p>
-                  )}
-                  <div className="space-y-3">
-                    {riesgos.map(r => (
-                      <div key={r.id} className={`bg-gray-950 border rounded-xl p-3 space-y-2 ${SEVERIDAD_COLOR[r.severidad] ?? 'border-gray-700'}`}>
-                        <div className="flex items-center gap-2">
-                          <input type="text" value={r.titulo} onChange={e => updateRiesgo(r.id, { titulo: e.target.value })}
-                            placeholder="Título del riesgo"
-                            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <button type="button" onClick={() => removeRiesgo(r.id)}
-                            className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                        <textarea value={r.descripcion ?? ''} onChange={e => updateRiesgo(r.id, { descripcion: e.target.value })}
-                          placeholder="Descripción del riesgo" rows={2}
-                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors resize-vertical" />
-                        <div className="grid grid-cols-4 gap-2">
-                          <select value={r.severidad} onChange={e => updateRiesgo(r.id, { severidad: e.target.value })} title="Severidad"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
-                            {SEVERIDADES.map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
-                          <select value={r.probabilidad} onChange={e => updateRiesgo(r.id, { probabilidad: e.target.value })} title="Probabilidad"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
-                            {PROBABILIDADES.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                          <select value={r.estado} onChange={e => updateRiesgo(r.id, { estado: e.target.value })} title="Estado"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
-                            {ESTADOS_RIESGO.map(e2 => <option key={e2} value={e2}>{e2}</option>)}
-                          </select>
-                          <input type="text" value={r.responsable ?? ''} onChange={e => updateRiesgo(r.id, { responsable: e.target.value })}
-                            placeholder="Responsable"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                        </div>
-                        <input type="text" value={r.mitigacion ?? ''} onChange={e => updateRiesgo(r.id, { mitigacion: e.target.value })}
-                          placeholder="Mitigación propuesta"
-                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                      </div>
-                    ))}
-                  </div>
-                  <button type="button" onClick={addRiesgo}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors">
-                    <Plus size={14} /> Agregar riesgo
-                  </button>
-                </>
-              )}
-            </div>
+          {/* Tabs con su propio componente (cargan y guardan lo suyo) */}
+          {activeTab === 'riesgos' && <Riesgos solucionId={id} />}
+          {activeTab === 'cumplimiento' && <Cumplimiento solucionId={id} esAdmin={esAdmin} refrescarClave={refrescoValor} />}
+          {activeTab === 'cambios' && <Cambios solucionId={id} esAdmin={esAdmin} alCambiarValor={() => void refrescarValor()} />}
+          {activeTab === 'diagramas' && (
+            <Diagramas solucionId={id} diagramas={diagramas} onChange={setDiagramas} guardarAntes={() => handleSave({ silencioso: true })} hayCambios={hayCambios} />
           )}
-
-          {/* Tab: Cumplimiento */}
-          {activeTab === 'cumplimiento' && (
-            <div className="space-y-3">
-              {loadingHitos ? (
-                <div className="flex justify-center py-8"><Loader2 className="text-cyan-500 animate-spin" size={22} /></div>
-              ) : (
-                <>
-                  {hitos.length === 0 && (
-                    <p className="text-gray-600 text-sm text-center py-4">Sin hitos registrados todavía.</p>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {hitos.map(h => (
-                      <div key={h.id} className={`bg-gray-950 border rounded-xl p-3 space-y-2 ${ESTADO_HITO_COLOR[h.estado] ?? 'border-gray-700'}`}>
-                        <div className="flex items-center gap-2">
-                          <input type="text" value={h.titulo} onChange={e => updateHito(h.id, { titulo: e.target.value })}
-                            placeholder="Título del hito / entregable"
-                            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <button type="button" onClick={() => removeHito(h.id)}
-                            className="w-8 h-8 flex-shrink-0 rounded-lg bg-gray-900 hover:bg-red-900/30 text-gray-500 hover:text-red-400 flex items-center justify-center transition-colors">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                        <input type="text" value={h.descripcion ?? ''} onChange={e => updateHito(h.id, { descripcion: e.target.value })}
-                          placeholder="Descripción (opcional)"
-                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-300 placeholder-gray-600 text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                        <div className="grid grid-cols-3 gap-2">
-                          <input type="date" value={h.fechaComprometida ? h.fechaComprometida.slice(0, 10) : ''}
-                            onChange={e => updateHito(h.id, { fechaComprometida: e.target.value || null })} title="Fecha comprometida"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <input type="date" value={h.fechaReal ? h.fechaReal.slice(0, 10) : ''}
-                            onChange={e => updateHito(h.id, { fechaReal: e.target.value || null })} title="Fecha real de entrega"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors" />
-                          <select value={h.estado} onChange={e => updateHito(h.id, { estado: e.target.value })} title="Estado"
-                            className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-cyan-500 transition-colors appearance-none cursor-pointer">
-                            {ESTADOS_HITO.map(es => <option key={es} value={es}>{es}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button type="button" onClick={addHito}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/40 text-sm transition-colors">
-                    <Plus size={14} /> Agregar hito
-                  </button>
-                </>
-              )}
-            </div>
+          {activeTab === 'revision' && <Revision solucionId={id} hayCambios={hayCambios} onIr={t => setActiveTab(t as TabKey)} tienePropuestas={!!currentLeadId} />}
+          {activeTab === 'entrega' && (
+            <Entrega solucionId={id} nombre={form.nombre} esAdmin={esAdmin} tokenCliente={tokenCliente} onToken={setTokenCliente} hayCambios={hayCambios}
+              parentId={parentId} irASolucion={sid => router.push(destinoBacklog(`/solutions/pilots/${sid}`))} />
           )}
 
           {/* Tab: Código fuente */}
@@ -3147,7 +3173,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
           )}
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             disabled={saving || deleting}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 text-white text-sm font-semibold transition-colors"
           >
