@@ -123,7 +123,12 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   ]
 
   return (
-    <div className="flex h-full min-h-0 w-full">
+    <div className="px-hover flex h-full min-h-0 w-full">
+      <style>{`.px-hover button:not(:disabled), .px-hover select, .px-hover summary, .px-hover [role="button"] { cursor: pointer; transition: box-shadow .12s, filter .12s, color .12s; }
+.px-hover button:not(:disabled):hover, .px-hover select:hover, .px-hover summary:hover, .px-hover [role="button"]:hover { box-shadow: inset 0 0 0 999px rgba(255,255,255,0.075); filter: brightness(1.18); }
+.px-hover button:not(:disabled):active { filter: brightness(1.05); }
+.px-hover input:hover, .px-hover textarea:hover { border-color: rgba(255,255,255,0.22); }
+.px-hover button:not(:disabled):focus-visible, .px-hover select:focus-visible { outline: 2px solid rgba(129,140,248,0.7); outline-offset: 1px; }`}</style>
       {/* ── Columna A: proyectos ── */}
       <div className="w-60 flex-shrink-0 flex flex-col border-r border-white/5" style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
