@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network } from 'lucide-react'
 import Link from '@/lib/BacklogLink'
-import { post, hace, type FasesRes, type FaseVista, type RecursoFase } from './api'
+import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
 // dónde está lo que produce la fase y la puerta para pasar a la siguiente. Mover fases lo hacen los
@@ -11,7 +11,7 @@ import { post, hace, type FasesRes, type FaseVista, type RecursoFase } from './a
 
 const APROBADOR: Record<string, string> = {
   COMERCIAL: 'Responsable comercial', LIDER_PREVENTA: 'Líder de preventa', LIDER_TECNICO: 'Líder técnico',
-  DIRECCION: 'Dirección', LIDER_PROYECTO: 'Líder de proyecto', CLIENTE: 'El cliente',
+  DIRECCION: 'Dirección', LIDER_PROYECTO: 'Líder de proyecto', CLIENTE: 'El cliente', DUENO: 'Dueño de la iniciativa',
 }
 const ACCION: Record<string, string> = {
   INICIO: 'Inició el motor de fases', AVANCE: 'Avanzó de fase', RETROCESO: 'Volvió a una fase anterior', SINCRONIZADO: 'Fase ajustada por el lead',
@@ -84,7 +84,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className="text-[16px] font-bold text-gray-100">{fase.numero}. {fase.nombre}</h2>
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.07)', color: '#c7d2fe' }}>{fase.bloque === 'PREVENTA' ? 'Preventa' : 'Ejecución'}</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.07)', color: '#c7d2fe' }}>{ETIQUETA_BLOQUE[fase.bloque] ?? fase.bloque}</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.07)', color: colorEstado }}>{estadoFase}</span>
         </div>
         <p className="text-[12px] text-[#9ca3af] mt-1 max-w-3xl leading-relaxed">{fase.objetivo}</p>

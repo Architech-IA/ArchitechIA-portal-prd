@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import Link from '@/lib/BacklogLink'
-import { api, post, hace, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
+import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
 import ChatSesion from './ChatSesion'
 import PanelContexto from './PanelContexto'
 import PanelMemoria from './PanelMemoria'
@@ -17,14 +17,15 @@ import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 
 type Panel = 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
-type FiltroFase = 'todos' | 'preventa' | 'ejecucion' | 'aprobar' | 'sin'
+type FiltroFase = 'todos' | 'preventa' | 'definicion' | 'ejecucion' | 'aprobar' | 'sin'
+type FiltroNat = 'todas' | Naturaleza
 type Orden = 'actividad' | 'fase' | 'nombre'
 const FILTROS: { k: FiltroFase; txt: string }[] = [
-  { k: 'todos', txt: 'Todos' }, { k: 'preventa', txt: 'Preventa' }, { k: 'ejecucion', txt: 'Ejecución' }, { k: 'aprobar', txt: 'Por aprobar' }, { k: 'sin', txt: 'Sin motor' },
+  { k: 'todos', txt: 'Todos' }, { k: 'preventa', txt: 'Preventa' }, { k: 'definicion', txt: 'Definición' }, { k: 'ejecucion', txt: 'Ejecución' }, { k: 'aprobar', txt: 'Por aprobar' }, { k: 'sin', txt: 'Sin motor' },
 ]
 const ORDENES: { k: Orden; txt: string }[] = [{ k: 'actividad', txt: 'Actividad' }, { k: 'fase', txt: 'Fase' }, { k: 'nombre', txt: 'Nombre' }]
 const esperaAprobacion = (f: FaseLista | null) => !!f && f.estadoMotor === 'EN_CURSO' && f.puerta.total > 0 && f.puerta.lista
-const colorFase = (f: FaseLista) => (f.estadoMotor === 'CERRADO_PERDIDO' ? '#fca5a5' : f.estadoMotor === 'COMPLETADO' ? '#6ee7b7' : f.bloque === 'PREVENTA' ? '#a5b4fc' : '#5eead4')
+const colorFase = (f: FaseLista) => (f.estadoMotor === 'CERRADO_PERDIDO' ? '#fca5a5' : f.estadoMotor === 'COMPLETADO' ? '#6ee7b7' : f.bloque !== 'EJECUCION' ? '#a5b4fc' : '#5eead4')
 const textoFase = (f: FaseLista) => (f.estadoMotor === 'COMPLETADO' ? 'Completado' : f.estadoMotor === 'CERRADO_PERDIDO' ? `Perdido · ${f.nombre}` : `${f.numero}·${f.nombre}`)
 const TIPOS_NUEVOS: TipoSesion[] = ['KICKOFF', 'PLANIFICACION', 'REVISION', 'LIBRE']
 const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: '#6366f1', REVISION: '#10b981', LIBRE: '#94a3b8', BITACORA: '#06b6d4' }
@@ -36,6 +37,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
   const [filtroFase, setFiltroFase] = useState<FiltroFase>('todos')
+  const [filtroNat, setFiltroNat] = useState<FiltroNat>('todas')
   const [orden, setOrden] = useState<Orden>('actividad')
   const [pid, setPid] = useState<string | null>(null)
   const [det, setDet] = useState<DetalleProyecto | null>(null)
@@ -106,6 +108,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const conteo = useMemo(() => ({
     todos: lista.length,
     preventa: lista.filter(p => p.fase?.bloque === 'PREVENTA' && p.fase.estadoMotor === 'EN_CURSO').length,
+    definicion: lista.filter(p => p.fase?.bloque === 'DEFINICION' && p.fase.estadoMotor === 'EN_CURSO').length,
     ejecucion: lista.filter(p => p.fase?.bloque === 'EJECUCION' && p.fase.estadoMotor === 'EN_CURSO').length,
     aprobar: lista.filter(p => esperaAprobacion(p.fase)).length,
     sin: lista.filter(p => !p.fase).length,
@@ -114,6 +117,8 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const filtrada = useMemo(() => {
     const t = filtro.trim().toLowerCase()
     let r = t ? lista.filter(p => p.nombre.toLowerCase().includes(t) || (p.codigo ?? '').toLowerCase().includes(t)) : lista
+    if (filtroNat !== 'todas') r = r.filter(p => p.naturaleza === filtroNat)
+    if (filtroFase === 'definicion') r = r.filter(p => p.fase?.bloque === 'DEFINICION' && p.fase.estadoMotor === 'EN_CURSO')
     if (filtroFase === 'preventa') r = r.filter(p => p.fase?.bloque === 'PREVENTA' && p.fase.estadoMotor === 'EN_CURSO')
     else if (filtroFase === 'ejecucion') r = r.filter(p => p.fase?.bloque === 'EJECUCION' && p.fase.estadoMotor === 'EN_CURSO')
     else if (filtroFase === 'aprobar') r = r.filter(p => esperaAprobacion(p.fase))
@@ -121,7 +126,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
     if (orden === 'nombre') r = [...r].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
     else if (orden === 'fase') r = [...r].sort((a, b) => (a.fase ? a.fase.numero : 99) - (b.fase ? b.fase.numero : 99) || a.nombre.localeCompare(b.nombre, 'es'))
     return r
-  }, [lista, filtro, filtroFase, orden])
+  }, [lista, filtro, filtroFase, filtroNat, orden])
 
   const sesion = det?.sesiones.find(s => s.id === sid) ?? null
   const bitacora = det?.sesiones.find(s => s.tipo === 'BITACORA') ?? null
@@ -146,7 +151,13 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
             <Search size={11} className="absolute left-2 top-2 text-[#7f8a9c]" />
             <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Filtrar…" className="w-full rounded-lg pl-7 pr-2 py-1.5 text-[11px] text-gray-300 outline-none border border-white/10 focus:border-indigo-500/40 placeholder-gray-600" style={{ background: 'rgba(255,255,255,0.04)' }} />
           </div>
-          <div className="flex flex-wrap gap-1 mt-2">
+          <div className="flex gap-1 mt-2">
+            {([['todas', 'Todas'], ['COMERCIAL', 'Comerciales'], ['INTERNO', 'Internas']] as const).map(([k, txt]) => (
+              <button key={k} onClick={() => setFiltroNat(k)} className="flex-1 px-1.5 py-0.5 rounded-md text-[10px] transition-colors"
+                style={filtroNat === k ? { background: 'rgba(168,85,247,0.25)', color: '#f3e8ff', border: '1px solid rgba(168,85,247,0.5)' } : { background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.07)' }}>
+                {txt} {k === 'todas' ? lista.length : lista.filter(p => p.naturaleza === k).length}</button>))}
+          </div>
+          <div className="flex flex-wrap gap-1 mt-1.5">
             {FILTROS.map(f => (
               <button key={f.k} onClick={() => setFiltroFase(f.k)} className="px-2 py-0.5 rounded-full text-[10px] transition-colors"
                 style={filtroFase === f.k ? { background: 'rgba(99,102,241,0.28)', color: '#e0e7ff', border: '1px solid rgba(99,102,241,0.5)' } : { background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -165,11 +176,12 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
               style={p.id === pid ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.35)' } : { background: 'rgba(255,255,255,0.02)', border: '1px solid transparent' }}>
               <div className="flex items-center gap-1.5">
                 <span className={`text-[11px] font-medium truncate flex-1 ${p.id === pid ? 'text-white' : 'text-gray-300'}`}>{p.nombre}</span>
+                {p.naturaleza === 'INTERNO' && <span title={`Interno (${p.tipo})`} className="text-[9px] px-1 rounded flex-shrink-0" style={{ background: 'rgba(168,85,247,0.2)', color: '#d8b4fe' }}>interno</span>}
                 {esperaAprobacion(p.fase) && <span title="La puerta de la fase está completa: espera aprobación" className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />}
                 {p.propuestasPendientes > 0 && <span title="Propuestas de memoria pendientes" className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
               </div>
               {p.fase
-                ? <p className="text-[10px] mt-0.5 truncate font-medium" style={{ color: colorFase(p.fase) }}>{textoFase(p.fase)}<span className="font-normal text-[#7f8a9c]"> · {p.fase.bloque === 'PREVENTA' ? 'preventa' : 'ejecución'}{p.fase.estadoMotor === 'EN_CURSO' && p.fase.puerta.total > 0 ? ` · puerta ${p.fase.puerta.ok}/${p.fase.puerta.total}` : ''}</span></p>
+                ? <p className="text-[10px] mt-0.5 truncate font-medium" style={{ color: colorFase(p.fase) }}>{textoFase(p.fase)}<span className="font-normal text-[#7f8a9c]"> · {(ETIQUETA_BLOQUE[p.fase.bloque] ?? '').toLowerCase()}{p.fase.estadoMotor === 'EN_CURSO' && p.fase.puerta.total > 0 ? ` · puerta ${p.fase.puerta.ok}/${p.fase.puerta.total}` : ''}</span></p>
                 : <p className="text-[10px] mt-0.5 text-[#6b7280]">Sin motor de fases</p>}
               <p className="text-[10px] text-[#7f8a9c] mt-0.5 truncate">
                 {p.codigo ? `${p.codigo} · ` : ''}{p.sesiones} sesión{p.sesiones === 1 ? '' : 'es'}{p.ultimaActividad ? ` · ${hace(p.ultimaActividad)}` : ''}
@@ -211,7 +223,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                   const lista = fasesRes?.iniciado && f.estado === 'ACTUAL' && f.puerta.cumplida
                   return (
                     <span key={f.clave} className="flex items-center gap-1 flex-shrink-0">
-                      {(i === 0 || todas[i - 1].bloque !== f.bloque) && <span className="text-[9px] uppercase tracking-wider text-[#6b7280] ml-1.5 mr-0.5">{f.bloque === 'PREVENTA' ? 'Preventa' : 'Ejecución'}</span>}
+                      {(i === 0 || todas[i - 1].bloque !== f.bloque) && <span className="text-[9px] uppercase tracking-wider text-[#6b7280] ml-1.5 mr-0.5">{ETIQUETA_BLOQUE[f.bloque] ?? f.bloque}</span>}
                       <button onClick={() => setVista(f.clave)} title={f.objetivo} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] transition-colors"
                         style={activa ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.55)', color: '#fff' } : { background: f.estado === 'ACTUAL' && fasesRes?.iniciado ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.03)', border: f.estado === 'ACTUAL' && fasesRes?.iniciado ? '1px solid rgba(99,102,241,0.35)' : '1px solid rgba(255,255,255,0.06)', color }}>
                         {fasesRes?.iniciado && f.estado === 'HECHA' ? <Check size={10} /> : <span className="text-[10px] opacity-70">{f.numero}</span>}

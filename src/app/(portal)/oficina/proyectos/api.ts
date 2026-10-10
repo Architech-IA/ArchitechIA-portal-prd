@@ -2,12 +2,16 @@ import type { FuenteCtx } from '@/lib/proyectos/tipos'
 
 export type { FuenteCtx }
 
+// Lo comercial se le vende a un cliente (PROJECT, DEMO, PARTNERSHIP); lo interno lo hace ArchitechIA para sí misma (PRODUCT, INTERN). Sale del campo tipo de la Solución.
+export type Naturaleza = 'COMERCIAL' | 'INTERNO'
+export type Bloque = 'PREVENTA' | 'DEFINICION' | 'EJECUCION'
+export const ETIQUETA_BLOQUE: Record<string, string> = { PREVENTA: 'Preventa', DEFINICION: 'Definición', EJECUCION: 'Ejecución' }
 export interface FaseLista {
-  numero: number; nombre: string; bloque: 'PREVENTA' | 'EJECUCION'; estadoMotor: 'EN_CURSO' | 'CERRADO_PERDIDO' | 'COMPLETADO'; totalFases: number
+  numero: number; nombre: string; bloque: Bloque; naturaleza?: Naturaleza; estadoMotor: 'EN_CURSO' | 'CERRADO_PERDIDO' | 'COMPLETADO'; totalFases: number
   puerta: { ok: number; total: number; lista: boolean; aprobador: string; tipo: 'NORMAL' | 'RESULTADO' }; leadId: string | null; cliente: string | null
 }
 export interface ProyectoLista {
-  fase: FaseLista | null
+  fase: FaseLista | null; naturaleza: Naturaleza
   id: string; nombre: string; tipo: string; estado: string; codigo: string | null
   sesiones: number; ultimaActividad: string | null; memoriaVersion: number; propuestasPendientes: number; adjuntos: number
 }
@@ -67,7 +71,7 @@ export interface FaseCriterio { texto: string; ok: boolean; por: string | null; 
 export interface FaseActividadVista { clave: string; titulo: string; tipo: 'AGENTE' | 'HUMANA'; area: string; creada: boolean; backlogItemId: string | null; taskCode: string | null; status: string | null; assigneeName: string | null }
 export interface RecursoFase { tipo: string; etiqueta: string; descripcion: string; estado: string; nivel: 'ok' | 'medio' | 'vacio' | 'aviso'; href: string | null; panel: string | null }
 export interface FaseVista {
-  clave: string; numero: number; bloque: 'PREVENTA' | 'EJECUCION'; nombre: string; objetivo: string
+  clave: string; numero: number; bloque: Bloque; nombre: string; objetivo: string
   estado: 'HECHA' | 'ACTUAL' | 'PENDIENTE' | 'CERRADA'; entregables: string[]
   puerta: { aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; criterios: FaseCriterio[]; cumplida: boolean }
   actividades: { total: number; hechas: number; items: FaseActividadVista[] }
