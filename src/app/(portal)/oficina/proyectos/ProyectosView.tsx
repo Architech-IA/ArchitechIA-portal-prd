@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, ExternalLink, MessageSquare,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import Link from '@/lib/BacklogLink'
@@ -41,6 +41,9 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const [sesionFull, setSesionFull] = useState<SesionFull | null>(null)
   const [panel, setPanel] = useState<Panel>('contexto')
   const [panelAbierto, setPanelAbierto] = useState(true)
+  const [listaAbierta, setListaAbierta] = useState(true)
+  useEffect(() => { try { if (localStorage.getItem('proyectos.lista') === '0') setListaAbierta(false) } catch { /* sin almacenamiento */ } }, [])
+  const alternarLista = () => setListaAbierta(o => { const n = !o; try { localStorage.setItem('proyectos.lista', n ? '1' : '0') } catch { /* sin almacenamiento */ } return n })
   const [nueva, setNueva] = useState(false)
   const [vista, setVista] = useState<string>('asistente')
   const [fasesRes, setFasesRes] = useState<FasesRes | null>(null)
@@ -130,7 +133,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
 .px-hover input:hover, .px-hover textarea:hover { border-color: rgba(255,255,255,0.22); }
 .px-hover button:not(:disabled):focus-visible, .px-hover select:focus-visible { outline: 2px solid rgba(129,140,248,0.7); outline-offset: 1px; }`}</style>
       {/* ── Columna A: proyectos ── */}
-      <div className="w-60 flex-shrink-0 flex flex-col border-r border-white/5" style={{ background: 'rgba(0,0,0,0.15)' }}>
+      <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${listaAbierta || !pid ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
           <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[11px] text-[#7f8a9c]">{lista.length}</span></div>
           <div className="relative">
@@ -185,6 +188,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
             {/* Cabecera + sesiones */}
             <div className="flex-shrink-0 border-b border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
               <div className="flex items-center gap-2 px-4 pt-2.5">
+                <button onClick={alternarLista} className="text-[#7f8a9c] hover:text-gray-200 flex-shrink-0" title={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'} aria-label={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'}>{listaAbierta ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}</button>
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
                 <span className="flex-1" />
