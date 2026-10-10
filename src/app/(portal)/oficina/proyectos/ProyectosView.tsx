@@ -133,7 +133,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
             <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Filtrar…" className="w-full rounded-lg pl-7 pr-2 py-1.5 text-[11px] text-gray-300 outline-none border border-white/10 focus:border-indigo-500/40 placeholder-gray-600" style={{ background: 'rgba(255,255,255,0.04)' }} />
           </div>
           <div className="flex gap-1 mt-2">
-            {([['todas', 'Todas'], ['COMERCIAL', 'Comerciales'], ['INTERNO', 'Internas']] as const).map(([k, txt]) => (
+            {([['todas', 'ALL'], ['COMERCIAL', 'BUSINESS'], ['INTERNO', 'INTERN']] as const).map(([k, txt]) => (
               <button key={k} onClick={() => setFiltroNat(k)} className="flex-1 px-1.5 py-0.5 rounded-md text-[10px] transition-colors"
                 style={filtroNat === k ? { background: 'rgba(168,85,247,0.25)', color: '#f3e8ff', border: '1px solid rgba(168,85,247,0.5)' } : { background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.07)' }}>
                 {txt} {k === 'todas' ? lista.length : lista.filter(p => p.naturaleza === k).length}</button>))}
