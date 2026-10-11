@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, FileText,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, FileText, ChevronDown,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -28,6 +28,7 @@ const HubSolucion = dynamic(() => import('../../solutions/pilots/[id]/HubSolucio
 })
 
 type Panel = 'artefactos' | 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
+const PRINCIPALES: Panel[] = ['artefactos', 'contexto', 'propuestas']
 type FiltroNat = 'todas' | Naturaleza
 type Orden = 'actividad' | 'fase' | 'nombre'
 const ORDENES: { k: Orden; txt: string }[] = [{ k: 'actividad', txt: 'Actividad' }, { k: 'fase', txt: 'Fase' }, { k: 'nombre', txt: 'Nombre' }]
@@ -52,6 +53,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [sesionFull, setSesionFull] = useState<SesionFull | null>(null)
   const [panel, setPanel] = useState<Panel>('artefactos')
   const [panelAbierto, setPanelAbierto] = useState(true)
+  const [masAbierto, setMasAbierto] = useState(false)
   const [listaAbierta, setListaAbierta] = useState(true)
   useEffect(() => { try { if (localStorage.getItem('proyectos.lista') === '0') setListaAbierta(false) } catch { /* sin almacenamiento */ } }, [])
   const alternarLista = () => setListaAbierta(o => { const n = !o; try { localStorage.setItem('proyectos.lista', n ? '1' : '0') } catch { /* sin almacenamiento */ } return n })
@@ -166,7 +168,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const proyecto = lista.find(p => p.id === pid)
 
   const TABS: { k: Panel; icono: typeof Layers; txt: string; badge?: number }[] = [
-    { k: 'artefactos', icono: FileText, txt: 'Artefactos', badge: nPropuestas },
+    { k: 'artefactos', icono: FileText, txt: 'Artefactos' },
     { k: 'contexto', icono: Layers, txt: 'Contexto' },
     { k: 'propuestas', icono: Sparkles, txt: 'Propuestas', badge: nPropuestas },
     { k: 'memoria', icono: Brain, txt: 'Memoria', badge: det?.propuestasPendientes },
@@ -350,13 +352,39 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
       {/* ── Columna C: panel lateral ── */}
       {pid && panelAbierto && (
         <div className="w-[340px] flex-shrink-0 flex flex-col border-l border-white/5" style={{ background: 'rgba(0,0,0,0.15)' }}>
-          <div className="flex border-b border-white/5 flex-shrink-0">
-            {TABS.map(t => (
-              <button key={t.k} onClick={() => setPanel(t.k)} title={t.txt} className="flex-1 flex flex-col items-center gap-0.5 py-2 relative transition-colors"
+          <div className="flex border-b border-white/5 flex-shrink-0 relative">
+            {TABS.filter(t => PRINCIPALES.includes(t.k)).map(t => (
+              <button key={t.k} onClick={() => { setPanel(t.k); setMasAbierto(false) }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 relative transition-colors"
                 style={panel === t.k ? { color: '#c7d2fe', borderBottom: '2px solid #6366f1', background: 'rgba(99,102,241,0.08)' } : { color: '#7f8a9c', borderBottom: '2px solid transparent' }}>
-                <t.icono size={14} /><span className="text-[10px] font-medium">{t.txt}</span>
-                {!!t.badge && <span className="absolute top-1 right-2 min-w-[14px] h-[14px] rounded-full text-[10px] font-bold flex items-center justify-center text-white px-1" style={{ background: t.k === 'memoria' ? '#f59e0b' : '#6366f1' }}>{t.badge}</span>}
+                <t.icono size={14} /><span className="text-[11px] font-medium">{t.txt}</span>
+                {!!t.badge && <span className="min-w-[15px] h-[15px] rounded-full text-[10px] font-bold flex items-center justify-center text-white px-1" style={{ background: '#f59e0b' }}>{t.badge}</span>}
               </button>))}
+            {(() => {
+              const secundarias = TABS.filter(t => !PRINCIPALES.includes(t.k))
+              const activa = secundarias.find(t => t.k === panel)
+              const avisos = secundarias.reduce((n, t) => n + (t.badge || 0), 0)
+              return (
+                <>
+                  <button onClick={() => setMasAbierto(o => !o)} aria-haspopup="menu" aria-expanded={masAbierto} className="flex items-center justify-center gap-1.5 px-3 py-2.5 relative transition-colors flex-shrink-0"
+                    style={activa ? { color: '#c7d2fe', borderBottom: '2px solid #6366f1', background: 'rgba(99,102,241,0.08)' } : { color: '#7f8a9c', borderBottom: '2px solid transparent' }}>
+                    {activa ? <><activa.icono size={14} /><span className="text-[11px] font-medium">{activa.txt}</span></> : <span className="text-[11px] font-medium">Más</span>}
+                    <ChevronDown size={12} />
+                    {!activa && avisos > 0 && <span className="absolute top-1.5 right-1 w-2 h-2 rounded-full bg-indigo-400" />}
+                  </button>
+                  {masAbierto && (
+                    <>
+                      <button aria-label="Cerrar el menú" onClick={() => setMasAbierto(false)} className="fixed inset-0 z-10 cursor-default" style={{ background: 'transparent' }} />
+                      <div role="menu" className="absolute right-2 top-full mt-1 z-20 w-48 rounded-xl py-1 shadow-xl" style={{ background: '#14142b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        {secundarias.map(t => (
+                          <button key={t.k} role="menuitem" onClick={() => { setPanel(t.k); setMasAbierto(false) }} className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] hover:bg-white/5"
+                            style={{ color: panel === t.k ? '#c7d2fe' : '#cbd5e1' }}>
+                            <t.icono size={14} /><span className="flex-1">{t.txt}</span>
+                            {!!t.badge && <span className="min-w-[15px] h-[15px] rounded-full text-[10px] font-bold flex items-center justify-center text-white px-1" style={{ background: t.k === 'memoria' ? '#f59e0b' : '#6366f1' }}>{t.badge}</span>}
+                          </button>))}
+                      </div>
+                    </>)}
+                </>)
+            })()}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {panel === 'artefactos' && <PanelArtefactos activo={tabVista} onIr={irArtefacto} meta={metaArt} />}
