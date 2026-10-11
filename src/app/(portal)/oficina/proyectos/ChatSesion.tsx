@@ -99,6 +99,10 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   }, [mensajes.length, ultimo?.estado, ultimo?.contenido.length])
 
   const cerrada = (full?.estado ?? sesion.estado) !== 'ACTIVA'
+  // La franja del rol se puede plegar; se recuerda la elección.
+  const [rolAbierto, setRolAbierto] = useState(true)
+  useEffect(() => { try { if (localStorage.getItem('proyectos.rol') === '0') setRolAbierto(false) } catch { /* sin almacenamiento */ } }, [])
+  const alternarRol = () => setRolAbierto(o => { const n = !o; try { localStorage.setItem('proyectos.rol', n ? '1' : '0') } catch { /* sin almacenamiento */ } return n })
   const soyDuenio = full ? full.creadaPorId === yo.id : sesion.mia
   const esBitacora = (full?.tipo ?? sesion.tipo) === 'BITACORA'
   const bloqueado = cerrada || enviando || generando
@@ -194,18 +198,20 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
         const ok = cierre.filter(x => x.ok).length
         return (
           <div className="mx-4 mt-3 rounded-xl px-3 py-2.5 space-y-1.5 text-[11px]" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
-            <div className="flex items-center gap-2">
+            <button onClick={alternarRol} aria-expanded={rolAbierto} title={rolAbierto ? 'Ocultar el rol y la lista de cierre' : 'Mostrar el rol y la lista de cierre'} className="w-full flex items-center gap-2 text-left">
+              {rolAbierto ? <ChevronDown size={13} className="text-indigo-300 flex-shrink-0" /> : <ChevronRight size={13} className="text-indigo-300 flex-shrink-0" />}
               <span className="font-semibold text-indigo-200 flex-shrink-0">{rolInfo.fase} · {rolInfo.rol.titulo}</span>
-              <span className="text-[#9ca3af] flex-1 truncate" title={rolInfo.rol.objetivo}>{rolInfo.rol.objetivo}</span>
+              {rolAbierto && <span className="text-[#9ca3af] flex-1 truncate" title={rolInfo.rol.objetivo}>{rolInfo.rol.objetivo}</span>}
+              {!rolAbierto && <span className="flex-1" />}
               <span className="text-[#9ca3af] flex-shrink-0" title="Puntos de la lista de cierre cumplidos">{ok}/{cierre.length}</span>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-0.5">
+            </button>
+            {rolAbierto && <div className="grid sm:grid-cols-2 gap-x-4 gap-y-0.5">
               {cierre.map((x, i) => (
                 <label key={i} className="flex items-start gap-1.5 text-gray-300 cursor-pointer">
                   <input type="checkbox" checked={x.ok} disabled={cerrada} onChange={e => void cambiar({ cierre: cierre.map((y, j) => (j === i ? e.target.checked : y.ok)) })} className="accent-indigo-500 mt-0.5" />
                   <span className={x.ok ? 'line-through opacity-60' : ''}>{x.texto}</span>
                 </label>))}
-            </div>
+            </div>}
           </div>)
       })()}
 
