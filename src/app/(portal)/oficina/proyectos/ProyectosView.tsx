@@ -18,6 +18,7 @@ import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
 import PanelPropuestas from './PanelPropuestas'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
+import type { RolSesion } from './api'
 import type { ArtefactoMeta, TabKey } from '../../solutions/pilots/[id]/espacio'
 
 // El hub de la solución (documentos, lienzos, cronograma…) vive aquí dentro, sin barra lateral propia. Se carga al abrir el primer artefacto.
@@ -66,6 +67,9 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const tabVista = vista.startsWith('art:') ? (vista.slice(4) as TabKey) : null
   const nPropuestas = Object.values(metaArt).reduce((n, m) => n + (m.propuestas || 0), 0)
   const irArtefacto = useCallback((t: TabKey) => { setTabArt(t); setHubAbierto(true); setVista('art:' + t); setPanel('artefactos'); setPanelAbierto(true) }, [])
+  const [faseNueva, setFaseNueva] = useState<string | null>(null)
+  const [rolSel, setRolSel] = useState<string | null>(null) // null = el primero de la fase; '' = libre
+  const [creandoRol, setCreandoRol] = useState<string | null>(null)
   const [tipoNueva, setTipoNueva] = useState<TipoSesion>('LIBRE')
   const [privadaNueva, setPrivadaNueva] = useState(false)
   const [creando, setCreando] = useState(false)
@@ -123,15 +127,30 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 
   const refrescar = useCallback(() => { if (pidRef.current) { void cargarDetalle(pidRef.current); void cargarFases(pidRef.current) } void cargarLista() }, [cargarDetalle, cargarFases, cargarLista])
 
-  async function crearSesion(tipo: TipoSesion) {
+  async function crearSesion(tipo: TipoSesion, rol?: { fase: string; rol: string }) {
     if (!pid || creando) return
     setCreando(true); setError(null)
     try {
-      const s = await post<SesionRes>(`/api/proyectos/${pid}/sesiones`, { tipo, privada: privadaNueva })
-      setNueva(false); setPrivadaNueva(false)
+      const s = await post<SesionRes>(`/api/proyectos/${pid}/sesiones`, { tipo, privada: privadaNueva, ...(rol ?? {}) })
+      setNueva(false); setPrivadaNueva(false); setVista('asistente')
       await cargarDetalle(pid, s.id); void cargarLista()
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la sesión') } finally { setCreando(false) }
   }
+
+  async function iniciarRol(fase: string, rol: string) {
+    setCreandoRol(rol)
+    try { await crearSesion('LIBRE', { fase, rol }) } finally { setCreandoRol(null) }
+  }
+  const fasesConRoles = !!fasesRes?.fases?.length
+  const faseSel = faseNueva ?? (fasesRes?.fases?.some(f => f.clave === vista) ? vista : fasesRes?.faseActual) ?? fasesRes?.fases?.[0]?.clave ?? ''
+  const rolesSel = fasesRes?.fases?.find(f => f.clave === faseSel)?.sesiones ?? []
+  const rolEfectivo = rolSel ?? rolesSel[0]?.clave ?? ''
+  const rolDe = (s: SesionRes | null): { fase: string; rol: RolSesion } | null => {
+    const f = s?.faseClave ? fasesRes?.fases?.find(x => x.clave === s.faseClave) : null
+    const r = f?.sesiones?.find(x => x.clave === s?.rol)
+    return f && r ? { fase: `${f.numero}·${f.nombre}`, rol: r } : null
+  }
+  const crearDesdeNueva = () => (fasesConRoles && rolEfectivo ? crearSesion('LIBRE', { fase: faseSel, rol: rolEfectivo }) : crearSesion(tipoNueva))
 
   const filtrada = useMemo(() => {
     const t = filtro.trim().toLowerCase()
@@ -252,11 +271,11 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
               {vista === 'asistente' && <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
                 {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-[#7f8a9c]" />}
                 {det?.sesiones.map(s => (
-                  <button key={s.id} onClick={() => { setSid(s.id); setNueva(false) }} title={`${ETIQUETA_TIPO[s.tipo as TipoSesion] ?? s.tipo} · ${s.creadaPorNombre} · ${s.mensajes} mensajes`}
+                  <button key={s.id} onClick={() => { setSid(s.id); setNueva(false) }} title={`${s.rol ? `${fasesRes?.fases?.find(f => f.clave === s.faseClave)?.sesiones?.find(r => r.clave === s.rol)?.titulo ?? s.rol} · ` : ''}${ETIQUETA_TIPO[s.tipo as TipoSesion] ?? s.tipo} · ${s.creadaPorNombre} · ${s.mensajes} mensajes`}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 max-w-[200px] transition-colors"
                     style={s.id === sid ? { background: 'rgba(99,102,241,0.22)', border: '1px solid rgba(99,102,241,0.45)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af', opacity: s.estado === 'ACTIVA' ? 1 : 0.65 }}>
                     <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: COLOR_TIPO[s.tipo] ?? '#94a3b8' }} />
-                    <span className="truncate">{s.titulo}</span>
+                    {s.faseClave && <span className="text-[9px] opacity-60 flex-shrink-0">{fasesRes?.fases?.find(f => f.clave === s.faseClave)?.numero}</span>}<span className="truncate">{s.titulo}</span>
                     {s.privada && <Lock size={9} className="text-amber-400 flex-shrink-0" />}
                   </button>))}
                 <button onClick={() => setNueva(o => !o)} disabled={!det} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 text-indigo-200 disabled:opacity-40" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}><Plus size={11} /> Nueva sesión</button>
@@ -265,7 +284,25 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
               {vista === 'asistente' && nueva && (
                 <div className="mx-4 mb-3 rounded-xl p-3 space-y-2" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex items-center justify-between"><span className="text-[11px] font-semibold text-gray-200">¿Qué tipo de sesión?</span><button onClick={() => setNueva(false)} className="text-[#7f8a9c] hover:text-gray-200"><X size={13} /></button></div>
-                  <div className="grid grid-cols-2 gap-2">
+                  {fasesConRoles && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-[11px] text-gray-400">Fase
+                        <select value={faseSel} onChange={e => { setFaseNueva(e.target.value); setRolSel(null) }} className="rounded px-1.5 py-1 text-[11px] text-gray-200 bg-black/30 border border-white/10 outline-none">
+                          {fasesRes?.fases?.map(f => <option key={f.clave} value={f.clave}>{f.numero}. {f.nombre}{f.clave === fasesRes.faseActual ? ' (actual)' : ''}</option>)}</select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {rolesSel.map(r => (
+                          <button key={r.clave} onClick={() => setRolSel(r.clave)} className="text-left rounded-lg px-3 py-2 transition-colors" style={rolEfectivo === r.clave ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.45)' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                            <span className="block text-[11px] font-semibold text-gray-200">{r.titulo}</span>
+                            <span className="block text-[11px] text-[#7f8a9c] mt-0.5 leading-snug">{r.objetivo}</span>
+                          </button>))}
+                        <button onClick={() => { setRolSel(''); setTipoNueva('LIBRE') }} className="text-left rounded-lg px-3 py-2 transition-colors" style={rolEfectivo === '' ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.45)' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <span className="block text-[11px] font-semibold text-gray-200">Libre</span>
+                          <span className="block text-[11px] text-[#7f8a9c] mt-0.5 leading-snug">Conversación abierta, sin rol ni lista de cierre.</span>
+                        </button>
+                      </div>
+                    </div>)}
+                  <div className={`grid grid-cols-2 gap-2 ${fasesConRoles ? 'hidden' : ''}`}>
                     {TIPOS_NUEVOS.map(t => (
                       <button key={t} onClick={() => setTipoNueva(t)} className="text-left rounded-lg px-3 py-2 transition-colors" style={tipoNueva === t ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.45)' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-200"><span className="w-1.5 h-1.5 rounded-full" style={{ background: COLOR_TIPO[t] }} />{ETIQUETA_TIPO[t]}</span>
@@ -275,7 +312,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                   <div className="flex items-center gap-3">
                     <label className="flex items-center gap-1.5 text-[11px] text-gray-400 cursor-pointer"><input type="checkbox" checked={privadaNueva} onChange={e => setPrivadaNueva(e.target.checked)} className="accent-indigo-500" /> <Lock size={10} /> Privada (solo yo la veo)</label>
                     <span className="flex-1" />
-                    <button onClick={() => void crearSesion(tipoNueva)} disabled={creando} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white flex items-center gap-1.5 disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.85)' }}>{creando && <Loader2 size={11} className="animate-spin" />} Crear sesión</button>
+                    <button onClick={() => void crearDesdeNueva()} disabled={creando} className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white flex items-center gap-1.5 disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.85)' }}>{creando && <Loader2 size={11} className="animate-spin" />} Crear sesión</button>
                   </div>
                 </div>)}
             </div>
@@ -290,12 +327,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 
             {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
-              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} /></div> : null
+              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto}
+                sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }} /></div> : null
             })()}
 
             {vista === 'asistente' && <div className="flex-1 min-h-0">
               {det && sesion && det.yo && (
-                <ChatSesion key={sesion.id} proyectoId={pid} sesion={sesion} yo={det.yo} onCambio={refrescar}
+                <ChatSesion key={sesion.id} proyectoId={pid} sesion={sesion} rolInfo={rolDe(sesion)} yo={det.yo} onCambio={refrescar}
                   onAbrirSesion={id => { if (id) setSid(id); else void cargarDetalle(pid) }}
                   onSesion={setSesionFull} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} />)}
               {det && !sesion && (

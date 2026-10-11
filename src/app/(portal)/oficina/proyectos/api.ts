@@ -16,7 +16,11 @@ export interface ProyectoLista {
   sesiones: number; ultimaActividad: string | null; memoriaVersion: number; propuestasPendientes: number; adjuntos: number
 }
 
+export interface RolSesion { clave: string; titulo: string; tipo: string; objetivo: string; artefactos: string[]; resultado: string; cierre: string[] }
+export interface CierreItem { texto: string; ok: boolean }
+
 export interface SesionRes {
+  faseClave: string | null; rol: string | null; cierre: CierreItem[]
   id: string; titulo: string; tipo: string; estado: string; privada: boolean
   creadaPorId: string; creadaPorNombre: string; cierreEstado: string | null
   createdAt: string; updatedAt: string; mensajes: number; mia: boolean
@@ -32,6 +36,7 @@ export interface DetalleProyecto {
 }
 
 export interface SesionFull {
+  faseClave: string | null; rol: string | null; cierre: CierreItem[]
   id: string; solucionId: string; titulo: string; tipo: string; estado: string; privada: boolean
   creadaPorId: string; creadaPorNombre: string; resumen: string; fuentesExcluidas: string[]
   cierreEstado: string | null; createdAt: string; updatedAt: string
@@ -76,6 +81,7 @@ export interface FaseVista {
   puerta: { aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; criterios: FaseCriterio[]; cumplida: boolean }
   actividades: { total: number; hechas: number; items: FaseActividadVista[] }
   recursos: RecursoFase[]
+  sesiones?: RolSesion[]
 }
 export interface FasesRes {
   iniciado: boolean

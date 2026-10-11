@@ -6,6 +6,7 @@ import {
   AlertTriangle, Archive, Trash2, X, Brain, User, Sparkles,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
+import type { RolSesion } from './api'
 import { api, post, patch, del, fechaHora, kb, pctCache, type Mensaje, type SesionFull, type SesionRes, type Adjunto } from './api'
 import { Md, opcionesNumeradas } from './Md'
 import PlanTareas from './PlanTareas'
@@ -13,7 +14,8 @@ import PlanTareas from './PlanTareas'
 const POLL_RAPIDO = 1500
 const POLL_LENTO = 12000
 
-export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel }: {
+export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel, rolInfo }: {
+  rolInfo?: { fase: string; rol: RolSesion } | null
   proyectoId: string
   sesion: SesionRes
   yo: { id: string; nombre: string }
@@ -132,7 +134,8 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
     try { const s = await patch<SesionFull>(base, data); setFull(prev => (prev ? { ...prev, ...s } : prev)); onSesion({ ...(full as SesionFull), ...s }); onCambio() } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo actualizar') }
   }
   async function cerrar() {
-    if (!window.confirm('¿Cerrar la sesión? Queda guardada completa; se generará un resumen y una propuesta de actualización de la memoria del proyecto.')) return
+    const falta = (full?.cierre ?? sesion.cierre ?? []).filter(x => !x.ok).length
+    if (!window.confirm((falta ? `Faltan ${falta} punto(s) de la lista de cierre. ` : '') + '¿Cerrar la sesión? Queda guardada completa; se generará un resumen y una propuesta de actualización de la memoria del proyecto.')) return
     try { const s = await post<SesionFull>(`${base}/cerrar`); setFull(prev => (prev ? { ...prev, ...s } : prev)); onCambio() } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo cerrar') }
   }
   async function eliminar() {
@@ -181,6 +184,27 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
           </>
         )}
       </div>
+
+      {/* Rol de la sesión en su fase: objetivo y lista de cierre */}
+      {rolInfo && (() => {
+        const cierre = full?.cierre ?? sesion.cierre ?? []
+        const ok = cierre.filter(x => x.ok).length
+        return (
+          <div className="mx-4 mt-3 rounded-xl px-3 py-2.5 space-y-1.5 text-[11px]" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-indigo-200 flex-shrink-0">{rolInfo.fase} · {rolInfo.rol.titulo}</span>
+              <span className="text-[#9ca3af] flex-1 truncate" title={rolInfo.rol.objetivo}>{rolInfo.rol.objetivo}</span>
+              <span className="text-[#9ca3af] flex-shrink-0" title="Puntos de la lista de cierre cumplidos">{ok}/{cierre.length}</span>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-0.5">
+              {cierre.map((x, i) => (
+                <label key={i} className="flex items-start gap-1.5 text-gray-300 cursor-pointer">
+                  <input type="checkbox" checked={x.ok} disabled={cerrada} onChange={e => void cambiar({ cierre: cierre.map((y, j) => (j === i ? e.target.checked : y.ok)) })} className="accent-indigo-500 mt-0.5" />
+                  <span className={x.ok ? 'line-through opacity-60' : ''}>{x.texto}</span>
+                </label>))}
+            </div>
+          </div>)
+      })()}
 
       {/* Sesión cerrada */}
       {cerrada && (
@@ -324,4 +348,3 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
     </div>
   )
 }
-

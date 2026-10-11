@@ -5,7 +5,8 @@ import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle,
 import Link from '@/lib/BacklogLink'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
-import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase } from './api'
+import SesionesDeFase from './SesionesDeFase'
+import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
 // dónde está lo que produce la fase y la puerta para pasar a la siguiente. Mover fases lo hacen los
@@ -40,7 +41,8 @@ function Seccion({ titulo, derecha, children }: { titulo: string; derecha?: Reac
     </section>)
 }
 
-export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto }: {
+export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion }: {
+  sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
   const [ocupado, setOcupado] = useState(false)
@@ -113,6 +115,10 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
 
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
+          <Seccion titulo="Sesiones de esta fase">
+            <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
+          </Seccion>
+
           <Seccion titulo={`Actividades (${fase.actividades.hechas}/${fase.actividades.total})`} derecha={<Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>}>
             <div className="space-y-1.5">
               {fase.actividades.items.map(a => (
