@@ -6,6 +6,7 @@ import Link from '@/lib/BacklogLink'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import SesionesDeFase from './SesionesDeFase'
+import LeadDeFase from './LeadDeFase'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
@@ -115,6 +116,11 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
 
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
+          {data.lead?.id && (
+            <Seccion titulo={fase.bloque === 'PREVENTA' ? 'Del Lead Hub · esta etapa' : 'Del Lead Hub'}>
+              <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} estado={fase.estado} />
+            </Seccion>)}
+
           <Seccion titulo="Sesiones de esta fase">
             <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
           </Seccion>
