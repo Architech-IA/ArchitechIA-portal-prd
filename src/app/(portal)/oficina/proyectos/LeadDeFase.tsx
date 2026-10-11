@@ -11,6 +11,7 @@ const ETAPA_DE_FASE: Record<string, { status: string; nombre: string }> = {
   identificacion: { status: 'NEW', nombre: 'Identificación' }, contacto: { status: 'CONTACTED', nombre: 'Contacto' }, diagnostico: { status: 'DIAGNOSIS', nombre: 'Diagnóstico' },
   demo: { status: 'DEMO_VALIDATION', nombre: 'Demo' }, propuesta: { status: 'PROPOSAL_SENT', nombre: 'Propuesta' }, negociacion: { status: 'NEGOTIATION', nombre: 'Negociación' },
 }
+const ESTADOS_LEAD = ['NEW', 'CONTACTED', 'DIAGNOSIS', 'DEMO_VALIDATION', 'PROPOSAL_SENT', 'NEGOTIATION', 'RESULT']
 const ORDEN = ['identificacion', 'contacto', 'diagnostico', 'demo', 'propuesta', 'negociacion']
 
 interface HubFase { id: string; phase: string; content: string; files: { id: string; name: string; size: number; mimeType: string }[] }
@@ -29,10 +30,11 @@ const dinero = (n: number) => '$' + Math.round(n || 0).toLocaleString('es-CO')
 const fechaCorta = (v: string) => new Date(v).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' })
 
 /** Lo que el Lead Hub tiene de esta fase: notas (editables), archivos, propuesta e interacciones. En ejecución, el historial comercial en solo lectura. */
-export default function LeadDeFase({ leadId, clave, estado }: { leadId: string; clave: string; estado: 'HECHA' | 'ACTUAL' | 'PENDIENTE' | 'CERRADA' }) {
+export default function LeadDeFase({ leadId, clave }: { leadId: string; clave: string }) {
   const [hub, setHub] = useState<HubFase[] | null>(null)
   const [ints, setInts] = useState<Interaccion[]>([])
   const [prop, setProp] = useState<Propuesta | null>(null)
+  const [estadoLead, setEstadoLead] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [texto, setTexto] = useState<string | null>(null) // edición en curso; null = sin cambios
   const [guardando, setGuardando] = useState(false)
@@ -45,13 +47,15 @@ export default function LeadDeFase({ leadId, clave, estado }: { leadId: string; 
       api<HubFase[]>(`/api/leads/hub-phase?leadId=${leadId}`).catch(() => []),
       api<Interaccion[]>(`/api/leads/${leadId}/interactions`).catch(() => []),
       api<Propuesta | null>(`/api/leads/${leadId}/proposal`).catch(() => null),
-    ]).then(([h, i, p]) => { if (vivo) { setHub(Array.isArray(h) ? h : []); setInts(Array.isArray(i) ? i : []); setProp(p && p.id ? p : null) } })
+      api<{ status: string }>(`/api/leads/${leadId}`).catch(() => null),
+    ]).then(([h, i, p, l]) => { if (vivo) { setEstadoLead(l?.status ?? null); setHub(Array.isArray(h) ? h : []); setInts(Array.isArray(i) ? i : []); setProp(p && p.id ? p : null) } })
     return () => { vivo = false }
   }, [leadId])
 
   const fila = useMemo(() => hub?.find(h => h.phase === etapa?.status) ?? null, [hub, etapa])
   const contenido = texto ?? fila?.content ?? ''
-  const puedeEditar = !!etapa && estado !== 'PENDIENTE'
+  // Igual que el Lead Hub: solo se bloquea una etapa a la que el lead todavía no llegó (el servidor también lo exige).
+  const puedeEditar = !!etapa && estadoLead !== null && ESTADOS_LEAD.indexOf(etapa.status) <= ESTADOS_LEAD.indexOf(estadoLead)
 
   async function guardar() {
     if (!etapa || texto === null) return
@@ -113,7 +117,9 @@ export default function LeadDeFase({ leadId, clave, estado }: { leadId: string; 
               <a href={`/leads/${leadId}/hub`} target="_blank" rel="noreferrer" className="ml-auto text-[10px] text-[#7f8a9c] hover:text-gray-200 flex items-center gap-1"><ExternalLink size={10} /> Abrir el Lead Hub</a>
             </div>
           </>)
-          : <p className="text-[11px] text-[#7f8a9c]">El proyecto todavía no llegó a esta fase: aún no se escriben notas aquí.</p>}
+          : (estadoLead === null
+            ? <p className="text-[11px] text-[#7f8a9c]">No se pudo leer el estado del lead.</p>
+            : <p className="text-[11px] text-[#7f8a9c]">El lead todavía no llegó a esta etapa: aún no se escriben notas aquí.</p>)}
         {error && <p className="text-[11px] text-red-300 mt-1">{error}</p>}
       </div>
 

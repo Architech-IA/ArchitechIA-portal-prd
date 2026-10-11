@@ -118,7 +118,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
         <div className="space-y-4">
           {data.lead?.id && (
             <Seccion titulo={fase.bloque === 'PREVENTA' ? 'Del Lead Hub · esta etapa' : 'Del Lead Hub'}>
-              <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} estado={fase.estado} />
+              <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
             </Seccion>)}
 
           <Seccion titulo="Sesiones de esta fase">
