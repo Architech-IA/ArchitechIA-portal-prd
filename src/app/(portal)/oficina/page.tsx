@@ -827,7 +827,7 @@ function OficinaPageInner() {
         ) : sideView === 'proyectos' ? (
           /* ── PROYECTOS VIEW ── sesiones persistentes por proyecto (= Solución) */
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ProyectosView initialProyectoId={searchParams.get('p')} />
+            <ProyectosView initialProyectoId={searchParams.get("p")} initialArtefacto={searchParams.get("art")} />
           </div>
 
         ) : sideView === 'solutions' ? (

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network } from 'lucide-react'
 import Link from '@/lib/BacklogLink'
+import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
+import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
@@ -26,6 +28,8 @@ const ICONO: Record<string, typeof Folder> = {
   LEAD_HUB: Users, PROPUESTAS: FileText, HUB_PRD: FileText, HUB_DISENO: FileText, HUB_ARQUITECTURA: Network, HUB_PLAN: ListChecks, HUB_CODIGO: Folder, HUB_DESPLIEGUE: Rocket,
   BACKLOG: ListChecks, SALA_CONTROL: Rocket, REUNIONES: Users, ADJUNTOS: Paperclip,
 }
+/** /solutions/pilots/<id>?seccion=prd → el artefacto "prd" (se abre en esta misma pantalla). */
+const artefactoDe = (href: string): TabKey | null => { const m = href.match(/^\/solutions\/pilots\/[^/?]+\?seccion=([\w-]+)/); return m && m[1] in TITULO_DE_TAB ? (m[1] as TabKey) : null }
 const externo = (href: string) => /^\/(leads|proposals|meetings)\b/.test(href)
 
 function Seccion({ titulo, derecha, children }: { titulo: string; derecha?: React.ReactNode; children: React.ReactNode }) {
@@ -36,8 +40,8 @@ function Seccion({ titulo, derecha, children }: { titulo: string; derecha?: Reac
     </section>)
 }
 
-export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel }: {
-  proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void
+export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto }: {
+  proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -141,6 +145,8 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
                   </>)
                 const cls = 'flex items-start gap-2 rounded-lg px-3 py-2 w-full transition-colors'
                 const st = { background: 'rgba(255,255,255,0.04)' }
+                const art = r.href ? artefactoDe(r.href) : null
+                if (art && onAbrirArtefacto) return <button key={r.etiqueta} onClick={() => onAbrirArtefacto(art)} className={`${cls} hover:bg-white/[0.07]`} style={st}>{cuerpo}</button>
                 if (r.href) return externo(r.href)
                   ? <a key={r.etiqueta} href={r.href} target="_blank" rel="noreferrer" className={`${cls} hover:bg-white/[0.07]`} style={st}>{cuerpo}</a>
                   : <Link key={r.etiqueta} href={r.href} className={`${cls} hover:bg-white/[0.07]`} style={st}>{cuerpo}</Link>

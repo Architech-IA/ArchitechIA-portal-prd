@@ -1,11 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
-import Link from '@/lib/BacklogLink'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
 import ChatSesion from './ChatSesion'
 import PanelContexto from './PanelContexto'
@@ -15,8 +15,18 @@ import PanelBuscar from './PanelBuscar'
 import PanelAuto from './PanelAuto'
 import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
+import BarraArtefactos from './BarraArtefactos'
+import PanelPropuestas from './PanelPropuestas'
+import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
+import type { ArtefactoMeta, TabKey } from '../../solutions/pilots/[id]/espacio'
 
-type Panel = 'contexto' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
+// El hub de la solución (documentos, lienzos, cronograma…) vive aquí dentro, sin barra lateral propia. Se carga al abrir el primer artefacto.
+const HubSolucion = dynamic(() => import('../../solutions/pilots/[id]/HubSolucion'), {
+  ssr: false,
+  loading: () => <div className="flex justify-center py-16 text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>,
+})
+
+type Panel = 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
 type FiltroNat = 'todas' | Naturaleza
 type Orden = 'actividad' | 'fase' | 'nombre'
 const ORDENES: { k: Orden; txt: string }[] = [{ k: 'actividad', txt: 'Actividad' }, { k: 'fase', txt: 'Fase' }, { k: 'nombre', txt: 'Nombre' }]
@@ -28,7 +38,7 @@ const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: 
 
 // Oficina Virtual > Proyectos. Proyecto = Solución. Cada proyecto tiene sesiones (conversaciones con
 // la IA) TODAS persistentes, con contexto vivo y exacto, memoria propia, adjuntos y automatizaciones.
-export default function ProyectosView({ initialProyectoId }: { initialProyectoId?: string | null }) {
+export default function ProyectosView({ initialProyectoId, initialArtefacto }: { initialProyectoId?: string | null; initialArtefacto?: string | null }) {
   const [lista, setLista] = useState<ProyectoLista[]>([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
@@ -47,6 +57,15 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
   const [nueva, setNueva] = useState(false)
   const [vista, setVista] = useState<string>('asistente')
   const [fasesRes, setFasesRes] = useState<FasesRes | null>(null)
+  // Hub embebido: se monta al abrir el primer artefacto y se oculta (no se desmonta) al volver al chat para no perder lo que se está editando
+  const [hubAbierto, setHubAbierto] = useState(false)
+  const [tabArt, setTabArt] = useState<TabKey | null>(null)
+  const [metaArt, setMetaArt] = useState<Record<string, ArtefactoMeta>>({})
+  const [hubSucio, setHubSucio] = useState(false)
+  const artInicial = useRef<string | null>(initialArtefacto ?? null)
+  const tabVista = vista.startsWith('art:') ? (vista.slice(4) as TabKey) : null
+  const nPropuestas = Object.values(metaArt).reduce((n, m) => n + (m.propuestas || 0), 0)
+  const irArtefacto = useCallback((t: TabKey) => { setTabArt(t); setHubAbierto(true); setVista('art:' + t) }, [])
   const [tipoNueva, setTipoNueva] = useState<TipoSesion>('LIBRE')
   const [privadaNueva, setPrivadaNueva] = useState(false)
   const [creando, setCreando] = useState(false)
@@ -79,17 +98,28 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
       const r = await api<FasesRes>(`/api/proyectos/${id}/fases`)
       if (pidRef.current !== id) return
       setFasesRes(r)
-      if (primera) setVista(r.iniciado && r.estado === 'EN_CURSO' && r.faseActual ? r.faseActual : 'asistente')
+      if (primera && artInicial.current && artInicial.current in TITULO_DE_TAB) { const t = artInicial.current as TabKey; artInicial.current = null; setTabArt(t); setHubAbierto(true); setVista('art:' + t) }
+      else if (primera) setVista(r.iniciado && r.estado === 'EN_CURSO' && r.faseActual ? r.faseActual : 'asistente')
     } catch (e) { if (pidRef.current === id) setError(e instanceof Error ? e.message : 'No se pudieron cargar las fases') }
+  }, [])
+
+  const cargarMeta = useCallback((id: string) => {
+    api<ArtefactoMeta[]>(`/api/soluciones/${id}/artefactos`).then(a => { if (pidRef.current === id) setMetaArt(Object.fromEntries((Array.isArray(a) ? a : []).map(m => [m.clave, m]))) }).catch(() => { /* la barra queda sin puntos */ })
   }, [])
 
   function elegirProyecto(id: string) {
     if (id === pid) return
+    if (hubSucio && !window.confirm('Hay cambios sin guardar en los artefactos de este proyecto. Si cambias de proyecto se pierden. ¿Continuar?')) return
+    setHubAbierto(false); setTabArt(null); setHubSucio(false); setMetaArt({}); cargarMeta(id)
     setPid(id); pidRef.current = id; setFasesRes(null); setVista('asistente'); void cargarFases(id, true); setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null); setCargandoDet(true)
     void cargarDetalle(id)
   }
   // Proyecto recibido por URL (?p=…)
-  useEffect(() => { if (initialProyectoId && !pid) elegirProyecto(initialProyectoId) }, [initialProyectoId]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!initialProyectoId) return
+    if (initialProyectoId !== pidRef.current) { artInicial.current = initialArtefacto ?? null; elegirProyecto(initialProyectoId) }
+    else if (initialArtefacto && initialArtefacto in TITULO_DE_TAB) irArtefacto(initialArtefacto as TabKey)
+  }, [initialProyectoId, initialArtefacto]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const refrescar = useCallback(() => { if (pidRef.current) { void cargarDetalle(pidRef.current); void cargarFases(pidRef.current) } void cargarLista() }, [cargarDetalle, cargarFases, cargarLista])
 
@@ -118,6 +148,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
 
   const TABS: { k: Panel; icono: typeof Layers; txt: string; badge?: number }[] = [
     { k: 'contexto', icono: Layers, txt: 'Contexto' },
+    { k: 'propuestas', icono: Sparkles, txt: 'Propuestas', badge: nPropuestas },
     { k: 'memoria', icono: Brain, txt: 'Memoria', badge: det?.propuestasPendientes },
     { k: 'adjuntos', icono: Paperclip, txt: 'Adjuntos', badge: det?.adjuntos },
     { k: 'buscar', icono: Search, txt: 'Buscar' },
@@ -192,7 +223,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
                 <span className="flex-1" />
-                <Link href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución"><ExternalLink size={11} /> Hub de la solución</Link>
+                <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución en su pantalla clásica"><ExternalLink size={11} /> Hub clásico</a>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
               {/* Una pestaña por fase: el asistente (sesiones de IA) y las 12 fases del proyecto */}
@@ -217,6 +248,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
                     </span>)
                 })}
               </div>
+              <BarraArtefactos activo={tabVista} onIr={irArtefacto} meta={metaArt} />
               {vista === 'asistente' && <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
                 {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-[#7f8a9c]" />}
                 {det?.sesiones.map(s => (
@@ -250,9 +282,15 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
 
             {error && <p className="px-4 py-2 text-[11px] text-red-400">{error}</p>}
 
-            {vista !== 'asistente' && fasesRes?.fases && (() => {
+            {hubAbierto && <div className={`flex-1 min-h-0 overflow-y-auto ${tabVista ? '' : 'hidden'}`}>
+              <HubSolucion key={pid} idDirecto={pid} embebido tabExterna={tabArt}
+                onTabChange={t => { setTabArt(t); setVista(v => (v.startsWith('art:') ? 'art:' + t : v)) }}
+                onMeta={m => setMetaArt(m)} onSucio={setHubSucio} />
+            </div>}
+
+            {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
-              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} /></div> : null
+              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} /></div> : null
             })()}
 
             {vista === 'asistente' && <div className="flex-1 min-h-0">
@@ -284,6 +322,7 @@ export default function ProyectosView({ initialProyectoId }: { initialProyectoId
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {panel === 'contexto' && <PanelContexto proyectoId={pid} sesion={sesionFull && sesionFull.id === sid ? sesionFull : null} onSesion={setSesionFull} />}
+            {panel === 'propuestas' && <PanelPropuestas key={nPropuestas} proyectoId={pid} onAbrir={irArtefacto} />}
             {panel === 'memoria' && <PanelMemoria proyectoId={pid} onCambio={refrescar} />}
             {panel === 'adjuntos' && <PanelAdjuntos proyectoId={pid} onCambio={refrescar} />}
             {panel === 'buscar' && <PanelBuscar proyectoId={pid} onAbrirSesion={id => setSid(id)} onAbrirPanel={p => setPanel(p)} />}

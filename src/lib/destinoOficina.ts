@@ -8,7 +8,7 @@
  *   /backlog/control/<sprintId>    → ?view=backlog&tab=control&sprint=<sprintId>
  *   /solutions                     → ?view=solutions
  *   /solutions/(productos|projects|pilots|partnership|intern|iniciativas) → ?view=solutions&tab=…
- *   /solutions/pilots/<id>         → ?view=solutions&tab=pilots&id=<id>   (detalle de cualquier solución)
+ *   /solutions/pilots/<id>[?seccion=x] → ?view=proyectos&p=<id>[&art=x]   (el hub vive dentro de Oficina › Proyectos)
  * Cualquier otra dirección se devuelve igual.
  */
 export function destinoEnOficina(href: string): string {
@@ -23,7 +23,7 @@ export function destinoEnOficina(href: string): string {
   let s = ruta.match(/^\/solutions\/(productos|projects|pilots|partnership|intern|iniciativas)$/)
   if (s) return con({ view: 'solutions', tab: s[1] })
   s = ruta.match(/^\/solutions\/pilots\/([^/]+)$/)
-  if (s) return con({ view: 'solutions', tab: 'pilots', id: s[1] })
+  if (s) { const sec = extra.get('seccion'); extra.delete('seccion'); return con(sec ? { view: 'proyectos', p: s[1], art: sec } : { view: 'proyectos', p: s[1] }) }
   if (ruta === '/backlog') return '/oficina?view=backlog'
   let m = ruta.match(/^\/backlog\/(sprint|epics|solution|control)$/)
   if (m) return con({ view: 'backlog', tab: m[1] })
