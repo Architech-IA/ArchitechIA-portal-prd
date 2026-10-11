@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, GitBranch,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -17,6 +17,7 @@ import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 import BarraArtefactos from './BarraArtefactos'
 import PanelPropuestas from './PanelPropuestas'
+import PanelFases from './PanelFases'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { ArtefactoMeta, TabKey } from '../../solutions/pilots/[id]/espacio'
 
@@ -26,7 +27,7 @@ const HubSolucion = dynamic(() => import('../../solutions/pilots/[id]/HubSolucio
   loading: () => <div className="flex justify-center py-16 text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>,
 })
 
-type Panel = 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
+type Panel = 'fases' | 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
 type FiltroNat = 'todas' | Naturaleza
 type Orden = 'actividad' | 'fase' | 'nombre'
 const ORDENES: { k: Orden; txt: string }[] = [{ k: 'actividad', txt: 'Actividad' }, { k: 'fase', txt: 'Fase' }, { k: 'nombre', txt: 'Nombre' }]
@@ -49,7 +50,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [cargandoDet, setCargandoDet] = useState(false)
   const [sid, setSid] = useState<string | null>(null)
   const [sesionFull, setSesionFull] = useState<SesionFull | null>(null)
-  const [panel, setPanel] = useState<Panel>('contexto')
+  const [panel, setPanel] = useState<Panel>('fases')
   const [panelAbierto, setPanelAbierto] = useState(true)
   const [listaAbierta, setListaAbierta] = useState(true)
   useEffect(() => { try { if (localStorage.getItem('proyectos.lista') === '0') setListaAbierta(false) } catch { /* sin almacenamiento */ } }, [])
@@ -147,6 +148,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const proyecto = lista.find(p => p.id === pid)
 
   const TABS: { k: Panel; icono: typeof Layers; txt: string; badge?: number }[] = [
+    { k: 'fases', icono: GitBranch, txt: 'Fases', badge: fasesRes?.iniciado && fasesRes.fases?.some(f => f.estado === 'ACTUAL' && f.puerta.cumplida) ? 1 : undefined },
     { k: 'contexto', icono: Layers, txt: 'Contexto' },
     { k: 'propuestas', icono: Sparkles, txt: 'Propuestas', badge: nPropuestas },
     { k: 'memoria', icono: Brain, txt: 'Memoria', badge: det?.propuestasPendientes },
@@ -222,33 +224,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                 <button onClick={alternarLista} className="text-[#7f8a9c] hover:text-gray-200 flex-shrink-0" title={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'} aria-label={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'}>{listaAbierta ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}</button>
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
+                {fasesRes?.iniciado && fasesRes.faseActual && (() => { const f = fasesRes.fases?.find(x => x.clave === fasesRes.faseActual); return f ? (
+                  <button onClick={() => { setVista(f.clave); setPanel('fases'); setPanelAbierto(true) }} title={f.objetivo} className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(99,102,241,0.2)', color: '#c7d2fe', border: '1px solid rgba(99,102,241,0.4)' }}>{f.numero}·{f.nombre}</button>) : null })()}
                 <span className="flex-1" />
                 <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución en su pantalla clásica"><ExternalLink size={11} /> Hub clásico</a>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
-              {/* Una pestaña por fase: el asistente (sesiones de IA) y las 12 fases del proyecto */}
-              <div className="flex items-center gap-1 px-4 py-1.5 overflow-x-auto border-t border-white/5">
-                <button onClick={() => setVista('asistente')} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 transition-colors"
-                  style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                  <MessageSquare size={11} /> Asistente</button>
-                {!fasesRes && <Loader2 size={12} className="animate-spin text-[#7f8a9c] mx-2" />}
-                {(fasesRes?.fases ?? []).map((f, i, todas) => {
-                  const activa = vista === f.clave
-                  const color = !fasesRes?.iniciado ? '#6b7280' : f.estado === 'HECHA' ? '#6ee7b7' : f.estado === 'ACTUAL' ? '#a5b4fc' : f.estado === 'CERRADA' ? '#fca5a5' : '#6b7280'
-                  const lista = fasesRes?.iniciado && f.estado === 'ACTUAL' && f.puerta.cumplida
-                  return (
-                    <span key={f.clave} className="flex items-center gap-1 flex-shrink-0">
-                      {(i === 0 || todas[i - 1].bloque !== f.bloque) && <span className="text-[9px] uppercase tracking-wider text-[#6b7280] ml-1.5 mr-0.5">{ETIQUETA_BLOQUE[f.bloque] ?? f.bloque}</span>}
-                      <button onClick={() => setVista(f.clave)} title={f.objetivo} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] transition-colors"
-                        style={activa ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.55)', color: '#fff' } : { background: f.estado === 'ACTUAL' && fasesRes?.iniciado ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.03)', border: f.estado === 'ACTUAL' && fasesRes?.iniciado ? '1px solid rgba(99,102,241,0.35)' : '1px solid rgba(255,255,255,0.06)', color }}>
-                        {fasesRes?.iniciado && f.estado === 'HECHA' ? <Check size={10} /> : <span className="text-[10px] opacity-70">{f.numero}</span>}
-                        {f.nombre}
-                        {lista && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="La puerta está completa: espera aprobación" />}
-                      </button>
-                    </span>)
-                })}
-              </div>
-              <BarraArtefactos activo={tabVista} onIr={irArtefacto} meta={metaArt} />
+              <BarraArtefactos activo={tabVista} onIr={irArtefacto} meta={metaArt} chatActivo={vista === 'asistente'} onChat={() => setVista('asistente')} />
               {vista === 'asistente' && <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
                 {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-[#7f8a9c]" />}
                 {det?.sesiones.map(s => (
@@ -321,6 +303,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
               </button>))}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
+            {panel === 'fases' && <PanelFases data={fasesRes} activa={vista} onAbrir={clave => setVista(clave)} />}
             {panel === 'contexto' && <PanelContexto proyectoId={pid} sesion={sesionFull && sesionFull.id === sid ? sesionFull : null} onSesion={setSesionFull} />}
             {panel === 'propuestas' && <PanelPropuestas key={nPropuestas} proyectoId={pid} onAbrir={irArtefacto} />}
             {panel === 'memoria' && <PanelMemoria proyectoId={pid} onCambio={refrescar} />}

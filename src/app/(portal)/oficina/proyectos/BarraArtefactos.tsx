@@ -1,5 +1,6 @@
 'use client'
 
+import { MessageSquare } from 'lucide-react'
 import { CLAVE_DE_TAB, PUNTO_ESTADO, type ArtefactoMeta, type TabKey } from '../../solutions/pilots/[id]/espacio'
 import { TITULO_DE_TAB, ICONO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 
@@ -11,9 +12,12 @@ const GRUPOS: { titulo: string; items: TabKey[] }[] = [
 ]
 
 /** Los artefactos del proyecto como pestañas de trabajo: cada uno con su estado, sus propuestas pendientes y sus comentarios abiertos. */
-export default function BarraArtefactos({ activo, onIr, meta }: { activo: TabKey | null; onIr: (t: TabKey) => void; meta: Record<string, ArtefactoMeta> }) {
+export default function BarraArtefactos({ activo, onIr, meta, chatActivo, onChat }: { activo: TabKey | null; onIr: (t: TabKey) => void; meta: Record<string, ArtefactoMeta>; chatActivo: boolean; onChat: () => void }) {
   return (
     <div className="flex items-center gap-1 px-4 py-1.5 overflow-x-auto border-t border-white/5" role="tablist" aria-label="Artefactos del proyecto">
+      <button role="tab" aria-selected={chatActivo} onClick={onChat} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] flex-shrink-0 transition-colors"
+        style={chatActivo ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
+        <MessageSquare size={11} /> Asistente</button>
       {GRUPOS.map((g, gi) => (
         <span key={g.titulo} className="flex items-center gap-1 flex-shrink-0">
           <span className={`text-[9px] uppercase tracking-wider text-[#6b7280] mr-0.5 ${gi > 0 ? 'ml-2' : ''}`}>{g.titulo}</span>
