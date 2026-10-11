@@ -26,7 +26,11 @@ import Revision from './Revision'
 import Entrega from './Entrega'
 import Diagramas, { type Diagrama } from './Diagramas'
 import FaseMotor from './FaseMotor'
-import Versiones from './Versiones'
+import ArbolArtefactos, { TITULO_DE_TAB, ICONO_DE_TAB } from './ArbolArtefactos'
+import CabeceraArtefacto from './CabeceraArtefacto'
+import DockAgente from './DockAgente'
+import CronogramaGantt, { aplicarDesplazamiento, type FaseGantt } from './CronogramaGantt'
+import { CLAVE_DE_TAB, TAB_DE_CLAVE, posicionLibre, type ArtefactoMeta, type Propuesta } from './espacio'
 
 const ESTADOS = ['ACTIVO', 'EN_DESARROLLO', 'PENDIENTE', 'PAUSADO', 'FINALIZADO']
 const ESTADOS_FASE = ['PENDIENTE', 'EN_CURSO', 'COMPLETADA']
@@ -51,6 +55,9 @@ interface FaseCronograma {
   horaFin?: string
   // Otra fase del cronograma que debe terminar antes de que esta empiece
   dependeDe?: string
+  // Las fechas con las que se comprometió la fase, y si es un hito (una sola fecha)
+  base?: { inicio: string; fin: string }
+  hito?: boolean
 }
 
 const ESTADO_A_BACKLOG: Record<string, string> = {
@@ -817,7 +824,11 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
   const [refrescoValor, setRefrescoValor] = useState(0)
   const [verVersiones, setVerVersiones] = useState(false)
   const [tareasPorId, setTareasPorId] = useState<Record<string, TareaBacklog>>({})
-  const [otrosDirty, setOtrosDirty] = useState(false)
+  const [dirtyOtros, setDirtyOtros] = useState({ arquitectura: false, cronograma: false, diagramas: false, plan: false, info: false })
+  const otrosDirty = Object.values(dirtyOtros).some(Boolean)
+  // Estado, comentarios y propuestas de cada pieza (lo que muestran el árbol, la cabecera y el panel del agente)
+  const [metaArt, setMetaArt] = useState<Record<string, ArtefactoMeta>>({})
+  const [pendientes, setPendientes] = useState<Propuesta[]>([])
   const [guardarAuto, setGuardarAuto] = useState(false)
 
   const [saving, setSaving] = useState(false)
@@ -836,7 +847,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
   const [draggiingPlan, setDraggingPlan] = useState(false)
   const [planFileError, setPlanFileError] = useState('')
   const [planView, setPlanView] = useState<'markdown' | 'visual'>('visual')
-  const [cronogramaView, setCronogramaView] = useState<'lista' | 'linea'>('linea')
+  const [cronogramaView, setCronogramaView] = useState<'gantt' | 'lista' | 'linea'>('gantt')
   const planFileInputRef = useRef<HTMLInputElement>(null)
   const htmlFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -899,6 +910,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
       }
     }
     load()
+    void recargarEspacio()
     loadLeads()
     loadTareasBacklog()
     return () => { cancelled = true }
@@ -985,6 +997,42 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
       formSaved.current = { ...formSaved.current, valorEstimado: v }
       setRefrescoValor(n => n + 1)
     } catch { /* se queda como estaba */ }
+  }
+
+  /** Vuelve a leer el estado, los comentarios y las propuestas de todas las piezas. */
+  async function recargarEspacio() {
+    try {
+      const [a, p] = await Promise.all([
+        apiJson<ArtefactoMeta[]>(`/api/soluciones/${id}/artefactos`),
+        apiJson<Propuesta[]>(`/api/soluciones/${id}/propuestas?estado=PENDIENTE`),
+      ])
+      setMetaArt(Object.fromEntries((Array.isArray(a) ? a : []).map(m => [m.clave, m])))
+      setPendientes(Array.isArray(p) ? p : [])
+    } catch { /* se queda lo que había */ }
+  }
+  /** El servidor cambió una pieza (se aprobó, se aceptó una propuesta…): traer su contenido y su estado. */
+  async function refrescarArtefacto(clave: string) {
+    try {
+      const sol = await apiJson<Record<string, any>>(`/api/soluciones/${id}`) // eslint-disable-line @typescript-eslint/no-explicit-any
+      aplicarSolucion(sol, [clave])
+    } catch { /* se queda como estaba */ }
+    await recargarEspacio()
+  }
+  /** Trae una versión anterior al editor (queda sin guardar hasta pulsar Guardar). */
+  function restaurarArtefacto(clave: string, contenido: string) {
+    try {
+      if (clave === 'prd') setPrd(migrarPrd(JSON.parse(contenido)))
+      else if (clave === 'disenoTecnico') setDiseno(migrarDiseno(JSON.parse(contenido)))
+      else if (clave === 'planEjecucion') setPlanEj(migrarPlanEj(JSON.parse(contenido)))
+      else if (clave === 'arquitectura') {
+        const p = JSON.parse(contenido)
+        setArchNodes(Array.isArray(p) ? p : Array.isArray(p?.nodes) ? p.nodes : [])
+        setArchConnections(Array.isArray(p?.connections) ? p.connections : [])
+      } else if (clave === 'cronograma') setFases(JSON.parse(contenido))
+      else if (clave === 'diagramas') setDiagramas(JSON.parse(contenido))
+      else if (clave === 'planTrabajo') setForm(f => ({ ...f, planTrabajo: contenido }))
+      setError('')
+    } catch { setError('No se pudo leer esa versión.') }
   }
 
   async function dispatchTarea(taskId: string) {
@@ -1518,6 +1566,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
       setConflicto(null)
       setSavedAt(Date.now())
       setRefrescoValor(n => n + 1)
+      void recargarEspacio()
       return true
     } catch (err: unknown) {
       const e = err as { status?: number; data?: { conflictos?: string[]; vigente?: Record<string, string> } }
@@ -1556,16 +1605,17 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
 
   const hayCambios = prdDirty || disenoDirty || planEjDirty || otrosDirty
   useEffect(() => {
-    setOtrosDirty(
-      JSON.stringify({ nodes: archNodes, connections: archConnections }) !== archSavedSnapshot.current
-      || JSON.stringify(fases) !== cronoSavedSnapshot.current
-      || JSON.stringify(diagramas) !== diagramasSavedSnapshot.current
-      || (arquitecturaHtml || '') !== htmlSavedSnapshot.current
-      || form.planTrabajo.trim() !== formSaved.current.planTrabajo.trim()
-      || form.nombre.trim() !== formSaved.current.nombre || form.descripcion.trim() !== formSaved.current.descripcion.trim()
-      || form.tipo !== formSaved.current.tipo || form.estado !== formSaved.current.estado || form.valorEstimado !== formSaved.current.valorEstimado
-      || form.leadId !== formSaved.current.leadId || form.repositorio.trim() !== formSaved.current.repositorio.trim(),
-    )
+    const f0 = formSaved.current
+    setDirtyOtros({
+      arquitectura: JSON.stringify({ nodes: archNodes, connections: archConnections }) !== archSavedSnapshot.current,
+      cronograma: JSON.stringify(fases) !== cronoSavedSnapshot.current,
+      diagramas: JSON.stringify(diagramas) !== diagramasSavedSnapshot.current,
+      plan: form.planTrabajo.trim() !== f0.planTrabajo.trim(),
+      info: (arquitecturaHtml || '') !== htmlSavedSnapshot.current
+        || form.nombre.trim() !== f0.nombre || form.descripcion.trim() !== f0.descripcion.trim()
+        || form.tipo !== f0.tipo || form.estado !== f0.estado || form.valorEstimado !== f0.valorEstimado
+        || form.leadId !== f0.leadId || form.repositorio.trim() !== f0.repositorio.trim(),
+    })
   }, [archNodes, archConnections, fases, diagramas, arquitecturaHtml, form, savedAt])
   useEffect(() => {
     if (guardarAuto) { setGuardarAuto(false); void handleSave({ silencioso: true }) }
@@ -1602,6 +1652,32 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
   // Panel izquierdo persistente (mismo esquema que el Hub de Lead): info de la
   // solucion + mapa de fases. Todo derivado de datos ya cargados en la pagina.
   const hoyStr = new Date().toISOString().slice(0, 10)
+  const sucioPorTab: Partial<Record<TabKey, boolean>> = {
+    prd: prdDirty, diseno: disenoDirty, 'plan-ejec': planEjDirty,
+    arquitectura: dirtyOtros.arquitectura, cronograma: dirtyOtros.cronograma, diagramas: dirtyOtros.diagramas, plan: dirtyOtros.plan,
+  }
+  // Lo que propone el motor para la arquitectura (componentes y conexiones punteados) y para el cronograma (cómo quedarían las fechas)
+  const fantasmasArq = (() => {
+    const nodes: ArchNode[] = []
+    const connections: ArchConnection[] = []
+    for (const p of pendientes.filter(x => x.clave === 'arquitectura')) {
+      for (const o of p.ops) {
+        const v = (o.valor ?? {}) as Record<string, unknown>
+        if (o.ruta === 'nodes') {
+          const pos = typeof v.x === 'number' && typeof v.y === 'number' ? { x: v.x as number, y: v.y as number } : posicionLibre([...archNodes, ...nodes])
+          nodes.push({ id: String(v.id ?? `prop-${p.id}-${nodes.length}`), label: String(v.label ?? 'Componente'), type: (v.type as ArchNode['type']) ?? 'externo', x: pos.x, y: pos.y })
+        } else if (o.ruta === 'connections') {
+          connections.push({ id: String(v.id ?? `prop-c-${p.id}-${connections.length}`), from: String(v.from ?? ''), to: String(v.to ?? '') })
+        }
+      }
+    }
+    return nodes.length || connections.length ? { nodes, connections } : undefined
+  })()
+  const fantasmaCrono = (() => {
+    const ps = pendientes.filter(x => x.clave === 'cronograma')
+    if (ps.length === 0) return undefined
+    return ps.reduce((acc, p) => p.ops.reduce((a, o) => (o.op === 'desplazar' && o.dias ? aplicarDesplazamiento(a, o.dias, o.desdeId) : a), acc), fases as unknown as FaseGantt[])
+  })()
   const leadSel = leads.find(l => l.id === (form.leadId || currentLeadId))
   const fasesPanel = calcularFases(prd, diseno, planEj, archNodes.length, tareasBacklog)
   const valorTxt = '$' + (Number(form.valorEstimado) || 0).toLocaleString('es-CO')
@@ -1846,11 +1922,6 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
 
 
 
-      {verVersiones && (
-        <Versiones solucionId={id} onCerrar={() => setVerVersiones(false)}
-          onRestaurar={(contenido) => { try { setPrd(migrarPrd(JSON.parse(contenido))); setError('') } catch { setError('No se pudo leer esa versión del PRD.') } }} />
-      )}
-
       {conflicto && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
           <div className="w-full max-w-lg rounded-2xl p-5 bg-[#0e0a1c] border border-amber-500/40 space-y-3">
@@ -2031,34 +2102,14 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
         <FaseMotor solucionId={id} esAdmin={esAdmin} glass={glassCard} />
 
         <div className="rounded-2xl p-4" style={glassCard}>
-          <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold mb-3">Documentos</p>
-          <ol className="relative">
-            {fasesPanel.map((f, i) => {
-              const clickable = !!f.tab
-              return (
-                <li key={f.key} className="relative">
-                  {i < fasesPanel.length - 1 && <span className="absolute left-[13px] top-7 bottom-0 w-px bg-white/10" aria-hidden />}
-                  <button type="button" disabled={!clickable} onClick={() => f.tab && setActiveTab(f.tab)} title={f.hint}
-                    className={'w-full flex items-center gap-3 py-1.5 text-left ' + (clickable ? 'cursor-pointer group' : 'cursor-default')}>
-                    <span className={'relative z-10 w-[27px] h-[27px] rounded-full border flex items-center justify-center flex-shrink-0 text-[11px] font-semibold ' + faseColor[f.estado]}>
-                      {f.estado === 'hecho' ? <CheckCircle2 size={13} /> : i + 1}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[13px] font-semibold truncate text-gray-200 group-hover:text-orange-300">{f.label}</span>
-                      <span className={'block text-[11px] ' + (f.estado === 'hecho' ? 'text-emerald-400/80' : f.estado === 'progreso' ? 'text-orange-300/80' : 'text-gray-600')}>{faseTxt[f.estado]}</span>
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ol>
+          <ArbolArtefactos activo={activeTab} onIr={setActiveTab} meta={metaArt} sucios={sucioPorTab} />
         </div>
       </aside>
 
       <div className="flex-1 min-w-0">
       {/* Tabs — mismo tamaño/estilo que la barra de tabs del Hub de Lead
           (leads/[id]/hub/page.tsx) para que ambos hubs se vean consistentes */}
-      <div style={{ display: 'flex', gap: '2px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)', overflowX: 'auto' }}>
+      <div className="md:hidden" style={{ display: 'flex', gap: '2px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)', overflowX: 'auto' }}>
         {TABS.map(t => {
           const active = activeTab === t.key
           return (
@@ -2079,6 +2130,20 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
       </div>
 
       <div className="p-4 space-y-4">
+        <CabeceraArtefacto
+          solucionId={id}
+          clave={CLAVE_DE_TAB[activeTab] ?? null}
+          titulo={TITULO_DE_TAB[activeTab]}
+          Icono={ICONO_DE_TAB[activeTab]}
+          meta={CLAVE_DE_TAB[activeTab] ? metaArt[CLAVE_DE_TAB[activeTab]!] : undefined}
+          esAdmin={esAdmin}
+          sucio={CLAVE_DE_TAB[activeTab] ? !!sucioPorTab[activeTab] : hayCambios}
+          otrosCambios={hayCambios}
+          guardando={saving}
+          onGuardar={() => void handleSave()}
+          onCambio={c => void refrescarArtefacto(c)}
+          onRestaurar={restaurarArtefacto}
+        />
         {/* Mismo tratamiento "premium" de liquid glass que TabbedNotes.tsx
             (Hub de Lead) — antes esta pagina usaba la clase .card estandar
             del portal (blur 20px, sin gradiente ni brillo especular). */}
@@ -2151,6 +2216,7 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                   nodes={archNodes}
                   connections={archConnections}
                   onChange={(n, c) => { setArchNodes(n); setArchConnections(c) }}
+                  fantasmas={fantasmasArq}
                 />
               ) : arquitecturaHtml ? (
                 <iframe
@@ -2357,11 +2423,6 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                   </div>
                   <div className="flex items-center gap-2">
                     <RichToolbar />
-                    <button type="button" onClick={() => setVerVersiones(true)}
-                      title="Versiones anteriores del PRD"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
-                      Historial
-                    </button>
                     <button type="button" onClick={() => window.print()}
                       title="Imprimir / Exportar a PDF"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
@@ -3023,6 +3084,10 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-0.5 bg-gray-800 border border-gray-700 rounded-lg p-0.5">
+                  <button type="button" onClick={() => setCronogramaView('gantt')}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${cronogramaView === 'gantt' ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:text-white'}`}>
+                    <BarChart3 size={12} /> Gantt
+                  </button>
                   <button type="button" onClick={() => setCronogramaView('lista')}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${cronogramaView === 'lista' ? 'bg-cyan-600 text-white' : 'text-gray-300 hover:text-white'}`}>
                     <List size={12} /> Lista
@@ -3045,7 +3110,9 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
                 </div>
               </div>
 
-              {cronogramaView === 'linea' ? (
+              {cronogramaView === 'gantt' ? (
+                <CronogramaGantt fases={fases as unknown as FaseGantt[]} onChange={f => setFases(f as unknown as FaseCronograma[])} tareasPorId={tareasPorId} fantasma={fantasmaCrono} />
+              ) : cronogramaView === 'linea' ? (
                 <CronogramaTimeline fases={fases} onUpdate={updateFase} onRemove={removeFase} solucionId={id} planMarkdown={form.planTrabajo} />
               ) : (
                 <>
@@ -3165,6 +3232,15 @@ export default function SolucionDetailPage({ params: paramsProp }: { params?: Pr
             </div>
           )}
         </div>
+
+        {CLAVE_DE_TAB[activeTab] && (
+          <DockAgente
+            propuestas={pendientes.filter(p => p.clave === CLAVE_DE_TAB[activeTab])}
+            sucio={!!sucioPorTab[activeTab]}
+            tareas={tareasBacklog}
+            onDecidida={() => void refrescarArtefacto(CLAVE_DE_TAB[activeTab]!)}
+          />
+        )}
 
         {/* Guardar cambios */}
         <div className="flex items-center justify-end gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
