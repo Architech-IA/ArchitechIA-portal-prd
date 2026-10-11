@@ -14,7 +14,8 @@ import PlanTareas from './PlanTareas'
 const POLL_RAPIDO = 1500
 const POLL_LENTO = 12000
 
-export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel, rolInfo }: {
+export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel, rolInfo, acciones }: {
+  acciones?: React.ReactNode
   rolInfo?: { fase: string; rol: RolSesion } | null
   proyectoId: string
   sesion: SesionRes
@@ -159,8 +160,10 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
             className="flex-1 min-w-0 bg-transparent text-[13px] font-semibold text-gray-100 outline-none border-b border-indigo-500/60" />
         ) : (
           <button onClick={() => !esBitacora && setEditTitulo(full?.titulo ?? sesion.titulo)} title={esBitacora ? undefined : 'Clic para renombrar'}
-            className="flex-1 min-w-0 text-left text-[13px] font-semibold text-gray-100 truncate hover:text-white">{full?.titulo ?? sesion.titulo}</button>
+            className="min-w-0 text-left text-[13px] font-semibold text-gray-100 truncate hover:text-white">{full?.titulo ?? sesion.titulo}</button>
         )}
+        {acciones}
+        <span className="flex-1" />
         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide flex-shrink-0" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }}>{ETIQUETA_TIPO[tipo] ?? tipo}</span>
         {full && !esBitacora && (
           <button onClick={() => soyDuenio && void cambiar({ privada: !full.privada })} disabled={!soyDuenio}

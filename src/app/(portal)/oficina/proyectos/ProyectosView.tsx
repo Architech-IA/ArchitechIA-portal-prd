@@ -270,7 +270,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                     </span>)
                 })}
               </div>
-              {vista === 'asistente' && <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
+              {vista === 'asistente' && (det?.sesiones.length ?? 0) > 1 && <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto">
                 {cargandoDet && !det && <Loader2 size={13} className="animate-spin text-[#7f8a9c]" />}
                 {det?.sesiones.map(s => (
                   <button key={s.id} onClick={() => { setSid(s.id); setNueva(false) }} title={`${s.rol ? `${fasesRes?.fases?.find(f => f.clave === s.faseClave)?.sesiones?.find(r => r.clave === s.rol)?.titulo ?? s.rol} · ` : ''}${ETIQUETA_TIPO[s.tipo as TipoSesion] ?? s.tipo} · ${s.creadaPorNombre} · ${s.mensajes} mensajes`}
@@ -280,7 +280,6 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                     {s.faseClave && <span className="text-[9px] opacity-60 flex-shrink-0">{fasesRes?.fases?.find(f => f.clave === s.faseClave)?.numero}</span>}<span className="truncate">{s.titulo}</span>
                     {s.privada && <Lock size={9} className="text-amber-400 flex-shrink-0" />}
                   </button>))}
-                <button onClick={() => setNueva(o => !o)} disabled={!det} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 text-indigo-200 disabled:opacity-40" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}><Plus size={11} /> Nueva sesión</button>
               </div>}
 
               {vista === 'asistente' && nueva && (
@@ -335,7 +334,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 
             {vista === 'asistente' && <div className="flex-1 min-h-0">
               {det && sesion && det.yo && (
-                <ChatSesion key={sesion.id} proyectoId={pid} sesion={sesion} rolInfo={rolDe(sesion)} yo={det.yo} onCambio={refrescar}
+                <ChatSesion key={sesion.id} proyectoId={pid} sesion={sesion}
+                  acciones={<button onClick={() => setNueva(o => !o)} className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] flex-shrink-0 text-indigo-200" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}><Plus size={11} /> Nueva sesión</button>} rolInfo={rolDe(sesion)} yo={det.yo} onCambio={refrescar}
                   onAbrirSesion={id => { if (id) setSid(id); else void cargarDetalle(pid) }}
                   onSesion={setSesionFull} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} />)}
               {det && !sesion && (
