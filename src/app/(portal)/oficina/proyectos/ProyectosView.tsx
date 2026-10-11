@@ -244,15 +244,15 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                 <button onClick={alternarLista} className="text-[#7f8a9c] hover:text-gray-200 flex-shrink-0" title={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'} aria-label={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'}>{listaAbierta ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}</button>
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
+                <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
+                  style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
+                  <MessageSquare size={12} /></button>
                 <span className="flex-1" />
                 <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución en su pantalla clásica"><ExternalLink size={11} /> Hub clásico</a>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
               {/* Una pestaña por fase: el asistente (sesiones de IA) y las 12 fases del proyecto */}
               <div className="flex items-center gap-1 px-4 py-1.5 overflow-x-auto border-t border-white/5">
-                <button onClick={() => setVista('asistente')} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] flex-shrink-0 transition-colors"
-                  style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                  <MessageSquare size={11} /> Asistente</button>
                 {!fasesRes && <Loader2 size={12} className="animate-spin text-[#7f8a9c] mx-2" />}
                 {(fasesRes?.fases ?? []).map((f, i, todas) => {
                   const activa = vista === f.clave
@@ -260,7 +260,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                   const lista = fasesRes?.iniciado && f.estado === 'ACTUAL' && f.puerta.cumplida
                   return (
                     <span key={f.clave} className="flex items-center gap-1 flex-shrink-0">
-                      {(i === 0 || todas[i - 1].bloque !== f.bloque) && <span className="text-[9px] uppercase tracking-wider text-[#6b7280] ml-1.5 mr-0.5">{ETIQUETA_BLOQUE[f.bloque] ?? f.bloque}</span>}
+                      
                       <button onClick={() => setVista(f.clave)} title={f.objetivo} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] transition-colors"
                         style={activa ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.55)', color: '#fff' } : { background: f.estado === 'ACTUAL' && fasesRes?.iniciado ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.03)', border: f.estado === 'ACTUAL' && fasesRes?.iniciado ? '1px solid rgba(99,102,241,0.35)' : '1px solid rgba(255,255,255,0.06)', color }}>
                         {fasesRes?.iniciado && f.estado === 'HECHA' ? <Check size={10} /> : <span className="text-[10px] opacity-70">{f.numero}</span>}
