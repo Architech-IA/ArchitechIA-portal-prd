@@ -7,6 +7,7 @@ import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import SesionesDeFase from './SesionesDeFase'
 import LeadDeFase from './LeadDeFase'
+import EntregablesDeFase from './EntregablesDeFase'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
@@ -116,6 +117,10 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
 
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
+          <Seccion titulo={`Entregables obligatorios (${(fase.requeridos ?? []).filter(r => r.ok).length}/${(fase.requeridos ?? []).length})`}>
+            <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} />
+          </Seccion>
+
           {data.lead?.id && (
             <Seccion titulo={fase.bloque === 'PREVENTA' ? 'Del Lead Hub · esta etapa' : 'Del Lead Hub'}>
               <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
@@ -167,7 +172,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
               })}
             </div>
             <div className="mt-3">
-              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Entregables de la fase</p>
+              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Todo lo que produce la fase (los obligatorios están arriba)</p>
               <ul className="list-disc pl-5 text-[12px] text-gray-300 space-y-0.5">{fase.entregables.map(e => <li key={e}>{e}</li>)}</ul>
             </div>
           </Seccion>

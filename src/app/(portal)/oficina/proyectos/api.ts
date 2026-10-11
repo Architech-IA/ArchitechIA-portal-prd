@@ -75,13 +75,18 @@ export interface ResultadoBusqueda {
 export interface FaseCriterio { texto: string; ok: boolean; por: string | null; en: string | null }
 export interface FaseActividadVista { clave: string; titulo: string; tipo: 'AGENTE' | 'HUMANA'; area: string; creada: boolean; backlogItemId: string | null; taskCode: string | null; status: string | null; assigneeName: string | null }
 export interface RecursoFase { tipo: string; etiqueta: string; descripcion: string; estado: string; nivel: 'ok' | 'medio' | 'vacio' | 'aviso'; href: string | null; panel: string | null }
+export interface RequeridoFase {
+  clave: string; titulo: string; ayuda: string | null; tipo: string; ok: boolean; detalle: string; manual: boolean; artefacto: string | null
+  evidencia: string | null; por: string | null; en: string | null
+}
 export interface FaseVista {
   clave: string; numero: number; bloque: Bloque; nombre: string; objetivo: string
   estado: 'HECHA' | 'ACTUAL' | 'PENDIENTE' | 'CERRADA'; entregables: string[]
-  puerta: { aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; criterios: FaseCriterio[]; cumplida: boolean }
+  puerta: { aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; criterios: FaseCriterio[]; cumplida: boolean; entregablesOk?: boolean }
   actividades: { total: number; hechas: number; items: FaseActividadVista[] }
   recursos: RecursoFase[]
   sesiones?: RolSesion[]
+  requeridos?: RequeridoFase[]
 }
 export interface FasesRes {
   iniciado: boolean
