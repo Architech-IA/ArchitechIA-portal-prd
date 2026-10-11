@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, FileText, ChevronDown,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -16,6 +16,7 @@ import PanelAuto from './PanelAuto'
 import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
+import PlantillasFases from './PlantillasFases'
 import PanelPropuestas from './PanelPropuestas'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { RolSesion } from './api'
@@ -54,6 +55,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [panel, setPanel] = useState<Panel>('artefactos')
   const [panelAbierto, setPanelAbierto] = useState(true)
   const [masAbierto, setMasAbierto] = useState(false)
+  const [editorPlantillas, setEditorPlantillas] = useState(false)
   const [listaAbierta, setListaAbierta] = useState(true)
   useEffect(() => { try { if (localStorage.getItem('proyectos.lista') === '0') setListaAbierta(false) } catch { /* sin almacenamiento */ } }, [])
   const alternarLista = () => setListaAbierta(o => { const n = !o; try { localStorage.setItem('proyectos.lista', n ? '1' : '0') } catch { /* sin almacenamiento */ } return n })
@@ -180,6 +182,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 
   return (
     <div className="px-hover flex h-full min-h-0 w-full">
+      {editorPlantillas && <PlantillasFases onCerrar={() => setEditorPlantillas(false)} onCambio={refrescar} />}
       <style>{`.px-hover button:not(:disabled), .px-hover select, .px-hover summary, .px-hover [role="button"] { cursor: pointer; transition: box-shadow .12s, filter .12s, color .12s; }
 .px-hover button:not(:disabled):hover, .px-hover select:hover, .px-hover summary:hover, .px-hover [role="button"]:hover { box-shadow: inset 0 0 0 999px rgba(255,255,255,0.075); filter: brightness(1.18); }
 .px-hover button:not(:disabled):active { filter: brightness(1.05); }
@@ -188,7 +191,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
       {/* ── Columna A: proyectos ── */}
       <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${listaAbierta || !pid ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[11px] text-[#7f8a9c]">{lista.length}</span></div>
+          <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[11px] text-[#7f8a9c]">{lista.length}</span><span className="flex-1" />
+            <button onClick={() => setEditorPlantillas(true)} title="Plantillas de fases: entregables, criterios y roles de sesión" aria-label="Plantillas de fases" className="text-[#7f8a9c] hover:text-gray-200"><SlidersHorizontal size={13} /></button></div>
           <div className="relative">
             <Search size={11} className="absolute left-2 top-2 text-[#7f8a9c]" />
             <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Filtrar…" className="w-full rounded-lg pl-7 pr-2 py-1.5 text-[11px] text-gray-300 outline-none border border-white/10 focus:border-indigo-500/40 placeholder-gray-600" style={{ background: 'rgba(255,255,255,0.04)' }} />
