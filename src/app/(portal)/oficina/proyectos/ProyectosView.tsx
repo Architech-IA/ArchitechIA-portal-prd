@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal, Building2,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -17,6 +17,7 @@ import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
 import PlantillasFases from './PlantillasFases'
+import FichaCliente from './FichaCliente'
 import PanelPropuestas from './PanelPropuestas'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { RolSesion } from './api'
@@ -56,6 +57,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [panelAbierto, setPanelAbierto] = useState(true)
   const [masAbierto, setMasAbierto] = useState(false)
   const [editorPlantillas, setEditorPlantillas] = useState(false)
+  const [fichaAbierta, setFichaAbierta] = useState(false)
+  const [fichaResumen, setFichaResumen] = useState<{ existe: boolean; nombre: string; ok: number; total: number } | null>(null)
+  const cargarFicha = useCallback((id: string) => {
+    api<{ existe: boolean; cliente: { nombre: string } | null; completitud: { ok: number; total: number } }>(`/api/proyectos/${id}/cliente`)
+      .then(d => { if (pidRef.current === id) setFichaResumen({ existe: d.existe, nombre: d.cliente?.nombre ?? '', ok: d.completitud.ok, total: d.completitud.total }) })
+      .catch(() => { if (pidRef.current === id) setFichaResumen(null) })
+  }, [])
   const [listaAbierta, setListaAbierta] = useState(true)
   useEffect(() => { try { if (localStorage.getItem('proyectos.lista') === '0') setListaAbierta(false) } catch { /* sin almacenamiento */ } }, [])
   const alternarLista = () => setListaAbierta(o => { const n = !o; try { localStorage.setItem('proyectos.lista', n ? '1' : '0') } catch { /* sin almacenamiento */ } return n })
@@ -118,9 +126,10 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   function elegirProyecto(id: string) {
     if (id === pid) return
     if (hubSucio && !window.confirm('Hay cambios sin guardar en los artefactos de este proyecto. Si cambias de proyecto se pierden. ¿Continuar?')) return
-    setHubAbierto(false); setTabArt(null); setHubSucio(false); setMetaArt({}); cargarMeta(id)
+    setHubAbierto(false); setTabArt(null); setHubSucio(false); setMetaArt({}); cargarMeta(id); setFichaResumen(null); setFichaAbierta(false)
     setPid(id); pidRef.current = id; setFasesRes(null); setVista('asistente'); void cargarFases(id, true); setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null); setCargandoDet(true)
     void cargarDetalle(id)
+    cargarFicha(id)
   }
   // Proyecto recibido por URL (?p=…)
   useEffect(() => {
@@ -129,7 +138,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
     else if (initialArtefacto && initialArtefacto in TITULO_DE_TAB) irArtefacto(initialArtefacto as TabKey)
   }, [initialProyectoId, initialArtefacto]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const refrescar = useCallback(() => { if (pidRef.current) { void cargarDetalle(pidRef.current); void cargarFases(pidRef.current) } void cargarLista() }, [cargarDetalle, cargarFases, cargarLista])
+  const refrescar = useCallback(() => { if (pidRef.current) { void cargarDetalle(pidRef.current); void cargarFases(pidRef.current); cargarFicha(pidRef.current) } void cargarLista() }, [cargarDetalle, cargarFases, cargarFicha, cargarLista])
 
   async function crearSesion(tipo: TipoSesion, rol?: { fase: string; rol: string }) {
     if (!pid || creando) return
@@ -183,6 +192,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   return (
     <div className="px-hover flex h-full min-h-0 w-full">
       {editorPlantillas && <PlantillasFases onCerrar={() => setEditorPlantillas(false)} onCambio={refrescar} />}
+      {fichaAbierta && pid && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setFichaAbierta(false)}>
+          <div className="w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-2xl p-5" style={{ background: '#0e0e20', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3"><h2 className="text-[14px] font-bold text-gray-100 flex-1">Ficha del cliente</h2><button onClick={() => setFichaAbierta(false)} className="text-[#7f8a9c] hover:text-gray-200"><X size={16} /></button></div>
+            <FichaCliente proyectoId={pid} onCambio={refrescar} />
+          </div>
+        </div>)}
       <style>{`.px-hover button:not(:disabled), .px-hover select, .px-hover summary, .px-hover [role="button"] { cursor: pointer; transition: box-shadow .12s, filter .12s, color .12s; }
 .px-hover button:not(:disabled):hover, .px-hover select:hover, .px-hover summary:hover, .px-hover [role="button"]:hover { box-shadow: inset 0 0 0 999px rgba(255,255,255,0.075); filter: brightness(1.18); }
 .px-hover button:not(:disabled):active { filter: brightness(1.05); }
@@ -251,6 +267,10 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                 <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
                   style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
                   <MessageSquare size={12} /></button>
+                {fichaResumen && (fichaResumen.existe || (fasesRes?.fases ?? []).some(x => (x.requeridos ?? []).some(r => r.tipo === 'ficha_cliente'))) && (
+                  <button onClick={() => setFichaAbierta(true)} title="Ficha del cliente" className="flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full flex-shrink-0 max-w-[260px] truncate"
+                    style={fichaResumen.ok === fichaResumen.total ? { background: 'rgba(16,185,129,0.14)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)' } : { background: 'rgba(245,158,11,0.14)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.3)' }}>
+                    <Building2 size={11} className="flex-shrink-0" /><span className="truncate">{fichaResumen.nombre || 'Sin cliente'}</span><span className="opacity-80 flex-shrink-0">· {fichaResumen.ok}/{fichaResumen.total}</span></button>)}
                 <span className="flex-1" />
                 <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución en su pantalla clásica"><ExternalLink size={11} /> Hub clásico</a>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
@@ -332,7 +352,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 
             {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
-              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto}
+              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)}
                 sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }} /></div> : null
             })()}
 

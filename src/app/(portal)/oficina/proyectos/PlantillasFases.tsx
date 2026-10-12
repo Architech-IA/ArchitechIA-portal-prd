@@ -11,12 +11,12 @@ import { FORMATO } from './formatos'
 // Editor de las plantillas de fases: objetivo, aprobador y criterios de la puerta, entregables obligatorios (con su verificación) y roles de sesión.
 // Lo que se guarda se aplica de inmediato a los proyectos nuevos y a los que ya están en marcha.
 
-interface Verifica { tipo: string; clave?: string; aprobado?: boolean; min_requisitos?: number | null; min?: number; hechas_min?: number; sin_fallidas?: boolean; estados?: string[] }
+interface Verifica { rol?: string; tipo: string; clave?: string; aprobado?: boolean; min_requisitos?: number | null; min?: number; hechas_min?: number; sin_fallidas?: boolean; estados?: string[] }
 interface Requerido { clave: string; titulo: string; ayuda: string; formato: string; verifica: Verifica }
 interface Rol { clave: string; titulo: string; tipo: string; objetivo: string; artefactos: string[]; resultado: string; cierre: string[] }
 interface FaseEd { clave: string; numero: number; bloque: string; nombre: string; leadStatus: string | null; tipoPuerta: string; objetivo: string; aprobador: string; criterios: string[]; entregables: string[]; requeridos: Requerido[]; sesiones: Rol[] }
 interface Plantilla { codigo: string; nombre: string; modificada: boolean; version: number; actualizadoPor: string | null; actualizadoEn: string | null; efectiva: FaseEd[]; base: FaseEd[] }
-interface Catalogo { formatosManuales: string[]; aprobadores: string[]; tiposVerificacion: string[]; tiposSesion: string[]; artefactos: string[]; estadosPropuesta: string[]; documentos: string[] }
+interface Catalogo { rolesFicha: string[]; formatosManuales: string[]; aprobadores: string[]; tiposVerificacion: string[]; tiposSesion: string[]; artefactos: string[]; estadosPropuesta: string[]; documentos: string[] }
 interface Datos { puedeEditar: boolean; catalogo: Catalogo; plantillas: Plantilla[] }
 interface Hist { id: string; version: number; nota: string | null; usuario: string | null; en: string; fasesEditadas: number }
 
@@ -24,10 +24,12 @@ const APROBADOR: Record<string, string> = { COMERCIAL: 'Responsable comercial', 
 const VERIF: Record<string, string> = {
   nota_lead: 'Notas de la etapa en el Lead Hub', reunion_lead: 'Reunión registrada en el lead', documento: 'Documento (PRD, diseño o plan)', arquitectura: 'Diagrama de arquitectura',
   propuesta: 'Propuesta del lead', tareas: 'Tareas del backlog', despliegue: 'URL de despliegue registrada', manual: 'Lo marca una persona, con evidencia',
+  ficha_cliente: 'Ficha del cliente completa', ficha_contacto: 'Persona identificada en la ficha del cliente',
 }
 const DOC: Record<string, string> = { prd: 'PRD', diseno: 'Diseño técnico', plan: 'Plan de ejecución' }
 const ESTADO_PROP: Record<string, string> = { DRAFT: 'Borrador', SENT: 'Enviada', UNDER_REVIEW: 'En revisión', ACCEPTED: 'Aceptada', REJECTED: 'Rechazada' }
-const AUTO_FORMATO: Record<string, string> = { nota_lead: 'nota', reunion_lead: 'registro', documento: 'portal', arquitectura: 'diagrama', propuesta: 'propuesta', tareas: 'backlog', despliegue: 'url' }
+const ROL_FICHA: Record<string, string> = { DECISOR: 'Quién decide la compra', REPRESENTANTE_LEGAL: 'Representante legal', FIRMANTE: 'Quién firma la aceptación y el cierre' }
+const AUTO_FORMATO: Record<string, string> = { ficha_cliente: 'ficha', ficha_contacto: 'ficha', nota_lead: 'nota', reunion_lead: 'registro', documento: 'portal', arquitectura: 'diagrama', propuesta: 'propuesta', tareas: 'backlog', despliegue: 'url' }
 const copia = <T,>(x: T): T => JSON.parse(JSON.stringify(x))
 const claveDe = (t: string) => (t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30) || 'nuevo') + '_' + Math.random().toString(36).slice(2, 5)
 const campo = 'w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-500/50 disabled:opacity-60'
@@ -249,9 +251,9 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                     <div className="space-y-2.5">
                       {fase.requeridos.map((r, i) => {
                         const v = r.verifica
-                        const tipos = cat.tiposVerificacion.filter(t => (t !== 'nota_lead' && t !== 'reunion_lead') || conLead).filter(t => t !== 'propuesta' || comercial)
+                        const tipos = cat.tiposVerificacion.filter(t => (t !== 'nota_lead' && t !== 'reunion_lead') || conLead).filter(t => (t !== 'propuesta' && t !== 'ficha_cliente' && t !== 'ficha_contacto') || comercial)
                         const cambiarV = (p: Partial<Verifica>) => cambiarReq(i, { verifica: { ...v, ...p } })
-                        const nuevoTipo = (t: string) => cambiarReq(i, { formato: t === 'manual' ? 'enlace' : AUTO_FORMATO[t] ?? 'enlace', verifica: t === 'documento' ? { tipo: t, clave: 'prd' } : t === 'arquitectura' ? { tipo: t, min: 1 } : t === 'propuesta' ? { tipo: t, estados: ['SENT'] } : t === 'tareas' ? { tipo: t, min: 1, hechas_min: 0, sin_fallidas: false } : { tipo: t } })
+                        const nuevoTipo = (t: string) => cambiarReq(i, { formato: t === 'manual' ? 'enlace' : AUTO_FORMATO[t] ?? 'enlace', verifica: t === 'documento' ? { tipo: t, clave: 'prd' } : t === 'arquitectura' ? { tipo: t, min: 1 } : t === 'propuesta' ? { tipo: t, estados: ['SENT'] } : t === 'tareas' ? { tipo: t, min: 1, hechas_min: 0, sin_fallidas: false } : t === 'ficha_contacto' ? { tipo: t, rol: 'FIRMANTE' } : { tipo: t } })
                         return (
                           <div key={r.clave} className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                             <div className="flex items-center gap-2">
@@ -277,6 +279,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                                   <option value="contenido">Con contenido</option><option value="aprobado">Aprobado</option><option value="req">Con requisitos</option></select>
                                 {!!v.min_requisitos && <label className="flex items-center gap-1 text-[11px] text-gray-400">mínimo <input type="number" min={1} max={50} value={v.min_requisitos} disabled={dis} onChange={e => cambiarV({ min_requisitos: Number(e.target.value) || 1 })} className={`${campo} !w-16`} /></label>}
                               </>)}
+                              {v.tipo === 'ficha_contacto' && <select value={v.rol ?? 'FIRMANTE'} disabled={dis} onChange={e => cambiarV({ rol: e.target.value })} className={`${campo} !w-auto`}>{cat.rolesFicha.map(x => <option key={x} value={x}>{ROL_FICHA[x] ?? x}</option>)}</select>}
                               {v.tipo === 'arquitectura' && <label className="flex items-center gap-1 text-[11px] text-gray-400">componentes mínimos <input type="number" min={1} max={50} value={v.min ?? 1} disabled={dis} onChange={e => cambiarV({ min: Number(e.target.value) || 1 })} className={`${campo} !w-16`} /></label>}
                               {v.tipo === 'propuesta' && cat.estadosPropuesta.map(e => (
                                 <label key={e} className="flex items-center gap-1 text-[11px] text-gray-300 cursor-pointer"><input type="checkbox" disabled={dis} checked={(v.estados ?? []).includes(e)} className="accent-indigo-500"

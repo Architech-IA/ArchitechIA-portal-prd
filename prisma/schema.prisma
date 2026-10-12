@@ -73,6 +73,7 @@ model Lead {
 }
 
 model Solucion {
+  ficha         ProyectoFicha?
   id            String        @id @default(cuid())
   solucionCode  String?       @unique
   nombre        String
@@ -369,8 +370,47 @@ model Cliente {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  razonSocial String?
+  nit         String?  @unique
+  ciudad      String?
+  telefono    String?
+  sitioWeb    String?
+  tamano      String?
+
   appInstances AppInstance[]
   leads        Lead[]
+  contactos    ClienteContacto[]
+  fichas       ProyectoFicha[]
+}
+
+model ClienteContacto {
+  id        String   @id @default(cuid())
+  clienteId String
+  rol       String
+  nombre    String   @default("")
+  cargo     String?
+  correo    String?
+  telefono  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, rol])
+}
+
+model ProyectoFicha {
+  solucionId        String   @id
+  clienteId         String?
+  fuente            String?
+  presupuesto       Float?
+  responsableId     String?
+  responsableNombre String?
+  actualizadoPor    String?
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  solucion Solucion @relation(fields: [solucionId], references: [id], onDelete: Cascade)
+  cliente  Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
 }
 
 model Producto {

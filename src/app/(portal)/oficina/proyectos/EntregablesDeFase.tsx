@@ -9,8 +9,8 @@ import { FORMATO } from './formatos'
 const fechaCorta = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' }) }
 
 /** Lo mínimo que debe existir para cerrar la fase. Se comprueba solo con lo que hay en el sistema; lo que no se puede comprobar lo marca una persona con su evidencia. */
-export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio, onAbrirArtefacto }: {
-  proyectoId: string; fase: FaseVista; editable: boolean; onCambio: () => void; onAbrirArtefacto?: (t: TabKey) => void
+export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio, onAbrirArtefacto, onAbrirFicha }: {
+  proyectoId: string; fase: FaseVista; editable: boolean; onCambio: () => void; onAbrirArtefacto?: (t: TabKey) => void; onAbrirFicha?: () => void
 }) {
   const [evid, setEvid] = useState<Record<string, string>>({})
   const [ocupado, setOcupado] = useState<string | null>(null)
@@ -39,6 +39,7 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
               {!r.ok && !cerrada && r.ayuda && <p className="text-[10px] text-[#7f8a9c] mt-0.5 leading-snug">{r.ayuda}</p>}
               {r.manual && r.ok && r.evidencia && <p className="text-[10px] text-gray-300 mt-0.5 break-words">Evidencia: {/^https?:\/\//.test(r.evidencia) ? <a href={r.evidencia} target="_blank" rel="noreferrer" className="text-indigo-300 underline">{r.evidencia}</a> : r.evidencia}</p>}
             </div>
+            {r.tipo.startsWith('ficha') && onAbrirFicha && <button onClick={onAbrirFicha} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir ficha</button>}
             {r.artefacto && onAbrirArtefacto && <button onClick={() => onAbrirArtefacto(r.artefacto as TabKey)} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir</button>}
           </div>
           {r.manual && editable && (

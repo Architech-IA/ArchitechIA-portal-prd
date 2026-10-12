@@ -8,6 +8,7 @@ import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import SesionesDeFase from './SesionesDeFase'
 import LeadDeFase from './LeadDeFase'
 import EntregablesDeFase from './EntregablesDeFase'
+import FichaCliente from './FichaCliente'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
@@ -43,7 +44,8 @@ function Seccion({ titulo, derecha, children }: { titulo: string; derecha?: Reac
     </section>)
 }
 
-export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion }: {
+export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha }: {
+  onAbrirFicha?: () => void
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
@@ -117,8 +119,13 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
           <Seccion titulo={`Entregables obligatorios (${(fase.requeridos ?? []).filter(r => r.ok).length}/${(fase.requeridos ?? []).length})`}>
-            <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} />
+            <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} />
           </Seccion>
+
+          {(fase.requeridos ?? []).some(r => r.tipo === 'ficha_cliente') && (
+            <Seccion titulo="Ficha del cliente">
+              <FichaCliente proyectoId={proyectoId} onCambio={onCambio} />
+            </Seccion>)}
 
           {data.lead?.id && (
             <Seccion titulo={fase.bloque === 'PREVENTA' ? 'Del Lead Hub · esta etapa' : 'Del Lead Hub'}>
