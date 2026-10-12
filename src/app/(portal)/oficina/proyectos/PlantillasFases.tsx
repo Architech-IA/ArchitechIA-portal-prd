@@ -6,16 +6,17 @@ import { ETIQUETA_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import { api, post, put, hace } from './api'
+import { FORMATO } from './formatos'
 
 // Editor de las plantillas de fases: objetivo, aprobador y criterios de la puerta, entregables obligatorios (con su verificación) y roles de sesión.
 // Lo que se guarda se aplica de inmediato a los proyectos nuevos y a los que ya están en marcha.
 
 interface Verifica { tipo: string; clave?: string; aprobado?: boolean; min_requisitos?: number | null; min?: number; hechas_min?: number; sin_fallidas?: boolean; estados?: string[] }
-interface Requerido { clave: string; titulo: string; ayuda: string; verifica: Verifica }
+interface Requerido { clave: string; titulo: string; ayuda: string; formato: string; verifica: Verifica }
 interface Rol { clave: string; titulo: string; tipo: string; objetivo: string; artefactos: string[]; resultado: string; cierre: string[] }
 interface FaseEd { clave: string; numero: number; bloque: string; nombre: string; leadStatus: string | null; tipoPuerta: string; objetivo: string; aprobador: string; criterios: string[]; entregables: string[]; requeridos: Requerido[]; sesiones: Rol[] }
 interface Plantilla { codigo: string; nombre: string; modificada: boolean; version: number; actualizadoPor: string | null; actualizadoEn: string | null; efectiva: FaseEd[]; base: FaseEd[] }
-interface Catalogo { aprobadores: string[]; tiposVerificacion: string[]; tiposSesion: string[]; artefactos: string[]; estadosPropuesta: string[]; documentos: string[] }
+interface Catalogo { formatosManuales: string[]; aprobadores: string[]; tiposVerificacion: string[]; tiposSesion: string[]; artefactos: string[]; estadosPropuesta: string[]; documentos: string[] }
 interface Datos { puedeEditar: boolean; catalogo: Catalogo; plantillas: Plantilla[] }
 interface Hist { id: string; version: number; nota: string | null; usuario: string | null; en: string; fasesEditadas: number }
 
@@ -26,6 +27,7 @@ const VERIF: Record<string, string> = {
 }
 const DOC: Record<string, string> = { prd: 'PRD', diseno: 'Diseño técnico', plan: 'Plan de ejecución' }
 const ESTADO_PROP: Record<string, string> = { DRAFT: 'Borrador', SENT: 'Enviada', UNDER_REVIEW: 'En revisión', ACCEPTED: 'Aceptada', REJECTED: 'Rechazada' }
+const AUTO_FORMATO: Record<string, string> = { nota_lead: 'nota', reunion_lead: 'registro', documento: 'portal', arquitectura: 'diagrama', propuesta: 'propuesta', tareas: 'backlog', despliegue: 'url' }
 const copia = <T,>(x: T): T => JSON.parse(JSON.stringify(x))
 const claveDe = (t: string) => (t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30) || 'nuevo') + '_' + Math.random().toString(36).slice(2, 5)
 const campo = 'w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-500/50 disabled:opacity-60'
@@ -192,7 +194,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                         const v = r.verifica
                         const tipos = cat.tiposVerificacion.filter(t => (t !== 'nota_lead' && t !== 'reunion_lead') || conLead).filter(t => t !== 'propuesta' || comercial)
                         const cambiarV = (p: Partial<Verifica>) => cambiarReq(i, { verifica: { ...v, ...p } })
-                        const nuevoTipo = (t: string) => cambiarReq(i, { verifica: t === 'documento' ? { tipo: t, clave: 'prd' } : t === 'arquitectura' ? { tipo: t, min: 1 } : t === 'propuesta' ? { tipo: t, estados: ['SENT'] } : t === 'tareas' ? { tipo: t, min: 1, hechas_min: 0, sin_fallidas: false } : { tipo: t } })
+                        const nuevoTipo = (t: string) => cambiarReq(i, { formato: t === 'manual' ? 'enlace' : AUTO_FORMATO[t] ?? 'enlace', verifica: t === 'documento' ? { tipo: t, clave: 'prd' } : t === 'arquitectura' ? { tipo: t, min: 1 } : t === 'propuesta' ? { tipo: t, estados: ['SENT'] } : t === 'tareas' ? { tipo: t, min: 1, hechas_min: 0, sin_fallidas: false } : { tipo: t } })
                         return (
                           <div key={r.clave} className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                             <div className="flex items-center gap-2">
@@ -202,6 +204,9 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                             <input value={r.ayuda} disabled={dis} onChange={e => cambiarReq(i, { ayuda: e.target.value })} placeholder="Ayuda: qué hay que hacer para cumplirlo" className={campo} />
                             <div className="flex flex-wrap items-center gap-2">
                               <select value={v.tipo} disabled={dis} onChange={e => nuevoTipo(e.target.value)} className={`${campo} !w-auto`}>{tipos.map(t => <option key={t} value={t}>{VERIF[t] ?? t}</option>)}</select>
+                              {v.tipo === 'manual'
+                                ? <select value={r.formato} disabled={dis} onChange={e => cambiarReq(i, { formato: e.target.value })} title="Formato en el que se espera el entregable" className={`${campo} !w-auto`}>{cat.formatosManuales.map(f => <option key={f} value={f}>Formato: {FORMATO[f] ?? f}</option>)}</select>
+                                : <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }} title="Lo fija la verificación">Formato: {FORMATO[AUTO_FORMATO[v.tipo]] ?? AUTO_FORMATO[v.tipo]}</span>}
                               {v.tipo === 'documento' && (<>
                                 <select value={v.clave ?? 'prd'} disabled={dis} onChange={e => cambiarV({ clave: e.target.value })} className={`${campo} !w-auto`}>{cat.documentos.map(d => <option key={d} value={d}>{DOC[d] ?? d}</option>)}</select>
                                 <select value={v.aprobado ? 'aprobado' : v.min_requisitos ? 'req' : 'contenido'} disabled={dis} onChange={e => cambiarV({ aprobado: e.target.value === 'aprobado' ? true : undefined, min_requisitos: e.target.value === 'req' ? 1 : null })} className={`${campo} !w-auto`}>
@@ -220,7 +225,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                             </div>
                           </div>)
                       })}
-                      {!dis && fase.requeridos.length < 8 && <button onClick={() => cambiar({ requeridos: [...fase.requeridos, { clave: claveDe('entregable'), titulo: '', ayuda: '', verifica: { tipo: 'manual' } }] })} className="flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200"><Plus size={11} /> Añadir entregable</button>}
+                      {!dis && fase.requeridos.length < 8 && <button onClick={() => cambiar({ requeridos: [...fase.requeridos, { clave: claveDe('entregable'), titulo: '', ayuda: '', formato: 'enlace', verifica: { tipo: 'manual' } }] })} className="flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200"><Plus size={11} /> Añadir entregable</button>}
                     </div>
                   </div>
 

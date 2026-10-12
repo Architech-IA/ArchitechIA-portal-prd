@@ -76,7 +76,7 @@ export interface FaseCriterio { texto: string; ok: boolean; por: string | null; 
 export interface FaseActividadVista { clave: string; titulo: string; tipo: 'AGENTE' | 'HUMANA'; area: string; creada: boolean; backlogItemId: string | null; taskCode: string | null; status: string | null; assigneeName: string | null }
 export interface RecursoFase { tipo: string; etiqueta: string; descripcion: string; estado: string; nivel: 'ok' | 'medio' | 'vacio' | 'aviso'; href: string | null; panel: string | null }
 export interface RequeridoFase {
-  clave: string; titulo: string; ayuda: string | null; tipo: string; ok: boolean; detalle: string; manual: boolean; artefacto: string | null
+  clave: string; titulo: string; ayuda: string | null; formato: string; tipo: string; ok: boolean; detalle: string; manual: boolean; artefacto: string | null
   evidencia: string | null; por: string | null; en: string | null
 }
 export interface FaseVista {
