@@ -117,12 +117,19 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
       {cerrado && <p className="text-[12px] rounded-lg px-3 py-2" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5' }}>{data.estado === 'COMPLETADO' ? 'El proyecto está completado.' : 'La oportunidad se cerró como perdida: las fases ya no se mueven.'}</p>}
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
+      {/* Lo que falta para cerrar la fase (65 %) junto al lead (35 %) */}
+      <div className={`grid grid-cols-1 gap-4 items-start ${data.lead?.id && fase.bloque === 'PREVENTA' ? 'lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]' : ''}`}>
+        <Seccion titulo={`Entregables obligatorios (${(fase.requeridos ?? []).filter(r => r.ok).length}/${(fase.requeridos ?? []).length})`}>
+          <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
+        </Seccion>
+        {data.lead?.id && fase.bloque === 'PREVENTA' && (
+          <Seccion titulo="Del lead">
+            <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
+          </Seccion>)}
+      </div>
+
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
-          <Seccion titulo={`Entregables obligatorios (${(fase.requeridos ?? []).filter(r => r.ok).length}/${(fase.requeridos ?? []).length})`}>
-            <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
-          </Seccion>
-
           {(fase.requeridos ?? []).some(r => r.tipo === 'ficha_cliente') && (
             <Seccion titulo="Ficha del cliente">
               <FichaCliente proyectoId={proyectoId} onCambio={onCambio} />
@@ -131,11 +138,6 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
           <Seccion titulo="Notas de la fase">
             <NotasDeFase key={`${proyectoId}-${fase.clave}`} proyectoId={proyectoId} clave={fase.clave} esPreventa={fase.bloque === 'PREVENTA'} soloLectura={!!data.iniciado && fase.estado === 'PENDIENTE'} />
           </Seccion>
-
-          {data.lead?.id && fase.bloque === 'PREVENTA' && (
-            <Seccion titulo="Del lead">
-              <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
-            </Seccion>)}
 
           <Seccion titulo="Sesiones de esta fase">
             <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />

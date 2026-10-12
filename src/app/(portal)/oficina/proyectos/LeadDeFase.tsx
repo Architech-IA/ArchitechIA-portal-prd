@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, ChevronDown, ChevronRight, ExternalLink, Phone, Mail, Users, MessageCircle, Plus } from 'lucide-react'
+import { Loader2, ExternalLink, Phone, Mail, Users, MessageCircle, Plus } from 'lucide-react'
 import { api, post } from './api'
 
 // Lo que el módulo de leads guarda de este lead y que se usa desde el proyecto: las interacciones con el cliente y la propuesta.
@@ -14,15 +14,16 @@ const ETIQUETA_INT: Record<Tipo, string> = { CALL: 'Llamada', EMAIL: 'Email', ME
 const dinero = (n: number) => '$' + Math.round(n || 0).toLocaleString('es-CO')
 const fechaCorta = (v: string) => new Date(v).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' })
 const hoy = () => new Date().toISOString().slice(0, 10)
-const campo: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#f1f5f9', padding: '8px 12px', fontSize: 11, outline: 'none' }
+const campo: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#f1f5f9', padding: '8px 12px', fontSize: 11, outline: 'none', width: '100%' }
 const boton: React.CSSProperties = { padding: '8px 16px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 11 }
+const etiq: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }
 
 export default function LeadDeFase({ leadId, clave }: { leadId: string; clave: string }) {
   const [ints, setInts] = useState<Interaccion[] | null>(null)
   const [prop, setProp] = useState<Propuesta | null>(null)
-  const [abierto, setAbierto] = useState(false)
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [popup, setPopup] = useState(false)
   const [tipo, setTipo] = useState<Tipo>('CALL')
   const [fecha, setFecha] = useState(hoy())
   const [desc, setDesc] = useState('')
@@ -36,10 +37,11 @@ export default function LeadDeFase({ leadId, clave }: { leadId: string; clave: s
     return () => { vivo = false }
   }, [leadId])
 
+  function abrir() { setTipo('CALL'); setFecha(hoy()); setDesc(''); setError(''); setPopup(true) }
   async function agregar() {
     if (!desc.trim()) return
     setGuardando(true); setError('')
-    try { const n = await post<Interaccion>(`/api/leads/${leadId}/interactions`, { type: tipo, description: desc.trim(), date: fecha }); setInts(p => [n, ...(p ?? [])]); setDesc(''); setAbierto(true) }
+    try { const n = await post<Interaccion>(`/api/leads/${leadId}/interactions`, { type: tipo, description: desc.trim(), date: fecha }); setInts(p => [n, ...(p ?? [])]); setPopup(false) }
     catch (e) { setError(e instanceof Error ? e.message : 'No se pudo registrar la interacción') } finally { setGuardando(false) }
   }
   async function crearPropuesta() {
@@ -52,54 +54,66 @@ export default function LeadDeFase({ leadId, clave }: { leadId: string; clave: s
   if (!ints) return <div className="flex justify-center py-3 text-[#7f8a9c]"><Loader2 size={14} className="animate-spin" /></div>
   const conPropuesta = clave === 'propuesta' || clave === 'negociacion'
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {conPropuesta && (
         <div>
           <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Propuesta</p>
           {prop
-            ? (<div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] text-gray-200">{prop.title} <span className="text-[10px] text-[#7f8a9c]">· {prop.status} · {dinero(prop.amount)}</span></p>
-                {(prop.documents ?? []).filter(d => !d.archived).map(d => <a key={d.id} href={d.url} target="_blank" rel="noreferrer" className="block text-[11px] text-indigo-300 hover:text-indigo-200 truncate">{d.name}</a>)}
-              </div>
-              <a href={`/proposals/${prop.id}`} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Gestionar documentos y estado</a>
+            ? (<div className="rounded-lg px-3 py-2 space-y-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <p className="text-[12px] text-gray-200">{prop.title} <span className="text-[10px] text-[#7f8a9c]">· {prop.status} · {dinero(prop.amount)}</span></p>
+              {(prop.documents ?? []).filter(d => !d.archived).map(d => <a key={d.id} href={d.url} target="_blank" rel="noreferrer" className="block text-[11px] text-indigo-300 hover:text-indigo-200 truncate">{d.name}</a>)}
+              <a href={`/proposals/${prop.id}`} className="inline-flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200"><ExternalLink size={10} /> Gestionar documentos y estado</a>
             </div>)
-            : (<div className="flex items-center gap-2 flex-wrap">
-              <input value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Título de la propuesta" style={{ ...campo, flex: 1, minWidth: 160 }} />
-              <input value={monto} onChange={e => setMonto(e.target.value)} placeholder="Monto (COP)" style={{ ...campo, width: 130 }} />
-              <button onClick={() => void crearPropuesta()} disabled={guardando || !titulo.trim()} style={boton} className="disabled:opacity-50">Crear propuesta</button>
+            : (<div className="space-y-2">
+              <input value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Título de la propuesta" style={campo} />
+              <div className="flex gap-2"><input value={monto} onChange={e => setMonto(e.target.value)} placeholder="Monto (COP)" style={campo} />
+                <button onClick={() => void crearPropuesta()} disabled={guardando || !titulo.trim()} style={boton} className="disabled:opacity-50 flex-shrink-0">Crear</button></div>
             </div>)}
         </div>)}
 
       <div>
-        <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Registrar una interacción con el cliente</p>
-        <div className="flex items-center gap-1.5 flex-wrap mb-2">
-          {(Object.keys(ICONO_INT) as Tipo[]).map(t => { const I = ICONO_INT[t]; const on = tipo === t; return (
-            <button key={t} onClick={() => setTipo(t)} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
-              style={on ? { background: 'rgba(249,115,22,0.18)', border: '1px solid rgba(249,115,22,0.5)', color: '#fed7aa' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}><I size={11} />{ETIQUETA_INT[t]}</button>) })}
+        <div className="flex items-center gap-2 mb-1.5">
+          <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] flex-1">Interacciones con el cliente ({ints.length}) · de todo el lead</p>
+          <button onClick={abrir} className="flex items-center gap-1 flex-shrink-0" style={{ ...boton, padding: '5px 12px' }}><Plus size={11} /> Agregar</button>
         </div>
-        <div className="flex items-center gap-2">
-          <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={{ ...campo, colorScheme: 'dark' }} />
-          <input value={desc} onChange={e => setDesc(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void agregar() }} placeholder="Descripción de la interacción…" style={{ ...campo, flex: 1 }} />
-          <button onClick={() => void agregar()} disabled={guardando || !desc.trim()} className="flex items-center gap-1 disabled:opacity-50" style={boton}>{guardando ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Agregar</button>
+        {ints.length === 0 && <p className="text-[11px] text-[#7f8a9c]">Todavía no hay interacciones registradas.</p>}
+        <div className="space-y-0.5 max-h-60 overflow-y-auto">
+          {ints.map(i => { const I = ICONO_INT[i.type] ?? Phone; return (
+            <div key={i.id} className="flex items-start gap-2 text-[11px] px-1.5 py-1 rounded-md hover:bg-white/[0.04]">
+              <I size={11} className="text-[#7f8a9c] mt-0.5 flex-shrink-0" />
+              <div className="min-w-0 flex-1"><p className="text-gray-300 leading-snug">{i.description}</p><p className="text-[10px] text-[#7f8a9c]">{fechaCorta(i.date)} · {i.user?.name}</p></div>
+            </div>) })}
         </div>
-        <p className="text-[10px] text-[#7f8a9c] mt-1">Las reuniones se registran en el módulo de reuniones y se vinculan al lead desde ahí.</p>
       </div>
+      {error && !popup && <p className="text-[11px] text-red-300">{error}</p>}
 
-      {ints.length > 0 && (
-        <div>
-          <button onClick={() => setAbierto(o => !o)} className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-[#7f8a9c] hover:text-gray-300">
-            {abierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />} Interacciones con el cliente ({ints.length}) · de todo el lead
-          </button>
-          {abierto && (
-            <div className="mt-1 space-y-1">
-              {ints.slice(0, 30).map(i => { const I = ICONO_INT[i.type] ?? Phone; return (
-                <div key={i.id} className="flex items-start gap-2 text-[11px] px-2 py-1">
-                  <I size={11} className="text-[#7f8a9c] mt-0.5 flex-shrink-0" /><span className="text-gray-300 flex-1">{i.description}</span><span className="text-[10px] text-[#7f8a9c] flex-shrink-0">{fechaCorta(i.date)} · {i.user?.name}</span>
-                </div>) })}
-            </div>)}
+      {popup && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setPopup(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 520 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Nueva interacción</h2>
+              <button onClick={() => setPopup(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', fontSize: 15, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={etiq}>Tipo</label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {(Object.keys(ICONO_INT) as Tipo[]).map(t => { const I = ICONO_INT[t]; const on = tipo === t; return (
+                    <button key={t} onClick={() => setTipo(t)} className="flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full"
+                      style={on ? { background: 'rgba(249,115,22,0.18)', border: '1px solid rgba(249,115,22,0.5)', color: '#fed7aa' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}><I size={12} />{ETIQUETA_INT[t]}</button>) })}
+                </div>
+              </div>
+              <div><label style={etiq}>Fecha</label><input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={{ ...campo, colorScheme: 'dark' }} /></div>
+              <div><label style={etiq}>Descripción <span style={{ color: '#f87171' }}>*</span></label><textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3} autoFocus placeholder="Qué se habló o se acordó…" style={{ ...campo, resize: 'vertical' }} /></div>
+              <p style={{ fontSize: 10, color: '#64748b', margin: 0 }}>Las reuniones se registran en el módulo de reuniones y se vinculan al lead desde ahí.</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginTop: 20 }}>
+              {error && <span style={{ fontSize: 11, color: '#fca5a5', flex: 1 }}>{error}</span>}
+              <button onClick={() => setPopup(false)} style={{ padding: '8px 18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#94a3b8', fontSize: 11 }}>Cancelar</button>
+              <button onClick={() => void agregar()} disabled={guardando || !desc.trim()} className="flex items-center gap-1.5 disabled:opacity-50" style={boton}>{guardando && <Loader2 size={13} className="animate-spin" />}Guardar interacción</button>
+            </div>
+          </div>
         </div>)}
-      {error && <p className="text-[11px] text-red-300">{error}</p>}
     </div>
   )
 }
