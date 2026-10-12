@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, X, Plus, Trash2, RotateCcw, History, Save, Lock } from 'lucide-react'
+import { Loader2, X, Plus, Trash2, RotateCcw, History, Save, Lock, ChevronUp, ChevronDown, Copy } from 'lucide-react'
 import { ETIQUETA_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
@@ -47,6 +47,24 @@ function ListaTextos({ valores, onCambio, vacio, deshabilitado, max = 12 }: { va
   )
 }
 
+/** Mover, duplicar, copiar a otra fase y quitar un elemento de una lista. */
+function Acciones({ i, total, max, minimo, fases, onSubir, onBajar, onDuplicar, onCopiar, onQuitar }: {
+  i: number; total: number; max: number; minimo: number; fases: FaseEd[]
+  onSubir: () => void; onBajar: () => void; onDuplicar: () => void; onCopiar: (fase: string) => void; onQuitar: () => void
+}) {
+  const b = 'p-1 rounded text-[#7f8a9c] hover:text-gray-100 hover:bg-white/10 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-[#7f8a9c]'
+  return (
+    <span className="flex items-center gap-0.5 flex-shrink-0">
+      <button onClick={onSubir} disabled={i === 0} title="Subir" className={b}><ChevronUp size={13} /></button>
+      <button onClick={onBajar} disabled={i === total - 1} title="Bajar" className={b}><ChevronDown size={13} /></button>
+      <button onClick={onDuplicar} disabled={total >= max} title={total >= max ? `Máximo ${max}` : 'Duplicar'} className={b}><Copy size={12} /></button>
+      <select value="" onChange={e => { if (e.target.value) onCopiar(e.target.value) }} title="Copiar a otra fase" className="w-[74px] rounded px-1 py-0.5 text-[10px] text-gray-400 bg-black/30 border border-white/10 outline-none">
+        <option value="">Copiar a…</option>{fases.map(f => <option key={f.clave} value={f.clave}>{f.numero}. {f.nombre}</option>)}</select>
+      <button onClick={onQuitar} disabled={total <= minimo} title={total <= minimo ? 'Cada fase necesita al menos uno' : 'Quitar'} className={`${b} hover:!text-red-400`}><Trash2 size={13} /></button>
+    </span>
+  )
+}
+
 export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () => void; onCambio: () => void }) {
   const [datos, setDatos] = useState<Datos | null>(null)
   const [error, setError] = useState('')
@@ -77,6 +95,41 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
   }
   const cambiarReq = (i: number, r: Partial<Requerido>) => cambiar({ requeridos: (fase?.requeridos ?? []).map((x, j) => (j === i ? { ...x, ...r } : x)) })
   const cambiarRol = (i: number, r: Partial<Rol>) => cambiar({ sesiones: (fase?.sesiones ?? []).map((x, j) => (j === i ? { ...x, ...r } : x)) })
+
+  // Reordenar, duplicar y copiar entre fases (entregables y roles)
+  type Lista = 'requeridos' | 'sesiones'
+  const MAX: Record<Lista, number> = { requeridos: 8, sesiones: 4 }
+  function mover(k: Lista, i: number, d: -1 | 1) {
+    if (!fase) return
+    const a = [...fase[k]] as unknown[]; const j = i + d
+    if (j < 0 || j >= a.length) return
+    ;[a[i], a[j]] = [a[j], a[i]]
+    cambiar({ [k]: a } as Partial<FaseEd>)
+  }
+  function duplicar(k: Lista, i: number) {
+    if (!fase || fase[k].length >= MAX[k]) return
+    const a = [...fase[k]] as (Requerido | Rol)[]
+    const o = copia(a[i]); o.clave = claveDe(o.titulo || 'copia'); o.titulo = (o.titulo || 'Sin título') + ' (copia)'
+    a.splice(i + 1, 0, o)
+    cambiar({ [k]: a } as Partial<FaseEd>)
+  }
+  /** Añade una copia a otra fase de la misma plantilla (si cabe). */
+  function copiarA(k: Lista, i: number, destino: string) {
+    if (!fase || !plantilla) return
+    const d = bor[destino] ?? plantilla.efectiva.find(f => f.clave === destino)
+    if (!d) return
+    if (d[k].length >= MAX[k]) { setError(`La fase «${d.nombre}» ya tiene el máximo (${MAX[k]}).`); return }
+    const o = copia((fase[k] as (Requerido | Rol)[])[i]); o.clave = claveDe(o.titulo || 'copia')
+    setError(''); setAviso(`Copiado a «${d.nombre}». Revísalo y guarda.`)
+    setBorrador(b => ({ ...b, [codigo]: { ...(b[codigo] ?? {}), [destino]: { ...d, [k]: [...d[k], o] } } }))
+  }
+  /** Reemplaza los entregables de la fase actual por los de otra fase. */
+  function copiarDesde(origen: string) {
+    if (!fase || !plantilla) return
+    const o = bor[origen] ?? plantilla.efectiva.find(f => f.clave === origen)
+    if (!o || !window.confirm(`Se reemplazan los ${fase.requeridos.length} entregable(s) de esta fase por los ${o.requeridos.length} de «${o.nombre}». ¿Continuar?`)) return
+    cambiar({ requeridos: copia(o.requeridos).map(r => ({ ...r, clave: claveDe(r.titulo || 'copia') })) })
+  }
 
   async function guardar() {
     if (!plantilla || sucias.length === 0) return
@@ -188,7 +241,11 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                   </div>
 
                   <div>
-                    <label className={etiqueta}>Entregables obligatorios para cerrar la fase ({fase.requeridos.length}/8)</label>
+                    <div className="flex items-center gap-3 mb-1">
+                      <label className={`${etiqueta} !mb-0 flex-1`}>Entregables obligatorios para cerrar la fase ({fase.requeridos.length}/8)</label>
+                      {!dis && <select value="" onChange={e => { if (e.target.value) copiarDesde(e.target.value) }} title="Reemplaza los entregables de esta fase por los de otra" className={`${campo} !w-auto !py-1 !text-[11px]`}>
+                        <option value="">Copiar los de otra fase…</option>{plantilla.efectiva.filter(f => f.clave !== fase.clave).map(f => <option key={f.clave} value={f.clave}>{f.numero}. {f.nombre}</option>)}</select>}
+                    </div>
                     <div className="space-y-2.5">
                       {fase.requeridos.map((r, i) => {
                         const v = r.verifica
@@ -198,10 +255,17 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                         return (
                           <div key={r.clave} className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                             <div className="flex items-center gap-2">
-                              <input value={r.titulo} disabled={dis} onChange={e => cambiarReq(i, { titulo: e.target.value })} placeholder="Título del entregable" className={campo} />
-                              {!dis && fase.requeridos.length > 1 && <button onClick={() => { if (window.confirm('¿Quitar este entregable? Las marcas manuales ya hechas dejan de contar.')) cambiar({ requeridos: fase.requeridos.filter((_, j) => j !== i) }) }} title="Quitar" className="text-[#7f8a9c] hover:text-red-400"><Trash2 size={13} /></button>}
+                              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgba(99,102,241,0.25)', color: '#c7d2fe' }}>{i + 1}</span>
+                              <input value={r.titulo} disabled={dis} onChange={e => cambiarReq(i, { titulo: e.target.value })} placeholder="Título del entregable" className={`${campo} !text-[13px] !font-semibold`} />
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={r.verifica.tipo === 'manual' ? { background: 'rgba(245,158,11,0.15)', color: '#fcd34d' } : { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' }}
+                                title={r.verifica.tipo === 'manual' ? 'Una persona lo marca y deja el enlace' : 'El sistema lo comprueba solo'}>{r.verifica.tipo === 'manual' ? 'La marca una persona' : 'Automática'}</span>
+                              {!dis && <Acciones i={i} total={fase.requeridos.length} max={8} minimo={1} fases={plantilla.efectiva.filter(f => f.clave !== fase.clave)}
+                                onSubir={() => mover('requeridos', i, -1)} onBajar={() => mover('requeridos', i, 1)} onDuplicar={() => duplicar('requeridos', i)} onCopiar={d => copiarA('requeridos', i, d)}
+                                onQuitar={() => { if (window.confirm('¿Quitar este entregable? Las marcas manuales ya hechas dejan de contar.')) cambiar({ requeridos: fase.requeridos.filter((_, j) => j !== i) }) }} />}
                             </div>
-                            <input value={r.ayuda} disabled={dis} onChange={e => cambiarReq(i, { ayuda: e.target.value })} placeholder="Ayuda: qué hay que hacer para cumplirlo" className={campo} />
+                            <div><span className={etiqueta}>Qué hay que hacer</span>
+                              <input value={r.ayuda} disabled={dis} onChange={e => cambiarReq(i, { ayuda: e.target.value })} placeholder="Ayuda: qué hay que hacer para cumplirlo" className={campo} /></div>
+                            <span className={etiqueta}>Cómo se verifica</span>
                             <div className="flex flex-wrap items-center gap-2">
                               <select value={v.tipo} disabled={dis} onChange={e => nuevoTipo(e.target.value)} className={`${campo} !w-auto`}>{tipos.map(t => <option key={t} value={t}>{VERIF[t] ?? t}</option>)}</select>
                               {v.tipo === 'manual'
@@ -235,9 +299,12 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                       {fase.sesiones.map((r, i) => (
                         <div key={r.clave} className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                           <div className="flex items-center gap-2">
-                            <input value={r.titulo} disabled={dis} onChange={e => cambiarRol(i, { titulo: e.target.value })} placeholder="Nombre del rol" className={campo} />
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgba(99,102,241,0.25)', color: '#c7d2fe' }}>{i + 1}</span>
+                            <input value={r.titulo} disabled={dis} onChange={e => cambiarRol(i, { titulo: e.target.value })} placeholder="Nombre del rol" className={`${campo} !text-[13px] !font-semibold`} />
                             <select value={r.tipo} disabled={dis} onChange={e => cambiarRol(i, { tipo: e.target.value })} title="Cómo conversa la IA" className={`${campo} !w-auto`}>{cat.tiposSesion.map(t => <option key={t} value={t}>{ETIQUETA_TIPO[t as TipoSesion] ?? t}</option>)}</select>
-                            {!dis && fase.sesiones.length > 1 && <button onClick={() => { if (window.confirm('¿Quitar este rol? Las sesiones que ya lo usan dejan de mostrar su lista de cierre.')) cambiar({ sesiones: fase.sesiones.filter((_, j) => j !== i) }) }} title="Quitar" className="text-[#7f8a9c] hover:text-red-400"><Trash2 size={13} /></button>}
+                            {!dis && <Acciones i={i} total={fase.sesiones.length} max={4} minimo={1} fases={plantilla.efectiva.filter(f => f.clave !== fase.clave)}
+                              onSubir={() => mover('sesiones', i, -1)} onBajar={() => mover('sesiones', i, 1)} onDuplicar={() => duplicar('sesiones', i)} onCopiar={d => copiarA('sesiones', i, d)}
+                              onQuitar={() => { if (window.confirm('¿Quitar este rol? Las sesiones que ya lo usan dejan de mostrar su lista de cierre.')) cambiar({ sesiones: fase.sesiones.filter((_, j) => j !== i) }) }} />}
                           </div>
                           <input value={r.objetivo} disabled={dis} onChange={e => cambiarRol(i, { objetivo: e.target.value })} placeholder="Objetivo de la sesión" className={campo} />
                           <input value={r.resultado} disabled={dis} onChange={e => cambiarRol(i, { resultado: e.target.value })} placeholder="Resultado esperado" className={campo} />
