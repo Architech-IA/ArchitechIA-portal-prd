@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Building2, Users, Target, Loader2, Search } from 'lucide-react'
-import { api, put, ErrorApi } from './api'
+import { Building2, Users, Target, Loader2, Search, Sparkles } from 'lucide-react'
+import { api, put, post, ErrorApi } from './api'
 
 // Ficha del cliente dentro del proyecto: la empresa (se reutiliza entre proyectos), sus personas por papel y lo propio de la oportunidad.
 // La fase 1 exige 11 datos; los valores de relleno (p. ej. unknow@unknow.com) no cuentan.
@@ -22,6 +22,9 @@ interface Form {
   resumen: string; fuente: string; valor: string; presupuesto: string; responsableId: string
 }
 interface Usuario { id: string; name: string }
+interface Sugerencia { campo: 'razonSocial' | 'nit' | 'sector' | 'ciudad' | 'pais'; etiqueta: string; valor: string; confianza: 'alta' | 'media' | 'baja'; evidencia: string }
+interface RespuestaIA { sugerencias: Sugerencia[]; avisos: string[]; mensaje?: string; limite?: string }
+const COLOR_CONF = { alta: { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' }, media: { background: 'rgba(245,158,11,0.15)', color: '#fcd34d' }, baja: { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } }
 const VACIA: Persona = { nombre: '', cargo: '', correo: '', telefono: '' }
 const FUENTES = ['Referido', 'Sitio web', 'LinkedIn', 'Evento', 'Llamada en frío', 'Alianza', 'Cliente existente', 'Otro']
 const limpio = (t: string | null | undefined) => (t && !/^sin especificar$/i.test(t.trim()) ? t : '')
@@ -52,6 +55,9 @@ export default function FichaCliente({ proyectoId, onCambio, onCerrar }: { proye
   const [guardando, setGuardando] = useState(false)
   const [aviso, setAviso] = useState('')
   const [buscando, setBuscando] = useState(false)
+  const [pensando, setPensando] = useState(false)
+  const [ia, setIa] = useState<RespuestaIA | null>(null)
+  const [elegidas, setElegidas] = useState<Record<string, boolean>>({})
   const [q, setQ] = useState('')
   const [resultados, setResultados] = useState<{ id: string; nombre: string; razonSocial: string | null; nit: string | null }[]>([])
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -81,6 +87,22 @@ export default function FichaCliente({ proyectoId, onCambio, onCerrar }: { proye
       if (e instanceof ErrorApi && e.status === 409 && e.data?.existente) setExistente(e.data.existente as { id: string; nombre: string })
       setError(e instanceof Error ? e.message : 'No se pudo guardar')
     } finally { setGuardando(false) }
+  }
+
+  async function completarConIA() {
+    setPensando(true); setError(''); setAviso(''); setIa(null)
+    try {
+      const r = await post<RespuestaIA>(`/api/proyectos/${proyectoId}/cliente/sugerir`)
+      setIa(r); setElegidas(Object.fromEntries(r.sugerencias.map(s => [s.campo, s.confianza !== 'baja'])))
+    } catch (e) { setError(e instanceof Error ? e.message : 'La IA no pudo proponer datos') } finally { setPensando(false) }
+  }
+  function aplicarIA() {
+    if (!ia || !f) return
+    const p: Partial<Form> = {}
+    for (const s of ia.sugerencias) if (elegidas[s.campo]) (p as Record<string, string>)[s.campo] = s.valor
+    setF({ ...f, ...p })
+    setAviso(`Aplicado al formulario: ${Object.keys(p).length} dato(s). Revísalos y pulsa «Guardar ficha» para confirmarlos.`)
+    setIa(null)
   }
 
   function guardar() {
@@ -119,6 +141,9 @@ export default function FichaCliente({ proyectoId, onCambio, onCerrar }: { proye
           <div className="relative flex-1"><Search size={12} className="absolute left-2.5 top-[11px] text-[#64748b]" />
             <input value={q} onChange={e => buscar(e.target.value)} placeholder={ficha.existe ? 'Cambiar por otra empresa existente (nombre o NIT)…' : 'Buscar una empresa existente por nombre o NIT…'} className={campo} style={{ ...borde(''), paddingLeft: 28 }} /></div>
           {buscando && <Loader2 size={12} className="animate-spin text-[#7f8a9c]" />}
+          <button onClick={() => void completarConIA()} disabled={pensando || guardando || !ficha.existe} title="La IA propone los datos que faltan a partir de lo que hay en el proyecto (notas, adjuntos, correo). No consulta internet."
+            className="flex items-center gap-1.5 flex-shrink-0 disabled:opacity-50" style={{ padding: '8px 14px', background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', borderRadius: 9, color: '#fed7aa', fontSize: 11, fontWeight: 600 }}>
+            {pensando ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}Completar con IA</button>
           <button onClick={() => { if (window.confirm('Se crea una empresa nueva para este proyecto. ¿Continuar?')) void enviar({ nueva: true, cliente: { nombre: f.nombre || 'Nueva empresa' } }, 'Empresa nueva creada: completa sus datos') }} disabled={guardando}
             style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#94a3b8', fontSize: 11 }} className="flex-shrink-0 hover:text-white">Crear nueva</button>
         </div>
@@ -129,6 +154,27 @@ export default function FichaCliente({ proyectoId, onCambio, onCerrar }: { proye
                 {r.nombre}<span className="text-[10px] text-[#7f8a9c]"> {r.razonSocial ? `· ${r.razonSocial}` : ''}{r.nit ? ` · NIT ${r.nit}` : ''}</span></button>))}
           </div>)}
       </div>
+
+      {ia && (
+        <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.25)' }}>
+          <p className="flex items-center gap-1.5 text-[12px] font-semibold text-orange-200"><Sparkles size={13} /> Propuestas de la IA: confírmalas antes de guardar</p>
+          {ia.mensaje && <p className="text-[11px] text-[#94a3b8]">{ia.mensaje}</p>}
+          {ia.sugerencias.map(s => (
+            <label key={s.campo} className="flex items-start gap-2 rounded-lg px-2 py-1.5 cursor-pointer" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <input type="checkbox" checked={!!elegidas[s.campo]} onChange={e => setElegidas(p => ({ ...p, [s.campo]: e.target.checked }))} className="accent-orange-500 mt-1" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2 flex-wrap"><span className="text-[10px] uppercase tracking-wide text-[#64748b]">{s.etiqueta}</span><span className="text-[12px] text-gray-100 font-medium">{s.valor}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={COLOR_CONF[s.confianza]}>confianza {s.confianza}</span></span>
+                <span className="block text-[10px] text-[#94a3b8] mt-0.5">{s.evidencia}</span>
+              </span>
+            </label>))}
+          {ia.avisos.map((a, i) => <p key={i} className="text-[11px] text-amber-300">· {a}</p>)}
+          {ia.limite && <p className="text-[10px] text-[#64748b]">{ia.limite}</p>}
+          <div className="flex items-center gap-2 pt-1">
+            {ia.sugerencias.length > 0 && <button onClick={aplicarIA} disabled={!Object.values(elegidas).some(Boolean)} className="disabled:opacity-50" style={{ padding: '7px 16px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 11 }}>Aplicar las seleccionadas</button>}
+            <button onClick={() => setIa(null)} style={{ padding: '7px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#94a3b8', fontSize: 11 }}>Descartar</button>
+          </div>
+        </div>)}
 
       <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
         <div>
