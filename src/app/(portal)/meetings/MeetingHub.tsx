@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 
 // Mismo editor con pestañas del hub de Leads (guarda un JSON { tabs } en hub.notas)
-const TabbedNotes = dynamic(() => import('../leads/[id]/hub/TabbedNotes'), { ssr: false });
+const TabbedNotes = dynamic(() => import('@/components/TabbedNotes'), { ssr: false });
 import { getDateStrUTC5, getTimeStrUTC5 } from '@/lib/timezone';
 
 // Hub de la reunion: popup grande para PREPARAR (agenda), TOMAR NOTAS,
