@@ -74,6 +74,7 @@ model Lead {
 
 model Solucion {
   ficha         ProyectoFicha?
+  notas         ProyectoNota[]
   id            String        @id @default(cuid())
   solucionCode  String?       @unique
   nombre        String
@@ -381,6 +382,34 @@ model Cliente {
   leads        Lead[]
   contactos    ClienteContacto[]
   fichas       ProyectoFicha[]
+}
+
+model ProyectoNota {
+  id             String   @unique
+  solucionId     String
+  fase           String
+  contenido      String   @default("")
+  actualizadoPor String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  solucion Solucion             @relation(fields: [solucionId], references: [id], onDelete: Cascade)
+  archivos ProyectoNotaArchivo[]
+
+  @@id([solucionId, fase])
+}
+
+model ProyectoNotaArchivo {
+  id        String   @id
+  notaId    String
+  nombre    String
+  size      Int      @default(0)
+  mimeType  String?
+  base64    String
+  subidoPor String?
+  createdAt DateTime @default(now())
+
+  nota ProyectoNota @relation(fields: [notaId], references: [id], onDelete: Cascade)
 }
 
 model ClienteContacto {

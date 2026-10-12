@@ -7,6 +7,7 @@ import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import SesionesDeFase from './SesionesDeFase'
 import LeadDeFase from './LeadDeFase'
+import NotasDeFase from './NotasDeFase'
 import EntregablesDeFase from './EntregablesDeFase'
 import FichaCliente from './FichaCliente'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
@@ -127,8 +128,12 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
               <FichaCliente proyectoId={proyectoId} onCambio={onCambio} />
             </Seccion>)}
 
-          {data.lead?.id && (
-            <Seccion titulo={fase.bloque === 'PREVENTA' ? 'Del Lead Hub · esta etapa' : 'Del Lead Hub'}>
+          <Seccion titulo="Notas de la fase">
+            <NotasDeFase key={`${proyectoId}-${fase.clave}`} proyectoId={proyectoId} clave={fase.clave} esPreventa={fase.bloque === 'PREVENTA'} soloLectura={!!data.iniciado && fase.estado === 'PENDIENTE'} />
+          </Seccion>
+
+          {data.lead?.id && fase.bloque === 'PREVENTA' && (
+            <Seccion titulo="Del lead">
               <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
             </Seccion>)}
 

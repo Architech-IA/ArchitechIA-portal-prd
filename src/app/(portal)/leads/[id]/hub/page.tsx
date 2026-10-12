@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import AvisoProyecto from './AvisoProyecto'
 import dynamic from 'next/dynamic'
 
 const TabbedNotes = dynamic(() => import('./TabbedNotes'), { ssr: false })
@@ -1129,7 +1130,7 @@ export default function LeadHubPage() {
   const [phases, setPhases]   = useState<PhaseData[]>([])
   const [loading, setLoading] = useState(true)
   const [active, setActive]   = useState<string | null>(null)
-  const [tab, setTab]         = useState<'fases' | 'interacciones' | 'propuesta' | 'diagrama'>('fases')
+  const [tab, setTab]         = useState<'fases' | 'interacciones' | 'propuesta'>('interacciones')
   const [interactions, setInteractions] = useState<Interaction[]>([])
   const [backlogItems, setBacklogItems] = useState<BacklogItem[]>([])
   const [proposal, setProposal]         = useState<Proposal | null>(null)
@@ -1426,7 +1427,7 @@ export default function LeadHubPage() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: '2px', padding: '0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(8,8,26,0.7)' }}>
-          {([ { key: 'fases' as const, label: 'Fases' }, { key: 'interacciones' as const, label: 'Interacciones' }, { key: 'propuesta' as const, label: 'Propuesta' }, { key: 'diagrama' as const, label: 'Diagrama' } ]).map(({ key, label }) => (
+          {([ { key: 'interacciones' as const, label: 'Interacciones' }, { key: 'propuesta' as const, label: 'Propuesta' }, { key: 'fases' as const, label: 'Notas y diagrama' } ]).map(({ key, label }) => (
             <button key={key} onClick={() => { setTab(key); if (key === 'fases') setActive(null) }}
               className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-t-md border-0 border-b-2 transition-all duration-150 ${
                 tab === key
@@ -1438,96 +1439,10 @@ export default function LeadHubPage() {
           ))}
         </div>
 
-        <div className={`flex-1 ${tab === 'diagrama' || tab === 'fases' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+        <div className={`flex-1 overflow-y-auto`}>
 
-          {/* FASES */}
-          {tab === 'fases' && (active ? (
-            <PhasePanel
-              key={active}
-              phase={PHASES.find(p => p.key === active)!}
-              data={getPhaseData(active)}
-              leadId={id}
-              onSaved={updatePhase}
-              leadStatus={lead?.status ?? null}
-              leadOutcome={lead?.outcome ?? null}
-              leadLostReason={lead?.lostReason ?? null}
-              onAdvance={advanceLead}
-              advancing={advancing}
-              advanceError={advanceError}
-            />
-          ) : (
-            <div className="h-full overflow-y-auto p-6">
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
-                {PHASES.map(phase => {
-                  const status = getPhaseStatus(phase.key)
-                  const data = getPhaseData(phase.key)
-                  const c = COLOR_MAP[phase.color]
-                  const isDone = status === 'done'
-                  const isActSt = status === 'active'
-                  return (
-                    <button key={phase.key} onClick={() => { setActive(phase.key); setTab('fases') }}
-                      className={`text-left rounded-lg border px-3 py-2.5 transition-all duration-150 hover:border-white/[0.15] hover:bg-white/[0.04] ${isActSt ? `${c.bg} ${c.border}` : 'border-white/[0.07] bg-white/[0.02]'}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          isDone  ? 'bg-orange-500/20 ring-2 ring-orange-500/40' :
-                          isActSt ? `${c.bg} ring-2 ${c.ring}` :
-                                    'bg-gray-900 ring-1 ring-gray-700/80'
-                        }`}>
-                          {isDone
-                            ? <CheckCircle2 size={11} className="text-orange-400" />
-                            : isActSt
-                            ? <div className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                            : <Circle size={9} className="text-gray-700" />
-                          }
-                        </div>
-                        <p className={`text-xs font-semibold truncate ${isActSt ? c.text : isDone ? 'text-gray-200' : 'text-gray-500'}`}>{phase.label}</p>
-                      </div>
-                      <p className="text-[11px] text-gray-600">
-                        {isActSt ? 'En curso' : isDone ? 'Completada' : 'Pendiente'}
-                        {data && data.files.length > 0 && ` · ${data.files.length} archivo${data.files.length !== 1 ? 's' : ''}`}
-                      </p>
-                    </button>
-                  )
-                })}
-              </div>
+          {tab === 'fases' && <AvisoProyecto leadId={id} />}
 
-              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-600 mb-3">Actividad reciente</p>
-              {(() => {
-                const recent = phases
-                  .filter(p => p.content && extractPhasePreview(p.content))
-                  .slice()
-                  .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-                if (recent.length === 0) {
-                  return <p className="text-sm text-gray-600 italic">Todavía no hay contenido registrado en ninguna fase.</p>
-                }
-                return (
-                  <div className="flex flex-col gap-2">
-                    {recent.map(p => {
-                      const phaseInfo = PHASES.find(ph => ph.key === p.phase)
-                      const isDiagram = p.phase === 'COMPONENT_DIAGRAM'
-                      const c = phaseInfo ? COLOR_MAP[phaseInfo.color] : null
-                      const label = phaseInfo?.label ?? (isDiagram ? 'Arquitectura' : p.phase)
-                      return (
-                        <button key={p.id} onClick={() => { if (isDiagram) setTab('diagrama'); else { setActive(p.phase); setTab('fases') } }}
-                          className="text-left rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-150">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className={`text-xs font-semibold ${c?.text ?? 'text-gray-300'}`}>{label}</span>
-                            <span className="text-[10px] text-orange-400/60 whitespace-nowrap">
-                              {p.updatedBy ? `${p.updatedBy} · ` : ''}
-                              {new Date(p.updatedAt).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-400 line-clamp-2">{extractPhasePreview(p.content)}</p>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )
-              })()}
-            </div>
-          ))}
-
-          {/* INTERACCIONES */}
           {tab === 'interacciones' && (
             <HubInteracciones leadId={id} companyName={lead.companyName} items={interactions} onAdd={i => setInteractions(prev => [i, ...prev])} />
           )}
@@ -1538,9 +1453,6 @@ export default function LeadHubPage() {
             <HubPropuesta leadId={id} proposal={proposal} onSave={setProposal} />
           )}
 
-          {tab === 'diagrama' && (
-            <div className="p-4 flex-1 flex flex-col min-h-0"><DiagramTab leadId={id} /></div>
-          )}
 
         </div>
       </div>

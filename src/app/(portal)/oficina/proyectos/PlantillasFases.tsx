@@ -22,7 +22,7 @@ interface Hist { id: string; version: number; nota: string | null; usuario: stri
 
 const APROBADOR: Record<string, string> = { COMERCIAL: 'Responsable comercial', LIDER_PREVENTA: 'Líder de preventa', LIDER_TECNICO: 'Líder técnico', DIRECCION: 'Dirección', LIDER_PROYECTO: 'Líder de proyecto', CLIENTE: 'El cliente', DUENO: 'Dueño de la iniciativa' }
 const VERIF: Record<string, string> = {
-  nota_lead: 'Notas de la etapa en el Lead Hub', reunion_lead: 'Reunión registrada en el lead', documento: 'Documento (PRD, diseño o plan)', arquitectura: 'Diagrama de arquitectura',
+  nota_lead: 'Notas de la fase en el proyecto', reunion_lead: 'Reunión registrada en el lead', documento: 'Documento (PRD, diseño o plan)', arquitectura: 'Diagrama de arquitectura',
   propuesta: 'Propuesta del lead', tareas: 'Tareas del backlog', despliegue: 'URL de despliegue registrada', manual: 'Lo marca una persona, con evidencia',
   lead_registrado: 'Lead registrado en el módulo de leads', ficha_cliente: 'Ficha del cliente completa', ficha_contacto: 'Persona identificada en la ficha del cliente',
 }
@@ -251,7 +251,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                     <div className="space-y-2.5">
                       {fase.requeridos.map((r, i) => {
                         const v = r.verifica
-                        const tipos = cat.tiposVerificacion.filter(t => (t !== 'nota_lead' && t !== 'reunion_lead') || conLead).filter(t => (t !== 'propuesta' && t !== 'lead_registrado' && t !== 'ficha_cliente' && t !== 'ficha_contacto') || comercial)
+                        const tipos = cat.tiposVerificacion.filter(t => t !== 'reunion_lead' || conLead).filter(t => (t !== 'propuesta' && t !== 'lead_registrado' && t !== 'ficha_cliente' && t !== 'ficha_contacto') || comercial)
                         const cambiarV = (p: Partial<Verifica>) => cambiarReq(i, { verifica: { ...v, ...p } })
                         const nuevoTipo = (t: string) => cambiarReq(i, { formato: t === 'manual' ? 'enlace' : AUTO_FORMATO[t] ?? 'enlace', verifica: t === 'documento' ? { tipo: t, clave: 'prd' } : t === 'arquitectura' ? { tipo: t, min: 1 } : t === 'propuesta' ? { tipo: t, estados: ['SENT'] } : t === 'tareas' ? { tipo: t, min: 1, hechas_min: 0, sin_fallidas: false } : t === 'ficha_contacto' ? { tipo: t, rol: 'FIRMANTE' } : { tipo: t } })
                         return (
