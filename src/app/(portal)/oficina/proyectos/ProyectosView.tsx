@@ -206,7 +206,15 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 .px-hover button:not(:disabled):hover, .px-hover select:hover, .px-hover summary:hover, .px-hover [role="button"]:hover { box-shadow: inset 0 0 0 999px rgba(255,255,255,0.075); filter: brightness(1.18); }
 .px-hover button:not(:disabled):active { filter: brightness(1.05); }
 .px-hover input:hover, .px-hover textarea:hover { border-color: rgba(255,255,255,0.22); }
-.px-hover button:not(:disabled):focus-visible, .px-hover select:focus-visible { outline: 2px solid rgba(129,140,248,0.7); outline-offset: 1px; }`}</style>
+.px-hover button:not(:disabled):focus-visible, .px-hover select:focus-visible { outline: 2px solid rgba(129,140,248,0.7); outline-offset: 1px; }
+.px-hover a[href] { cursor: pointer; transition: filter .12s, color .12s; }
+.px-hover a[href]:hover { filter: brightness(1.35); text-decoration: underline; text-underline-offset: 2px; }
+.px-hover input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .px-hover textarea { transition: box-shadow .12s; }
+.px-hover input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):hover, .px-hover textarea:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.22); }
+.px-hover input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, .px-hover textarea:focus { box-shadow: 0 0 0 1px rgba(249,115,22,0.55); }
+.px-hover label:has(input[type="checkbox"]), .px-hover label:has(input[type="radio"]) { cursor: pointer; transition: filter .12s; }
+.px-hover label:has(input[type="checkbox"]):hover, .px-hover label:has(input[type="radio"]):hover { filter: brightness(1.35); }
+.px-hover [role="tab"]:not(:disabled):hover, .px-hover [role="menuitem"]:hover { filter: brightness(1.2); }`}</style>
       {/* ── Columna A: proyectos ── */}
       <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${listaAbierta || !pid ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
