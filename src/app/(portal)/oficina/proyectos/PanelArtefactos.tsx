@@ -1,5 +1,6 @@
 'use client'
 
+import { Building2 } from 'lucide-react'
 import { CLAVE_DE_TAB, PUNTO_ESTADO, ETIQUETA_ESTADO, type ArtefactoMeta, type TabKey } from '../../solutions/pilots/[id]/espacio'
 import { TITULO_DE_TAB, ICONO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 
@@ -11,9 +12,24 @@ const GRUPOS: { titulo: string; items: TabKey[] }[] = [
 ]
 
 /** Los artefactos del proyecto como lista agrupada: estado, propuestas del motor y comentarios abiertos de cada uno. */
-export default function PanelArtefactos({ activo, onIr, meta }: { activo: TabKey | null; onIr: (t: TabKey) => void; meta: Record<string, ArtefactoMeta> }) {
+export default function PanelArtefactos({ activo, onIr, meta, ficha, onAbrirFicha }: {
+  activo: TabKey | null; onIr: (t: TabKey) => void; meta: Record<string, ArtefactoMeta>
+  ficha?: { nombre: string; ok: number; total: number } | null; onAbrirFicha?: () => void
+}) {
+  const completa = !!ficha && ficha.ok === ficha.total
   return (
     <div className="p-3 space-y-3" role="tablist" aria-label="Artefactos del proyecto">
+      {ficha && onAbrirFicha && (
+        <div>
+          <p className="text-[9px] uppercase tracking-wider text-[#6b7280] mb-1">Cliente</p>
+          <button onClick={onAbrirFicha} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#cbd5e1' }}>
+            <Building2 size={13} className="flex-shrink-0 opacity-80" />
+            <span className="flex-1 truncate">Ficha del cliente</span>
+            <span className="flex items-center gap-1 text-[10px] flex-shrink-0" style={{ color: completa ? '#6ee7b7' : '#fcd34d' }} title={ficha.nombre}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: completa ? '#10b981' : '#f59e0b' }} />{completa ? 'Completa' : `${ficha.ok}/${ficha.total}`}
+            </span>
+          </button>
+        </div>)}
       {GRUPOS.map(g => (
         <div key={g.titulo}>
           <p className="text-[9px] uppercase tracking-wider text-[#6b7280] mb-1">{g.titulo}</p>

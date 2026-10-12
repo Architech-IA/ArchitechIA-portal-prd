@@ -411,7 +411,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
             })()}
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
-            {panel === 'artefactos' && <PanelArtefactos activo={tabVista} onIr={irArtefacto} meta={metaArt} />}
+            {panel === 'artefactos' && <PanelArtefactos activo={tabVista} onIr={irArtefacto} meta={metaArt} onAbrirFicha={() => setFichaAbierta(true)}
+              ficha={fichaResumen && (fichaResumen.existe || (fasesRes?.fases ?? []).some(x => (x.requeridos ?? []).some(r => r.tipo === 'ficha_cliente'))) ? fichaResumen : null} />}
             {panel === 'contexto' && <PanelContexto proyectoId={pid} sesion={sesionFull && sesionFull.id === sid ? sesionFull : null} onSesion={setSesionFull} />}
             {panel === 'propuestas' && <PanelPropuestas key={nPropuestas} proyectoId={pid} onAbrir={irArtefacto} />}
             {panel === 'memoria' && <PanelMemoria proyectoId={pid} onCambio={refrescar} />}
