@@ -18,6 +18,7 @@ import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
 import PlantillasFases from './PlantillasFases'
 import FichaCliente from './FichaCliente'
+import LeadRegistrado from './LeadRegistrado'
 import PanelPropuestas from './PanelPropuestas'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { RolSesion } from './api'
@@ -58,6 +59,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [masAbierto, setMasAbierto] = useState(false)
   const [editorPlantillas, setEditorPlantillas] = useState(false)
   const [fichaAbierta, setFichaAbierta] = useState(false)
+  const [leadAbierto, setLeadAbierto] = useState(false)
   const [fichaResumen, setFichaResumen] = useState<{ existe: boolean; nombre: string; ok: number; total: number } | null>(null)
   const cargarFicha = useCallback((id: string) => {
     api<{ existe: boolean; cliente: { nombre: string } | null; completitud: { ok: number; total: number } }>(`/api/proyectos/${id}/cliente`)
@@ -192,6 +194,16 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   return (
     <div className="px-hover flex h-full min-h-0 w-full">
       {editorPlantillas && <PlantillasFases onCerrar={() => setEditorPlantillas(false)} onCambio={refrescar} />}
+      {leadAbierto && pid && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setLeadAbierto(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 720, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Lead del proyecto</h2>
+              <button onClick={() => setLeadAbierto(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', fontSize: 15, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            </div>
+            <LeadRegistrado leadId={fasesRes?.lead?.id ?? null} />
+          </div>
+        </div>)}
       {fichaAbierta && pid && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setFichaAbierta(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 980, maxHeight: '92vh', overflowY: 'auto' }}>
@@ -363,7 +375,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 
             {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
-              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)}
+              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)}
                 sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }} /></div> : null
             })()}
 

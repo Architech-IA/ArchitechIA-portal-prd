@@ -9,7 +9,8 @@ import { FORMATO } from './formatos'
 const fechaCorta = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' }) }
 
 /** Lo mínimo que debe existir para cerrar la fase. Se comprueba solo con lo que hay en el sistema; lo que no se puede comprobar lo marca una persona con su evidencia. */
-export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio, onAbrirArtefacto, onAbrirFicha }: {
+export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio, onAbrirArtefacto, onAbrirFicha, onAbrirLead }: {
+  onAbrirLead?: () => void
   proyectoId: string; fase: FaseVista; editable: boolean; onCambio: () => void; onAbrirArtefacto?: (t: TabKey) => void; onAbrirFicha?: () => void
 }) {
   const [evid, setEvid] = useState<Record<string, string>>({})
@@ -29,8 +30,13 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
   return (
     <div className="space-y-2">
       {cerrada && lista.some(r => !r.ok) && <p className="text-[10px] text-[#7f8a9c]">Fase ya cerrada: lo que figura como pendiente no estaba registrado en el sistema (se cerró antes de exigir entregables o se hizo fuera de él).</p>}
-      {lista.map(r => (
-        <div key={r.clave} className="rounded-lg px-3 py-2" style={{ background: r.ok ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${r.ok ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.06)'}` }}>
+      {lista.map(r => {
+        // Cada entregable se abre donde se trabaja: la ficha, el lead o el artefacto
+        const abrir = r.tipo.startsWith('ficha') ? onAbrirFicha : r.tipo === 'lead_registrado' ? onAbrirLead : r.artefacto && onAbrirArtefacto ? () => onAbrirArtefacto(r.artefacto as TabKey) : undefined
+        return (
+        <div key={r.clave} onClick={abrir ? ev => { if (!(ev.target as HTMLElement).closest('button,input,a,select,textarea')) abrir() } : undefined}
+          className={`rounded-lg px-3 py-2 transition-colors ${abrir ? 'cursor-pointer hover:brightness-125' : ''}`} role={abrir ? 'button' : undefined} tabIndex={abrir ? 0 : undefined}
+          onKeyDown={abrir ? ev => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) abrir() } : undefined} style={{ background: r.ok ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${r.ok ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.06)'}` }}>
           <div className="flex items-start gap-2">
             {r.ok ? <Check size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" /> : <Circle size={14} className="text-[#6b7280] mt-0.5 flex-shrink-0" />}
             <div className="min-w-0 flex-1">
@@ -50,7 +56,8 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
                 style={{ background: r.ok ? 'rgba(255,255,255,0.1)' : 'rgba(16,185,129,0.7)' }}>
                 {ocupado === r.clave ? <Loader2 size={11} className="animate-spin" /> : null}{r.ok ? 'Desmarcar' : 'Marcar como listo'}</button>
             </div>)}
-        </div>))}
+        </div>)
+      })}
       {error && <p className="text-[11px] text-red-300">{error}</p>}
     </div>
   )

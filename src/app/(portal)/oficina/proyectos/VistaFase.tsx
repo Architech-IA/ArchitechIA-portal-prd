@@ -45,8 +45,8 @@ function Seccion({ titulo, derecha, children }: { titulo: string; derecha?: Reac
     </section>)
 }
 
-export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha }: {
-  onAbrirFicha?: () => void
+export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead }: {
+  onAbrirFicha?: () => void; onAbrirLead?: () => void
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
@@ -120,7 +120,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
           <Seccion titulo={`Entregables obligatorios (${(fase.requeridos ?? []).filter(r => r.ok).length}/${(fase.requeridos ?? []).length})`}>
-            <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} />
+            <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
           </Seccion>
 
           {(fase.requeridos ?? []).some(r => r.tipo === 'ficha_cliente') && (
