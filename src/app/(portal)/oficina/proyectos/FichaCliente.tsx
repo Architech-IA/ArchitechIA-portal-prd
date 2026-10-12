@@ -28,8 +28,11 @@ const limpio = (t: string | null | undefined) => (t && !/^sin especificar$/i.tes
 const persona = (p: FichaApi['contactos']['principal']): Persona => (p ? { nombre: p.nombre ?? '', cargo: p.cargo ?? '', correo: p.correo ?? '', telefono: p.telefono ?? '' } : { ...VACIA })
 const num = (t: string) => { const d = t.replace(/[^\d]/g, ''); return d ? Number(d) : null }
 const miles = (n: number | null | undefined) => (n ? Math.round(n).toLocaleString('es-CO') : '')
-const campo = 'w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border outline-none focus:border-indigo-500/50'
-const etiq = 'block text-[10px] text-[#9ca3af] mb-0.5 mt-2.5'
+// Mismos valores que editInputCls / editLabelCls del formulario «Editar Lead»
+const campo = 'w-full outline-none focus:!border-orange-400/50'
+const etiq = 'block text-[11px] font-semibold text-[#64748b] uppercase tracking-[0.06em] mb-1.5 mt-3'
+const BASE: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#f1f5f9', padding: '8px 12px', fontSize: 11 }
+const OPCION: React.CSSProperties = { background: '#0f172a' }
 
 function aForm(f: FichaApi): Form {
   const c = f.cliente
@@ -40,7 +43,7 @@ function aForm(f: FichaApi): Form {
   }
 }
 
-export default function FichaCliente({ proyectoId, onCambio }: { proyectoId: string; onCambio?: () => void }) {
+export default function FichaCliente({ proyectoId, onCambio, onCerrar }: { proyectoId: string; onCambio?: () => void; onCerrar?: () => void }) {
   const [ficha, setFicha] = useState<FichaApi | null>(null)
   const [f, setF] = useState<Form | null>(null)
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -93,7 +96,7 @@ export default function FichaCliente({ proyectoId, onCambio }: { proyectoId: str
   if (!f || !ficha) return error ? <p className="text-[11px] text-red-300">{error}</p> : <div className="flex justify-center py-6 text-[#7f8a9c]"><Loader2 size={14} className="animate-spin" /></div>
   const faltan = new Map(ficha.completitud.faltan.map(x => [x.campo, x]))
   const aj = (p: Partial<Form>) => setF({ ...f, ...p })
-  const borde = (c: string) => ({ borderColor: faltan.has(c) ? 'rgba(245,158,11,0.7)' : 'rgba(255,255,255,0.1)' })
+  const borde = (c: string): React.CSSProperties => ({ ...BASE, borderColor: faltan.has(c) ? 'rgba(245,158,11,0.7)' : 'rgba(255,255,255,0.08)' })
   const aviso1 = (c: string) => (faltan.has(c) ? <p className="text-[10px] text-amber-300 mt-0.5">{faltan.get(c)?.motivo}</p> : null)
   const persona_ = (clave: 'principal' | 'decisor' | 'representante' | 'firmante', p: Persona, marca?: string) => (
     <>
@@ -102,22 +105,22 @@ export default function FichaCliente({ proyectoId, onCambio }: { proyectoId: str
       <label className={etiq}>Correo</label><input value={p.correo} onChange={e => aj({ [clave]: { ...p, correo: e.target.value } } as Partial<Form>)} className={campo} style={borde('')} />
       <label className={etiq}>Teléfono</label><input value={p.telefono} onChange={e => aj({ [clave]: { ...p, telefono: e.target.value } } as Partial<Form>)} className={campo} style={borde('')} />
     </>)
-  const titulo = (I: typeof Building2, t: string) => <div className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-100"><I size={13} className="text-indigo-300" />{t}</div>
+  const titulo = (I: typeof Building2, t: string) => <div className="flex items-center gap-2 text-[13px] font-bold text-[#f1f5f9] pb-2 border-b border-white/10"><I size={14} className="text-orange-400" />{t}</div>
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[12px] text-gray-200 font-medium">{ficha.completitud.ok} de {ficha.completitud.total} datos obligatorios</span>
-        <div className="flex-1 min-w-[80px] h-1.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full" style={{ width: `${(ficha.completitud.ok / ficha.completitud.total) * 100}%`, background: ficha.completitud.ok === ficha.completitud.total ? '#10b981' : '#f59e0b' }} /></div>
+        <div className="flex-1 min-w-[80px] h-1.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full" style={{ width: `${(ficha.completitud.ok / ficha.completitud.total) * 100}%`, background: ficha.completitud.ok === ficha.completitud.total ? '#10b981' : 'linear-gradient(90deg,#f97316,#ea580c)' }} /></div>
       </div>
 
       <div className="relative">
         <div className="flex items-center gap-2">
-          <div className="relative flex-1"><Search size={11} className="absolute left-2 top-2.5 text-[#7f8a9c]" />
-            <input value={q} onChange={e => buscar(e.target.value)} placeholder={ficha.existe ? 'Cambiar por otra empresa existente (nombre o NIT)…' : 'Buscar una empresa existente por nombre o NIT…'} className={`${campo} !pl-7`} style={borde('')} /></div>
+          <div className="relative flex-1"><Search size={12} className="absolute left-2.5 top-[11px] text-[#64748b]" />
+            <input value={q} onChange={e => buscar(e.target.value)} placeholder={ficha.existe ? 'Cambiar por otra empresa existente (nombre o NIT)…' : 'Buscar una empresa existente por nombre o NIT…'} className={campo} style={{ ...borde(''), paddingLeft: 28 }} /></div>
           {buscando && <Loader2 size={12} className="animate-spin text-[#7f8a9c]" />}
           <button onClick={() => { if (window.confirm('Se crea una empresa nueva para este proyecto. ¿Continuar?')) void enviar({ nueva: true, cliente: { nombre: f.nombre || 'Nueva empresa' } }, 'Empresa nueva creada: completa sus datos') }} disabled={guardando}
-            className="text-[11px] px-2.5 py-1.5 rounded-lg text-gray-300 border border-white/10 hover:bg-white/5 flex-shrink-0">Crear nueva</button>
+            style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#94a3b8', fontSize: 11 }} className="flex-shrink-0 hover:text-white">Crear nueva</button>
         </div>
         {resultados.length > 0 && (
           <div className="absolute z-10 left-0 right-0 mt-1 rounded-lg py-1" style={{ background: '#14142b', border: '1px solid rgba(255,255,255,0.12)' }}>
@@ -154,11 +157,11 @@ export default function FichaCliente({ proyectoId, onCambio }: { proyectoId: str
           {titulo(Target, 'Oportunidad')}
           <label className={etiq}>Qué quiere resolver</label><textarea value={f.resumen} onChange={e => aj({ resumen: e.target.value })} rows={4} className={campo} style={borde('resumen')} />{aviso1('resumen')}
           <label className={etiq}>Fuente</label>
-          <select value={f.fuente} onChange={e => aj({ fuente: e.target.value })} className={campo} style={borde('fuente')}><option value="">Elige…</option>{[...new Set([...(f.fuente ? [f.fuente] : []), ...FUENTES])].map(x => <option key={x} value={x}>{x}</option>)}</select>{aviso1('fuente')}
+          <select value={f.fuente} onChange={e => aj({ fuente: e.target.value })} className={campo} style={borde('fuente')}><option value="" style={OPCION}>Elige…</option>{[...new Set([...(f.fuente ? [f.fuente] : []), ...FUENTES])].map(x => <option key={x} value={x} style={OPCION}>{x}</option>)}</select>{aviso1('fuente')}
           <label className={etiq}>Valor estimado (COP)</label><input value={f.valor} onChange={e => aj({ valor: miles(num(e.target.value)) })} className={campo} style={borde('valor')} />{aviso1('valor')}
           <label className={etiq}>Responsable</label>
           <select value={f.responsableId} onChange={e => aj({ responsableId: e.target.value })} className={campo} style={borde('responsable')}>
-            <option value="">{ficha.oportunidad.responsableNombre ? `${ficha.oportunidad.responsableNombre} (actual)` : 'Elige…'}</option>{usuarios.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select>{aviso1('responsable')}
+            <option value="" style={OPCION}>{ficha.oportunidad.responsableNombre ? `${ficha.oportunidad.responsableNombre} (actual)` : 'Elige…'}</option>{usuarios.map(u => <option key={u.id} value={u.id} style={OPCION}>{u.name}</option>)}</select>{aviso1('responsable')}
           <label className={etiq}>Presupuesto del cliente (opcional)</label><input value={f.presupuesto} onChange={e => aj({ presupuesto: miles(num(e.target.value)) })} placeholder="COP" className={campo} style={borde('')} />
         </div>
       </div>
@@ -168,8 +171,9 @@ export default function FichaCliente({ proyectoId, onCambio }: { proyectoId: str
           {error ? <span className="text-red-300">{error}{existente && <> <button onClick={() => void enviar({ clienteId: existente.id }, `Empresa «${existente.nombre}» vinculada al proyecto`)} className="underline ml-1">Usar «{existente.nombre}»</button></>}</span>
             : aviso ? <span className="text-emerald-300">{aviso}</span> : <span className="text-[#7f8a9c]">Se guarda en el proyecto. Si la empresa ya existe, se reutiliza.</span>}
         </p>
-        <button onClick={guardar} disabled={guardando} className="flex items-center gap-1.5 text-[12px] px-4 py-1.5 rounded-lg text-white font-semibold disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.85)' }}>
-          {guardando && <Loader2 size={12} className="animate-spin" />}Guardar ficha</button>
+        {onCerrar && <button onClick={onCerrar} style={{ padding: '8px 18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 9, color: '#94a3b8', fontSize: 11 }} className="hover:text-white">Cancelar</button>}
+        <button onClick={guardar} disabled={guardando} className="flex items-center gap-1.5 disabled:opacity-60" style={{ padding: '8px 20px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 11 }}>
+          {guardando && <Loader2 size={13} className="animate-spin" />}Guardar ficha</button>
       </div>
     </div>
   )

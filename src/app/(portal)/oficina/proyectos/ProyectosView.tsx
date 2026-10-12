@@ -193,10 +193,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
     <div className="px-hover flex h-full min-h-0 w-full">
       {editorPlantillas && <PlantillasFases onCerrar={() => setEditorPlantillas(false)} onCambio={refrescar} />}
       {fichaAbierta && pid && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setFichaAbierta(false)}>
-          <div className="w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-2xl p-5" style={{ background: '#0e0e20', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2 mb-3"><h2 className="text-[14px] font-bold text-gray-100 flex-1">Ficha del cliente</h2><button onClick={() => setFichaAbierta(false)} className="text-[#7f8a9c] hover:text-gray-200"><X size={16} /></button></div>
-            <FichaCliente proyectoId={pid} onCambio={refrescar} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setFichaAbierta(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 980, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Ficha del cliente</h2>
+              <button onClick={() => setFichaAbierta(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', fontSize: 15, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            </div>
+            <FichaCliente proyectoId={pid} onCambio={refrescar} onCerrar={() => setFichaAbierta(false)} />
           </div>
         </div>)}
       <style>{`.px-hover button:not(:disabled), .px-hover select, .px-hover summary, .px-hover [role="button"] { cursor: pointer; transition: box-shadow .12s, filter .12s, color .12s; }
