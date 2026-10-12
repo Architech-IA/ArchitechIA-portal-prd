@@ -61,6 +61,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [editorPlantillas, setEditorPlantillas] = useState(false)
   const [fichaAbierta, setFichaAbierta] = useState(false)
   const [leadAbierto, setLeadAbierto] = useState(false)
+  const [fichaAuto, setFichaAuto] = useState(0)
   const [nuevoProyecto, setNuevoProyecto] = useState(false)
   const [fichaResumen, setFichaResumen] = useState<{ existe: boolean; nombre: string; ok: number; total: number } | null>(null)
   const cargarFicha = useCallback((id: string) => {
@@ -214,7 +215,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
               <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Ficha del cliente</h2>
               <button onClick={() => setFichaAbierta(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', fontSize: 15, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
             </div>
-            <FichaCliente proyectoId={pid} onCambio={refrescar} onCerrar={() => setFichaAbierta(false)} />
+            <FichaCliente proyectoId={pid} onCambio={refrescar} onCerrar={() => setFichaAbierta(false)} autoIA={fichaAuto} />
           </div>
         </div>)}
       <style>{`.px-hover button:not(:disabled), .px-hover select, .px-hover summary, .px-hover [role="button"] { cursor: pointer; transition: box-shadow .12s, filter .12s, color .12s; }
@@ -379,7 +380,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 
             {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
-              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)}
+              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)} onInvestigarEmpresa={() => { setFichaAuto(n => n + 1); setFichaAbierta(true) }}
                 sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }} /></div> : null
             })()}
 

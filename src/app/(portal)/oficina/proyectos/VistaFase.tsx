@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network } from 'lucide-react'
+import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network, Sparkles } from 'lucide-react'
 import Link from '@/lib/BacklogLink'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
@@ -45,8 +45,8 @@ function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derech
     </section>)
 }
 
-export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead }: {
-  onAbrirFicha?: () => void; onAbrirLead?: () => void
+export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
+  onAbrirFicha?: () => void; onAbrirLead?: () => void; onInvestigarEmpresa?: () => void
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
@@ -139,22 +139,33 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
             <NotasDeFase key={`${proyectoId}-${fase.clave}`} proyectoId={proyectoId} clave={fase.clave} esPreventa={fase.bloque === 'PREVENTA'} soloLectura={!!data.iniciado && fase.estado === 'PENDIENTE'} />
           </Seccion>
 
-          <Seccion titulo="Sesiones de esta fase">
-            <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
-          </Seccion>
-
-          <Seccion titulo={`Actividades (${fase.actividades.hechas}/${fase.actividades.total})`} derecha={<Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>}>
-            <div className="space-y-1.5">
-              {fase.actividades.items.map(a => (
-                <div key={a.clave} className="flex items-start gap-2 rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                  {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
-                    <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}</p>
-                  </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={a.status === 'DONE' ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                    {a.creada ? `${ESTADO_TAREA[a.status ?? ''] ?? a.status}${a.taskCode ? ` · ${a.taskCode}` : ''}` : 'Aún no creada'}</span>
-                </div>))}
+          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={<Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>}>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
+                <div className="space-y-1.5">
+                  {fase.actividades.items.map(a => {
+                    // «Investigar la empresa» es la consulta de la IA que completa la ficha del cliente
+                    const investigar = a.clave === 'ficha_cliente' && a.tipo === 'AGENTE' && !!onInvestigarEmpresa
+                    return (
+                      <div key={a.clave} className="flex items-start gap-2 rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                        {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
+                          <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}</p>
+                        </div>
+                        {investigar && a.status !== 'DONE' && (
+                          <button onClick={onInvestigarEmpresa} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}><Sparkles size={11} /> Investigar</button>)}
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={a.status === 'DONE' ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
+                          {a.creada ? `${ESTADO_TAREA[a.status ?? ''] ?? a.status}${a.taskCode ? ` · ${a.taskCode}` : ''}` : 'Aún no creada'}</span>
+                      </div>)
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>
+                <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
+              </div>
             </div>
           </Seccion>
 

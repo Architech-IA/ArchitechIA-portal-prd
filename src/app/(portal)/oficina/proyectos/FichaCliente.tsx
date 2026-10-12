@@ -46,7 +46,7 @@ function aForm(f: FichaApi): Form {
   }
 }
 
-export default function FichaCliente({ proyectoId, onCambio, onCerrar }: { proyectoId: string; onCambio?: () => void; onCerrar?: () => void }) {
+export default function FichaCliente({ proyectoId, onCambio, onCerrar, autoIA = 0 }: { proyectoId: string; onCambio?: () => void; onCerrar?: () => void; autoIA?: number }) {
   const [ficha, setFicha] = useState<FichaApi | null>(null)
   const [f, setF] = useState<Form | null>(null)
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -104,6 +104,10 @@ export default function FichaCliente({ proyectoId, onCambio, onCerrar }: { proye
     setAviso(`Aplicado al formulario: ${Object.keys(p).length} dato(s). Revísalos y pulsa «Guardar ficha» para confirmarlos.`)
     setIa(null)
   }
+
+  // Si se abre desde «Investigar la empresa», la consulta de la IA arranca sola (una vez por pulsación)
+  const iaLanzada = useRef(0)
+  useEffect(() => { if (autoIA > 0 && ficha && ficha.existe && iaLanzada.current !== autoIA) { iaLanzada.current = autoIA; void completarConIA() } }, [autoIA, ficha]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function guardar() {
     if (!f) return
