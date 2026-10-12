@@ -118,12 +118,12 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
       {/* Lo que falta para cerrar la fase (65 %) junto al lead (35 %) */}
-      <div className={`grid grid-cols-1 gap-4 items-start ${data.lead?.id && fase.bloque === 'PREVENTA' ? 'lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]' : ''}`}>
+      <div className={`grid grid-cols-1 gap-4 ${data.lead?.id && fase.bloque === 'PREVENTA' ? 'items-stretch lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)] lg:min-h-[250px]' : 'items-start'}`}>
         <Seccion titulo={`Entregables obligatorios (${(fase.requeridos ?? []).filter(r => r.ok).length}/${(fase.requeridos ?? []).length})`}>
           <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
         </Seccion>
         {data.lead?.id && fase.bloque === 'PREVENTA' && (
-          <div className="relative lg:min-h-[270px]"><div className="lg:absolute lg:inset-0"><Seccion titulo="Del lead" llenar>
+          <div className="relative"><div className="lg:absolute lg:inset-0"><Seccion titulo="Del lead" llenar>
             <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
           </Seccion></div></div>)}
       </div>
