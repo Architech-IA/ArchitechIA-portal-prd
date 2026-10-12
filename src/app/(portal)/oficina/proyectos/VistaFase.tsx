@@ -37,11 +37,11 @@ const ICONO: Record<string, typeof Folder> = {
 const artefactoDe = (href: string): TabKey | null => { const m = href.match(/^\/solutions\/pilots\/[^/?]+\?seccion=([\w-]+)/); return m && m[1] in TITULO_DE_TAB ? (m[1] as TabKey) : null }
 const externo = (href: string) => /^\/(leads|proposals|meetings)\b/.test(href)
 
-function Seccion({ titulo, derecha, children }: { titulo: string; derecha?: React.ReactNode; children: React.ReactNode }) {
+function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derecha?: React.ReactNode; children: React.ReactNode; llenar?: boolean }) {
   return (
-    <section className="rounded-xl" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+    <section className={`rounded-xl ${llenar ? 'h-full flex flex-col' : ''}`} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
       <header className="flex items-center gap-2 px-4 py-2 border-b border-white/5"><h3 className="text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]">{titulo}</h3><span className="flex-1" />{derecha}</header>
-      <div className="p-3">{children}</div>
+      <div className={llenar ? 'p-3 flex-1 min-h-0 flex flex-col' : 'p-3'}>{children}</div>
     </section>)
 }
 
@@ -123,9 +123,9 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
           <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
         </Seccion>
         {data.lead?.id && fase.bloque === 'PREVENTA' && (
-          <Seccion titulo="Del lead">
+          <div className="relative lg:min-h-[270px]"><div className="lg:absolute lg:inset-0"><Seccion titulo="Del lead" llenar>
             <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
-          </Seccion>)}
+          </Seccion></div></div>)}
       </div>
 
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
