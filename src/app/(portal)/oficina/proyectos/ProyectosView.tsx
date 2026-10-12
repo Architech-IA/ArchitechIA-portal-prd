@@ -19,6 +19,7 @@ import PanelArtefactos from './PanelArtefactos'
 import PlantillasFases from './PlantillasFases'
 import FichaCliente from './FichaCliente'
 import LeadRegistrado from './LeadRegistrado'
+import NuevoProyecto from './NuevoProyecto'
 import PanelPropuestas from './PanelPropuestas'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { RolSesion } from './api'
@@ -60,6 +61,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [editorPlantillas, setEditorPlantillas] = useState(false)
   const [fichaAbierta, setFichaAbierta] = useState(false)
   const [leadAbierto, setLeadAbierto] = useState(false)
+  const [nuevoProyecto, setNuevoProyecto] = useState(false)
   const [fichaResumen, setFichaResumen] = useState<{ existe: boolean; nombre: string; ok: number; total: number } | null>(null)
   const cargarFicha = useCallback((id: string) => {
     api<{ existe: boolean; cliente: { nombre: string } | null; completitud: { ok: number; total: number } }>(`/api/proyectos/${id}/cliente`)
@@ -194,6 +196,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   return (
     <div className="px-hover flex h-full min-h-0 w-full">
       {editorPlantillas && <PlantillasFases onCerrar={() => setEditorPlantillas(false)} onCambio={refrescar} />}
+      {nuevoProyecto && <NuevoProyecto onCerrar={() => setNuevoProyecto(false)} onCreado={id => { setNuevoProyecto(false); void cargarLista().then(() => elegirProyecto(id)) }} />}
       {leadAbierto && pid && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setLeadAbierto(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 720, maxHeight: '92vh', overflowY: 'auto' }}>
@@ -231,6 +234,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
       <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${listaAbierta || !pid ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
           <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[11px] text-[#7f8a9c]">{lista.length}</span><span className="flex-1" />
+            <button onClick={() => setNuevoProyecto(true)} title="Nuevo proyecto: registra el lead, crea el proyecto y arranca el motor" aria-label="Nuevo proyecto" className="text-[#7f8a9c] hover:text-gray-200"><Plus size={14} /></button>
             <button onClick={() => setEditorPlantillas(true)} title="Plantillas de fases: entregables, criterios y roles de sesión" aria-label="Plantillas de fases" className="text-[#7f8a9c] hover:text-gray-200"><SlidersHorizontal size={13} /></button></div>
           <div className="relative">
             <Search size={11} className="absolute left-2 top-2 text-[#7f8a9c]" />
