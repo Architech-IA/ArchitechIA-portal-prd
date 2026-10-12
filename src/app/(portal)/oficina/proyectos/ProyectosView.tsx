@@ -62,6 +62,11 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [fichaAbierta, setFichaAbierta] = useState(false)
   const [leadAbierto, setLeadAbierto] = useState(false)
   const [fichaAuto, setFichaAuto] = useState(0)
+  // Escape cierra el diálogo abierto (ficha / lead)
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') { setFichaAbierta(false); setLeadAbierto(false) } }
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k)
+  }, [])
   const [nuevoProyecto, setNuevoProyecto] = useState(false)
   const [fichaResumen, setFichaResumen] = useState<{ existe: boolean; nombre: string; ok: number; total: number } | null>(null)
   const cargarFicha = useCallback((id: string) => {
@@ -200,7 +205,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
       {nuevoProyecto && <NuevoProyecto onCerrar={() => setNuevoProyecto(false)} onCreado={id => { setNuevoProyecto(false); void cargarLista().then(() => elegirProyecto(id)) }} />}
       {leadAbierto && pid && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setLeadAbierto(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 720, maxHeight: '92vh', overflowY: 'auto' }}>
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 720, maxHeight: '92vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Lead del proyecto</h2>
               <button onClick={() => setLeadAbierto(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', fontSize: 15, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
@@ -210,7 +215,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
         </div>)}
       {fichaAbierta && pid && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setFichaAbierta(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 980, maxHeight: '92vh', overflowY: 'auto' }}>
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 980, maxHeight: '92vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 24px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Ficha del cliente</h2>
               <button onClick={() => setFichaAbierta(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', fontSize: 15, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
@@ -230,7 +235,25 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
 .px-hover input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus, .px-hover textarea:focus { box-shadow: 0 0 0 1px rgba(249,115,22,0.55); }
 .px-hover label:has(input[type="checkbox"]), .px-hover label:has(input[type="radio"]) { cursor: pointer; transition: filter .12s; }
 .px-hover label:has(input[type="checkbox"]):hover, .px-hover label:has(input[type="radio"]):hover { filter: brightness(1.35); }
-.px-hover [role="tab"]:not(:disabled):hover, .px-hover [role="menuitem"]:hover { filter: brightness(1.2); }`}</style>
+.px-hover [role="tab"]:not(:disabled):hover, .px-hover [role="menuitem"]:hover { filter: brightness(1.2); }
+/* Superficies del navegador: selección, cursor, barras de desplazamiento y foco con la paleta del motor */
+.px-hover ::selection { background: rgba(249,115,22,0.35); color: #fff; }
+.px-hover input, .px-hover textarea { caret-color: #fb923c; }
+.px-hover *, .px-hover { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.28) transparent; }
+.px-hover ::-webkit-scrollbar { width: 8px; height: 8px; }
+.px-hover ::-webkit-scrollbar-track { background: transparent; }
+.px-hover ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.25); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+.px-hover ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.45); background-clip: content-box; }
+.px-hover a[href]:focus-visible, .px-hover summary:focus-visible, .px-hover [role="tab"]:focus-visible, .px-hover [role="button"]:focus-visible { outline: 2px solid rgba(249,115,22,0.75); outline-offset: 2px; border-radius: 6px; }
+.px-hover button:not(:disabled):focus-visible, .px-hover select:focus-visible { outline-color: rgba(249,115,22,0.75); }
+.px-hover button:disabled, .px-hover select:disabled { cursor: not-allowed; }
+.px-hover summary { list-style: none; } .px-hover summary::-webkit-details-marker { display: none; }
+.px-hover details > summary::before { content: '▸'; display: inline-block; margin-right: 6px; transition: transform .15s cubic-bezier(.22,1,.36,1); }
+.px-hover details[open] > summary::before { transform: rotate(90deg); }
+.px-hover { font-variant-numeric: tabular-nums; }
+@keyframes px-entra { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.px-hover section { animation: px-entra .22s cubic-bezier(.22,1,.36,1) both; }
+@media (prefers-reduced-motion: reduce) { .px-hover *, .px-hover section { animation: none !important; transition: none !important; } }`}</style>
       {/* ── Columna A: proyectos ── */}
       <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${listaAbierta || !pid ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">

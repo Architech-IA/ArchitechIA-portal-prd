@@ -11,7 +11,7 @@ import { FORMATO } from './formatos'
 // Editor de las plantillas de fases: objetivo, aprobador y criterios de la puerta, entregables obligatorios (con su verificación) y roles de sesión.
 // Lo que se guarda se aplica de inmediato a los proyectos nuevos y a los que ya están en marcha.
 
-interface Verifica { rol?: string; tipo: string; clave?: string; aprobado?: boolean; min_requisitos?: number | null; min?: number; hechas_min?: number; sin_fallidas?: boolean; estados?: string[] }
+interface Verifica { rol?: string; tipo: string; clave?: string; aprobado?: boolean; min_requisitos?: number | null; min?: number; hechas_min?: number; sin_fallidas?: boolean; estados?: string[]; nivel?: string }
 interface Requerido { clave: string; titulo: string; ayuda: string; formato: string; verifica: Verifica }
 interface Rol { clave: string; titulo: string; tipo: string; objetivo: string; artefactos: string[]; resultado: string; cierre: string[] }
 interface FaseEd { clave: string; numero: number; bloque: string; nombre: string; leadStatus: string | null; tipoPuerta: string; objetivo: string; aprobador: string; criterios: string[]; entregables: string[]; requeridos: Requerido[]; sesiones: Rol[] }
@@ -77,6 +77,8 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
   const [nota, setNota] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [hist, setHist] = useState<Hist[] | null>(null)
+  const [abiertos, setAbiertos] = useState<string[]>([])
+  const alternar = (k: string) => setAbiertos(a => a.includes(k) ? a.filter(x => x !== k) : [...a, k])
   const [verHist, setVerHist] = useState(false)
 
   const cargar = useCallback(async () => {
@@ -173,19 +175,19 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
   const dis = !editable || guardando
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }}>
-      <div className="w-full max-w-6xl h-full max-h-[92vh] flex flex-col rounded-2xl overflow-hidden" style={{ background: '#0e0e20', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-white/10 flex-shrink-0">
-          <h2 className="text-[14px] font-bold text-gray-100">Plantillas de fases</h2>
+    <div className="px-hover" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }}>
+      <div className="w-full max-w-6xl h-full max-h-[92vh] flex flex-col overflow-hidden" style={{ background: 'rgba(15,23,42,0.72)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)' }}>
+        <div className="flex items-center gap-3 px-7 py-5 flex-shrink-0" style={{ background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>Plantillas de fases</h2>
           <div className="flex gap-1">
             {datos?.plantillas.map(p => (
               <button key={p.codigo} onClick={() => setCodigo(p.codigo)} className="px-2.5 py-1 rounded-lg text-[11px] transition-colors"
-                style={codigo === p.codigo ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#9ca3af' }}>
+                style={codigo === p.codigo ? { background: 'rgba(249,115,22,0.18)', border: '1px solid rgba(249,115,22,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#9ca3af' }}>
                 {p.codigo === 'PROYECTO_COMPLETO' ? 'Comercial' : 'Interna'}{p.modificada ? ' ·editada' : ''}</button>))}
           </div>
           {!editable && datos && <span className="flex items-center gap-1 text-[11px] text-amber-300"><Lock size={11} /> Solo lectura: editar requiere ser administrador</span>}
           <span className="flex-1" />
-          <button onClick={cerrar} title="Cerrar" className="text-[#7f8a9c] hover:text-gray-200"><X size={16} /></button>
+          <button onClick={cerrar} title="Cerrar" aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={15} /></button>
         </div>
 
         {!datos && !error && <div className="flex-1 flex items-center justify-center text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>}
@@ -196,7 +198,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
             <div className="w-56 flex-shrink-0 border-r border-white/10 overflow-y-auto p-2 space-y-0.5">
               {plantilla.efectiva.map(f => (
                 <button key={f.clave} onClick={() => setFaseSel(f.clave)} className="w-full text-left rounded-lg px-2.5 py-1.5 text-[12px] flex items-center gap-2 transition-colors"
-                  style={faseSel === f.clave ? { background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.45)', color: '#fff' } : { border: '1px solid transparent', color: '#cbd5e1' }}>
+                  style={faseSel === f.clave ? { background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fff' } : { border: '1px solid transparent', color: '#cbd5e1' }}>
                   <span className="text-[10px] opacity-60 w-4">{f.numero}</span><span className="flex-1 truncate">{f.nombre}</span>
                   {sucias.includes(f.clave) && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Cambios sin guardar" />}
                 </button>))}
@@ -227,21 +229,13 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                     <p className="text-[11px] text-[#7f8a9c] mt-0.5">Los cambios se aplican a los proyectos nuevos y a los que ya están en esta fase o la tendrán después.</p>
                   </div>
 
-                  <div><label className={etiqueta}>Objetivo de la fase</label><textarea value={fase.objetivo} disabled={dis} onChange={e => cambiar({ objetivo: e.target.value })} rows={2} className={campo} /></div>
-
-                  <div className="grid md:grid-cols-2 gap-5">
-                    <div>
-                      <label className={etiqueta}>Aprueba la puerta</label>
-                      <select value={fase.aprobador} disabled={dis} onChange={e => cambiar({ aprobador: e.target.value })} className={campo}>{cat.aprobadores.map(a => <option key={a} value={a}>{APROBADOR[a] ?? a}</option>)}</select>
-                      <label className={`${etiqueta} mt-3`}>Criterios de la puerta (los marca una persona)</label>
-                      <ListaTextos valores={fase.criterios} deshabilitado={dis} onCambio={criterios => cambiar({ criterios })} vacio="Debe haber al menos un criterio." />
-                    </div>
-                    <div>
-                      <label className={etiqueta}>Qué produce la fase (referencia)</label>
-                      <ListaTextos valores={fase.entregables} deshabilitado={dis} onCambio={entregables => cambiar({ entregables })} vacio="Sin entregables de referencia." />
-                    </div>
+                  <div className="grid md:grid-cols-[1fr_260px] gap-4">
+                    <div><label className={etiqueta}>Objetivo de la fase</label><textarea value={fase.objetivo} disabled={dis} onChange={e => cambiar({ objetivo: e.target.value })} rows={2} className={campo} /></div>
+                    <div><label className={etiqueta}>Aprueba la puerta</label>
+                      <select value={fase.aprobador} disabled={dis} onChange={e => cambiar({ aprobador: e.target.value })} className={campo}>{cat.aprobadores.map(a => <option key={a} value={a}>{APROBADOR[a] ?? a}</option>)}</select></div>
                   </div>
 
+                  <div className="grid lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)] gap-5 items-start">
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <label className={`${etiqueta} !mb-0 flex-1`}>Entregables obligatorios para cerrar la fase ({fase.requeridos.length}/8)</label>
@@ -254,10 +248,11 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                         const tipos = cat.tiposVerificacion.filter(t => t !== 'reunion_lead' || conLead).filter(t => (t !== 'propuesta' && t !== 'lead_registrado' && t !== 'ficha_cliente' && t !== 'ficha_contacto') || comercial)
                         const cambiarV = (p: Partial<Verifica>) => cambiarReq(i, { verifica: { ...v, ...p } })
                         const nuevoTipo = (t: string) => cambiarReq(i, { formato: t === 'manual' ? 'enlace' : AUTO_FORMATO[t] ?? 'enlace', verifica: t === 'documento' ? { tipo: t, clave: 'prd' } : t === 'arquitectura' ? { tipo: t, min: 1 } : t === 'propuesta' ? { tipo: t, estados: ['SENT'] } : t === 'tareas' ? { tipo: t, min: 1, hechas_min: 0, sin_fallidas: false } : t === 'ficha_contacto' ? { tipo: t, rol: 'FIRMANTE' } : { tipo: t } })
+                        const abierto = abiertos.includes(r.clave)
                         return (
                           <div key={r.clave} className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                             <div className="flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgba(99,102,241,0.25)', color: '#c7d2fe' }}>{i + 1}</span>
+                              <button onClick={() => alternar(r.clave)} title={abierto ? 'Plegar' : 'Ver y editar el detalle'} className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgba(249,115,22,0.2)', color: '#fed7aa' }}>{i + 1}</button>
                               <input value={r.titulo} disabled={dis} onChange={e => cambiarReq(i, { titulo: e.target.value })} placeholder="Título del entregable" className={`${campo} !text-[13px] !font-semibold`} />
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={r.verifica.tipo === 'manual' ? { background: 'rgba(245,158,11,0.15)', color: '#fcd34d' } : { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' }}
                                 title={r.verifica.tipo === 'manual' ? 'Una persona lo marca y deja el enlace' : 'El sistema lo comprueba solo'}>{r.verifica.tipo === 'manual' ? 'La marca una persona' : 'Automática'}</span>
@@ -265,6 +260,8 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                                 onSubir={() => mover('requeridos', i, -1)} onBajar={() => mover('requeridos', i, 1)} onDuplicar={() => duplicar('requeridos', i)} onCopiar={d => copiarA('requeridos', i, d)}
                                 onQuitar={() => { if (window.confirm('¿Quitar este entregable? Las marcas manuales ya hechas dejan de contar.')) cambiar({ requeridos: fase.requeridos.filter((_, j) => j !== i) }) }} />}
                             </div>
+                            {!abierto && <button onClick={() => alternar(r.clave)} className="w-full text-left text-[11px] text-[#7f8a9c] truncate">▸ {FORMATO[r.formato] ?? r.formato} · {r.ayuda || 'Sin descripción'}</button>}
+                            {abierto && (<div className="space-y-2">
                             <div><span className={etiqueta}>Qué hay que hacer</span>
                               <input value={r.ayuda} disabled={dis} onChange={e => cambiarReq(i, { ayuda: e.target.value })} placeholder="Ayuda: qué hay que hacer para cumplirlo" className={campo} /></div>
                             <span className={etiqueta}>Cómo se verifica</span>
@@ -279,6 +276,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                                   <option value="contenido">Con contenido</option><option value="aprobado">Aprobado</option><option value="req">Con requisitos</option></select>
                                 {!!v.min_requisitos && <label className="flex items-center gap-1 text-[11px] text-gray-400">mínimo <input type="number" min={1} max={50} value={v.min_requisitos} disabled={dis} onChange={e => cambiarV({ min_requisitos: Number(e.target.value) || 1 })} className={`${campo} !w-16`} /></label>}
                               </>)}
+                              {v.tipo === 'ficha_cliente' && <select value={v.nivel === 'basica' ? 'basica' : 'completa'} disabled={dis} onChange={e => cambiarV({ nivel: e.target.value === 'basica' ? 'basica' : undefined })} title='Cuántos datos de la ficha se exigen' className={`${campo} !w-auto`}><option value='basica'>Datos esenciales (5)</option><option value='completa'>Ficha completa (11)</option></select>}
                               {v.tipo === 'ficha_contacto' && <select value={v.rol ?? 'FIRMANTE'} disabled={dis} onChange={e => cambiarV({ rol: e.target.value })} className={`${campo} !w-auto`}>{cat.rolesFicha.map(x => <option key={x} value={x}>{ROL_FICHA[x] ?? x}</option>)}</select>}
                               {v.tipo === 'arquitectura' && <label className="flex items-center gap-1 text-[11px] text-gray-400">componentes mínimos <input type="number" min={1} max={50} value={v.min ?? 1} disabled={dis} onChange={e => cambiarV({ min: Number(e.target.value) || 1 })} className={`${campo} !w-16`} /></label>}
                               {v.tipo === 'propuesta' && cat.estadosPropuesta.map(e => (
@@ -290,9 +288,22 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                                 <label className="flex items-center gap-1 text-[11px] text-gray-300 cursor-pointer"><input type="checkbox" disabled={dis} checked={!!v.sin_fallidas} onChange={e => cambiarV({ sin_fallidas: e.target.checked })} className="accent-indigo-500" />sin fallidas</label>
                               </>)}
                             </div>
+                            </div>)}
                           </div>)
                       })}
-                      {!dis && fase.requeridos.length < 8 && <button onClick={() => cambiar({ requeridos: [...fase.requeridos, { clave: claveDe('entregable'), titulo: '', ayuda: '', formato: 'enlace', verifica: { tipo: 'manual' } }] })} className="flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200"><Plus size={11} /> Añadir entregable</button>}
+                      {!dis && fase.requeridos.length < 8 && <button onClick={() => { const k = claveDe('entregable'); setAbiertos(a => [...a, k]); cambiar({ requeridos: [...fase.requeridos, { clave: k, titulo: '', ayuda: '', formato: 'enlace', verifica: { tipo: 'manual' } }] }) }} className="flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200"><Plus size={11} /> Añadir entregable</button>}
+                    </div>
+                  </div>
+
+                    <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div>
+                        <label className={etiqueta}>Criterios de la puerta (los marca una persona)</label>
+                        <ListaTextos valores={fase.criterios} deshabilitado={dis} onCambio={criterios => cambiar({ criterios })} vacio="Debe haber al menos un criterio." />
+                      </div>
+                      <details className="border-t border-white/5 pt-3">
+                        <summary className="text-[10px] uppercase tracking-wide text-[#7f8a9c] cursor-pointer select-none">Qué produce la fase · referencia ({fase.entregables.length})</summary>
+                        <div className="mt-2"><ListaTextos valores={fase.entregables} deshabilitado={dis} onCambio={entregables => cambiar({ entregables })} vacio="Sin entregables de referencia." /></div>
+                      </details>
                     </div>
                   </div>
 
@@ -335,11 +346,11 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
           </div>)}
 
         {datos && editable && (
-          <div className="flex items-center gap-3 px-5 py-3 border-t border-white/10 flex-shrink-0">
+          <div className="flex items-center gap-3 px-7 py-4 border-t border-white/10 flex-shrink-0">
             <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Nota del cambio (opcional)" maxLength={300} className={`${campo} max-w-md`} />
             <span className="flex-1 text-[11px]">{error ? <span className="text-red-300">{error}</span> : aviso ? <span className="text-emerald-300">{aviso}</span> : sucias.length > 0 ? <span className="text-amber-300">{sucias.length} fase(s) con cambios sin guardar</span> : ''}</span>
             <button disabled={sucias.length === 0 || guardando} onClick={() => setBorrador(b => ({ ...b, [codigo]: {} }))} className="text-[11px] px-3 py-1.5 rounded-lg text-gray-300 border border-white/10 disabled:opacity-40">Descartar</button>
-            <button disabled={sucias.length === 0 || guardando} onClick={() => void guardar()} className="flex items-center gap-1.5 text-[12px] px-4 py-1.5 rounded-lg text-white font-semibold disabled:opacity-40" style={{ background: 'rgba(99,102,241,0.85)' }}>
+            <button disabled={sucias.length === 0 || guardando} onClick={() => void guardar()} className="flex items-center gap-1.5 text-[12px] px-4 py-1.5 rounded-lg text-white font-semibold disabled:opacity-40" style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>
               {guardando ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Guardar y aplicar</button>
           </div>)}
       </div>

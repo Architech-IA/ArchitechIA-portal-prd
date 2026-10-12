@@ -40,7 +40,7 @@ const externo = (href: string) => /^\/(leads|proposals|meetings)\b/.test(href)
 function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derecha?: React.ReactNode; children: React.ReactNode; llenar?: boolean }) {
   return (
     <section className={`rounded-xl ${llenar ? 'h-full flex flex-col' : ''}`} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-      <header className="flex items-center gap-2 px-4 py-2 border-b border-white/5"><h3 className="text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]">{titulo}</h3><span className="flex-1" />{derecha}</header>
+      <header className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5" style={{ background: 'linear-gradient(90deg,rgba(249,115,22,0.05),transparent 60%)' }}><h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#b4bccb]">{titulo}</h3><span className="flex-1" />{derecha}</header>
       <div className={llenar ? 'p-3 flex-1 min-h-0 flex flex-col' : 'p-3'}>{children}</div>
     </section>)
 }
