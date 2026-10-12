@@ -119,8 +119,66 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
 
       {/* Lo que falta para cerrar la fase (65 %) junto al lead (35 %) */}
       <div className={`grid grid-cols-1 gap-4 ${data.lead?.id && fase.bloque === 'PREVENTA' ? 'items-stretch lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)] lg:min-h-[250px]' : 'items-start'}`}>
-        <Seccion titulo={`Entregables obligatorios (${(fase.requeridos ?? []).filter(r => r.ok).length}/${(fase.requeridos ?? []).length})`}>
-          <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
+        <Seccion titulo={`${ultima ? 'Para cerrar el proyecto' : `Para pasar a ${siguiente?.nombre ?? 'la siguiente fase'}`} · ${(fase.requeridos ?? []).filter(r => r.ok).length + marcados}/${(fase.requeridos ?? []).length + fase.puerta.criterios.length}`}>
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Entregables obligatorios ({(fase.requeridos ?? []).filter(r => r.ok).length}/{(fase.requeridos ?? []).length})</p>
+              <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
+            </div>
+            <div className="border-t border-white/5 pt-3">
+              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Criterios de la puerta · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>
+                <div className="space-y-2">
+                  {fase.puerta.criterios.map((c, i) => (
+                    <label key={i} className={`flex items-start gap-2 text-[12px] ${puede ? 'cursor-pointer' : 'cursor-default'}`}>
+                      <input type="checkbox" checked={c.ok} disabled={!puede || ocupado} className="mt-0.5 accent-indigo-500" onChange={e => void accion('criterio', { fase: fase.clave, indice: i, ok: e.target.checked })} />
+                      <span className={c.ok ? 'text-gray-300' : 'text-gray-400'}>{c.texto}{c.ok && c.por && <span className="text-[10px] text-[#7f8a9c]"> — {c.por}{c.en ? `, ${hace(c.en)}` : ''}</span>}</span>
+                    </label>))}
+                  {!actual && data.iniciado && fase.estado === 'PENDIENTE' && <p className="text-[11px] text-[#7f8a9c]">Esta fase aún no empieza: sus criterios se marcan cuando sea la fase actual.</p>}
+                  {!data.puedeAprobar && actual && <p className="text-[11px] text-amber-300">Solo los administradores mueven las fases.</p>}
+
+                  {puede && (
+                    <div className="pt-2 space-y-2 border-t border-white/5">
+                      <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2} placeholder="Nota de la aprobación (opcional)"
+                        className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-400/50" />
+                      {data.esSuperadmin && !fase.puerta.cumplida && (
+                        <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
+                      {!esResultado && (
+                        <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { nota, forzar })}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-medium text-white disabled:opacity-40" style={{ background: '#6366f1' }}>
+                          {ocupado ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</button>)}
+                      {esResultado && (
+                        <div className="space-y-2">
+                          <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { resultado: 'GANADO', nota, forzar })}
+                            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-medium text-white disabled:opacity-40" style={{ background: '#059669' }}>
+                            {ocupado ? <Loader2 size={12} className="animate-spin" /> : <Trophy size={12} />} Venta ganada: convertir en proyecto</button>
+                          <p className="text-[10px] text-[#7f8a9c]">El lead queda ganado y esta misma solución (con su repositorio, MVP y PRD) pasa a ejecución. El PRD de preventa se guarda como versión 1.</p>
+                          {modo !== 'perdido'
+                            ? <button onClick={() => setModo('perdido')} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] text-red-300 border border-red-400/30 hover:bg-red-500/10"><XCircle size={12} /> Oportunidad perdida…</button>
+                            : (<div className="space-y-1.5">
+                              <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Motivo de la pérdida (obligatorio)" className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none" />
+                              <div className="flex gap-2">
+                                <button disabled={ocupado || !texto.trim()} onClick={() => void accion('avanzar', { resultado: 'PERDIDO', motivo: texto })} className="flex-1 py-2 rounded-lg text-[12px] text-white disabled:opacity-40" style={{ background: '#dc2626' }}>Cerrar como perdido</button>
+                                <button onClick={() => { setModo('ninguno'); setTexto('') }} className="px-3 py-2 rounded-lg text-[12px] text-gray-400 border border-white/10">Cancelar</button>
+                              </div>
+                            </div>)}
+                        </div>)}
+
+                      {opcionesVolver.length > 0 && (modo !== 'volver'
+                        ? <button onClick={() => { setModo('volver'); setVolverA(opcionesVolver[0]?.clave ?? '') }} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200"><Undo2 size={11} /> Volver a una fase anterior</button>
+                        : (<div className="space-y-1.5">
+                          <select value={volverA} onChange={e => setVolverA(e.target.value)} className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none">
+                            {opcionesVolver.map(o => <option key={o.clave} value={o.clave}>{o.numero}. {o.nombre}</option>)}</select>
+                          <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Motivo (obligatorio)" className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none" />
+                          <div className="flex gap-2">
+                            <button disabled={ocupado || !texto.trim() || !volverA} onClick={() => void accion('retroceder', { fase: volverA, motivo: texto })} className="flex-1 py-2 rounded-lg text-[12px] text-white disabled:opacity-40" style={{ background: '#d97706' }}>Volver a esa fase</button>
+                            <button onClick={() => { setModo('ninguno'); setTexto('') }} className="px-3 py-2 rounded-lg text-[12px] text-gray-400 border border-white/10">Cancelar</button>
+                          </div>
+                        </div>))}
+                    </div>)}
+                </div>
+
+            </div>
+          </div>
         </Seccion>
         {data.lead?.id && fase.bloque === 'PREVENTA' && (
           <div className="relative"><div className="lg:absolute lg:inset-0"><Seccion titulo="Del lead" llenar>
@@ -199,58 +257,6 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
         </div>
 
         <div className="space-y-4">
-          <Seccion titulo={`Puerta · aprueba: ${APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} (${marcados}/${fase.puerta.criterios.length})`}>
-            <div className="space-y-2">
-              {fase.puerta.criterios.map((c, i) => (
-                <label key={i} className={`flex items-start gap-2 text-[12px] ${puede ? 'cursor-pointer' : 'cursor-default'}`}>
-                  <input type="checkbox" checked={c.ok} disabled={!puede || ocupado} className="mt-0.5 accent-indigo-500" onChange={e => void accion('criterio', { fase: fase.clave, indice: i, ok: e.target.checked })} />
-                  <span className={c.ok ? 'text-gray-300' : 'text-gray-400'}>{c.texto}{c.ok && c.por && <span className="text-[10px] text-[#7f8a9c]"> — {c.por}{c.en ? `, ${hace(c.en)}` : ''}</span>}</span>
-                </label>))}
-              {!actual && data.iniciado && fase.estado === 'PENDIENTE' && <p className="text-[11px] text-[#7f8a9c]">Esta fase aún no empieza: sus criterios se marcan cuando sea la fase actual.</p>}
-              {!data.puedeAprobar && actual && <p className="text-[11px] text-amber-300">Solo los administradores mueven las fases.</p>}
-
-              {puede && (
-                <div className="pt-2 space-y-2 border-t border-white/5">
-                  <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2} placeholder="Nota de la aprobación (opcional)"
-                    className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-400/50" />
-                  {data.esSuperadmin && !fase.puerta.cumplida && (
-                    <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
-                  {!esResultado && (
-                    <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { nota, forzar })}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-medium text-white disabled:opacity-40" style={{ background: '#6366f1' }}>
-                      {ocupado ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</button>)}
-                  {esResultado && (
-                    <div className="space-y-2">
-                      <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { resultado: 'GANADO', nota, forzar })}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-medium text-white disabled:opacity-40" style={{ background: '#059669' }}>
-                        {ocupado ? <Loader2 size={12} className="animate-spin" /> : <Trophy size={12} />} Venta ganada: convertir en proyecto</button>
-                      <p className="text-[10px] text-[#7f8a9c]">El lead queda ganado y esta misma solución (con su repositorio, MVP y PRD) pasa a ejecución. El PRD de preventa se guarda como versión 1.</p>
-                      {modo !== 'perdido'
-                        ? <button onClick={() => setModo('perdido')} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] text-red-300 border border-red-400/30 hover:bg-red-500/10"><XCircle size={12} /> Oportunidad perdida…</button>
-                        : (<div className="space-y-1.5">
-                          <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Motivo de la pérdida (obligatorio)" className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none" />
-                          <div className="flex gap-2">
-                            <button disabled={ocupado || !texto.trim()} onClick={() => void accion('avanzar', { resultado: 'PERDIDO', motivo: texto })} className="flex-1 py-2 rounded-lg text-[12px] text-white disabled:opacity-40" style={{ background: '#dc2626' }}>Cerrar como perdido</button>
-                            <button onClick={() => { setModo('ninguno'); setTexto('') }} className="px-3 py-2 rounded-lg text-[12px] text-gray-400 border border-white/10">Cancelar</button>
-                          </div>
-                        </div>)}
-                    </div>)}
-
-                  {opcionesVolver.length > 0 && (modo !== 'volver'
-                    ? <button onClick={() => { setModo('volver'); setVolverA(opcionesVolver[0]?.clave ?? '') }} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200"><Undo2 size={11} /> Volver a una fase anterior</button>
-                    : (<div className="space-y-1.5">
-                      <select value={volverA} onChange={e => setVolverA(e.target.value)} className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none">
-                        {opcionesVolver.map(o => <option key={o.clave} value={o.clave}>{o.numero}. {o.nombre}</option>)}</select>
-                      <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Motivo (obligatorio)" className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none" />
-                      <div className="flex gap-2">
-                        <button disabled={ocupado || !texto.trim() || !volverA} onClick={() => void accion('retroceder', { fase: volverA, motivo: texto })} className="flex-1 py-2 rounded-lg text-[12px] text-white disabled:opacity-40" style={{ background: '#d97706' }}>Volver a esa fase</button>
-                        <button onClick={() => { setModo('ninguno'); setTexto('') }} className="px-3 py-2 rounded-lg text-[12px] text-gray-400 border border-white/10">Cancelar</button>
-                      </div>
-                    </div>))}
-                </div>)}
-            </div>
-          </Seccion>
-
           {historial.length > 0 && (
             <Seccion titulo="Historial de esta fase">
               <div className="space-y-1">
