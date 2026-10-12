@@ -156,9 +156,9 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
             </div>
           </Seccion>
 
-          <Seccion titulo="Dónde está lo de esta fase">
+          {fase.recursos.some(r => r.tipo !== 'LEAD_HUB' && r.tipo !== 'BACKLOG') && <Seccion titulo="Dónde está lo de esta fase">
             <div className="space-y-1.5">
-              {fase.recursos.map(r => {
+              {fase.recursos.filter(r => r.tipo !== 'LEAD_HUB' && r.tipo !== 'BACKLOG').map(r => {
                 const Icono = ICONO[r.tipo] ?? Folder
                 const n = NIVEL[r.nivel] ?? NIVEL.vacio
                 const cuerpo = (
@@ -182,11 +182,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
                 return <div key={r.etiqueta} className={cls} style={st}>{cuerpo}</div>
               })}
             </div>
-            <div className="mt-3">
-              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Todo lo que produce la fase (los obligatorios están arriba)</p>
-              <ul className="list-disc pl-5 text-[12px] text-gray-300 space-y-0.5">{fase.entregables.map(e => <li key={e}>{e}</li>)}</ul>
-            </div>
-          </Seccion>
+          </Seccion>}
         </div>
 
         <div className="space-y-4">
