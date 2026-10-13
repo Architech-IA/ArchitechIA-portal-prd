@@ -222,6 +222,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>
+                {(fase.requeridos ?? []).some(r => !r.ok) && <p className="text-[11px] text-[#9ca3af] mb-2 leading-snug">Cada sesión trabaja sobre los entregables que faltan: {(fase.requeridos ?? []).filter(r => !r.ok).map(r => r.titulo).join(' · ')}.</p>}
                 <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
               </div>
             </div>
