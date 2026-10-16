@@ -9,7 +9,6 @@ import SesionesDeFase from './SesionesDeFase'
 import LeadDeFase from './LeadDeFase'
 import NotasDeFase from './NotasDeFase'
 import EntregablesDeFase from './EntregablesDeFase'
-import FichaCliente from './FichaCliente'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
@@ -188,11 +187,6 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
 
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
-          {(fase.requeridos ?? []).some(r => r.tipo === 'ficha_cliente') && (
-            <Seccion titulo="Ficha del cliente">
-              <FichaCliente proyectoId={proyectoId} onCambio={onCambio} />
-            </Seccion>)}
-
           <Seccion titulo="Notas de la fase">
             <NotasDeFase key={`${proyectoId}-${fase.clave}`} proyectoId={proyectoId} clave={fase.clave} esPreventa={fase.bloque === 'PREVENTA'} soloLectura={!!data.iniciado && fase.estado === 'PENDIENTE'} />
           </Seccion>
