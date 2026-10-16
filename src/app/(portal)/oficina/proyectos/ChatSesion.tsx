@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { ETIQUETA_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import type { RolSesion } from './api'
-import { api, post, patch, del, fechaHora, kb, pctCache, type Mensaje, type SesionFull, type SesionRes, type Adjunto } from './api'
+import { api, post, put, patch, del, fechaHora, kb, pctCache, type Mensaje, type SesionFull, type SesionRes, type Adjunto } from './api'
 import { Md, opcionesNumeradas } from './Md'
 import PlanTareas from './PlanTareas'
 
@@ -138,6 +138,103 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   async function cambiar(data: Record<string, unknown>) {
     try { const s = await patch<SesionFull>(base, data); setFull(prev => (prev ? { ...prev, ...s } : prev)); onSesion({ ...(full as SesionFull), ...s }); onCambio() } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo actualizar') }
   }
+  // Lo que la IA dejó pendiente de confirmación desde esta sesión (notas tras consultar la web, tareas de backlog)
+  interface AccionIA { id: string; tipo: 'NOTA' | 'TAREAS' | 'PLAN' | 'EJECUCION_RED' | 'DESPLIEGUE'; titulo: string; payload: { comando?: string; nota?: string; migrar?: boolean; entorno?: string; rama?: string; revertir?: boolean; texto?: string; fase?: string; tareas?: { title: string; priority?: string }[]; epicas?: { nombre: string; inicio?: string | null; fin?: string | null }[]; sprints?: { nombre: string; epica?: string | null; tareas?: string[]; inicio?: string | null; fin?: string | null }[] }; motivo: string | null }
+  const [accionesIA, setAccionesIA] = useState<AccionIA[]>([])
+  const [accionOcupada, setAccionOcupada] = useState<string | null>(null)
+  const cargarAcciones = useCallback(() => {
+    api<AccionIA[]>(`/api/proyectos/${proyectoId}/acciones-ia?sesionId=${sesion.id}`).then(l => setAccionesIA(Array.isArray(l) ? l : [])).catch(() => setAccionesIA([]))
+  }, [proyectoId, sesion.id])
+  useEffect(() => { if (!generando) cargarAcciones() }, [generando, mensajes.length, cargarAcciones])
+  async function decidirAccion(a: AccionIA, accion: 'aplicar' | 'rechazar') {
+    setAccionOcupada(a.id); setError(null)
+    try { await post(`/api/proyectos/${proyectoId}/acciones-ia/${a.id}/decidir`, { accion }); cargarAcciones(); onCambio() }
+    catch (e) { setError(e instanceof Error ? e.message : 'No se pudo decidir') }
+    finally { setAccionOcupada(null) }
+  }
+  // Sesión de DESARROLLO: lo que la IA cambió en su rama; subir o descartar la rama es decisión humana (administrador)
+  interface EstadoDev { existe?: boolean; rama?: string; archivos?: string[]; stat?: string; commits?: string[]; capturas?: string[]; servicios?: string[]; tareas?: { taskCode: string | null; title: string; estado: string; sprintCode: string | null }[] }
+  const [devAbierto, setDevAbierto] = useState(false)
+  const [devEstado, setDevEstado] = useState<EstadoDev | null>(null)
+  const [devDiff, setDevDiff] = useState('')
+  const [varsPrueba, setVarsPrueba] = useState<string[] | null>(null)
+  const [varNombre, setVarNombre] = useState('')
+  const [varValor, setVarValor] = useState('')
+  async function guardarVariable() {
+    setDevOcupado(true); setDevMsg('')
+    try { const r = await put<{ nombres: string[] }>(`/api/proyectos/${proyectoId}/variables-prueba`, { nombre: varNombre.trim(), valor: varValor }); setVarsPrueba(r.nombres); setVarNombre(''); setVarValor(''); setDevMsg('Variable guardada. Sus valores no se vuelven a mostrar.') }
+    catch (e) { setDevMsg(e instanceof Error ? e.message : 'No se pudo guardar la variable') }
+    finally { setDevOcupado(false) }
+  }
+  async function quitarVariable(n: string) {
+    setDevOcupado(true); setDevMsg('')
+    try { const r = await del<{ nombres: string[] }>(`/api/proyectos/${proyectoId}/variables-prueba?nombre=${encodeURIComponent(n)}`); setVarsPrueba(r.nombres) }
+    catch (e) { setDevMsg(e instanceof Error ? e.message : 'No se pudo quitar la variable') }
+    finally { setDevOcupado(false) }
+  }
+  const [devOcupado, setDevOcupado] = useState(false)
+  const [devMsg, setDevMsg] = useState('')
+  async function cargarDev() {
+    setDevOcupado(true); setDevMsg('')
+    try {
+      setDevEstado(await post<EstadoDev>(`${base}/dev/estado`))
+      const d = await post<{ texto?: string }>(`${base}/dev/diff`).catch(() => ({ texto: '' }))
+      setDevDiff(d.texto ?? '')
+      api<{ nombres: string[] }>(`/api/proyectos/${proyectoId}/variables-prueba`).then(r => setVarsPrueba(r.nombres)).catch(() => setVarsPrueba(null))
+    } catch (e) { setDevMsg(e instanceof Error ? e.message : 'No se pudo leer el estado') }
+    finally { setDevOcupado(false) }
+  }
+  async function subirRama() {
+    if (!window.confirm('Se sube la rama de esta sesión a GitHub (no se fusiona nada). ¿Continuar?')) return
+    setDevOcupado(true); setDevMsg('')
+    try { const r = await post<{ urlPr?: string | null; rama?: string }>(`${base}/dev/subir`); setDevMsg(`Rama «${r.rama}» subida.${r.urlPr ? ' Abre el pull request aquí: ' + r.urlPr : ''}`) }
+    catch (e) { setDevMsg(e instanceof Error ? e.message : 'No se pudo subir la rama') }
+    finally { setDevOcupado(false) }
+  }
+  async function integrarSprint() {
+    if (!window.confirm('Se une la rama de esta sesión a la rama de integración del sprint (la misma que usa el ejecutor); el pull request del sprint sigue su camino de siempre. Si hay conflictos se aborta y el sprint queda como estaba. ¿Continuar?')) return
+    setDevOcupado(true); setDevMsg('')
+    try { const r = await post<{ texto?: string }>(`${base}/dev/integrar`); setDevMsg(r.texto ?? 'Rama integrada en el sprint.') }
+    catch (e) { setDevMsg(e instanceof Error ? e.message : 'No se pudo integrar en el sprint') }
+    finally { setDevOcupado(false) }
+  }
+  async function descartarRama() {
+    if (!window.confirm('Se borra el espacio de trabajo y la rama LOCAL de esta sesión (lo que no hayas subido se pierde). ¿Continuar?')) return
+    setDevOcupado(true); setDevMsg('')
+    try { await post(`${base}/dev/descartar`); setDevMsg('Espacio de trabajo descartado.'); await cargarDev() }
+    catch (e) { setDevMsg(e instanceof Error ? e.message : 'No se pudo descartar') }
+    finally { setDevOcupado(false) }
+  }
+  const [prdOcupado, setPrdOcupado] = useState(false)
+  // Borrador de nota para las notas de la fase: la IA lo redacta, la persona lo revisa y recién ahí se agrega.
+  const [notaBorrador, setNotaBorrador] = useState<{ fase: string; titulo: string; texto: string } | null>(null)
+  const [notaOcupada, setNotaOcupada] = useState(false)
+  async function proponerNota() {
+    setNotaOcupada(true); setError(null); setAviso(null)
+    try { setNotaBorrador(await post<{ fase: string; titulo: string; texto: string }>(`${base}/notas/proponer`)) }
+    catch (e) { setError(e instanceof Error ? e.message : 'No se pudo redactar la nota') }
+    finally { setNotaOcupada(false) }
+  }
+  async function guardarNota() {
+    if (!notaBorrador || !notaBorrador.texto.trim()) return
+    setNotaOcupada(true); setError(null)
+    try {
+      await post(`/api/proyectos/${proyectoId}/notas/${notaBorrador.fase}/agregar`, { titulo: notaBorrador.titulo, texto: notaBorrador.texto })
+      setNotaBorrador(null); setAviso('Nota agregada a «Notas de la fase» como una pestaña nueva. Lo que ya estaba no se tocó.'); onCambio()
+    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar la nota') }
+    finally { setNotaOcupada(false) }
+  }
+  // Genera el PRD con esta conversación y lo deja como propuesta en el artefacto: no se aplica hasta que alguien la acepta.
+  async function proponerPrd() {
+    if (!window.confirm('Se generará un borrador de PRD con esta conversación y el contexto del proyecto. Quedará como PROPUESTA en el artefacto PRD (no cambia nada hasta que alguien la acepte). Puede tardar 1–2 minutos. ¿Continuar?')) return
+    setPrdOcupado(true); setError(null); setAviso(null)
+    try {
+      const r = await post<{ requisitos: number; avisos?: string[] }>(`${base}/prd/proponer`)
+      setAviso(`PRD propuesto con ${r.requisitos} requisito(s). Ábrelo en Artefactos › PRD: ahí lo revisas y lo aceptas o lo rechazas.${r.avisos?.length ? ' ' + r.avisos.join(' ') : ''}`)
+      onCambio()
+    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo proponer el PRD') }
+    finally { setPrdOcupado(false) }
+  }
   async function cerrar() {
     const falta = (full?.cierre ?? sesion.cierre ?? []).filter(x => !x.ok).length
     if (!window.confirm((falta ? `Faltan ${falta} punto(s) de la lista de cierre. ` : '') + '¿Cerrar la sesión? Queda guardada completa; se generará un resumen y una propuesta de actualización de la memoria del proyecto.')) return
@@ -179,6 +276,20 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
             <button onClick={() => setPlan(true)} disabled={mensajes.length < 2 || generando} title="El coordinador propone tareas de backlog a partir de esta conversación"
               className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
               <ListPlus size={11} /> Convertir en tareas
+            </button>
+            {tipo === 'DESARROLLO' && (
+              <button onClick={() => { setDevAbierto(true); void cargarDev() }} title="Qué cambió la IA en su rama: archivos, commits y diff; subir o descartar la rama"
+                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
+                <GitBranch size={11} /> Desarrollo
+              </button>)}
+            {sesion.faseClave && (
+              <button onClick={() => void proponerNota()} disabled={mensajes.length < 2 || generando || notaOcupada} title="La IA redacta una nota con lo acordado en esta conversación; tú la revisas antes de agregarla a las notas de la fase"
+                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                {notaOcupada && !notaBorrador ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} Guardar en notas
+              </button>)}
+            <button onClick={() => void proponerPrd()} disabled={mensajes.length < 2 || generando || prdOcupado} title="Genera el PRD con esta conversación y lo deja como propuesta en el artefacto PRD (también puedes editarlo a mano desde Artefactos)"
+              className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.35)', color: '#fed7aa' }}>
+              {prdOcupado ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} {prdOcupado ? 'Generando PRD…' : 'Proponer PRD'}
             </button>
             <button onClick={() => void cerrar()} disabled={generando || mensajes.length === 0} title="Cerrar: resumen final y propuesta de memoria"
               className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-300 border border-white/10 hover:bg-white/5 disabled:opacity-40 flex-shrink-0"><CheckCircle2 size={11} /> Cerrar sesión</button>
@@ -327,6 +438,31 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
       {/* Compositor */}
       <div className="px-4 pb-3 pt-2 border-t border-white/5 flex-shrink-0">
         {error && <p className="text-[11px] text-red-400 mb-1.5 flex items-start gap-1.5"><AlertTriangle size={12} className="flex-shrink-0 mt-0.5" /><span className="flex-1">{error}</span><button onClick={() => setError(null)}><X size={11} /></button></p>}
+        {accionesIA.length > 0 && (
+          <div className="mb-2 space-y-1.5">
+            {accionesIA.map(a => (
+              <div key={a.id} className="rounded-lg px-3 py-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px dashed rgba(217,119,6,0.55)' }}>
+                <p className="text-[12px] text-amber-200 font-medium flex items-center gap-1.5"><Sparkles size={12} className="flex-shrink-0" />{a.tipo === 'NOTA' ? 'La IA quiere agregar una nota' : a.tipo === 'PLAN' ? 'La IA propone épicas y sprints' : a.tipo === 'EJECUCION_RED' ? 'La IA pide ejecutar un comando CON internet' : a.tipo === 'DESPLIEGUE' ? (a.payload.revertir ? 'La IA propone volver a la versión anterior de producción' : a.payload.entorno === 'pruebas' ? 'La IA propone levantar una copia de pruebas' : 'La IA propone desplegar a producción') : 'La IA propone tareas para el backlog'} · {a.titulo}</p>
+                {a.motivo && <p className="text-[10px] text-[#9ca3af] mt-0.5">{a.motivo}</p>}
+                {a.tipo === 'NOTA' && <p className="text-[11px] text-gray-300 mt-1 whitespace-pre-line line-clamp-5">{a.payload.texto}</p>}
+                {a.tipo === 'EJECUCION_RED' && <p className="text-[11px] text-gray-300 mt-1 font-mono break-all rounded px-2 py-1 bg-black/30">{a.payload.comando}</p>}
+                {a.tipo === 'DESPLIEGUE' && (<>
+                  <p className="text-[11px] text-gray-300 mt-1 whitespace-pre-line">{a.payload.nota}</p>
+                  <p className="text-[10px] text-amber-300 mt-1">{a.payload.revertir ? 'Se vuelve a la versión que había antes del último despliegue; si algo falla, la actual sigue en pie.' : a.payload.entorno === 'pruebas' ? `Copia aparte en otra URL, construida desde la rama «${a.payload.rama ?? 'main'}» (debe estar subida). Sin base de datos ni secretos de producción; producción no se toca.` : 'Se despliega solo lo que ya está fusionado en main; si algo falla, la versión anterior sigue en pie.'}{a.payload.migrar ? ' INCLUYE migraciones de la base de datos del proyecto.' : ''}</p>
+                </>)}
+                {a.tipo === 'PLAN' && (
+                  <ul className="text-[11px] text-gray-300 mt-1 list-disc pl-5">
+                    {(a.payload.epicas ?? []).map((e, i) => <li key={'e' + i}>Épica: {e.nombre}{e.inicio ? ` (${e.inicio}${e.fin ? ' → ' + e.fin : ''})` : ''}</li>)}
+                    {(a.payload.sprints ?? []).map((s, i) => <li key={'s' + i}>Sprint: {s.nombre}{s.epica ? ` · épica «${s.epica}»` : ''}{s.tareas?.length ? ` · ${s.tareas.length} tarea(s)` : ''}{s.inicio ? ` · ${s.inicio}${s.fin ? ' → ' + s.fin : ''}` : ''}</li>)}
+                  </ul>)}
+                {a.tipo === 'TAREAS' && <ul className="text-[11px] text-gray-300 mt-1 list-disc pl-5">{(a.payload.tareas ?? []).slice(0, 8).map((t, i) => <li key={i}>{t.title}</li>)}</ul>}
+                <div className="flex items-center gap-2 mt-2">
+                  <button disabled={accionOcupada === a.id} onClick={() => void decidirAccion(a, 'aplicar')} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg text-white disabled:opacity-40" style={{ background: 'rgba(16,185,129,0.7)' }}>{accionOcupada === a.id ? <Loader2 size={11} className="animate-spin" /> : null}{a.tipo === 'NOTA' ? 'Agregar nota' : a.tipo === 'PLAN' ? 'Crear el plan' : a.tipo === 'EJECUCION_RED' ? 'Ejecutar con internet' : a.tipo === 'DESPLIEGUE' ? (a.payload.revertir ? 'Volver a la anterior' : a.payload.entorno === 'pruebas' ? 'Levantar pruebas' : 'Desplegar') : 'Crear tareas'}</button>
+                  <button disabled={accionOcupada === a.id} onClick={() => void decidirAccion(a, 'rechazar')} className="text-[11px] px-2.5 py-1 rounded-lg text-gray-300 border border-white/10 disabled:opacity-40">Rechazar</button>
+                  <span className="text-[10px] text-[#7f8a9c]">{a.tipo === 'EJECUCION_RED' || a.tipo === 'DESPLIEGUE' ? 'Solo un administrador puede confirmar.' : 'Solo la persona asignada puede confirmar.'}</span>
+                </div>
+              </div>))}
+          </div>)}
         {aviso && <p className="text-[11px] text-amber-300 mb-1.5 flex items-start gap-1.5"><span className="flex-1">{aviso}</span><button onClick={() => setAviso(null)}><X size={11} /></button></p>}
         {adjuntos.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-1.5">
@@ -353,6 +489,81 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
         </div>
       </div>
 
+      {devAbierto && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => !devOcupado && setDevAbierto(false)}>
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.72)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', width: '100%', maxWidth: 820, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>Desarrollo · {devEstado?.rama ?? 'rama de la sesión'}</h2>
+              <button onClick={() => !devOcupado && setDevAbierto(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 30, height: 30 }}>×</button>
+            </div>
+            <div className="p-6 space-y-3 overflow-y-auto">
+              {devOcupado && !devEstado && <div className="flex justify-center py-6 text-[#7f8a9c]"><Loader2 size={16} className="animate-spin" /></div>}
+              {devEstado && devEstado.existe === false && <p className="text-[12px] text-[#9ca3af]">Esta sesión todavía no tiene espacio de trabajo: se crea cuando la IA usa su primera herramienta de código.</p>}
+              {devEstado?.existe && (<>
+                <p className="text-[11px] text-[#9ca3af] leading-snug">La IA solo escribe en esta rama. Nada llega a la rama principal hasta que alguien suba la rama y fusione el pull request.</p>
+                <div><p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Commits de la rama ({devEstado.commits?.length ?? 0})</p>
+                  <pre className="text-[11px] text-gray-300 whitespace-pre-wrap rounded-lg p-2 bg-black/30 border border-white/10">{devEstado.commits?.length ? devEstado.commits.join('\n') : 'Todavía ninguno.'}</pre></div>
+                <div><p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Cambios sin commit ({devEstado.archivos?.length ?? 0})</p>
+                  <pre className="text-[11px] text-gray-300 whitespace-pre-wrap rounded-lg p-2 bg-black/30 border border-white/10">{devEstado.archivos?.length ? devEstado.archivos.join('\n') : 'Ninguno.'}</pre></div>
+                {!!devEstado.tareas?.length && (
+                  <div><p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Tareas del backlog de esta sesión ({devEstado.tareas.length})</p>
+                    <ul className="text-[11px] text-gray-300 space-y-0.5 rounded-lg p-2 bg-black/30 border border-white/10">
+                      {devEstado.tareas.map((t, i) => <li key={i}>{t.taskCode ?? ''} · {t.title} — <span className={t.estado === 'DONE' ? 'text-emerald-300' : t.estado === 'FAILED' ? 'text-red-300' : 'text-amber-300'}>{t.estado === 'EN_CURSO' ? 'en curso' : t.estado}</span>{t.sprintCode ? ` · sprint ${t.sprintCode}` : ''}</li>)}
+                    </ul></div>)}
+                {!!devEstado.capturas?.length && (
+                  <div><p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Capturas de la verificación de la interfaz ({devEstado.capturas.length})</p>
+                    <div className="flex flex-wrap gap-2">
+                      {devEstado.capturas.map(n => (
+                        <a key={n} href={`${base}/dev/captura/${n}`} target="_blank" rel="noreferrer" title={n}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={`${base}/dev/captura/${n}`} alt={n} className="h-28 rounded-lg border border-white/10 hover:border-orange-400/60" />
+                        </a>))}
+                    </div></div>)}
+                {!!devEstado.servicios?.length && (
+                  <div><p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Servicios en marcha ({devEstado.servicios.length})</p>
+                    <p className="text-[11px] text-gray-300">{devEstado.servicios.join(' · ')} <span className="text-[#7f8a9c]">(red interna, sin internet; se retiran solos a las 3 horas)</span></p></div>)}
+                {varsPrueba !== null && (
+                  <div><p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1">Variables de prueba ({varsPrueba.length}) · solo administradores</p>
+                    <p className="text-[10px] text-[#7f8a9c] mb-1.5 leading-snug">Valores de PRUEBA (nunca de producción) que llegan como variables de entorno a los comandos y a la aplicación. La IA ve solo los nombres, y los valores se ocultan en la salida de sus comandos.</p>
+                    <div className="flex flex-wrap gap-1.5 mb-2">{varsPrueba.map(n => <span key={n} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-200">{n}<button onClick={() => void quitarVariable(n)} disabled={devOcupado} title="Quitar" aria-label={`Quitar ${n}`} className="text-[#7f8a9c] hover:text-red-300"><X size={10} /></button></span>)}</div>
+                    <div className="flex items-center gap-2">
+                      <input value={varNombre} onChange={e => setVarNombre(e.target.value.toUpperCase())} placeholder="NOMBRE_DE_LA_VARIABLE" maxLength={60} className="rounded-lg px-2 py-1 text-[11px] text-gray-100 bg-black/30 border border-white/10 outline-none w-52" />
+                      <input type="password" value={varValor} onChange={e => setVarValor(e.target.value)} placeholder="valor de prueba" autoComplete="off" className="rounded-lg px-2 py-1 text-[11px] text-gray-100 bg-black/30 border border-white/10 outline-none flex-1 min-w-0" />
+                      <button onClick={() => void guardarVariable()} disabled={devOcupado || !varNombre.trim() || !varValor} className="text-[11px] px-2.5 py-1 rounded-lg text-white disabled:opacity-40" style={{ background: 'rgba(16,185,129,0.7)' }}>Guardar</button>
+                    </div></div>)}
+                {devDiff && <details><summary className="text-[11px] text-indigo-300 cursor-pointer">Ver el diff completo</summary><pre className="text-[11px] text-gray-300 whitespace-pre-wrap rounded-lg p-2 mt-1 bg-black/30 border border-white/10 max-h-72 overflow-auto">{devDiff}</pre></details>}
+              </>)}
+              {devMsg && <p className="text-[12px] text-amber-300 break-words">{devMsg}</p>}
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-white/10">
+              <button onClick={() => void cargarDev()} disabled={devOcupado} className="text-[12px] px-3 py-1.5 rounded-lg text-gray-300 border border-white/10 disabled:opacity-40">Actualizar</button>
+              <button onClick={() => void descartarRama()} disabled={devOcupado || !devEstado?.existe} className="text-[12px] px-3 py-1.5 rounded-lg text-red-300 border border-red-500/30 disabled:opacity-40">Descartar espacio</button>
+              {!!devEstado?.tareas?.some(t => t.estado === 'DONE' && t.sprintCode) && (
+                <button onClick={() => void integrarSprint()} disabled={devOcupado || !devEstado?.existe} title="Une la rama a la rama de integración del sprint; solo un administrador" className="text-[12px] px-3 py-1.5 rounded-lg text-orange-200 border border-orange-500/40 disabled:opacity-40">Integrar en el sprint</button>)}
+              <button onClick={() => void subirRama()} disabled={devOcupado || !devEstado?.existe || !(devEstado?.commits?.length)} title="Sube la rama a GitHub; solo un administrador" className="flex items-center gap-1.5 text-[12px] px-4 py-1.5 rounded-lg text-white font-semibold disabled:opacity-40" style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>
+                {devOcupado ? <Loader2 size={12} className="animate-spin" /> : <GitBranch size={12} />} Subir rama</button>
+            </div>
+          </div>
+        </div>)}
+      {notaBorrador && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => !notaOcupada && setNotaBorrador(null)}>
+          <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.72)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', width: '100%', maxWidth: 640, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#f1f5f9', margin: 0 }}>Nota para las notas de la fase</h2>
+              <button onClick={() => !notaOcupada && setNotaBorrador(null)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 30, height: 30 }}>×</button>
+            </div>
+            <div className="p-6 space-y-3 overflow-y-auto">
+              <p className="text-[11px] text-[#9ca3af] leading-snug">La IA redactó esto con lo hablado en la sesión. Revísalo y corrígelo: se agrega como una pestaña nueva en las notas de la fase y no cambia lo que ya está escrito.</p>
+              <input value={notaBorrador.titulo} onChange={e => setNotaBorrador({ ...notaBorrador, titulo: e.target.value })} maxLength={60} placeholder="Título de la pestaña" className="w-full rounded-lg px-3 py-2 text-[13px] text-gray-100 bg-black/30 border border-white/10 outline-none focus:border-orange-500/50" />
+              <textarea value={notaBorrador.texto} onChange={e => setNotaBorrador({ ...notaBorrador, texto: e.target.value })} rows={14} className="w-full rounded-lg px-3 py-2 text-[12px] leading-relaxed text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-orange-500/50 resize-y" />
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-white/10">
+              <button onClick={() => setNotaBorrador(null)} disabled={notaOcupada} className="text-[12px] px-3 py-1.5 rounded-lg text-gray-300 border border-white/10 disabled:opacity-40">Descartar</button>
+              <button onClick={() => void guardarNota()} disabled={notaOcupada || !notaBorrador.texto.trim()} className="flex items-center gap-1.5 text-[12px] px-4 py-1.5 rounded-lg text-white font-semibold disabled:opacity-40" style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>
+                {notaOcupada ? <Loader2 size={12} className="animate-spin" /> : null} Agregar a las notas</button>
+            </div>
+          </div>
+        </div>)}
       {plan && <PlanTareas proyectoId={proyectoId} sesionId={sesion.id} onCerrar={() => setPlan(false)} onAplicado={() => { setPlan(false); void api<{ mensajes: Mensaje[] }>(`${base}?desde=${encodeURIComponent(new Date(Date.now() - 60_000).toISOString())}`).then(r => merge(r.mensajes)); onCambio() }} />}
     </div>
   )

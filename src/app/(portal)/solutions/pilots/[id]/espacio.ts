@@ -55,11 +55,33 @@ export function posicionLibre(nodos: { y: number }[]): { x: number; y: number } 
 
 /** Resumen legible de lo que hace una propuesta. */
 export function resumenOps(p: Propuesta): string[] {
-  return p.ops.map(o => {
+  return p.ops.flatMap(o => {
+    if (o.op === 'reemplazar') {
+      const v = (o.valor ?? {}) as Record<string, unknown>
+      const largo = (k: string) => (Array.isArray(v[k]) ? (v[k] as unknown[]).length : 0)
+      const texto = ['resumenEjecutivo', 'problema', 'objetivoGeneral'].filter(k => typeof v[k] === 'string' && (v[k] as string).trim()).length
+      const listas = ['objetivosEspecificos', 'dentroDeAlcance', 'fueraDeAlcance', 'personas', 'requisitosNoFuncionales', 'metricas', 'riesgos', 'dependencias', 'supuestos', 'preguntasAbiertas'].filter(k => largo(k) > 0).length
+      return [`${largo('requisitos')} requisito(s) nuevos (los que ya existen se conservan)`, `${texto + listas} sección(es) del PRD se reemplazan por lo propuesto`]
+    }
+    return [resumenUna(o)]
+  })
+}
+
+function resumenUna(o: Propuesta['ops'][number]): string {
+  {
+    if (o.op === 'agregar_fase' || o.op === 'editar_fase' || o.op === 'quitar_fase') {
+      const v = (o.valor ?? (o as { cambios?: Record<string, unknown> }).cambios ?? {}) as Record<string, unknown>
+      const f = v.fase ? `: ${String(v.fase).slice(0, 80)}` : ''
+      const fechas = v.fechaInicio || v.fechaFin ? ` (${v.fechaInicio ?? '…'} → ${v.fechaFin ?? '…'})` : ''
+      return o.op === 'agregar_fase' ? `Nueva fase${f}${fechas}` : o.op === 'quitar_fase' ? 'Quitar una fase del cronograma' : `Editar una fase${f}${fechas}`
+    }
+    if (o.op === 'establecer') {
+      return `${({ qa: 'Estrategia de QA', release: 'Estrategia de release', cambios: 'Gestión de cambios' } as Record<string, string>)[o.ruta ?? ''] ?? 'Texto'}: ${String(o.valor ?? '').slice(0, 90)}`
+    }
     if (o.op === 'desplazar') return `${o.dias! > 0 ? 'Correr' : 'Adelantar'} ${Math.abs(o.dias!)} día(s)${o.desdeId ? ' desde esa fase y sus dependientes' : ' las fases pendientes'}`
     const v = o.valor ?? {}
-    const nombre = (v.label ?? v.nombre ?? v.decision ?? v.sistema ?? v.tecnologia ?? '') as string
-    const que = ({ nodes: 'Componente', connections: 'Conexión', entidades: 'Entidad', stack: 'Stack', integraciones: 'Integración', decisiones: 'Decisión técnica' } as Record<string, string>)[o.ruta ?? ''] ?? 'Elemento'
+    const nombre = (v.label ?? v.nombre ?? v.decision ?? v.sistema ?? v.tecnologia ?? v.ambiente ?? v.actividad ?? v.que ?? '') as string
+    const que = ({ nodes: 'Componente', connections: 'Conexión', entidades: 'Entidad', stack: 'Stack', integraciones: 'Integración', decisiones: 'Decisión técnica', ambientes: 'Ambiente', raci: 'Responsabilidad (RACI)', comunicacion: 'Comunicación' } as Record<string, string>)[o.ruta ?? ''] ?? 'Elemento'
     return `${que}${nombre ? `: ${String(nombre).slice(0, 90)}` : ''}`
-  })
+  }
 }

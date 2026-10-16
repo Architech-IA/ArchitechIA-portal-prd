@@ -7,7 +7,9 @@ import {
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
+import { BarChart3 } from 'lucide-react'
 import ChatSesion from './ChatSesion'
+import ResumenProyecto from './ResumenProyecto'
 import PanelContexto from './PanelContexto'
 import PanelMemoria from './PanelMemoria'
 import PanelAdjuntos from './PanelAdjuntos'
@@ -60,6 +62,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [masAbierto, setMasAbierto] = useState(false)
   const [editorPlantillas, setEditorPlantillas] = useState(false)
   const [fichaAbierta, setFichaAbierta] = useState(false)
+  const [resumenAbierto, setResumenAbierto] = useState(false)
+  const [avisosN, setAvisosN] = useState(0)
   const [leadAbierto, setLeadAbierto] = useState(false)
   const [fichaAuto, setFichaAuto] = useState(0)
   // Escape cierra el diálogo abierto (ficha / lead)
@@ -80,6 +84,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [nueva, setNueva] = useState(false)
   const [vista, setVista] = useState<string>('asistente')
   const [fasesRes, setFasesRes] = useState<FasesRes | null>(null)
+  // Cuántos avisos abiertos tiene el proyecto (la insignia del botón «Resumen»)
+  useEffect(() => {
+    if (!pid) { setAvisosN(0); return }
+    let vivo = true
+    api<unknown[]>(`/api/proyectos/${pid}/alertas`).then(l => { if (vivo) setAvisosN(Array.isArray(l) ? l.length : 0) }).catch(() => { if (vivo) setAvisosN(0) })
+    return () => { vivo = false }
+  }, [pid, resumenAbierto])
   // Hub embebido: se monta al abrir el primer artefacto y se oculta (no se desmonta) al volver al chat para no perder lo que se está editando
   const [hubAbierto, setHubAbierto] = useState(false)
   const [tabArt, setTabArt] = useState<TabKey | null>(null)
@@ -203,6 +214,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
     <div className="px-hover flex h-full min-h-0 w-full">
       {editorPlantillas && <PlantillasFases onCerrar={() => setEditorPlantillas(false)} onCambio={refrescar} />}
       {nuevoProyecto && <NuevoProyecto onCerrar={() => setNuevoProyecto(false)} onCreado={id => { setNuevoProyecto(false); void cargarLista().then(() => elegirProyecto(id)) }} />}
+      {resumenAbierto && pid && <ResumenProyecto proyectoId={pid} fases={fasesRes} onCerrar={() => setResumenAbierto(false)} />}
       {leadAbierto && pid && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => setLeadAbierto(false)}>
           <div role="dialog" aria-modal="true" onClick={e => e.stopPropagation()} style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', padding: 28, width: '100%', maxWidth: 720, maxHeight: '92vh', overflowY: 'auto' }}>
@@ -323,6 +335,9 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
                     style={fichaResumen.ok === fichaResumen.total ? { background: 'rgba(16,185,129,0.14)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)' } : { background: 'rgba(245,158,11,0.14)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.3)' }}>
                     <Building2 size={11} className="flex-shrink-0" /><span className="truncate">{fichaResumen.nombre || 'Sin cliente'}</span><span className="opacity-80 flex-shrink-0">· {fichaResumen.ok}/{fichaResumen.total}</span></button>)}
                 <span className="flex-1" />
+                <button onClick={() => setResumenAbierto(true)} title="Resumen: avance, avisos y costo del proyecto" className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full flex-shrink-0"
+                  style={avisosN > 0 ? { background: 'rgba(245,158,11,0.14)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.3)' } : { background: 'rgba(255,255,255,0.05)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <BarChart3 size={11} /> Resumen{avisosN > 0 ? ` · ${avisosN}` : ''}</button>
                 <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución en su pantalla clásica"><ExternalLink size={11} /> Hub clásico</a>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>

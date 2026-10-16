@@ -14,9 +14,10 @@ import { FORMATO } from './formatos'
 interface Verifica { rol?: string; tipo: string; clave?: string; aprobado?: boolean; min_requisitos?: number | null; min?: number; hechas_min?: number; sin_fallidas?: boolean; estados?: string[]; nivel?: string }
 interface Requerido { clave: string; titulo: string; ayuda: string; formato: string; verifica: Verifica }
 interface Rol { clave: string; titulo: string; tipo: string; objetivo: string; artefactos: string[]; resultado: string; cierre: string[] }
-interface FaseEd { clave: string; numero: number; bloque: string; nombre: string; leadStatus: string | null; tipoPuerta: string; objetivo: string; aprobador: string; criterios: string[]; entregables: string[]; requeridos: Requerido[]; sesiones: Rol[] }
+interface Actividad { clave: string; titulo: string; tipo: string; area: string; backlogType: string; prioridad: string; descripcion: string; entregable?: string }
+interface FaseEd { clave: string; numero: number; bloque: string; nombre: string; leadStatus: string | null; tipoPuerta: string; objetivo: string; aprobador: string; criterios: string[]; entregables: string[]; requeridos: Requerido[]; sesiones: Rol[]; actividades: Actividad[] }
 interface Plantilla { codigo: string; nombre: string; modificada: boolean; version: number; actualizadoPor: string | null; actualizadoEn: string | null; efectiva: FaseEd[]; base: FaseEd[] }
-interface Catalogo { rolesFicha: string[]; formatosManuales: string[]; aprobadores: string[]; tiposVerificacion: string[]; tiposSesion: string[]; artefactos: string[]; estadosPropuesta: string[]; documentos: string[] }
+interface Catalogo { rolesFicha: string[]; formatosManuales: string[]; aprobadores: string[]; tiposVerificacion: string[]; tiposSesion: string[]; artefactos: string[]; estadosPropuesta: string[]; documentos: string[]; areas: string[]; tiposTarea: string[]; prioridades: string[] }
 interface Datos { puedeEditar: boolean; catalogo: Catalogo; plantillas: Plantilla[] }
 interface Hist { id: string; version: number; nota: string | null; usuario: string | null; en: string; fasesEditadas: number }
 
@@ -33,6 +34,8 @@ const AUTO_FORMATO: Record<string, string> = { lead_registrado: 'registro', fich
 const copia = <T,>(x: T): T => JSON.parse(JSON.stringify(x))
 const claveDe = (t: string) => (t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30) || 'nuevo') + '_' + Math.random().toString(36).slice(2, 5)
 const campo = 'w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-500/50 disabled:opacity-60'
+const TIPO_TAREA: Record<string, string> = { TASK: 'Tarea', FEATURE: 'Funcionalidad', IMPROVEMENT: 'Mejora', DOCUMENTACION: 'Documentación', TEST_QA: 'Pruebas / QA', INFRAESTRUCTURA: 'Infraestructura', DESARROLLO: 'Desarrollo' }
+const PRIORIDAD: Record<string, string> = { LOW: 'Baja', MEDIUM: 'Media', HIGH: 'Alta', CRITICAL: 'Crítica' }
 const etiqueta = 'block text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1'
 
 function ListaTextos({ valores, onCambio, vacio, deshabilitado, max = 12 }: { valores: string[]; onCambio: (v: string[]) => void; vacio: string; deshabilitado: boolean; max?: number }) {
@@ -75,6 +78,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
   const [faseSel, setFaseSel] = useState<string>('')
   const [borrador, setBorrador] = useState<Record<string, Record<string, FaseEd>>>({})
   const [nota, setNota] = useState('')
+  const [actualizarTareas, setActualizarTareas] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [hist, setHist] = useState<Hist[] | null>(null)
   const [abiertos, setAbiertos] = useState<string[]>([])
@@ -98,11 +102,12 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
     setBorrador(b => ({ ...b, [codigo]: { ...(b[codigo] ?? {}), [fase.clave]: { ...fase, ...parche } } }))
   }
   const cambiarReq = (i: number, r: Partial<Requerido>) => cambiar({ requeridos: (fase?.requeridos ?? []).map((x, j) => (j === i ? { ...x, ...r } : x)) })
+  const cambiarAct = (i: number, r: Partial<Actividad>) => cambiar({ actividades: (fase?.actividades ?? []).map((x, j) => (j === i ? { ...x, ...r } : x)) })
   const cambiarRol = (i: number, r: Partial<Rol>) => cambiar({ sesiones: (fase?.sesiones ?? []).map((x, j) => (j === i ? { ...x, ...r } : x)) })
 
   // Reordenar, duplicar y copiar entre fases (entregables y roles)
-  type Lista = 'requeridos' | 'sesiones'
-  const MAX: Record<Lista, number> = { requeridos: 8, sesiones: 4 }
+  type Lista = 'requeridos' | 'sesiones' | 'actividades'
+  const MAX: Record<Lista, number> = { requeridos: 8, sesiones: 4, actividades: 6 }
   function mover(k: Lista, i: number, d: -1 | 1) {
     if (!fase) return
     const a = [...fase[k]] as unknown[]; const j = i + d
@@ -112,7 +117,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
   }
   function duplicar(k: Lista, i: number) {
     if (!fase || fase[k].length >= MAX[k]) return
-    const a = [...fase[k]] as (Requerido | Rol)[]
+    const a = [...fase[k]] as (Requerido | Rol | Actividad)[]
     const o = copia(a[i]); o.clave = claveDe(o.titulo || 'copia'); o.titulo = (o.titulo || 'Sin título') + ' (copia)'
     a.splice(i + 1, 0, o)
     cambiar({ [k]: a } as Partial<FaseEd>)
@@ -123,7 +128,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
     const d = bor[destino] ?? plantilla.efectiva.find(f => f.clave === destino)
     if (!d) return
     if (d[k].length >= MAX[k]) { setError(`La fase «${d.nombre}» ya tiene el máximo (${MAX[k]}).`); return }
-    const o = copia((fase[k] as (Requerido | Rol)[])[i]); o.clave = claveDe(o.titulo || 'copia')
+    const o = copia((fase[k] as (Requerido | Rol | Actividad)[])[i]); o.clave = claveDe(o.titulo || 'copia')
     setError(''); setAviso(`Copiado a «${d.nombre}». Revísalo y guarda.`)
     setBorrador(b => ({ ...b, [codigo]: { ...(b[codigo] ?? {}), [destino]: { ...d, [k]: [...d[k], o] } } }))
   }
@@ -140,10 +145,10 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
     setGuardando(true); setError(''); setAviso('')
     try {
       const fases: Record<string, unknown> = {}
-      for (const k of sucias) { const f = bor[k]; fases[k] = { objetivo: f.objetivo, aprobador: f.aprobador, criterios: f.criterios, entregables: f.entregables, requeridos: f.requeridos, sesiones: f.sesiones } }
-      const r = await put<{ proyectosActualizados: number }>(`/api/fases/plantillas/${codigo}`, { fases, nota: nota.trim() || undefined })
+      for (const k of sucias) { const f = bor[k]; fases[k] = { objetivo: f.objetivo, aprobador: f.aprobador, criterios: f.criterios, entregables: f.entregables, requeridos: f.requeridos, sesiones: f.sesiones, actividades: f.actividades } }
+      const r = await put<{ proyectosActualizados: number; tareasActualizadas?: number }>(`/api/fases/plantillas/${codigo}`, { fases, nota: nota.trim() || undefined, actualizarTareas })
       setBorrador(b => ({ ...b, [codigo]: {} })); setNota(''); setHist(null)
-      setAviso(`Guardado. ${r.proyectosActualizados} proyecto(s) en marcha actualizado(s).`)
+      setAviso(`Guardado. ${r.proyectosActualizados} proyecto(s) en marcha actualizado(s)${actualizarTareas ? ` y ${r.tareasActualizadas ?? 0} tarea(s) en cola actualizada(s)` : ''}.`)
       await cargar(); onCambio()
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar') } finally { setGuardando(false) }
   }
@@ -258,7 +263,7 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                                 title={r.verifica.tipo === 'manual' ? 'Una persona lo marca y deja el enlace' : 'El sistema lo comprueba solo'}>{r.verifica.tipo === 'manual' ? 'La marca una persona' : 'Automática'}</span>
                               {!dis && <Acciones i={i} total={fase.requeridos.length} max={8} minimo={1} fases={plantilla.efectiva.filter(f => f.clave !== fase.clave)}
                                 onSubir={() => mover('requeridos', i, -1)} onBajar={() => mover('requeridos', i, 1)} onDuplicar={() => duplicar('requeridos', i)} onCopiar={d => copiarA('requeridos', i, d)}
-                                onQuitar={() => { if (window.confirm('¿Quitar este entregable? Las marcas manuales ya hechas dejan de contar.')) cambiar({ requeridos: fase.requeridos.filter((_, j) => j !== i) }) }} />}
+                                onQuitar={() => { if (window.confirm('¿Quitar este entregable? Las marcas manuales ya hechas dejan de contar.')) cambiar({ requeridos: fase.requeridos.filter((_, j) => j !== i), actividades: fase.actividades.map(a => (a.entregable === r.clave ? { ...a, entregable: undefined } : a)) }) }} />}
                             </div>
                             {!abierto && <button onClick={() => alternar(r.clave)} className="w-full text-left text-[11px] text-[#7f8a9c] truncate">▸ {FORMATO[r.formato] ?? r.formato} · {r.ayuda || 'Sin descripción'}</button>}
                             {abierto && (<div className="space-y-2">
@@ -308,6 +313,32 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
                   </div>
 
                   <div>
+                    <label className={etiqueta}>Actividades de la fase ({fase.actividades.length}/6)</label>
+                    <p className="text-[11px] text-[#7f8a9c] mb-2 leading-snug">Cada actividad se convierte en una tarea del Backlog cuando el proyecto entra en esta fase: las de agente las ejecuta el Motor y las de persona las hace el equipo. Un cambio aquí vale para las fases que todavía no han empezado; para las tareas ya creadas, marca la opción de abajo al guardar.</p>
+                    <div className="space-y-2.5">
+                      {fase.actividades.map((a, i) => (
+                        <div key={a.clave} className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgba(249,115,22,0.2)', color: '#fed7aa' }}>{i + 1}</span>
+                            <input value={a.titulo} disabled={dis} onChange={e => cambiarAct(i, { titulo: e.target.value })} placeholder="Título de la actividad" className={`${campo} !text-[13px] !font-semibold`} />
+                            <select value={a.tipo} disabled={dis} onChange={e => cambiarAct(i, { tipo: e.target.value })} title="Quién la hace" className={`${campo} !w-auto`}><option value="AGENTE">Agente (IA)</option><option value="HUMANA">Persona</option></select>
+                            {!dis && <Acciones i={i} total={fase.actividades.length} max={6} minimo={1} fases={plantilla.efectiva.filter(f => f.clave !== fase.clave)}
+                              onSubir={() => mover('actividades', i, -1)} onBajar={() => mover('actividades', i, 1)} onDuplicar={() => duplicar('actividades', i)} onCopiar={d => copiarA('actividades', i, d)}
+                              onQuitar={() => { if (window.confirm('¿Quitar esta actividad de la plantilla? Las tareas que ya existen en el Backlog no se borran.')) cambiar({ actividades: fase.actividades.filter((_, j) => j !== i) }) }} />}
+                          </div>
+                          <textarea value={a.descripcion} disabled={dis} onChange={e => cambiarAct(i, { descripcion: e.target.value })} rows={2} placeholder="Qué hay que hacer y cómo se sabe que está hecho" className={campo} />
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="flex items-center gap-1 text-[11px] text-gray-400">Área <select value={a.area} disabled={dis} onChange={e => cambiarAct(i, { area: e.target.value })} className={`${campo} !w-auto`}>{[...new Set([a.area, ...(cat.areas ?? [])])].map(x => <option key={x} value={x}>{x}</option>)}</select></label>
+                            <label className="flex items-center gap-1 text-[11px] text-gray-400">Tipo de tarea <select value={a.backlogType} disabled={dis} onChange={e => cambiarAct(i, { backlogType: e.target.value })} className={`${campo} !w-auto`}>{(cat.tiposTarea ?? []).map(x => <option key={x} value={x}>{TIPO_TAREA[x] ?? x}</option>)}</select></label>
+                            <label className="flex items-center gap-1 text-[11px] text-gray-400" title="El entregable obligatorio de la fase al que contribuye esta actividad: la vista de la fase los muestra juntos">Ayuda a cumplir <select value={a.entregable ?? ''} disabled={dis} onChange={e => cambiarAct(i, { entregable: e.target.value || undefined })} className={`${campo} !w-auto max-w-[220px]`}><option value="">— ninguno —</option>{fase.requeridos.map(r => <option key={r.clave} value={r.clave}>{r.titulo || r.clave}</option>)}</select></label>
+                            <label className="flex items-center gap-1 text-[11px] text-gray-400">Prioridad <select value={a.prioridad} disabled={dis} onChange={e => cambiarAct(i, { prioridad: e.target.value })} className={`${campo} !w-auto`}>{(cat.prioridades ?? []).map(x => <option key={x} value={x}>{PRIORIDAD[x] ?? x}</option>)}</select></label>
+                          </div>
+                        </div>))}
+                      {!dis && fase.actividades.length < 6 && <button onClick={() => cambiar({ actividades: [...fase.actividades, { clave: claveDe('actividad'), titulo: '', tipo: 'HUMANA', area: cat.areas?.[0] ?? 'Sales & Presales', backlogType: 'TASK', prioridad: 'MEDIUM', descripcion: '' }] })} className="flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200"><Plus size={11} /> Añadir actividad</button>}
+                    </div>
+                  </div>
+
+                  <div>
                     <label className={etiqueta}>Roles de sesión de la fase ({fase.sesiones.length}/4)</label>
                     <div className="space-y-2.5">
                       {fase.sesiones.map((r, i) => (
@@ -347,7 +378,8 @@ export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () =
 
         {datos && editable && (
           <div className="flex items-center gap-3 px-7 py-4 border-t border-white/10 flex-shrink-0">
-            <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Nota del cambio (opcional)" maxLength={300} className={`${campo} max-w-md`} />
+            <input value={nota} onChange={e => setNota(e.target.value)} placeholder="Nota del cambio (opcional)" maxLength={300} className={`${campo} max-w-sm`} />
+            <label className="flex items-center gap-1.5 text-[11px] text-gray-400 cursor-pointer flex-shrink-0" title="Cambia también las tareas del Backlog ya creadas a partir de estas actividades, pero SOLO las que siguen en cola y nadie ha editado. Las que están en curso, hechas o editadas no se tocan."><input type="checkbox" checked={actualizarTareas} onChange={e => setActualizarTareas(e.target.checked)} className="accent-orange-500" /> Actualizar también las tareas ya creadas (en cola y sin tocar)</label>
             <span className="flex-1 text-[11px]">{error ? <span className="text-red-300">{error}</span> : aviso ? <span className="text-emerald-300">{aviso}</span> : sucias.length > 0 ? <span className="text-amber-300">{sucias.length} fase(s) con cambios sin guardar</span> : ''}</span>
             <button disabled={sucias.length === 0 || guardando} onClick={() => setBorrador(b => ({ ...b, [codigo]: {} }))} className="text-[11px] px-3 py-1.5 rounded-lg text-gray-300 border border-white/10 disabled:opacity-40">Descartar</button>
             <button disabled={sucias.length === 0 || guardando} onClick={() => void guardar()} className="flex items-center gap-1.5 text-[12px] px-4 py-1.5 rounded-lg text-white font-semibold disabled:opacity-40" style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>

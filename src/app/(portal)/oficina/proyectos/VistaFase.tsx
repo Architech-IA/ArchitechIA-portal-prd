@@ -123,7 +123,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
           <div className="space-y-4">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Entregables obligatorios ({(fase.requeridos ?? []).filter(r => r.ok).length}/{(fase.requeridos ?? []).length})</p>
-              <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} />
+              <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} sesiones={sesiones} />
             </div>
             <div className="border-t border-white/5 pt-3">
               <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Criterios de la puerta · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>
@@ -211,6 +211,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
                         <div className="min-w-0 flex-1">
                           <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
                           <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}</p>
+                          {a.entregable && <p className="text-[10px] mt-0.5 leading-snug" style={{ color: a.entregable.ok ? '#6ee7b7' : '#fcd34d' }} title="El entregable obligatorio de la fase al que contribuye esta actividad">→ Ayuda a cumplir: {a.entregable.titulo} · {a.entregable.ok ? 'ya cumplido' : 'pendiente'}</p>}
                         </div>
                         {investigar && a.status !== 'DONE' && (
                           <button onClick={onInvestigarEmpresa} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}><Sparkles size={11} /> Investigar</button>)}

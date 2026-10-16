@@ -26,6 +26,11 @@ export interface SesionRes {
   createdAt: string; updatedAt: string; mensajes: number; mia: boolean
 }
 
+export interface ArchivoEntregable {
+  id: string; faseClave: string; entregableClave: string; titulo: string; nombre: string; mime: string; size: number; resumen: string | null
+  estado: 'BORRADOR' | 'ACEPTADO' | 'RECHAZADO'; sesionId: string | null; creadoPorNombre: string | null; revisadoPorNombre: string | null; revisadoEn: string | null; createdAt: string
+}
+
 export interface DetalleProyecto {
   proyecto: { id: string; nombre: string; tipo: string; estado: string; solucionCode: string | null; leadId: string | null; updatedAt: string }
   yo: { id: string; nombre: string }
@@ -73,7 +78,7 @@ export interface ResultadoBusqueda {
 
 // Motor de fases
 export interface FaseCriterio { texto: string; ok: boolean; por: string | null; en: string | null }
-export interface FaseActividadVista { clave: string; titulo: string; tipo: 'AGENTE' | 'HUMANA'; area: string; creada: boolean; backlogItemId: string | null; taskCode: string | null; status: string | null; assigneeName: string | null }
+export interface FaseActividadVista { clave: string; titulo: string; tipo: 'AGENTE' | 'HUMANA'; area: string; creada: boolean; backlogItemId: string | null; taskCode: string | null; status: string | null; assigneeName: string | null; entregable?: { clave: string; titulo: string; ok: boolean } | null }
 export interface RecursoFase { tipo: string; etiqueta: string; descripcion: string; estado: string; nivel: 'ok' | 'medio' | 'vacio' | 'aviso'; href: string | null; panel: string | null }
 export interface RequeridoFase {
   clave: string; titulo: string; ayuda: string | null; formato: string; tipo: string; ok: boolean; detalle: string; manual: boolean; artefacto: string | null

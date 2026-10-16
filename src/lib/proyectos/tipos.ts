@@ -1,6 +1,6 @@
 // Constantes y tipos compartidos (servidor y navegador) de Oficina > Proyectos.
 
-export const TIPOS_SESION = ['KICKOFF', 'PLANIFICACION', 'REVISION', 'LIBRE', 'BITACORA'] as const
+export const TIPOS_SESION = ['KICKOFF', 'PLANIFICACION', 'REVISION', 'LIBRE', 'DESARROLLO', 'BITACORA'] as const
 export type TipoSesion = (typeof TIPOS_SESION)[number]
 
 export const ETIQUETA_TIPO: Record<TipoSesion, string> = {
@@ -8,6 +8,7 @@ export const ETIQUETA_TIPO: Record<TipoSesion, string> = {
   PLANIFICACION: 'Planificación',
   REVISION: 'Revisión',
   LIBRE: 'Libre',
+  DESARROLLO: 'Desarrollo',
   BITACORA: 'Bitácora',
 }
 
@@ -16,6 +17,7 @@ export const DESCRIPCION_TIPO: Record<TipoSesion, string> = {
   PLANIFICACION: 'Coordinador: descompone el trabajo en tareas y las convierte en backlog.',
   REVISION: 'Revisa el estado: avance, contradicciones entre documentos, riesgos y acciones.',
   LIBRE: 'Conversación abierta sobre el proyecto, con todo su contexto.',
+  DESARROLLO: 'La IA programa en una rama propia del repositorio: edita, prueba y hace commit. Solo administradores.',
   BITACORA: 'Actividad automática del proyecto (suscripciones).',
 }
 
