@@ -6,7 +6,6 @@ import Link from '@/lib/BacklogLink'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import SesionesDeFase from './SesionesDeFase'
-import LeadDeFase from './LeadDeFase'
 import NotasDeFase from './NotasDeFase'
 import EntregablesDeFase from './EntregablesDeFase'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
@@ -116,8 +115,8 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
       {cerrado && <p className="text-[12px] rounded-lg px-3 py-2" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5' }}>{data.estado === 'COMPLETADO' ? 'El proyecto está completado.' : 'La oportunidad se cerró como perdida: las fases ya no se mueven.'}</p>}
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
-      {/* Lo que falta para cerrar la fase (65 %) junto al lead (35 %) */}
-      <div className={`grid grid-cols-1 gap-4 ${data.lead?.id && fase.bloque === 'PREVENTA' ? 'items-stretch lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)] lg:min-h-[250px]' : 'items-start'}`}>
+      {/* Lo que falta para cerrar la fase (65 %) junto al trabajo de la fase (35 %) */}
+      <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]`}>
         <Seccion titulo={`${ultima ? 'Para cerrar el proyecto' : `Para pasar a ${siguiente?.nombre ?? 'la siguiente fase'}`} · ${(fase.requeridos ?? []).filter(r => r.ok).length + marcados}/${(fase.requeridos ?? []).length + fase.puerta.criterios.length}`}>
           <div className="space-y-4">
             <div>
@@ -179,48 +178,43 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
             </div>
           </div>
         </Seccion>
-        {data.lead?.id && fase.bloque === 'PREVENTA' && (
-          <div className="relative"><div className="lg:absolute lg:inset-0"><Seccion titulo="Del lead" llenar>
-            <LeadDeFase key={`${data.lead.id}-${fase.clave}`} leadId={data.lead.id} clave={fase.clave} />
-          </Seccion></div></div>)}
+          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={<Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>}>
+         <div className="space-y-4">
+           <div>
+             <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
+             <div className="space-y-1.5">
+               {fase.actividades.items.map(a => {
+                 // «Investigar la empresa» es la consulta de la IA que completa la ficha del cliente
+                 const investigar = a.clave === 'ficha_cliente' && a.tipo === 'AGENTE' && !!onInvestigarEmpresa
+                 return (
+                   <div key={a.clave} className="flex items-start gap-2 rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                     {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
+                     <div className="min-w-0 flex-1">
+                       <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
+                       <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}</p>
+                       {a.entregable && <p className="text-[10px] mt-0.5 leading-snug" style={{ color: a.entregable.ok ? '#6ee7b7' : '#fcd34d' }} title="El entregable obligatorio de la fase al que contribuye esta actividad">→ Ayuda a cumplir: {a.entregable.titulo} · {a.entregable.ok ? 'ya cumplido' : 'pendiente'}</p>}
+                     </div>
+                     {investigar && a.status !== 'DONE' && (
+                       <button onClick={onInvestigarEmpresa} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}><Sparkles size={11} /> Investigar</button>)}
+                     <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={a.status === 'DONE' ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
+                       {a.creada ? `${ESTADO_TAREA[a.status ?? ''] ?? a.status}${a.taskCode ? ` · ${a.taskCode}` : ''}` : 'Aún no creada'}</span>
+                   </div>)
+               })}
+             </div>
+           </div>
+           <div>
+             <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>
+             {(fase.requeridos ?? []).some(r => !r.ok) && <p className="text-[11px] text-[#9ca3af] mb-2 leading-snug">Cada sesión trabaja sobre los entregables que faltan: {(fase.requeridos ?? []).filter(r => !r.ok).map(r => r.titulo).join(' · ')}.</p>}
+             <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
+           </div>
+         </div>
+          </Seccion>
       </div>
 
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
         <div className="space-y-4">
           <Seccion titulo="Notas de la fase">
             <NotasDeFase key={`${proyectoId}-${fase.clave}`} proyectoId={proyectoId} clave={fase.clave} esPreventa={fase.bloque === 'PREVENTA'} soloLectura={!!data.iniciado && fase.estado === 'PENDIENTE'} />
-          </Seccion>
-
-          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={<Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>}>
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
-                <div className="space-y-1.5">
-                  {fase.actividades.items.map(a => {
-                    // «Investigar la empresa» es la consulta de la IA que completa la ficha del cliente
-                    const investigar = a.clave === 'ficha_cliente' && a.tipo === 'AGENTE' && !!onInvestigarEmpresa
-                    return (
-                      <div key={a.clave} className="flex items-start gap-2 rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                        {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
-                          <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}</p>
-                          {a.entregable && <p className="text-[10px] mt-0.5 leading-snug" style={{ color: a.entregable.ok ? '#6ee7b7' : '#fcd34d' }} title="El entregable obligatorio de la fase al que contribuye esta actividad">→ Ayuda a cumplir: {a.entregable.titulo} · {a.entregable.ok ? 'ya cumplido' : 'pendiente'}</p>}
-                        </div>
-                        {investigar && a.status !== 'DONE' && (
-                          <button onClick={onInvestigarEmpresa} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}><Sparkles size={11} /> Investigar</button>)}
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={a.status === 'DONE' ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                          {a.creada ? `${ESTADO_TAREA[a.status ?? ''] ?? a.status}${a.taskCode ? ` · ${a.taskCode}` : ''}` : 'Aún no creada'}</span>
-                      </div>)
-                  })}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>
-                {(fase.requeridos ?? []).some(r => !r.ok) && <p className="text-[11px] text-[#9ca3af] mb-2 leading-snug">Cada sesión trabaja sobre los entregables que faltan: {(fase.requeridos ?? []).filter(r => !r.ok).map(r => r.titulo).join(' · ')}.</p>}
-                <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
-              </div>
-            </div>
           </Seccion>
 
           {fase.recursos.some(r => r.tipo !== 'LEAD_HUB' && r.tipo !== 'BACKLOG') && <Seccion titulo="Dónde está lo de esta fase">
