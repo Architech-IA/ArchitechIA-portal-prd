@@ -53,6 +53,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [nota, setNota] = useState('')
+  const [aprobarAbierto, setAprobarAbierto] = useState(false)
   const [forzar, setForzar] = useState(false)
   const [modo, setModo] = useState<'ninguno' | 'volver' | 'perdido'>('ninguno')
   const [texto, setTexto] = useState('')
@@ -99,7 +100,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
     setOcupado(true); setError(null)
     try {
       await post(`/api/proyectos/${proyectoId}/fases/${ruta}`, cuerpo)
-      setNota(''); setForzar(false); setModo('ninguno'); setTexto('')
+      setNota(''); setForzar(false); setModo('ninguno'); setTexto(''); setAprobarAbierto(false)
       onCambio()
     } catch (e) {
       const faltan = (e as { data?: { faltan?: string[] } }).data?.faltan
@@ -107,6 +108,18 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
     } finally { setOcupado(false) }
   }
 
+  // Marcar un criterio desde el popup no borra el comentario que se esté escribiendo
+  const marcarCriterio = async (indice: number, ok: boolean) => {
+    setOcupado(true); setError(null)
+    try { await post(`/api/proyectos/${proyectoId}/fases/criterio`, { fase: fase.clave, indice, ok }); onCambio() }
+    catch (e) { setError(e instanceof Error ? e.message : 'No se pudo marcar el criterio') } finally { setOcupado(false) }
+  }
+  useEffect(() => {
+    if (!aprobarAbierto) return
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape' && !ocupado) setAprobarAbierto(false) }
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [aprobarAbierto, ocupado])
   const estadoFase = !data.iniciado ? 'Sin iniciar' : fase.estado === 'HECHA' ? 'Hecha' : fase.estado === 'ACTUAL' ? 'Fase actual' : fase.estado === 'CERRADA' ? 'Cerrada: oportunidad perdida' : 'Pendiente'
   const colorEstado = fase.estado === 'HECHA' ? '#6ee7b7' : fase.estado === 'ACTUAL' ? '#a5b4fc' : fase.estado === 'CERRADA' ? '#fca5a5' : '#9ca3af'
 
@@ -170,15 +183,15 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
             <div>
               <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} sesiones={sesiones} />
             </div>
-            <div className="border-t border-white/5 pt-3">
-              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Criterios de la puerta · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>
+            <div className={esResultado || (puede && opcionesVolver.length > 0) || (!data.puedeAprobar && actual) ? 'border-t border-white/5 pt-3' : ''}>
+              {esResultado && <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Criterios de la puerta · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>}
                 <div className="space-y-2">
-                  {fase.puerta.criterios.map((c, i) => (
+                  {esResultado && fase.puerta.criterios.map((c, i) => (
                     <label key={i} className={`flex items-start gap-2 text-[12px] ${puede ? 'cursor-pointer' : 'cursor-default'}`}>
                       <input type="checkbox" checked={c.ok} disabled={!puede || ocupado} className="mt-0.5 accent-indigo-500" onChange={e => void accion('criterio', { fase: fase.clave, indice: i, ok: e.target.checked })} />
                       <span className={c.ok ? 'text-gray-300' : 'text-gray-400'}>{c.texto}{c.ok && c.por && <span className="text-[10px] text-[#7f8a9c]"> — {c.por}{c.en ? `, ${hace(c.en)}` : ''}</span>}</span>
                     </label>))}
-                  {!actual && data.iniciado && fase.estado === 'PENDIENTE' && <p className="text-[11px] text-[#7f8a9c]">Esta fase aún no empieza: sus criterios se marcan cuando sea la fase actual.</p>}
+                  {esResultado && !actual && data.iniciado && fase.estado === 'PENDIENTE' && <p className="text-[11px] text-[#7f8a9c]">Esta fase aún no empieza: sus criterios se marcan cuando sea la fase actual.</p>}
                   {!data.puedeAprobar && actual && <p className="text-[11px] text-amber-300">Solo los administradores mueven las fases.</p>}
 
                   {puede && (esResultado || opcionesVolver.length > 0) && (
@@ -289,11 +302,40 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
 .btn-aprobar:not(:disabled):active { transform: translateY(0); filter: brightness(1.02) !important; }
 .btn-aprobar:disabled { box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .btn-aprobar, .btn-aprobar:hover { transition: none; transform: none !important; } }`}</style>
-          {data.esSuperadmin && !fase.puerta.cumplida && (
-            <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
-          <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { nota, forzar })}
+          <button disabled={ocupado} onClick={() => setAprobarAbierto(true)}
             className="btn-aprobar w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed">
             {ocupado ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />} {ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</button>
+        </div>)}
+
+      {aprobarAbierto && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(20px)', padding: 16 }} onClick={() => !ocupado && setAprobarAbierto(false)}>
+          <div role="dialog" aria-modal="true" aria-label="Aprobar la fase" onClick={e => e.stopPropagation()}
+            style={{ background: 'rgba(15,23,42,0.55)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 24, backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', boxShadow: '0 8px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)', width: '100%', maxWidth: 540, padding: 28, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', margin: '-28px -28px 20px -28px', padding: '20px 28px', borderRadius: '24px 24px 0 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>{ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</h2>
+              <button onClick={() => !ocupado && setAprobarAbierto(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            </div>
+            <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-2">Criterios de la puerta · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>
+            <div className="space-y-2 mb-3">
+              {fase.puerta.criterios.map((c, i) => (
+                <label key={i} className="flex items-start gap-2 text-[13px] cursor-pointer">
+                  <input type="checkbox" checked={c.ok} disabled={ocupado} className="mt-1 accent-indigo-500" onChange={e => void marcarCriterio(i, e.target.checked)} />
+                  <span className={c.ok ? 'text-gray-200' : 'text-gray-400'}>{c.texto}{c.ok && c.por && <span className="text-[10px] text-[#7f8a9c]"> — {c.por}{c.en ? `, ${hace(c.en)}` : ''}</span>}</span>
+                </label>))}
+            </div>
+            {fase.puerta.entregablesOk === false && <p className="text-[11px] text-amber-300 mb-3">Faltan entregables por cumplir: míralos en el panel «Entregables».</p>}
+            <label className="block text-[11px] text-[#9ca3af] mb-1">Comentarios (opcional)</label>
+            <textarea value={nota} onChange={e => setNota(e.target.value)} rows={3} placeholder="Algo que quieras dejar escrito sobre esta aprobación…" className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-orange-400/50" />
+            {data.esSuperadmin && !fase.puerta.cumplida && (
+              <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer mt-3"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
+            {error && <p className="text-[11px] text-red-300 mt-3">{error}</p>}
+            <div className="flex items-center justify-end gap-2 mt-5">
+              <button disabled={ocupado} onClick={() => setAprobarAbierto(false)} className="px-4 py-2 rounded-xl text-[12px] text-gray-300 border border-white/10 disabled:opacity-40">Cancelar</button>
+              <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { nota, forzar })}
+                className="btn-aprobar flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed">
+                {ocupado ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {ultima ? 'Cerrar el proyecto' : 'Aprobar y pasar'}</button>
+            </div>
+          </div>
         </div>)}
     </div>
   )
