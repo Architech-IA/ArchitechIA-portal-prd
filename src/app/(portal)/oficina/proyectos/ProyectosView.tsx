@@ -17,6 +17,7 @@ import PanelAuto from './PanelAuto'
 import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
+import GaleriaProyectos from './GaleriaProyectos'
 import PlantillasFases from './PlantillasFases'
 import FichaCliente from './FichaCliente'
 import LeadRegistrado from './LeadRegistrado'
@@ -268,7 +269,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 .px-hover section { animation: px-entra .22s cubic-bezier(.22,1,.36,1) both; }
 @media (prefers-reduced-motion: reduce) { .px-hover *, .px-hover section { animation: none !important; transition: none !important; } }`}</style>
       {/* ── Columna A: proyectos ── */}
-      <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${listaAbierta || !pid ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
+      <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${pid && listaAbierta ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
         <div className="px-3 pt-3 pb-2 flex-shrink-0">
           <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[11px] text-[#7f8a9c]">{lista.length}</span><span className="flex-1" />
             <button onClick={() => setNuevoProyecto(true)} title="Nuevo proyecto: registra el lead, crea el proyecto y arranca el motor" aria-label="Nuevo proyecto" className="text-[#7f8a9c] hover:text-gray-200"><Plus size={14} /></button>
@@ -314,11 +315,10 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
       {/* ── Columna B: sesiones + chat ── */}
       <div className="flex-1 min-w-0 flex flex-col">
         {!pid && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-2">
-            <FolderKanban size={30} className="text-indigo-400/60" />
-            <p className="text-sm text-gray-200 font-medium">Elige un proyecto</p>
-            <p className="text-[12px] text-[#7f8a9c] max-w-md">Cada proyecto es una Solución. Aquí tiene sus conversaciones con la IA — todas guardadas, con el contexto vivo del proyecto, su memoria, sus adjuntos y automatizaciones.</p>
-          </div>)}
+          <GaleriaProyectos proyectos={filtrada} cargando={cargandoLista} filtro={filtro} onFiltro={setFiltro} nat={filtroNat} onNat={setFiltroNat}
+            conteo={k => (k === 'todas' ? lista.length : lista.filter(p => p.naturaleza === k).length)} orden={orden} onOrden={o => setOrden(o as Orden)} ordenes={ORDENES}
+            onElegir={id => { setListaAbierta(false); elegirProyecto(id) }} onNuevo={() => setNuevoProyecto(true)} onPlantillas={() => setEditorPlantillas(true)}
+            espera={esperaAprobacion} color={colorFase} texto={textoFase} />)}
 
         {pid && (
           <>
