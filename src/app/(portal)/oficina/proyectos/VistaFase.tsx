@@ -181,7 +181,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
                   {!actual && data.iniciado && fase.estado === 'PENDIENTE' && <p className="text-[11px] text-[#7f8a9c]">Esta fase aún no empieza: sus criterios se marcan cuando sea la fase actual.</p>}
                   {!data.puedeAprobar && actual && <p className="text-[11px] text-amber-300">Solo los administradores mueven las fases.</p>}
 
-                  {puede && (
+                  {puede && (esResultado || opcionesVolver.length > 0) && (
                     <div className="pt-2 space-y-2 border-t border-white/5">
                       {data.esSuperadmin && !fase.puerta.cumplida && esResultado && (
                         <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
