@@ -78,6 +78,10 @@ export default function MotorView() {
   const [iniAbierta, setIniAbierta] = useState(false)
   const [ini, setIni] = useState(INICIATIVA_VACIA)
   const [natCartera, setNatCartera] = useState<'todas' | Naturaleza>('todas')
+  const [tiposInternos, setTiposInternos] = useState<{ clave: string; etiqueta: string }[]>([{ clave: 'PRODUCT', etiqueta: 'Producto propio' }, { clave: 'INTERN', etiqueta: 'Mejora o herramienta interna' }])
+  useEffect(() => {
+    api<{ clave: string; etiqueta: string; naturaleza: string }[]>('/api/tipos-proyecto').then(l => { const i = Array.isArray(l) ? l.filter(t => t.naturaleza === 'INTERNO') : []; if (i.length) setTiposInternos(i) }).catch(() => { /* se queda con los dos de siempre */ })
+  }, [])
   const [form, setForm] = useState(FORM_VACIO)
   const [usuarios, setUsuarios] = useState<{ id: string; name: string }[]>([])
   const [guardando, setGuardando] = useState(false)
@@ -335,7 +339,7 @@ export default function MotorView() {
             <div className="grid grid-cols-2 gap-3">
               <label className="text-[11px] text-[#9ca3af] col-span-2">Nombre *<input required value={ini.nombre} onChange={e => setIni({ ...ini, nombre: e.target.value })} className={inputCls} /></label>
               <label className="text-[11px] text-[#9ca3af]">Tipo
-                <select value={ini.tipo} onChange={e => setIni({ ...ini, tipo: e.target.value })} className={inputCls}><option value="PRODUCT">Producto propio</option><option value="INTERN">Mejora o herramienta interna</option></select></label>
+                <select value={ini.tipo} onChange={e => setIni({ ...ini, tipo: e.target.value })} className={inputCls}>{tiposInternos.map(t => <option key={t.clave} value={t.clave}>{t.etiqueta}</option>)}</select></label>
               <label className="text-[11px] text-[#9ca3af]">Dueño<input value={ini.duenio} onChange={e => setIni({ ...ini, duenio: e.target.value })} placeholder="Quién responde por el resultado" className={inputCls} /></label>
               <label className="text-[11px] text-[#9ca3af] col-span-2">Problema *<textarea required rows={3} value={ini.problema} onChange={e => setIni({ ...ini, problema: e.target.value })} placeholder="Qué problema resuelve, a quién afecta y cómo se resuelve hoy" className={inputCls} /></label>
               <label className="text-[11px] text-[#9ca3af]">Beneficio esperado<input value={ini.beneficioTexto} onChange={e => setIni({ ...ini, beneficioTexto: e.target.value })} placeholder="Ej: ahorra 10 h/semana" className={inputCls} /></label>

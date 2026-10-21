@@ -10,7 +10,8 @@ import CouncilView from './CouncilView'
 import ProyectosView from './proyectos/ProyectosView'
 import MotorView from './motor/MotorView'
 import CostosView from './costos/CostosView'
-import { Coins, LayoutTemplate } from 'lucide-react'
+import { Coins, LayoutTemplate, Tag } from 'lucide-react'
+import TiposView from './tipos/TiposView'
 // Migrado desde /backlog (antes item propio del sidebar principal) a
 // subpage de Oficina — se reusa el componente real tal cual, sin duplicar
 // logica ni perder ninguna funcion.
@@ -103,9 +104,9 @@ const ETIQUETA_SOL: Record<(typeof TABS_SOLUTIONS)[number], string> = { producto
 const TABS_BACKLOG = ['sprint', 'epics', 'solution', 'control'] as const
 const ETIQUETA_TAB: Record<(typeof TABS_BACKLOG)[number], string> = { sprint: 'Sprint', epics: 'Épicas', solution: 'Solution', control: 'Sala de Control' }
 
-type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos' | 'motor' | 'costos'
-const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos', 'motor', 'costos'] as const
-const ETIQUETA_VISTA: Record<(typeof VISTAS)[number], string> = { agentes: 'Agents', directory: 'Directory', backlog: 'Backlog', solutions: 'Solutions', proyectos: 'Proyectos', motor: 'Motor', costos: 'Costos' }
+type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos' | 'motor' | 'costos' | 'tipos'
+const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos', 'motor', 'costos', 'tipos'] as const
+const ETIQUETA_VISTA: Record<(typeof VISTAS)[number], string> = { agentes: 'Agents', directory: 'Directory', backlog: 'Backlog', solutions: 'Solutions', proyectos: 'Proyectos', motor: 'Motor', costos: 'Costos', tipos: 'Tipos de proyecto' }
 /** La vista elegida vive en la URL (?view=backlog…): se puede recargar, compartir el enlace y volver con "Atrás". */
 const vistaDeUrl = (v: string | null): Vista => ((VISTAS as readonly string[]).includes(v ?? '') ? (v as Vista) : 'motor')
 
@@ -335,6 +336,7 @@ function OficinaPageInner() {
             </button>)}
           {configOpen && itemVista('agentes', Bot)}
           {configOpen && itemVista('directory', Network)}
+          {configOpen && itemVista('tipos', Tag)}
           {configOpen && itemVista('solutions', Package)}
         </div>
       </div>
@@ -777,6 +779,12 @@ function OficinaPageInner() {
           /* ── MOTOR ── portada del motor agéntico: cartera, aprobaciones, agentes y costo */
           <div className="flex-1 min-h-0 overflow-hidden">
             <MotorView />
+          </div>
+
+        ) : sideView === 'tipos' ? (
+          /* ── TIPOS DE PROYECTO ── la lista que se elige en la cabecera del proyecto */
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <TiposView />
           </div>
 
         ) : sideView === 'costos' ? (
