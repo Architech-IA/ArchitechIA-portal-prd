@@ -46,7 +46,7 @@ const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: 
 
 // Oficina Virtual > Proyectos. Proyecto = Solución. Cada proyecto tiene sesiones (conversaciones con
 // la IA) TODAS persistentes, con contexto vivo y exacto, memoria propia, adjuntos y automatizaciones.
-export default function ProyectosView({ initialProyectoId, initialArtefacto, abrirPlantillas }: { initialProyectoId?: string | null; initialArtefacto?: string | null; abrirPlantillas?: boolean }) {
+export default function ProyectosView({ initialProyectoId, initialArtefacto, abrirPlantillas, onAbrirProyecto, onVolverGaleria }: { initialProyectoId?: string | null; initialArtefacto?: string | null; abrirPlantillas?: boolean; onAbrirProyecto?: () => void; onVolverGaleria?: () => void }) {
   const [lista, setLista] = useState<ProyectoLista[]>([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
@@ -59,6 +59,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
   const [sesionFull, setSesionFull] = useState<SesionFull | null>(null)
   const [panel, setPanel] = useState<Panel>('artefactos')
   const [panelAbierto, setPanelAbierto] = useState(true)
+  // Sin proyecto abierto (la galería) el menú de Oficina vuelve a verse; al abrir uno desde una tarjeta se pliegan el menú y el panel derecho
+  useEffect(() => { if (!pid) onVolverGaleria?.() }, [pid]) // eslint-disable-line react-hooks/exhaustive-deps
   const [masAbierto, setMasAbierto] = useState(false)
   const [editorPlantillas, setEditorPlantillas] = useState(!!abrirPlantillas)
   const [plantillasIni, setPlantillasIni] = useState<{ codigo: string; fase: string } | null>(null)
@@ -282,7 +284,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
         {!pid && (
           <GaleriaProyectos proyectos={filtrada} cargando={cargandoLista} filtro={filtro} onFiltro={setFiltro} nat={filtroNat} onNat={setFiltroNat}
             conteo={k => (k === 'todas' ? lista.length : lista.filter(p => p.naturaleza === k).length)} orden={orden} onOrden={o => setOrden(o as Orden)} ordenes={ORDENES}
-            onElegir={elegirProyecto} onNuevo={() => setNuevoProyecto(true)} onPlantillas={() => setEditorPlantillas(true)}
+            onElegir={id => { setPanelAbierto(false); onAbrirProyecto?.(); elegirProyecto(id) }} onNuevo={() => setNuevoProyecto(true)} onPlantillas={() => setEditorPlantillas(true)}
             espera={esperaAprobacion} color={colorFase} texto={textoFase} />)}
 
         {pid && (
