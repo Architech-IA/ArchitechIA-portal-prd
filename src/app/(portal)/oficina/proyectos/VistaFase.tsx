@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network, Sparkles, Settings } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Loader2, Check, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network, Sparkles, Settings } from 'lucide-react'
 import Link from '@/lib/BacklogLink'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
-import SesionesDeFase from './SesionesDeFase'
+import FaseSesiones from './FaseSesiones'
 import NotasDeFase from './NotasDeFase'
 import EntregablesDeFase from './EntregablesDeFase'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
@@ -22,7 +22,6 @@ const ACCION: Record<string, string> = {
   INICIO: 'Inició el motor de fases', AVANCE: 'Avanzó de fase', RETROCESO: 'Volvió a una fase anterior', SINCRONIZADO: 'Fase ajustada por el lead',
   VENTA_CONFIRMADA: 'Venta confirmada: pasa a ejecución', VENTA_PERDIDA: 'Oportunidad perdida', COMPLETADO: 'Proyecto completado',
 }
-const ESTADO_TAREA: Record<string, string> = { BACKLOG: 'En cola', IN_PROGRESS: 'En curso', DONE: 'Hecha', FAILED: 'Fallida', BLOCKED: 'Bloqueada', CANCELLED: 'Cancelada' }
 const NIVEL: Record<string, { color: string; fondo: string }> = {
   ok: { color: '#6ee7b7', fondo: 'rgba(16,185,129,0.14)' }, medio: { color: '#fcd34d', fondo: 'rgba(245,158,11,0.14)' },
   vacio: { color: '#9ca3af', fondo: 'rgba(255,255,255,0.07)' }, aviso: { color: '#fdba74', fondo: 'rgba(249,115,22,0.14)' },
@@ -43,8 +42,9 @@ function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derech
     </section>)
 }
 
-export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
+export default function VistaFase({ sidActiva, onElegirSesion, renderChat, onAbrirPlantillas, proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
   onAbrirFicha?: () => void; onAbrirLead?: () => void; onInvestigarEmpresa?: () => void; onAbrirPlantillas?: (fase: string) => void
+  sidActiva?: string | null; onElegirSesion?: (id: string) => void; renderChat?: (s: SesionRes) => React.ReactNode
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
@@ -62,6 +62,10 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
   const cerrado = !!data.iniciado && data.estado !== 'EN_CURSO'
   const actual = !!data.iniciado && fase.clave === data.faseActual && !cerrado
   const puede = data.puedeAprobar && actual
+  // La sesión que se ve en esta fase: la elegida si es de la fase; si no, la abierta más reciente
+  const activa = sesiones.find(x => x.id === sidActiva && x.faseClave === fase.clave && x.estado !== 'ARCHIVADA') ?? null
+  const abiertaReciente = [...sesiones].filter(x => x.faseClave === fase.clave && x.estado === 'ACTIVA').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.id
+  useEffect(() => { if (!activa && abiertaReciente) onElegirSesion?.(abiertaReciente) }, [fase.clave, abiertaReciente]) // eslint-disable-line react-hooks/exhaustive-deps
   // Lleva directo al editor de plantillas de fases, en la plantilla de este proyecto y en esta fase (solo los administradores pueden editarlas)
   const botonConfig = data.puedeAprobar && onAbrirPlantillas ? (
     <button onClick={() => onAbrirPlantillas(fase.clave)} title="Configurar los entregables, los criterios y las actividades de esta fase (plantillas de fases)" aria-label="Configurar esta fase en las plantillas"
@@ -120,37 +124,17 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
       {/* Lo que falta para cerrar la fase (50 %) junto al trabajo de la fase (50 %) */}
-      <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-2`}>
-          <Seccion titulo="Trabajo de la fase" derecha={botonConfig}>
-         <div className="space-y-4">
-           <div>
-             <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
-             <div className="space-y-1.5">
-               {fase.actividades.items.map(a => {
-                 // «Investigar la empresa» es la consulta de la IA que completa la ficha del cliente
-                 const investigar = a.clave === 'ficha_cliente' && a.tipo === 'AGENTE' && !!onInvestigarEmpresa
-                 return (
-                   <div key={a.clave} className="flex items-start gap-2 rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                     {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
-                     <div className="min-w-0 flex-1">
-                       <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
-                       <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}</p>
-                     </div>
-                     {investigar && a.status !== 'DONE' && (
-                       <button onClick={onInvestigarEmpresa} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}><Sparkles size={11} /> Investigar</button>)}
-                     <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={a.status === 'DONE' ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                       {a.creada ? `${ESTADO_TAREA[a.status ?? ''] ?? a.status}${a.taskCode ? ` · ${a.taskCode}` : ''}` : 'Aún no creada'}</span>
-                   </div>)
-               })}
-             </div>
-           </div>
-           <div>
-             <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>
-             {(fase.requeridos ?? []).some(r => !r.ok) && <p className="text-[11px] text-[#9ca3af] mb-2 leading-snug">Cada sesión trabaja sobre los entregables que faltan: {(fase.requeridos ?? []).filter(r => !r.ok).map(r => r.titulo).join(' · ')}.</p>}
-             <SesionesDeFase fase={fase} sesiones={sesiones} creando={creandoRol} onIniciar={onIniciarSesion} onAbrirSesion={onAbrirSesion} onAbrirArtefacto={onAbrirArtefacto} />
-           </div>
-         </div>
-          </Seccion>
+      <FaseSesiones fase={fase} sesiones={sesiones} creando={creandoRol} activaId={sidActiva ?? null} onIniciar={onIniciarSesion} onElegir={id => onElegirSesion?.(id)} onInvestigar={onInvestigarEmpresa} config={botonConfig} />
+
+      <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]`}>
+        <section className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', height: 620 }}>
+          {activa && renderChat ? <div className="flex-1 min-h-0">{renderChat(activa)}</div> : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-3">
+              <p className="text-[13px] text-gray-200 font-medium">Elige una sesión de la fase o inicia una</p>
+              <p className="text-[11px] text-[#7f8a9c] max-w-sm leading-snug">Cada sesión trabaja sobre lo que falta en los entregables. Lo que la IA proponga te llega aquí para que lo aceptes.</p>
+              {(fase.sesiones ?? [])[0] && <button disabled={creandoRol === (fase.sesiones ?? [])[0].clave} onClick={() => onIniciarSesion((fase.clave), (fase.sesiones ?? [])[0].clave)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] text-white disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.8)' }}>{creandoRol === (fase.sesiones ?? [])[0].clave ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Iniciar «{(fase.sesiones ?? [])[0].titulo}»</button>}
+            </div>)}
+        </section>
         <Seccion titulo="Entregables" derecha={botonConfig}>
           <div className="space-y-4">
             <div>

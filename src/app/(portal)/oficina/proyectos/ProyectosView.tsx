@@ -160,19 +160,19 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 
   const refrescar = useCallback(() => { if (pidRef.current) { void cargarDetalle(pidRef.current); void cargarFases(pidRef.current); cargarFicha(pidRef.current) } void cargarLista() }, [cargarDetalle, cargarFases, cargarFicha, cargarLista])
 
-  async function crearSesion(tipo: TipoSesion, rol?: { fase: string; rol: string }) {
+  async function crearSesion(tipo: TipoSesion, rol?: { fase: string; rol: string }, quedarse = false) {
     if (!pid || creando) return
     setCreando(true); setError(null)
     try {
       const s = await post<SesionRes>(`/api/proyectos/${pid}/sesiones`, { tipo, privada: privadaNueva, ...(rol ?? {}) })
-      setNueva(false); setPrivadaNueva(false); setVista('asistente')
+      setNueva(false); setPrivadaNueva(false); if (!quedarse) setVista('asistente')
       await cargarDetalle(pid, s.id); void cargarLista()
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la sesión') } finally { setCreando(false) }
   }
 
   async function iniciarRol(fase: string, rol: string) {
     setCreandoRol(rol)
-    try { await crearSesion('LIBRE', { fase, rol }) } finally { setCreandoRol(null) }
+    try { await crearSesion('LIBRE', { fase, rol }, true) } finally { setCreandoRol(null) }
   }
   const fasesConRoles = !!fasesRes?.fases?.length
   const faseSel = faseNueva ?? (fasesRes?.fases?.some(f => f.clave === vista) ? vista : fasesRes?.faseActual) ?? fasesRes?.fases?.[0]?.clave ?? ''
@@ -362,7 +362,10 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
             {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
               return f ? <div className="flex-1 min-h-0"><VistaFase onAbrirPlantillas={(fase: string) => { setPlantillasIni({ codigo: fasesRes?.plantilla?.codigo ?? (proyecto?.naturaleza === 'INTERNO' ? 'INICIATIVA_INTERNA' : 'PROYECTO_COMPLETO'), fase }); setEditorPlantillas(true) }} key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)} onInvestigarEmpresa={() => { setFichaAuto(n => n + 1); setFichaAbierta(true) }}
-                sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }} /></div> : null
+                sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }}
+                sidActiva={sid} onElegirSesion={id => setSid(id)}
+                renderChat={s => (det && det.yo ? <ChatSesion key={s.id} proyectoId={pid} sesion={s} rolInfo={rolDe(s)} yo={det.yo} onCambio={refrescar}
+                  onAbrirSesion={id => { if (id) setSid(id); else void cargarDetalle(pid) }} onSesion={setSesionFull} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} /> : null)} /></div> : null
             })()}
 
             {vista === 'asistente' && <div className="flex-1 min-h-0">
