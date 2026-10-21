@@ -6,6 +6,7 @@ import Link from '@/lib/BacklogLink'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import FaseSesiones from './FaseSesiones'
+import ActividadesDeFase from './ActividadesDeFase'
 import NotasDeFase from './NotasDeFase'
 import EntregablesDeFase from './EntregablesDeFase'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
@@ -141,7 +142,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
       {/* Lo que falta para cerrar la fase (50 %) junto al trabajo de la fase (50 %) */}
-      <FaseSesiones fase={fase} sesiones={sesiones} creando={creandoRol} activaId={panelModo === 'fase' ? faseSid : null} onIniciar={onIniciarSesion} onElegir={id => { setFaseSid(id); setPanelModo('fase'); onElegirSesion?.(id) }} onInvestigar={onInvestigarEmpresa} config={botonConfig} />
+      <FaseSesiones fase={fase} sesiones={sesiones} creando={creandoRol} activaId={panelModo === 'fase' ? faseSid : null} onIniciar={onIniciarSesion} onElegir={id => { setFaseSid(id); setPanelModo('fase'); onElegirSesion?.(id) }} config={botonConfig} />
 
       <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]`}>
         <section className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', height: 620 }}>
@@ -165,6 +166,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
                 </div>
               </div>)}
         </section>
+      <div className="space-y-4">
         <Seccion titulo="Entregables" derecha={botonConfig}>
           <div className="space-y-4">
             <div>
@@ -219,6 +221,10 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
             </div>
           </div>
         </Seccion>
+        <Seccion titulo="Actividades" derecha={botonConfig}>
+          <ActividadesDeFase fase={fase} onInvestigar={onInvestigarEmpresa} />
+        </Seccion>
+      </div>
       </div>
 
       <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
