@@ -5,17 +5,13 @@ import type { FaseVista, SesionRes } from './api'
 
 // El corazón de cada fase: sus sesiones con la IA, un rol por tarjeta. Al elegir una sesión, su chat se abre en la misma pantalla.
 
-export default function FaseSesiones({ fase, sesiones, creando, activaId, onIniciar, onElegir, config }: {
+export default function FaseSesiones({ fase, sesiones, creando, activaId, onIniciar, onElegir }: {
   fase: FaseVista; sesiones: SesionRes[]; creando: string | null; activaId: string | null
-  onIniciar: (fase: string, rol: string) => void; onElegir: (id: string) => void; config?: React.ReactNode
+  onIniciar: (fase: string, rol: string) => void; onElegir: (id: string) => void
 }) {
   const roles = fase.sesiones ?? []
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] flex-1">Sesiones de la fase</p>
-        {config}
-      </div>
       <div className="grid gap-2.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
         {roles.map(r => {
           const propias = sesiones.filter(s => s.faseClave === fase.clave && s.rol === r.clave && s.estado !== 'ARCHIVADA').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

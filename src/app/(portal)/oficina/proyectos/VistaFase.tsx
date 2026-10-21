@@ -142,8 +142,6 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
       {/* Lo que falta para cerrar la fase (50 %) junto al trabajo de la fase (50 %) */}
-      <FaseSesiones fase={fase} sesiones={sesiones} creando={creandoRol} activaId={panelModo === 'fase' ? faseSid : null} onIniciar={onIniciarSesion} onElegir={id => { setFaseSid(id); setPanelModo('fase'); onElegirSesion?.(id) }} config={botonConfig} />
-
       <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]`}>
         <section className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', height: 620 }}>
           <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-white/5 flex-shrink-0">
@@ -223,6 +221,9 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
         </Seccion>
         <Seccion titulo="Actividades" derecha={botonConfig}>
           <ActividadesDeFase fase={fase} onInvestigar={onInvestigarEmpresa} />
+        </Seccion>
+        <Seccion titulo="Sesiones de la fase" derecha={botonConfig}>
+          <FaseSesiones fase={fase} sesiones={sesiones} creando={creandoRol} activaId={panelModo === 'fase' ? faseSid : null} onIniciar={onIniciarSesion} onElegir={id => { setFaseSid(id); setPanelModo('fase'); onElegirSesion?.(id) }} />
         </Seccion>
       </div>
       </div>
