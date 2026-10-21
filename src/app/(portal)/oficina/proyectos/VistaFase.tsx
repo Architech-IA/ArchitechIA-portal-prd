@@ -121,7 +121,7 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
 
       {/* Lo que falta para cerrar la fase (65 %) a la derecha del trabajo de la fase (35 %) */}
       <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,35fr)_minmax(0,65fr)]`}>
-          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={botonConfig}>
+          <Seccion titulo="Trabajo de la fase" derecha={botonConfig}>
          <div className="space-y-4">
            <div>
              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
@@ -151,7 +151,7 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
            </div>
          </div>
           </Seccion>
-        <Seccion titulo={`Entregables · ${(fase.requeridos ?? []).filter(r => r.ok).length + marcados}/${(fase.requeridos ?? []).length + fase.puerta.criterios.length}`} derecha={botonConfig}>
+        <Seccion titulo="Entregables" derecha={botonConfig}>
           <div className="space-y-4">
             <div>
               <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} sesiones={sesiones} />
