@@ -169,12 +169,8 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
 
                   {puede && (
                     <div className="pt-2 space-y-2 border-t border-white/5">
-                      {data.esSuperadmin && !fase.puerta.cumplida && (
+                      {data.esSuperadmin && !fase.puerta.cumplida && esResultado && (
                         <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
-                      {!esResultado && (
-                        <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { nota, forzar })}
-                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-medium text-white disabled:opacity-40" style={{ background: '#6366f1' }}>
-                          {ocupado ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</button>)}
                       {esResultado && (
                         <div className="space-y-2">
                           <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { resultado: 'GANADO', nota, forzar })}
@@ -258,6 +254,20 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
             </Seccion>)}
         </div>
       </div>
+      {/* Aprobar la fase: barra transversal bajo los cuatro paneles */}
+      {puede && !esResultado && (
+        <div className="space-y-2">
+          <style>{`.btn-aprobar { background: linear-gradient(135deg,#f97316,#ea580c); box-shadow: 0 8px 24px rgba(234,88,12,0.35), inset 0 1px 0 rgba(255,255,255,0.25); transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s, filter .18s; }
+.btn-aprobar:not(:disabled):hover { transform: translateY(-2px); filter: brightness(1.1) !important; box-shadow: 0 14px 34px rgba(234,88,12,0.5), 0 0 0 1px rgba(251,146,60,0.55), inset 0 1px 0 rgba(255,255,255,0.35) !important; }
+.btn-aprobar:not(:disabled):active { transform: translateY(0); filter: brightness(1.02) !important; }
+.btn-aprobar:disabled { box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .btn-aprobar, .btn-aprobar:hover { transition: none; transform: none !important; } }`}</style>
+          {data.esSuperadmin && !fase.puerta.cumplida && (
+            <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
+          <button disabled={ocupado || (!fase.puerta.cumplida && !forzar)} onClick={() => void accion('avanzar', { nota, forzar })}
+            className="btn-aprobar w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed">
+            {ocupado ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />} {ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</button>
+        </div>)}
     </div>
   )
 }
