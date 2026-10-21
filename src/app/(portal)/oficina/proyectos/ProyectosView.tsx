@@ -20,6 +20,7 @@ import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
 import PlantillasFases from './PlantillasFases'
 import FichaCliente from './FichaCliente'
+import TipoProyecto from './TipoProyecto'
 import LeadRegistrado from './LeadRegistrado'
 import NuevoProyecto from './NuevoProyecto'
 import PanelPropuestas from './PanelPropuestas'
@@ -327,6 +328,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
               <div className="flex items-center gap-2 px-4 pt-2.5">
                 <button onClick={alternarLista} className="text-[#7f8a9c] hover:text-gray-200 flex-shrink-0" title={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'} aria-label={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'}>{listaAbierta ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}</button>
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
+                {(proyecto?.tipo ?? fasesRes?.solucion?.tipo) && <TipoProyecto proyectoId={pid} tipo={(proyecto?.tipo ?? fasesRes?.solucion?.tipo) as string} onCambio={refrescar} />}
                 {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
                 <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
                   style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
