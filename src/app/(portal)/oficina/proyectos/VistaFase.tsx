@@ -169,8 +169,6 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
 
                   {puede && (
                     <div className="pt-2 space-y-2 border-t border-white/5">
-                      <textarea value={nota} onChange={e => setNota(e.target.value)} rows={2} placeholder="Nota de la aprobación (opcional)"
-                        className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-400/50" />
                       {data.esSuperadmin && !fase.puerta.cumplida && (
                         <label className="flex items-center gap-1.5 text-[11px] text-amber-300 cursor-pointer"><input type="checkbox" checked={forzar} onChange={e => setForzar(e.target.checked)} className="accent-amber-500" /><AlertTriangle size={11} /> Saltarme los criterios (queda registrado)</label>)}
                       {!esResultado && (
