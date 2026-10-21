@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -283,7 +283,6 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
                   style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
                   <MessageSquare size={12} /></button>
                 <span className="flex-1" />
-                <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
               {/* Una pestaña por fase: el asistente (sesiones de IA) y las 12 fases del proyecto */}
               <div className="flex items-center gap-1 px-4 py-1.5 overflow-x-auto border-t border-white/5">
@@ -382,6 +381,16 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
             </div>}
           </>)}
       </div>
+
+      {/* Asa para mostrar u ocultar el panel derecho: media píldora de vidrio pegada a su borde (igual que la del menú de Oficina) */}
+      {pid && (
+        <div className="relative flex-shrink-0 w-0 z-20">
+          <button onClick={() => setPanelAbierto(o => !o)} aria-label={panelAbierto ? 'Ocultar el panel' : 'Mostrar el panel'} aria-expanded={panelAbierto} title={panelAbierto ? 'Ocultar el panel' : 'Mostrar el panel'}
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-5 h-11 flex items-center justify-center rounded-l-xl text-[#7f8a9c] bg-white/[0.06] hover:bg-white/[0.13] hover:text-orange-300 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
+            style={{ border: '1px solid rgba(255,255,255,0.12)', borderRight: 'none', backdropFilter: 'blur(14px) saturate(160%)', WebkitBackdropFilter: 'blur(14px) saturate(160%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), -4px 0 14px rgba(0,0,0,0.3)' }}>
+            {panelAbierto ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          </button>
+        </div>)}
 
       {/* ── Columna C: panel lateral ── */}
       {pid && panelAbierto && (
