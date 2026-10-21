@@ -219,11 +219,17 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
             </div>
           </div>
         </Seccion>
-        <Seccion titulo="Actividades" derecha={botonConfig}>
-          <ActividadesDeFase fase={fase} onInvestigar={onInvestigarEmpresa} />
-        </Seccion>
-        <Seccion titulo="Sesiones de la fase" derecha={botonConfig}>
-          <FaseSesiones fase={fase} sesiones={sesiones} creando={creandoRol} activaId={panelModo === 'fase' ? faseSid : null} onIniciar={onIniciarSesion} onElegir={id => { setFaseSid(id); setPanelModo('fase'); onElegirSesion?.(id) }} />
+        <Seccion titulo="Trabajo de la fase" derecha={botonConfig}>
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
+              <ActividadesDeFase fase={fase} onInvestigar={onInvestigarEmpresa} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>
+              <FaseSesiones fase={fase} sesiones={sesiones} creando={creandoRol} activaId={panelModo === 'fase' ? faseSid : null} onIniciar={onIniciarSesion} onElegir={id => { setFaseSid(id); setPanelModo('fase'); onElegirSesion?.(id) }} />
+            </div>
+          </div>
         </Seccion>
       </div>
       </div>
