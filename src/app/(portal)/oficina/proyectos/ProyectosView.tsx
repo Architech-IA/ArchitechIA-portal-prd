@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, ExternalLink, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal, Building2,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
-import { BarChart3 } from 'lucide-react'
 import ChatSesion from './ChatSesion'
 import ResumenProyecto from './ResumenProyecto'
 import PanelContexto from './PanelContexto'
@@ -20,7 +19,6 @@ import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
 import PlantillasFases from './PlantillasFases'
 import FichaCliente from './FichaCliente'
-import TipoProyecto from './TipoProyecto'
 import LeadRegistrado from './LeadRegistrado'
 import NuevoProyecto from './NuevoProyecto'
 import PanelPropuestas from './PanelPropuestas'
@@ -328,20 +326,10 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
               <div className="flex items-center gap-2 px-4 pt-2.5">
                 <button onClick={alternarLista} className="text-[#7f8a9c] hover:text-gray-200 flex-shrink-0" title={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'} aria-label={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'}>{listaAbierta ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}</button>
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
-                {(proyecto?.tipo ?? fasesRes?.solucion?.tipo) && <TipoProyecto proyectoId={pid} tipo={(proyecto?.tipo ?? fasesRes?.solucion?.tipo) as string} onCambio={refrescar} />}
-                {det && <span className="text-[10px] px-1.5 py-0.5 rounded-full text-gray-400" style={{ background: 'rgba(255,255,255,0.07)' }}>{det.proyecto.estado}</span>}
                 <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
                   style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
                   <MessageSquare size={12} /></button>
-                {fichaResumen && (fichaResumen.existe || (fasesRes?.fases ?? []).some(x => (x.requeridos ?? []).some(r => r.tipo === 'ficha_cliente'))) && (
-                  <button onClick={() => setFichaAbierta(true)} title="Ficha del cliente" className="flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full flex-shrink-0 max-w-[260px] truncate"
-                    style={fichaResumen.ok === fichaResumen.total ? { background: 'rgba(16,185,129,0.14)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)' } : { background: 'rgba(245,158,11,0.14)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.3)' }}>
-                    <Building2 size={11} className="flex-shrink-0" /><span className="truncate">{fichaResumen.nombre || 'Sin cliente'}</span><span className="opacity-80 flex-shrink-0">· {fichaResumen.ok}/{fichaResumen.total}</span></button>)}
                 <span className="flex-1" />
-                <button onClick={() => setResumenAbierto(true)} title="Resumen: avance, avisos y costo del proyecto" className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={avisosN > 0 ? { background: 'rgba(245,158,11,0.14)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.3)' } : { background: 'rgba(255,255,255,0.05)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <BarChart3 size={11} /> Resumen{avisosN > 0 ? ` · ${avisosN}` : ''}</button>
-                <a href={`/solutions/pilots/${pid}`} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200" title="Abrir el hub de la solución en su pantalla clásica"><ExternalLink size={11} /> Hub clásico</a>
                 <button onClick={() => setPanelAbierto(o => !o)} className="text-[#7f8a9c] hover:text-gray-200" title={panelAbierto ? 'Ocultar panel' : 'Mostrar panel'}>{panelAbierto ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
               </div>
               {/* Una pestaña por fase: el asistente (sesiones de IA) y las 12 fases del proyecto */}
@@ -481,6 +469,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             {panel === 'artefactos' && <PanelArtefactos activo={tabVista} onIr={irArtefacto} meta={metaArt} onAbrirFicha={() => setFichaAbierta(true)}
+              proyecto={(proyecto?.tipo ?? fasesRes?.solucion?.tipo) ? { id: pid, tipo: (proyecto?.tipo ?? fasesRes?.solucion?.tipo) as string, onCambio: refrescar, avisos: avisosN, onResumen: () => setResumenAbierto(true) } : null}
               ficha={fichaResumen && (fichaResumen.existe || (fasesRes?.fases ?? []).some(x => (x.requeridos ?? []).some(r => r.tipo === 'ficha_cliente'))) ? fichaResumen : null} />}
             {panel === 'contexto' && <PanelContexto proyectoId={pid} sesion={sesionFull && sesionFull.id === sid ? sesionFull : null} onSesion={setSesionFull} />}
             {panel === 'propuestas' && <PanelPropuestas key={nPropuestas} proyectoId={pid} onAbrir={irArtefacto} />}

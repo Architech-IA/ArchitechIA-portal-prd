@@ -1,6 +1,7 @@
 'use client'
 
-import { Building2 } from 'lucide-react'
+import { Building2, BarChart3 } from 'lucide-react'
+import TipoProyecto from './TipoProyecto'
 import { CLAVE_DE_TAB, PUNTO_ESTADO, ETIQUETA_ESTADO, type ArtefactoMeta, type TabKey } from '../../solutions/pilots/[id]/espacio'
 import { TITULO_DE_TAB, ICONO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 
@@ -12,13 +13,27 @@ const GRUPOS: { titulo: string; items: TabKey[] }[] = [
 ]
 
 /** Los artefactos del proyecto como lista agrupada: estado, propuestas del motor y comentarios abiertos de cada uno. */
-export default function PanelArtefactos({ activo, onIr, meta, ficha, onAbrirFicha }: {
+export default function PanelArtefactos({ activo, onIr, meta, ficha, onAbrirFicha, proyecto }: {
   activo: TabKey | null; onIr: (t: TabKey) => void; meta: Record<string, ArtefactoMeta>
   ficha?: { nombre: string; ok: number; total: number } | null; onAbrirFicha?: () => void
+  proyecto?: { id: string; tipo: string; onCambio: () => void; avisos: number; onResumen: () => void } | null
 }) {
   const completa = !!ficha && ficha.ok === ficha.total
   return (
     <div className="p-3 space-y-3" role="tablist" aria-label="Artefactos del proyecto">
+      {proyecto && (
+        <div>
+          <p className="text-[9px] uppercase tracking-wider text-[#6b7280] mb-1">Proyecto</p>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 px-0.5"><span className="text-[11px] text-[#7f8a9c]">Tipo</span><TipoProyecto proyectoId={proyecto.id} tipo={proyecto.tipo} onCambio={proyecto.onCambio} /></div>
+            <button onClick={proyecto.onResumen} title="Resumen: avance, avisos y costo del proyecto" className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors"
+              style={proyecto.avisos > 0 ? { background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#cbd5e1' }}>
+              <BarChart3 size={13} className="flex-shrink-0 opacity-80" />
+              <span className="flex-1 truncate">Resumen</span>
+              {proyecto.avisos > 0 && <span className="text-[9px] px-1.5 rounded-full bg-amber-500/25 text-amber-300" title={proyecto.avisos + ' aviso(s) abiertos'}>{proyecto.avisos}</span>}
+            </button>
+          </div>
+        </div>)}
       {ficha && onAbrirFicha && (
         <div>
           <p className="text-[9px] uppercase tracking-wider text-[#6b7280] mb-1">Cliente</p>
