@@ -41,7 +41,7 @@ function Tarjeta({ titulo, children }: { titulo: string; children: React.ReactNo
 }
 
 /** Costo por sesión, evolución diaria y presupuestos de tokens (el tope lo ponen los administradores). */
-function CostoPorSesion({ proyectoId }: { proyectoId: string }) {
+export function CostoPorSesion({ proyectoId }: { proyectoId: string }) {
   const [c, setC] = useState<Costo | null>(null)
   const [error, setError] = useState('')
   const [editando, setEditando] = useState<string | null>(null) // 'proyecto' | id de sesión

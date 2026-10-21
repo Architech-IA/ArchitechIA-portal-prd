@@ -46,7 +46,7 @@ const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: 
 
 // Oficina Virtual > Proyectos. Proyecto = Solución. Cada proyecto tiene sesiones (conversaciones con
 // la IA) TODAS persistentes, con contexto vivo y exacto, memoria propia, adjuntos y automatizaciones.
-export default function ProyectosView({ initialProyectoId, initialArtefacto }: { initialProyectoId?: string | null; initialArtefacto?: string | null }) {
+export default function ProyectosView({ initialProyectoId, initialArtefacto, abrirPlantillas }: { initialProyectoId?: string | null; initialArtefacto?: string | null; abrirPlantillas?: boolean }) {
   const [lista, setLista] = useState<ProyectoLista[]>([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
@@ -60,7 +60,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto }: {
   const [panel, setPanel] = useState<Panel>('artefactos')
   const [panelAbierto, setPanelAbierto] = useState(true)
   const [masAbierto, setMasAbierto] = useState(false)
-  const [editorPlantillas, setEditorPlantillas] = useState(false)
+  const [editorPlantillas, setEditorPlantillas] = useState(!!abrirPlantillas)
+  useEffect(() => { if (abrirPlantillas) setEditorPlantillas(true) }, [abrirPlantillas])
   const [fichaAbierta, setFichaAbierta] = useState(false)
   const [resumenAbierto, setResumenAbierto] = useState(false)
   const [avisosN, setAvisosN] = useState(0)

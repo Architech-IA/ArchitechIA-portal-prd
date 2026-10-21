@@ -9,6 +9,8 @@ import { usePageTitleOverride } from '@/lib/pageTitleContext'
 import CouncilView from './CouncilView'
 import ProyectosView from './proyectos/ProyectosView'
 import MotorView from './motor/MotorView'
+import CostosView from './costos/CostosView'
+import { Coins, LayoutTemplate } from 'lucide-react'
 // Migrado desde /backlog (antes item propio del sidebar principal) a
 // subpage de Oficina — se reusa el componente real tal cual, sin duplicar
 // logica ni perder ninguna funcion.
@@ -101,11 +103,11 @@ const ETIQUETA_SOL: Record<(typeof TABS_SOLUTIONS)[number], string> = { producto
 const TABS_BACKLOG = ['sprint', 'epics', 'solution', 'control'] as const
 const ETIQUETA_TAB: Record<(typeof TABS_BACKLOG)[number], string> = { sprint: 'Sprint', epics: 'Épicas', solution: 'Solution', control: 'Sala de Control' }
 
-type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos' | 'motor'
-const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos', 'motor'] as const
-const ETIQUETA_VISTA: Record<(typeof VISTAS)[number], string> = { agentes: 'Agents', directory: 'Directory', backlog: 'Backlog', solutions: 'Solutions', proyectos: 'Proyectos', motor: 'Motor' }
+type Vista = 'rooms' | 'agentes' | 'directory' | 'backlog' | 'solutions' | 'proyectos' | 'motor' | 'costos'
+const VISTAS = ['agentes', 'directory', 'backlog', 'solutions', 'proyectos', 'motor', 'costos'] as const
+const ETIQUETA_VISTA: Record<(typeof VISTAS)[number], string> = { agentes: 'Agents', directory: 'Directory', backlog: 'Backlog', solutions: 'Solutions', proyectos: 'Proyectos', motor: 'Motor', costos: 'Costos' }
 /** La vista elegida vive en la URL (?view=backlog…): se puede recargar, compartir el enlace y volver con "Atrás". */
-const vistaDeUrl = (v: string | null): Vista => ((VISTAS as readonly string[]).includes(v ?? '') ? (v as Vista) : 'rooms')
+const vistaDeUrl = (v: string | null): Vista => ((VISTAS as readonly string[]).includes(v ?? '') ? (v as Vista) : 'motor')
 
 function OficinaPageInner() {
   const router = useRouter()
@@ -153,15 +155,6 @@ function OficinaPageInner() {
       }
       if (data.length) setSelectedId(data[0].id)
     }).catch(() => setLoading(false))
-  }, [])
-
-  useEffect(() => {
-    function fetchBadge() {
-      fetch('/api/council/badge').then(r => r.json()).then(d => setCouncilBadge(d)).catch(() => {})
-    }
-    fetchBadge()
-    const t = setInterval(fetchBadge, 30000)
-    return () => clearInterval(t)
   }, [])
 
   useEffect(() => {
@@ -310,52 +303,7 @@ function OficinaPageInner() {
         <div className="w-56 flex-shrink-0 flex flex-col border-r border-white/5 overflow-hidden"
              style={{ background: 'rgba(0,0,0,0.25)', opacity: sidebarOpen ? 1 : 0, visibility: sidebarOpen ? 'visible' : 'hidden', pointerEvents: sidebarOpen ? 'auto' : 'none', transition: sidebarOpen ? 'opacity 0.2s' : 'opacity 0.2s, visibility 0s 0.3s' }}>
 
-        {/* Rooms section */}
-        <div className="overflow-y-auto overflow-x-hidden">
-          <button onClick={() => setRoomsOpen(o => !o)}
-            className="w-full flex items-center justify-between px-3 pt-4 pb-2 group hover:bg-white/5 transition-colors rounded-lg">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#7f8a9c] group-hover:text-gray-400 transition-colors">Rooms</span>
-            <ChevronRight size={11} className="transition-transform flex-shrink-0"
-              style={{ color: roomsOpen ? '#6366f1' : '#4b5563', transform: roomsOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
-          </button>
-          {roomsOpen && areas.map(area => (
-            <div key={area.id}>
-              <button
-                onClick={() => irASala(area)}
-                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-left group hover:bg-white/5"
-                style={sideView === 'rooms' && selectedId === area.id
-                  ? { background: area.color+'22', color: area.color }
-                  : { color: '#7f8a9c' }}>
-                <span className="text-[12px] font-semibold flex-1 truncate group-hover:text-gray-300 transition-colors">{area.name}</span>
-                {area.slug === 'consejo' ? (
-                  councilBadge.total > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                          style={{ background: councilBadge.escalated > 0 ? '#ef444430' : '#f59e0b30', color: councilBadge.escalated > 0 ? '#ef4444' : '#f59e0b' }}>{councilBadge.total}</span>
-                  )
-                ) : (
-                  area.activeItems > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                          style={{ background: area.color+'30', color: area.color }}>{area.activeItems}</span>
-                  )
-                )}
-              </button>
-              {area.subAreas.map(sub => (
-                <button key={sub.id}
-                  onClick={() => irASala(sub)}
-                  className="w-full flex items-center gap-2 pl-7 pr-3 py-1 rounded-lg transition-all text-left group hover:bg-white/5"
-                  style={sideView === 'rooms' && selectedId === sub.id
-                    ? { background: sub.color+'18', color: sub.color }
-                    : { color: '#7f8a9c' }}>
-                  <span className="text-[11px] flex-1 truncate group-hover:text-gray-400 transition-colors">{sub.name}</span>
-                  {sub.activeItems > 0 && (
-                    <span className="text-[10px] px-1 rounded-full flex-shrink-0"
-                          style={{ background: sub.color+'25', color: sub.color }}>{sub.activeItems}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
+        <div className="pt-2" />
 
         {/* Trabajo: herramientas de uso diario */}
         <div className="flex-shrink-0 border-t border-white/5 pt-1 pb-1">
@@ -366,9 +314,9 @@ function OficinaPageInner() {
               style={{ color: workOpen ? '#6366f1' : '#7f8a9c', transform: workOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
           {workOpen && itemVista('motor', Gauge)}
-          {workOpen && itemVista('backlog', LayoutGrid)}
-          {workOpen && itemVista('solutions', Package)}
           {workOpen && itemVista('proyectos', FolderKanban)}
+          {workOpen && itemVista('backlog', LayoutGrid)}
+          {workOpen && itemVista('costos', Coins)}
         </div>
 
         {/* Config: agentes y organigrama */}
@@ -379,8 +327,15 @@ function OficinaPageInner() {
             <ChevronRight size={11} className="transition-transform flex-shrink-0"
               style={{ color: configOpen ? '#6366f1' : '#7f8a9c', transform: configOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
           </button>
+          {configOpen && (
+            <button onClick={() => router.push('/oficina?view=proyectos&plantillas=1', { scroll: false })}
+              className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5" style={{ color: '#7f8a9c' }}>
+              <LayoutTemplate size={12} className="flex-shrink-0 group-hover:text-gray-400 transition-colors" />
+              <span className="text-[11px] group-hover:text-gray-400 transition-colors">Plantillas</span>
+            </button>)}
           {configOpen && itemVista('agentes', Bot)}
           {configOpen && itemVista('directory', Network)}
+          {configOpen && itemVista('solutions', Package)}
         </div>
       </div>
       </div>
@@ -824,10 +779,16 @@ function OficinaPageInner() {
             <MotorView />
           </div>
 
+        ) : sideView === 'costos' ? (
+          /* ── COSTOS ── tokens por proyecto, este mes y en total, con presupuesto */
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <CostosView />
+          </div>
+
         ) : sideView === 'proyectos' ? (
           /* ── PROYECTOS VIEW ── sesiones persistentes por proyecto (= Solución) */
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ProyectosView initialProyectoId={searchParams.get("p")} initialArtefacto={searchParams.get("art")} />
+            <ProyectosView initialProyectoId={searchParams.get("p")} initialArtefacto={searchParams.get("art")} abrirPlantillas={searchParams.get('plantillas') === '1'} />
           </div>
 
         ) : sideView === 'solutions' ? (

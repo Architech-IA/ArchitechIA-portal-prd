@@ -21,11 +21,18 @@ interface FilaCartera {
 interface Aprobacion { id: string; nombre: string; faseNombre: string; faseNumero: number; aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; ok: number; total: number; lista: boolean; enFaseDesde: string | null }
 interface Tarea { id: string; taskCode: string | null; title: string; solucionId: string | null; solucion: string | null; desde?: string | null; status?: string; updatedAt?: string }
 interface Atascada { id: string; backlogItemId: string; taskCode: string | null; title: string | null; startedAt: string }
+interface Espera { kind: 'accion' | 'propuesta' | 'entregable' | 'alerta'; id: string; titulo: string; detalle: string; subtipo: string; solucionId: string; solucion: string; desde: string }
+interface SesionViva { id: string; titulo: string; tipo: string; solucionId: string; solucion: string; ultima: string; generando: boolean; ultimoRol: string | null }
+const ETIQUETA_ESPERA: Record<Espera['kind'], { texto: string; color: string }> = {
+  accion: { texto: 'Acción de la IA', color: '#fcd34d' }, propuesta: { texto: 'Propuesta de artefacto', color: '#a5b4fc' },
+  entregable: { texto: 'Archivo por revisar', color: '#6ee7b7' }, alerta: { texto: 'Aviso', color: '#fca5a5' },
+}
 interface Resumen {
   puedeAprobar: boolean
   totales: { proyectos: number; enCurso: number; porAprobar: number; sinMotor: number; corriendo: number; problemas: number }
   cartera: FilaCartera[]; aprobaciones: Aprobacion[]; leadsSinMotor: LeadSinMotor[]
-  ejecucion: { corriendo: Tarea[]; problemas: Tarea[]; atascadas: Atascada[]; atascadaHoras: number; harness: { ok: boolean; colas: Record<string, number> | null } }
+  ejecucion: { corriendo: Tarea[]; problemas: Tarea[]; antiguos: number; atascadas: Atascada[]; atascadaHoras: number; harness: { ok: boolean; colas: Record<string, number> | null } }
+  esperan: Espera[]; sesiones: SesionViva[]; gastoMes: { sesiones: number; ejecutor: number }
   costo: { ejecuciones: number; conUso: number; tokens: number; entrada: number; salida: number; porProyecto: { id: string; nombre: string; tareas: number; tokens: number }[] }
 }
 
@@ -52,11 +59,11 @@ function Tarjeta({ titulo, icono: Icono, derecha, children }: { titulo: string; 
     </section>)
 }
 
-function Cifra({ valor, etiqueta, tono }: { valor: number; etiqueta: string; tono?: 'ok' | 'aviso' | 'mal' }) {
+function Cifra({ valor, etiqueta, tono, texto }: { valor: number; etiqueta: string; tono?: 'ok' | 'aviso' | 'mal'; texto?: string }) {
   const color = tono === 'mal' && valor > 0 ? '#fca5a5' : tono === 'aviso' && valor > 0 ? '#fcd34d' : tono === 'ok' && valor > 0 ? '#6ee7b7' : '#e5e7eb'
   return (
     <div className="rounded-xl px-4 py-2.5 min-w-[110px]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-      <p className="text-[22px] font-bold leading-none" style={{ color }}>{n(valor)}</p>
+      <p className="text-[22px] font-bold leading-none" style={{ color }}>{texto ?? n(valor)}</p>
       <p className="text-[10px] text-[#7f8a9c] mt-1">{etiqueta}</p>
     </div>)
 }
@@ -168,11 +175,12 @@ export default function MotorView() {
         <Cifra valor={t.corriendo} etiqueta="tareas corriendo" tono="ok" />
         <Cifra valor={t.problemas} etiqueta="con problemas" tono="mal" />
         <Cifra valor={t.sinMotor} etiqueta="leads sin motor de fases" />
+        <Cifra valor={d.gastoMes.sesiones + d.gastoMes.ejecutor} texto={miles(d.gastoMes.sesiones + d.gastoMes.ejecutor)} etiqueta="tokens del mes" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Tarjeta titulo="Esperan a una persona" icono={UserCheck} derecha={<span className="text-[10px] text-[#7f8a9c]">{d.aprobaciones.length} puerta{d.aprobaciones.length === 1 ? '' : 's'} abiertas</span>}>
-          {d.aprobaciones.length === 0 && <p className="px-4 py-3 text-[11px] text-[#7f8a9c]">Ningún proyecto tiene una puerta abierta.</p>}
+        <Tarjeta titulo="Esperan a una persona" icono={UserCheck} derecha={<span className="text-[10px] text-[#7f8a9c]">{d.aprobaciones.length} puerta{d.aprobaciones.length === 1 ? '' : 's'} abiertas · {d.esperan.length} pendiente{d.esperan.length === 1 ? '' : 's'}</span>}>
+          {d.aprobaciones.length === 0 && d.esperan.length === 0 && <p className="px-4 py-3 text-[11px] text-[#7f8a9c]">Nada espera a una persona ahora mismo.</p>}
           <div className="divide-y divide-white/5">
             {d.aprobaciones.map(a => (
               <div key={a.id} className="flex items-center gap-3 px-4 py-2">
@@ -188,6 +196,20 @@ export default function MotorView() {
                   : <NextLink href={urlProyecto(a.id)} className="text-[11px] text-indigo-300 hover:text-indigo-200 flex-shrink-0">{a.lista && a.tipo === 'RESULTADO' ? 'Decidir resultado' : 'Abrir'}</NextLink>}
               </div>))}
           </div>
+          {d.esperan.length > 0 && (
+            <div className="divide-y divide-white/5 border-t border-white/5 max-h-[320px] overflow-y-auto">
+              {d.esperan.map(x => {
+                const et = ETIQUETA_ESPERA[x.kind]
+                return (
+                  <div key={x.kind + x.id} className="flex items-center gap-3 px-4 py-2">
+                    <div className="min-w-0 flex-1">
+                      <NextLink href={urlProyecto(x.solucionId)} className="text-[12px] text-gray-100 hover:text-indigo-200 truncate block">{x.titulo}</NextLink>
+                      <p className="text-[10px] text-[#7f8a9c] truncate"><span style={{ color: et.color }}>{et.texto}</span> · {x.solucion} · {hace(x.desde)}{x.detalle ? ' · ' + x.detalle : ''}</p>
+                    </div>
+                    <NextLink href={urlProyecto(x.solucionId)} className="text-[11px] text-indigo-300 hover:text-indigo-200 flex-shrink-0">{x.kind === 'alerta' ? 'Ver' : 'Revisar'}</NextLink>
+                  </div>)
+              })}
+            </div>)}
         </Tarjeta>
 
         <Tarjeta titulo="Agentes y cola" icono={Bot}
@@ -197,6 +219,24 @@ export default function MotorView() {
             <span>Corriendo: <b className="text-gray-200">{ej.corriendo.length}</b></span>
             <span style={{ color: (colas.DLQ ?? 0) > 0 ? '#fcd34d' : undefined }}>Cartas muertas (DLQ): <b>{colas.DLQ ?? 0}</b></span>
           </div>
+          {d.sesiones.length > 0 && (
+            <div className="border-b border-white/5">
+              <p className="px-4 pt-2 text-[10px] uppercase tracking-wide text-[#7f8a9c]">Sesiones de proyecto</p>
+              <div className="divide-y divide-white/5">
+                {d.sesiones.map(s => {
+                  const reciente = Date.now() - new Date(s.ultima).getTime() < 3 * 60_000
+                  const estado = s.generando || reciente ? { t: 'activa', bg: 'rgba(16,185,129,0.18)', c: '#6ee7b7' } : s.ultimoRol === 'assistant' ? { t: 'espera tu respuesta', bg: 'rgba(245,158,11,0.16)', c: '#fcd34d' } : { t: 'en pausa', bg: 'rgba(255,255,255,0.07)', c: '#9ca3af' }
+                  return (
+                    <div key={s.id} className="flex items-center gap-2 px-4 py-1.5">
+                      <div className="min-w-0 flex-1">
+                        <NextLink href={urlProyecto(s.solucionId)} className="text-[11px] text-gray-200 hover:text-indigo-200 truncate block">{s.titulo}</NextLink>
+                        <p className="text-[10px] text-[#7f8a9c] truncate">{s.solucion} · {hace(s.ultima)}</p>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: estado.bg, color: estado.c }}>{estado.t}</span>
+                    </div>)
+                })}
+              </div>
+            </div>)}
           {ej.atascadas.length > 0 && (
             <div className="px-4 py-2 border-b border-white/5" style={{ background: 'rgba(245,158,11,0.07)' }}>
               <p className="text-[11px] text-amber-300 flex items-center gap-1.5"><AlertTriangle size={12} /> {ej.atascadas.length} ejecución{ej.atascadas.length === 1 ? '' : 'es'} en RUNNING hace más de {ej.atascadaHoras} h (probablemente atascadas)</p>
@@ -215,6 +255,7 @@ export default function MotorView() {
               </div>))}
             {ej.corriendo.length === 0 && ej.problemas.length === 0 && <p className="px-4 py-3 text-[11px] text-[#7f8a9c]">Nada corriendo ni con problemas.</p>}
           </div>
+          {ej.antiguos > 0 && <p className="px-4 py-2 border-t border-white/5 text-[10px] text-[#7f8a9c]">Hay {n(ej.antiguos)} tarea{ej.antiguos === 1 ? '' : 's'} fallida{ej.antiguos === 1 ? '' : 's'} o bloqueada{ej.antiguos === 1 ? '' : 's'} de hace más de 14 días: no se cuentan arriba. Revísalas en el Backlog.</p>}
           <div className="px-4 py-2 border-t border-white/5"><Link href="/backlog/control" className="text-[11px] text-indigo-300 hover:text-indigo-200">Abrir la Sala de Control</Link></div>
         </Tarjeta>
       </div>
