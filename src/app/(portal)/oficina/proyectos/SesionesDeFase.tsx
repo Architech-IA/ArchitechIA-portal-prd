@@ -1,7 +1,6 @@
 'use client'
 
 import { Loader2, MessageSquare, Play, CheckCircle2 } from 'lucide-react'
-import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import type { FaseVista, SesionRes } from './api'
 
@@ -27,12 +26,6 @@ export default function SesionesDeFase({ fase, sesiones, creando, onIniciar, onA
               </div>
               <button disabled={creando === r.clave} onClick={() => onIniciar(fase.clave, r.clave)} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg text-white flex-shrink-0 disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.75)' }}>
                 {creando === r.clave ? <Loader2 size={11} className="animate-spin" /> : <Play size={11} />}{abierta ? 'Otra sesión' : 'Iniciar'}</button>
-            </div>
-            <p className="text-[10px] text-[#7f8a9c] leading-snug"><span className="uppercase tracking-wide">Resultado esperado · </span>{r.resultado}</p>
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="text-[10px] text-[#7f8a9c] uppercase tracking-wide mr-0.5">Suele tocar</span>
-              {r.artefactos.filter(a => a in TITULO_DE_TAB).map(a => (
-                <button key={a} onClick={() => onAbrirArtefacto?.(a as TabKey)} disabled={!onAbrirArtefacto} className="text-[10px] px-1.5 py-0.5 rounded-md text-orange-200" style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.25)' }}>{TITULO_DE_TAB[a as TabKey]}</button>))}
             </div>
             {hechas.length > 0 && (
               <div className="space-y-1 pt-1 border-t border-white/5">
