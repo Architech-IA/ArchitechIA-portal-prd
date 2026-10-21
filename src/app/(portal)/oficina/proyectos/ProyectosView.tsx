@@ -60,6 +60,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
   const [panelAbierto, setPanelAbierto] = useState(true)
   const [masAbierto, setMasAbierto] = useState(false)
   const [editorPlantillas, setEditorPlantillas] = useState(!!abrirPlantillas)
+  const [plantillasIni, setPlantillasIni] = useState<{ codigo: string; fase: string } | null>(null)
   useEffect(() => { if (abrirPlantillas) setEditorPlantillas(true) }, [abrirPlantillas])
   const [fichaAbierta, setFichaAbierta] = useState(false)
   const [resumenAbierto, setResumenAbierto] = useState(false)
@@ -212,7 +213,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 
   return (
     <div className="px-hover flex h-full min-h-0 w-full">
-      {editorPlantillas && <PlantillasFases onCerrar={() => setEditorPlantillas(false)} onCambio={refrescar} />}
+      {editorPlantillas && <PlantillasFases inicial={plantillasIni ?? undefined} onCerrar={() => { setEditorPlantillas(false); setPlantillasIni(null) }} onCambio={refrescar} />}
       {nuevoProyecto && <NuevoProyecto onCerrar={() => setNuevoProyecto(false)} onCreado={id => { setNuevoProyecto(false); void cargarLista().then(() => elegirProyecto(id)) }} />}
       {resumenAbierto && pid && <ResumenProyecto proyectoId={pid} fases={fasesRes} onCerrar={() => setResumenAbierto(false)} />}
       {leadAbierto && pid && (
@@ -409,7 +410,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 
             {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
-              return f ? <div className="flex-1 min-h-0"><VistaFase key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)} onInvestigarEmpresa={() => { setFichaAuto(n => n + 1); setFichaAbierta(true) }}
+              return f ? <div className="flex-1 min-h-0"><VistaFase onAbrirPlantillas={(fase: string) => { setPlantillasIni({ codigo: fasesRes?.plantilla?.codigo ?? (proyecto?.naturaleza === 'INTERNO' ? 'INICIATIVA_INTERNA' : 'PROYECTO_COMPLETO'), fase }); setEditorPlantillas(true) }} key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)} onInvestigarEmpresa={() => { setFichaAuto(n => n + 1); setFichaAbierta(true) }}
                 sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }} /></div> : null
             })()}
 

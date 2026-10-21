@@ -70,12 +70,12 @@ function Acciones({ i, total, max, minimo, fases, onSubir, onBajar, onDuplicar, 
   )
 }
 
-export default function PlantillasFases({ onCerrar, onCambio }: { onCerrar: () => void; onCambio: () => void }) {
+export default function PlantillasFases({ onCerrar, onCambio, inicial }: { onCerrar: () => void; onCambio: () => void; inicial?: { codigo: string; fase: string } }) {
   const [datos, setDatos] = useState<Datos | null>(null)
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
-  const [codigo, setCodigo] = useState('PROYECTO_COMPLETO')
-  const [faseSel, setFaseSel] = useState<string>('')
+  const [codigo, setCodigo] = useState(inicial?.codigo ?? 'PROYECTO_COMPLETO')
+  const [faseSel, setFaseSel] = useState<string>(inicial?.fase ?? '')
   const [borrador, setBorrador] = useState<Record<string, Record<string, FaseEd>>>({})
   const [nota, setNota] = useState('')
   const [actualizarTareas, setActualizarTareas] = useState(false)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network, Sparkles } from 'lucide-react'
+import { Loader2, Check, Bot, User, Undo2, Trophy, XCircle, Play, AlertTriangle, ExternalLink, Folder, FileText, Paperclip, Rocket, ListChecks, Users, Flag, Network, Sparkles, Settings } from 'lucide-react'
 import Link from '@/lib/BacklogLink'
 import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
@@ -43,8 +43,8 @@ function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derech
     </section>)
 }
 
-export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
-  onAbrirFicha?: () => void; onAbrirLead?: () => void; onInvestigarEmpresa?: () => void
+export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
+  onAbrirFicha?: () => void; onAbrirLead?: () => void; onInvestigarEmpresa?: () => void; onAbrirPlantillas?: (fase: string) => void
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
@@ -62,6 +62,10 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
   const cerrado = !!data.iniciado && data.estado !== 'EN_CURSO'
   const actual = !!data.iniciado && fase.clave === data.faseActual && !cerrado
   const puede = data.puedeAprobar && actual
+  // Lleva directo al editor de plantillas de fases, en la plantilla de este proyecto y en esta fase (solo los administradores pueden editarlas)
+  const botonConfig = data.puedeAprobar && onAbrirPlantillas ? (
+    <button onClick={() => onAbrirPlantillas(fase.clave)} title="Configurar los entregables, los criterios y las actividades de esta fase (plantillas de fases)" aria-label="Configurar esta fase en las plantillas"
+      className="flex items-center justify-center w-6 h-6 rounded-lg text-[#9ca3af] hover:text-gray-100 hover:bg-white/10 transition-colors"><Settings size={13} /></button>) : null
   const marcados = fase.puerta.criterios.filter(c => c.ok).length
   const esResultado = fase.puerta.tipo === 'RESULTADO'
   const ultima = fase.numero === fases.length
@@ -117,7 +121,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
 
       {/* Lo que falta para cerrar la fase (65 %) a la derecha del trabajo de la fase (35 %) */}
       <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,35fr)_minmax(0,65fr)]`}>
-          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={<Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>}>
+          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={<span className="flex items-center gap-3"><Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>{botonConfig}</span>}>
          <div className="space-y-4">
            <div>
              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
@@ -147,7 +151,7 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
            </div>
          </div>
           </Seccion>
-        <Seccion titulo={`Entregables · ${(fase.requeridos ?? []).filter(r => r.ok).length + marcados}/${(fase.requeridos ?? []).length + fase.puerta.criterios.length}`}>
+        <Seccion titulo={`Entregables · ${(fase.requeridos ?? []).filter(r => r.ok).length + marcados}/${(fase.requeridos ?? []).length + fase.puerta.criterios.length}`} derecha={botonConfig}>
           <div className="space-y-4">
             <div>
               <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} sesiones={sesiones} />
