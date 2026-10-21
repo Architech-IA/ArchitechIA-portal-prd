@@ -142,7 +142,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
       {/* Lo que falta para cerrar la fase (50 %) junto al trabajo de la fase (50 %) */}
-      <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]`}>
+      <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]`}>
         <section className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', height: 620 }}>
           <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-white/5 flex-shrink-0">
             <button onClick={() => { setPanelModo('general'); if (general) onElegirSesion?.(general.id) }} className="text-[11px] px-2.5 py-1 rounded-lg transition-colors" aria-pressed={panelModo === 'general'}
