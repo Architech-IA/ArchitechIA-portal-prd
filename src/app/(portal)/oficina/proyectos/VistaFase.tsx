@@ -121,7 +121,7 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
 
       {/* Lo que falta para cerrar la fase (65 %) a la derecha del trabajo de la fase (35 %) */}
       <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,35fr)_minmax(0,65fr)]`}>
-          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={<span className="flex items-center gap-3"><Link href="/backlog/solution" className="text-[10px] text-indigo-300 hover:text-indigo-200">Ver en el Backlog</Link>{botonConfig}</span>}>
+          <Seccion titulo={`Trabajo de la fase · ${fase.actividades.hechas}/${fase.actividades.total} actividades`} derecha={botonConfig}>
          <div className="space-y-4">
            <div>
              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
