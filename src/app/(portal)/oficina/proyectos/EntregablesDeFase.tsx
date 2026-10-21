@@ -56,6 +56,8 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
       {lista.map(r => {
         // Cada entregable se abre donde se trabaja: la ficha, el lead o el artefacto
         const abrir = r.tipo.startsWith('ficha') ? onAbrirFicha : r.tipo === 'lead_registrado' ? onAbrirLead : r.artefacto && onAbrirArtefacto ? () => onAbrirArtefacto(r.artefacto as TabKey) : undefined
+        // Un entregable automático ya cumplido solo muestra su título (lo manual conserva su evidencia y el botón para desmarcar)
+        const compacto = r.ok && !r.manual
         return (
         <div key={r.clave} onClick={abrir ? ev => { if (!(ev.target as HTMLElement).closest('button,input,a,select,textarea')) abrir() } : undefined}
           className={`rounded-lg px-3 py-2 transition-colors ${abrir ? 'cursor-pointer hover:brightness-125' : ''}`} role={abrir ? 'button' : undefined} tabIndex={abrir ? 0 : undefined}
@@ -63,10 +65,10 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
           <div className="flex items-start gap-2">
             {r.ok ? <Check size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" /> : <Circle size={14} className="text-[#6b7280] mt-0.5 flex-shrink-0" />}
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] text-gray-100 leading-snug">{r.titulo} <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full align-middle" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }} title="Formato en el que se espera este entregable">{FORMATO[r.formato] ?? r.formato}</span></p>
-              <p className="text-[10px] mt-0.5" style={{ color: r.ok ? '#6ee7b7' : cerrada ? '#9ca3af' : '#fcd34d' }}>{r.detalle}{r.manual && r.ok && r.por ? ` · ${r.por}${r.en ? ` · ${fechaCorta(r.en)}` : ''}` : ''}</p>
+              <p className="text-[12px] text-gray-100 leading-snug">{r.titulo}{!compacto && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full align-middle" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }} title="Formato en el que se espera este entregable">{FORMATO[r.formato] ?? r.formato}</span>}</p>
+              {!compacto && <p className="text-[10px] mt-0.5" style={{ color: r.ok ? '#6ee7b7' : cerrada ? '#9ca3af' : '#fcd34d' }}>{r.detalle}{r.manual && r.ok && r.por ? ` · ${r.por}${r.en ? ` · ${fechaCorta(r.en)}` : ''}` : ''}</p>}
               {!r.ok && !cerrada && r.ayuda && <p className="text-[10px] text-[#7f8a9c] mt-0.5 leading-snug">{r.ayuda}</p>}
-              {(() => { const acts = (fase.actividades?.items ?? []).filter(a => a.entregable?.clave === r.clave); return acts.length > 0 && !cerrada ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Actividades de la fase que contribuyen a este entregable">Se trabaja en: {acts.map(a => a.titulo).join(' · ')}</p> : null })()}
+              {(() => { const acts = (fase.actividades?.items ?? []).filter(a => a.entregable?.clave === r.clave); return acts.length > 0 && !cerrada && !compacto ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Actividades de la fase que contribuyen a este entregable">Se trabaja en: {acts.map(a => a.titulo).join(' · ')}</p> : null })()}
               {r.manual && r.ok && r.evidencia && <p className="text-[10px] text-gray-300 mt-0.5 break-words">Evidencia: {/^(https?:\/\/|\/api\/)/.test(r.evidencia) ? <a href={r.evidencia} target="_blank" rel="noreferrer" className="text-indigo-300 underline">{r.evidencia}</a> : r.evidencia}</p>}
             </div>
             {r.tipo.startsWith('ficha') && onAbrirFicha && <button onClick={onAbrirFicha} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir ficha</button>}
