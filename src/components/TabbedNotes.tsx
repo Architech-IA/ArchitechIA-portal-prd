@@ -201,9 +201,11 @@ interface TabbedNotesProps {
   onActiveChange?: (tab: { id: string; name: string; content: string }) => void
   // Pestaña a mostrar al montar (el padre remonta el componente al aplicar cambios de la IA)
   initialActiveId?: string
+  // Acciones del padre (por ejemplo «Guardar») a la derecha de la barra de pestañas
+  acciones?: React.ReactNode
 }
 
-export default function TabbedNotes({ value, onChange, onActiveChange, initialActiveId }: TabbedNotesProps) {
+export default function TabbedNotes({ value, onChange, onActiveChange, initialActiveId, acciones }: TabbedNotesProps) {
   const [tabs, setTabs] = useState<NoteTab[]>(() => parse(value))
   const [activeId, setActiveId] = useState<string>(() => {
     const t = parse(value)
@@ -322,6 +324,7 @@ export default function TabbedNotes({ value, onChange, onActiveChange, initialAc
         >
           <Plus size={14} />
         </button>
+        {acciones && <div className="ml-auto flex items-center gap-2 px-2 py-1 shrink-0 self-center">{acciones}</div>}
       </div>
 
       {/* Active tab editor */}

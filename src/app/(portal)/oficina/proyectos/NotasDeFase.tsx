@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, Save, Paperclip, Download, Trash2, ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Loader2, Save, ChevronDown, ChevronRight } from 'lucide-react'
 import TabbedNotes from '@/components/TabbedNotes'
 import { sanitizarHtml } from '../../solutions/pilots/[id]/sanitizar'
-import { api, post, put, del, hace } from './api'
+import { api, put, hace } from './api'
 
 // Notas y archivos de cada fase DENTRO del proyecto (sustituyen a las notas del Lead Hub). Texto enriquecido en pestañas, como siempre.
 
@@ -33,10 +33,8 @@ export default function NotasDeFase({ proyectoId, clave, esPreventa, soloLectura
   const [notas, setNotas] = useState<Record<string, Nota> | null>(null)
   const [texto, setTexto] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
-  const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState('')
   const [abierto, setAbierto] = useState(false)
-  const archivo = useRef<HTMLInputElement>(null)
 
   const cargar = useCallback(async () => {
     try { const r = await api<{ notas: Record<string, Nota> }>(`/api/proyectos/${proyectoId}/notas`); setNotas(r.notas ?? {}) } catch (e) { setError(e instanceof Error ? e.message : 'No se pudieron cargar las notas'); setNotas({}) }
@@ -51,22 +49,6 @@ export default function NotasDeFase({ proyectoId, clave, esPreventa, soloLectura
     setGuardando(true); setError('')
     try { await put(`/api/proyectos/${proyectoId}/notas/${clave}`, { contenido: texto }); setTexto(null); await cargar() } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar') } finally { setGuardando(false) }
   }
-  async function adjuntar(f: File) {
-    if (f.size > 5 * 1024 * 1024) { setError('Máximo 5 MB por archivo'); return }
-    setSubiendo(true); setError('')
-    try {
-      const b64 = await new Promise<string>((ok, mal) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] ?? ''); r.onerror = () => mal(new Error('No se pudo leer el archivo')); r.readAsDataURL(f) })
-      await post(`/api/proyectos/${proyectoId}/archivos-nota`, { fase: clave, nombre: f.name, mimeType: f.type, base64: b64 })
-      await cargar()
-    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo adjuntar') } finally { setSubiendo(false) }
-  }
-  async function descargar(a: ArchivoNota) {
-    try { const r = await api<{ base64: string; mimeType: string }>(`/api/proyectos/${proyectoId}/archivos-nota/${a.id}`); const l = document.createElement('a'); l.href = `data:${r.mimeType || 'application/octet-stream'};base64,${r.base64}`; l.download = a.nombre; l.click() } catch { setError('No se pudo descargar el archivo') }
-  }
-  async function quitar(a: ArchivoNota) {
-    if (!window.confirm(`¿Quitar «${a.nombre}»?`)) return
-    try { await del(`/api/proyectos/${proyectoId}/archivos-nota/${a.id}`); await cargar() } catch { setError('No se pudo quitar el archivo') }
-  }
 
   if (!notas) return <div className="flex justify-center py-4 text-[#7f8a9c]"><Loader2 size={14} className="animate-spin" /></div>
   const previas = PREVENTA.filter(f => f.clave !== clave && notas[f.clave] && !vacio(notas[f.clave].contenido))
@@ -79,36 +61,12 @@ export default function NotasDeFase({ proyectoId, clave, esPreventa, soloLectura
           ? <div><Solo raw={nota?.contenido ?? ''} /></div>
           : (<>
             <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-              <TabbedNotes key={`${clave}-${nota?.actualizadoEn ?? 'nueva'}`} value={contenido} onChange={setTexto} />
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => void guardar()} disabled={guardando || texto === null} className="flex items-center gap-1.5 disabled:opacity-40" style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 11 }}>
-                {guardando ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Guardar notas</button>
-              {texto !== null && <span className="text-[10px] text-amber-300">Cambios sin guardar</span>}
-              {nota?.actualizadoEn && texto === null && <span className="text-[10px] text-[#7f8a9c]">Guardado {hace(nota.actualizadoEn)}{nota.actualizadoPor ? ` por ${nota.actualizadoPor}` : ''}</span>}
+              <TabbedNotes key={`${clave}-${nota?.actualizadoEn ?? 'nueva'}`} value={contenido} onChange={setTexto} acciones={<>
+                {texto !== null && <span className="text-[10px] text-amber-300 whitespace-nowrap">Sin guardar</span>}
+                <button onClick={() => void guardar()} disabled={guardando || texto === null} title={nota?.actualizadoEn && texto === null ? `Guardado ${hace(nota.actualizadoEn)}${nota.actualizadoPor ? ` por ${nota.actualizadoPor}` : ''}` : 'Guardar las notas de esta fase'} className="flex items-center gap-1.5 disabled:opacity-40" style={{ padding: '4px 12px', background: 'linear-gradient(135deg,#f97316,#ea580c)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 11 }}>
+                  {guardando ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Guardar</button></>} />
             </div>
           </>)}
-
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] flex-1">Archivos de la fase</p>
-          {!soloLectura && <>
-            <input ref={archivo} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) void adjuntar(f); e.target.value = '' }} />
-            <button onClick={() => archivo.current?.click()} disabled={subiendo} className="flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200 disabled:opacity-40">{subiendo ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Adjuntar</button>
-          </>}
-        </div>
-        {(nota?.archivos ?? []).length === 0 && <p className="text-[11px] text-[#7f8a9c]">Sin archivos.</p>}
-        <div className="space-y-1">
-          {(nota?.archivos ?? []).map(a => (
-            <div key={a.id} className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-white/[0.05]">
-              <Paperclip size={11} className="text-[#7f8a9c] flex-shrink-0" />
-              <button onClick={() => void descargar(a)} className="text-[11px] text-gray-300 truncate flex-1 text-left" title="Descargar">{a.nombre}</button>
-              <span className="text-[10px] text-[#7f8a9c]">{Math.max(1, Math.round(a.size / 1024))} KB</span>
-              <button onClick={() => void descargar(a)} title="Descargar" className="text-[#7f8a9c] hover:text-gray-200"><Download size={11} /></button>
-              {!soloLectura && <button onClick={() => void quitar(a)} title="Quitar" className="text-[#7f8a9c] hover:text-red-400"><Trash2 size={11} /></button>}
-            </div>))}
-        </div>
-      </div>
 
       {!esPreventa && previas.length > 0 && (
         <div>
