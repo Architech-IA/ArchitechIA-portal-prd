@@ -10,7 +10,7 @@ import CouncilView from './CouncilView'
 import ProyectosView from './proyectos/ProyectosView'
 import MotorView from './motor/MotorView'
 import CostosView from './costos/CostosView'
-import { Coins, LayoutTemplate, Tag } from 'lucide-react'
+import { Coins, LayoutTemplate, Tag, ChevronLeft } from 'lucide-react'
 import TiposView from './tipos/TiposView'
 // Migrado desde /backlog (antes item propio del sidebar principal) a
 // subpage de Oficina — se reusa el componente real tal cual, sin duplicar
@@ -342,16 +342,17 @@ function OficinaPageInner() {
       </div>
       </div>
 
-      {/* Sidebar toggle button */}
-      <button
-        onClick={() => setSidebarOpen(o => !o)}
-        className="flex-shrink-0 flex items-center justify-center w-4 hover:w-5 transition-all duration-200 group z-10"
-        style={{ background: 'rgba(0,0,0,0.2)', borderRight: '1px solid rgba(255,255,255,0.05)' }}
-        title={sidebarOpen ? 'Ocultar sidebar' : 'Mostrar sidebar'}>
-        <span style={{ color: '#f97316', fontSize: '13px', fontWeight: 900 }}>
-          {sidebarOpen ? '‹' : '›'}
-        </span>
-      </button>
+      {/* Asa para plegar el menú: media píldora de vidrio pegada al borde, centrada en vertical. En reposo es discreta; el naranja aparece al interactuar. */}
+      <div className="relative flex-shrink-0 w-0 z-20">
+        <button
+          onClick={() => setSidebarOpen(o => !o)}
+          aria-label={sidebarOpen ? 'Ocultar el menú' : 'Mostrar el menú'} aria-expanded={sidebarOpen}
+          title={sidebarOpen ? 'Ocultar el menú' : 'Mostrar el menú'}
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-11 flex items-center justify-center rounded-r-xl text-[#7f8a9c] bg-white/[0.06] hover:bg-white/[0.13] hover:text-orange-300 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-400"
+          style={{ border: '1px solid rgba(255,255,255,0.12)', borderLeft: 'none', backdropFilter: 'blur(14px) saturate(160%)', WebkitBackdropFilter: 'blur(14px) saturate(160%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 4px 0 14px rgba(0,0,0,0.3)' }}>
+          {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
+      </div>
 
       {/* ── Center: Content ── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
