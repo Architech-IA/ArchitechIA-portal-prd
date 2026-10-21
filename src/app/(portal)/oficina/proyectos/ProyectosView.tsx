@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
+  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, PanelRightClose, PanelRightOpen, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -80,9 +80,6 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
       .then(d => { if (pidRef.current === id) setFichaResumen({ existe: d.existe, nombre: d.cliente?.nombre ?? '', ok: d.completitud.ok, total: d.completitud.total }) })
       .catch(() => { if (pidRef.current === id) setFichaResumen(null) })
   }, [])
-  const [listaAbierta, setListaAbierta] = useState(true)
-  useEffect(() => { try { if (localStorage.getItem('proyectos.lista') === '0') setListaAbierta(false) } catch { /* sin almacenamiento */ } }, [])
-  const alternarLista = () => setListaAbierta(o => { const n = !o; try { localStorage.setItem('proyectos.lista', n ? '1' : '0') } catch { /* sin almacenamiento */ } return n })
   const [nueva, setNueva] = useState(false)
   const [vista, setVista] = useState<string>('asistente')
   const [fasesRes, setFasesRes] = useState<FasesRes | null>(null)
@@ -268,56 +265,12 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 @keyframes px-entra { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .px-hover section { animation: px-entra .22s cubic-bezier(.22,1,.36,1) both; }
 @media (prefers-reduced-motion: reduce) { .px-hover *, .px-hover section { animation: none !important; transition: none !important; } }`}</style>
-      {/* ── Columna A: proyectos ── */}
-      <div className={`w-60 flex-shrink-0 flex flex-col border-r border-white/5 ${pid && listaAbierta ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.15)' }}>
-        <div className="px-3 pt-3 pb-2 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-2"><FolderKanban size={14} className="text-indigo-300" /><span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Proyectos</span><span className="text-[11px] text-[#7f8a9c]">{lista.length}</span><span className="flex-1" />
-            <button onClick={() => setNuevoProyecto(true)} title="Nuevo proyecto: registra el lead, crea el proyecto y arranca el motor" aria-label="Nuevo proyecto" className="text-[#7f8a9c] hover:text-gray-200"><Plus size={14} /></button>
-            <button onClick={() => setEditorPlantillas(true)} title="Plantillas de fases: entregables, criterios y roles de sesión" aria-label="Plantillas de fases" className="text-[#7f8a9c] hover:text-gray-200"><SlidersHorizontal size={13} /></button></div>
-          <div className="relative">
-            <Search size={11} className="absolute left-2 top-2 text-[#7f8a9c]" />
-            <input value={filtro} onChange={e => setFiltro(e.target.value)} placeholder="Filtrar…" className="w-full rounded-lg pl-7 pr-2 py-1.5 text-[11px] text-gray-300 outline-none border border-white/10 focus:border-indigo-500/40 placeholder-gray-600" style={{ background: 'rgba(255,255,255,0.04)' }} />
-          </div>
-          <div className="flex gap-1 mt-2">
-            {([['todas', 'ALL'], ['COMERCIAL', 'BUSINESS'], ['INTERNO', 'INTERN']] as const).map(([k, txt]) => (
-              <button key={k} onClick={() => setFiltroNat(k)} className="flex-1 px-1.5 py-0.5 rounded-md text-[10px] transition-colors"
-                style={filtroNat === k ? { background: 'rgba(168,85,247,0.25)', color: '#f3e8ff', border: '1px solid rgba(168,85,247,0.5)' } : { background: 'rgba(255,255,255,0.04)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.07)' }}>
-                {txt} {k === 'todas' ? lista.length : lista.filter(p => p.naturaleza === k).length}</button>))}
-          </div>
-          <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-[#7f8a9c]">
-            <span>Orden</span>
-            <select value={orden} onChange={e => setOrden(e.target.value as Orden)} className="rounded px-1 py-0.5 text-[10px] text-gray-300 bg-black/30 border border-white/10 outline-none">
-              {ORDENES.map(o => <option key={o.k} value={o.k}>{o.txt}</option>)}</select>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-1">
-          {cargandoLista && <div className="flex justify-center py-6 text-[#7f8a9c]"><Loader2 size={14} className="animate-spin" /></div>}
-          {filtrada.map(p => (
-            <button key={p.id} onClick={() => elegirProyecto(p.id)} className="w-full text-left rounded-lg px-2.5 py-2 transition-colors"
-              style={p.id === pid ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.35)' } : { background: 'rgba(255,255,255,0.02)', border: '1px solid transparent' }}>
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[11px] font-medium truncate flex-1 ${p.id === pid ? 'text-white' : 'text-gray-300'}`}>{p.nombre}</span>
-                {p.naturaleza === 'INTERNO' && <span title={`Interno (${p.tipo})`} className="text-[9px] px-1 rounded flex-shrink-0" style={{ background: 'rgba(168,85,247,0.2)', color: '#d8b4fe' }}>interno</span>}
-                {esperaAprobacion(p.fase) && <span title="La puerta de la fase está completa: espera aprobación" className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />}
-                {p.propuestasPendientes > 0 && <span title="Propuestas de memoria pendientes" className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
-              </div>
-              {p.fase
-                ? <p className="text-[10px] mt-0.5 truncate font-medium" style={{ color: colorFase(p.fase) }}>{textoFase(p.fase)}<span className="font-normal text-[#7f8a9c]"> · {(ETIQUETA_BLOQUE[p.fase.bloque] ?? '').toLowerCase()}{p.fase.estadoMotor === 'EN_CURSO' && p.fase.puerta.total > 0 ? ` · puerta ${p.fase.puerta.ok}/${p.fase.puerta.total}` : ''}</span></p>
-                : <p className="text-[10px] mt-0.5 text-[#6b7280]">Sin motor de fases</p>}
-              <p className="text-[10px] text-[#7f8a9c] mt-0.5 truncate">
-                {p.codigo ? `${p.codigo} · ` : ''}{p.sesiones} sesión{p.sesiones === 1 ? '' : 'es'}{p.ultimaActividad ? ` · ${hace(p.ultimaActividad)}` : ''}
-              </p>
-            </button>))}
-          {!cargandoLista && filtrada.length === 0 && <p className="text-[11px] text-[#7f8a9c] text-center py-4">Sin resultados.</p>}
-        </div>
-      </div>
-
       {/* ── Columna B: sesiones + chat ── */}
       <div className="flex-1 min-w-0 flex flex-col">
         {!pid && (
           <GaleriaProyectos proyectos={filtrada} cargando={cargandoLista} filtro={filtro} onFiltro={setFiltro} nat={filtroNat} onNat={setFiltroNat}
             conteo={k => (k === 'todas' ? lista.length : lista.filter(p => p.naturaleza === k).length)} orden={orden} onOrden={o => setOrden(o as Orden)} ordenes={ORDENES}
-            onElegir={id => { setListaAbierta(false); elegirProyecto(id) }} onNuevo={() => setNuevoProyecto(true)} onPlantillas={() => setEditorPlantillas(true)}
+            onElegir={elegirProyecto} onNuevo={() => setNuevoProyecto(true)} onPlantillas={() => setEditorPlantillas(true)}
             espera={esperaAprobacion} color={colorFase} texto={textoFase} />)}
 
         {pid && (
@@ -325,7 +278,6 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
             {/* Cabecera + sesiones */}
             <div className="flex-shrink-0 border-b border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
               <div className="flex items-center gap-2 px-4 pt-2.5">
-                <button onClick={alternarLista} className="text-[#7f8a9c] hover:text-gray-200 flex-shrink-0" title={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'} aria-label={listaAbierta ? 'Ocultar la lista de proyectos' : 'Mostrar la lista de proyectos'}>{listaAbierta ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}</button>
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
                   style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
