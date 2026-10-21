@@ -119,8 +119,8 @@ export default function VistaFase({ onAbrirPlantillas, proyectoId, fase, data, o
       {cerrado && <p className="text-[12px] rounded-lg px-3 py-2" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5' }}>{data.estado === 'COMPLETADO' ? 'El proyecto está completado.' : 'La oportunidad se cerró como perdida: las fases ya no se mueven.'}</p>}
       {error && <p className="text-[11px] text-red-300">{error}</p>}
 
-      {/* Lo que falta para cerrar la fase (65 %) a la derecha del trabajo de la fase (35 %) */}
-      <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,35fr)_minmax(0,65fr)]`}>
+      {/* Lo que falta para cerrar la fase (50 %) junto al trabajo de la fase (50 %) */}
+      <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-2`}>
           <Seccion titulo="Trabajo de la fase" derecha={botonConfig}>
          <div className="space-y-4">
            <div>
