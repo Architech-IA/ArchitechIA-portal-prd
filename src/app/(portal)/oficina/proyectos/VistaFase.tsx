@@ -148,10 +148,9 @@ export default function VistaFase({ proyectoId, fase, data, onCambio, onAbrirPan
            </div>
          </div>
           </Seccion>
-        <Seccion titulo={`${ultima ? 'Para cerrar el proyecto' : `Para pasar a ${siguiente?.nombre ?? 'la siguiente fase'}`} · ${(fase.requeridos ?? []).filter(r => r.ok).length + marcados}/${(fase.requeridos ?? []).length + fase.puerta.criterios.length}`}>
+        <Seccion titulo={`Entregables · ${(fase.requeridos ?? []).filter(r => r.ok).length + marcados}/${(fase.requeridos ?? []).length + fase.puerta.criterios.length}`}>
           <div className="space-y-4">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Entregables ({(fase.requeridos ?? []).filter(r => r.ok).length}/{(fase.requeridos ?? []).length})</p>
               <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} sesiones={sesiones} />
             </div>
             <div className="border-t border-white/5 pt-3">
