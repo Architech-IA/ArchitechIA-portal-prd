@@ -45,7 +45,7 @@ function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derech
 
 export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, onElegirSesion, renderChat, onAbrirPlantillas, proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
   onAbrirFicha?: () => void; onAbrirLead?: () => void; onInvestigarEmpresa?: () => void; onAbrirPlantillas?: (fase: string) => void
-  onNuevaGeneral?: (texto: string) => Promise<void>; creandoGeneral?: boolean
+  onNuevaGeneral?: (texto: string, fase: string) => Promise<void>; creandoGeneral?: boolean
   sidActiva?: string | null; onElegirSesion?: (id: string) => void; renderChat?: (s: SesionRes) => React.ReactNode
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
@@ -70,10 +70,11 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
   const [faseSid, setFaseSid] = useState<string | null>(null)
   const [panelModo, setPanelModo] = useState<'fase' | 'general'>('general')
   const [primero, setPrimero] = useState('')
-  const delaFase = (x: SesionRes) => x.faseClave === fase.clave && x.estado !== 'ARCHIVADA'
+  // Las sesiones de rol de esta fase; el asistente de la fase es la conversación libre ligada a ella (sin rol). Cada fase tiene las suyas.
+  const delaFase = (x: SesionRes) => x.faseClave === fase.clave && !!x.rol && x.estado !== 'ARCHIVADA'
   const activa = sesiones.find(x => x.id === faseSid && delaFase(x)) ?? null
   const abiertaReciente = [...sesiones].filter(x => delaFase(x) && x.estado === 'ACTIVA').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.id
-  const general = [...sesiones].filter(x => !x.faseClave && x.tipo !== 'BITACORA' && x.estado === 'ACTIVA').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null
+  const general = [...sesiones].filter(x => x.faseClave === fase.clave && !x.rol && x.tipo !== 'BITACORA' && x.estado === 'ACTIVA').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null
   // Al entrar a la fase: si hay una sesión suya abierta (o la global ya es de esta fase), se muestra; si no, el asistente general
   useEffect(() => {
     if (activa) return
@@ -159,21 +160,21 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
         <section className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', height: 620 }}>
           <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-white/5 flex-shrink-0">
             <button onClick={() => { setPanelModo('general'); if (general) onElegirSesion?.(general.id) }} className="text-[11px] px-2.5 py-1 rounded-lg transition-colors" aria-pressed={panelModo === 'general'}
-              style={panelModo === 'general' ? { background: 'rgba(99,102,241,0.22)', color: '#e0e7ff', border: '1px solid rgba(129,140,248,0.5)' } : { background: 'transparent', color: '#9ca3af', border: '1px solid transparent' }}>Asistente general</button>
+              style={panelModo === 'general' ? { background: 'rgba(99,102,241,0.22)', color: '#e0e7ff', border: '1px solid rgba(129,140,248,0.5)' } : { background: 'transparent', color: '#9ca3af', border: '1px solid transparent' }}>Asistente de la fase</button>
             {activa && <button onClick={() => { setPanelModo('fase'); onElegirSesion?.(activa.id) }} className="text-[11px] px-2.5 py-1 rounded-lg transition-colors max-w-[260px] truncate" aria-pressed={panelModo === 'fase'} title={activa.titulo}
               style={panelModo === 'fase' ? { background: 'rgba(99,102,241,0.22)', color: '#e0e7ff', border: '1px solid rgba(129,140,248,0.5)' } : { background: 'transparent', color: '#9ca3af', border: '1px solid transparent' }}>Sesión · {activa.titulo}</button>}
             <span className="flex-1" />
-            {panelModo === 'general' && general && onNuevaGeneral && <button disabled={creandoGeneral} onClick={() => void onNuevaGeneral('')} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}>{creandoGeneral ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Nueva conversación</button>}
+            {panelModo === 'general' && general && onNuevaGeneral && <button disabled={creandoGeneral} onClick={() => void onNuevaGeneral('', fase.clave)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}>{creandoGeneral ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Nueva conversación</button>}
           </div>
           {panelModo === 'fase' && activa && renderChat ? <div className="flex-1 min-h-0">{renderChat(activa)}</div>
             : general && renderChat ? <div className="flex-1 min-h-0">{renderChat(general)}</div>
             : (
               <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-3">
-                <p className="text-[13px] text-gray-200 font-medium">Asistente general del proyecto</p>
-                <p className="text-[11px] text-[#7f8a9c] max-w-sm leading-snug">Pregúntale lo que quieras sobre el proyecto o pídele que trabaje en algo. Tiene el mismo contexto, herramientas y permisos que una sesión de la fase.</p>
+                <p className="text-[13px] text-gray-200 font-medium">Asistente de esta fase</p>
+                <p className="text-[11px] text-[#7f8a9c] max-w-sm leading-snug">Pregúntale lo que quieras sobre el proyecto o pídele que trabaje en algo de esta fase. Cada fase tiene su propia conversación; tiene el mismo contexto, herramientas y permisos que una sesión de la fase.</p>
                 <div className="w-full max-w-md flex gap-2">
                   <textarea value={primero} onChange={e => setPrimero(e.target.value)} rows={3} placeholder="Escribe tu primer mensaje…" className="flex-1 rounded-lg px-3 py-2 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-400/50" />
-                  <button disabled={creandoGeneral || !primero.trim() || !onNuevaGeneral} onClick={() => { const t = primero; setPrimero(''); void onNuevaGeneral?.(t) }} className="self-end flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] text-white disabled:opacity-40" style={{ background: 'rgba(99,102,241,0.85)' }}>{creandoGeneral ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} Enviar</button>
+                  <button disabled={creandoGeneral || !primero.trim() || !onNuevaGeneral} onClick={() => { const t = primero; setPrimero(''); void onNuevaGeneral?.(t, fase.clave) }} className="self-end flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] text-white disabled:opacity-40" style={{ background: 'rgba(99,102,241,0.85)' }}>{creandoGeneral ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} Enviar</button>
                 </div>
               </div>)}
         </section>

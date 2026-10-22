@@ -172,13 +172,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la sesión') } finally { setCreando(false) }
   }
 
-  // El asistente general: una sesión libre del proyecto (sin fase), con el primer mensaje opcional
+  // El asistente de la fase: una conversación libre ligada a la fase (sin rol), con el primer mensaje opcional
   const [creandoGeneral, setCreandoGeneral] = useState(false)
-  async function nuevaGeneral(texto: string) {
+  async function nuevaGeneral(texto: string, fase: string) {
     if (!pid || creandoGeneral) return
     setCreandoGeneral(true); setError(null)
     try {
-      const s = await post<SesionRes>(`/api/proyectos/${pid}/sesiones`, { tipo: 'LIBRE', privada: false })
+      const s = await post<SesionRes>(`/api/proyectos/${pid}/sesiones`, { tipo: 'LIBRE', privada: false, fase })
       if (texto.trim()) await post(`/api/proyectos/${pid}/sesiones/${s.id}/mensajes`, { contenido: texto.trim() })
       await cargarDetalle(pid, s.id); void cargarLista()
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la conversación') } finally { setCreandoGeneral(false) }
