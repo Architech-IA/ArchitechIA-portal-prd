@@ -50,7 +50,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
   const [lista, setLista] = useState<ProyectoLista[]>([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
-  const [filtroNat, setFiltroNat] = useState<FiltroNat>('todas')
+  const [filtroNat, setFiltroNat] = useState<FiltroNat>('COMERCIAL')
   const [orden, setOrden] = useState<Orden>('actividad')
   const [pid, setPid] = useState<string | null>(null)
   const [det, setDet] = useState<DetalleProyecto | null>(null)
