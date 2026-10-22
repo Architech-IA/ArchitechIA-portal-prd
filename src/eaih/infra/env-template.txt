@@ -1,0 +1,45 @@
+# EAIH — Environment Variables Template
+# Copiar este archivo a .env.dev o .env.staging en /opt/eaih/
+# ⚠️ NUNCA commitear archivos .env en git
+
+# --- Base de datos ---
+DATABASE_URL="postgresql://eaih_USER:eaih_PASSWORD@localhost:PORT/eaih_DB?schema=public"
+DIRECT_URL="postgresql://eaih_USER:eaih_PASSWORD@localhost:PORT/eaih_DB?schema=public"
+
+# --- Redis ---
+REDIS_URL="redis://:REDIS_PASSWORD@localhost:REDIS_PORT"
+
+# --- NextAuth ---
+NEXTAUTH_SECRET="GENERAR_SECRET_HEX_64_CHARS"
+NEXTAUTH_URL="http://localhost:PORT"
+
+# --- Google OAuth (https://console.cloud.google.com/apis/credentials) ---
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+
+# --- Microsoft OAuth (https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps) ---
+MS_CLIENT_ID=""
+MS_CLIENT_SECRET=""
+MS_TENANT_ID="common"
+
+# --- OpenAI (https://platform.openai.com/api-keys) ---
+OPENAI_API_KEY=""
+
+# --- App Config ---
+NODE_ENV=development
+PORT=3010
+LOG_LEVEL=debug
+EAIH_ENV=development
+
+# --- EAIH Feature Flags ---
+EAIH_LOG_ENCRYPTED_FIELDS=false
+EAIH_DATA_RETENTION_DAYS=90
+EAIH_PII_MASKING=false
+
+# --- VPS Integration ---
+VPS_METRICS_URL="http://host-gateway:9100"
+VPS_METRICS_TOKEN=""
+
+# --- GitHub (CI/CD) ---
+GITHUB_TOKEN=""
+GITHUB_USERNAME=""

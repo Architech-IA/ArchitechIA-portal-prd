@@ -1,0 +1,46 @@
+name: EAIH CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/eaih/**'
+      - 'src/app/(portal)/inbox/**'
+      - 'src/app/api/inbox/**'
+      - 'src/lib/inbox.ts'
+      - 'src/config/eaih/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/eaih/**'
+      - 'src/app/(portal)/inbox/**'
+      - 'src/app/api/inbox/**'
+      - 'src/lib/inbox.ts'
+      - 'src/config/eaih/**'
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint on EAIH paths
+        run: npx eslint src/eaih src/app/\(portal\)/inbox src/app/api/inbox src/lib/inbox.ts --max-warnings=0
+
+      - name: Run Prettier check
+        run: npx prettier --check "src/eaih/**/*" "src/app/(portal)/inbox/**/*" "src/app/api/inbox/**/*"
+
+      - name: Run TypeScript type check
+        run: npx tsc --noEmit
