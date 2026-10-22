@@ -1,0 +1,106 @@
+// =============================================================================
+// ADDITIONS TO prisma/schema.prisma
+// =============================================================================
+// Instrucciones de aplicación:
+// 1. Copiar el bloque de abajo al final de `prisma/schema.prisma`.
+// 2. Agregar a tu modelo `User` existente las relaciones inversas:
+//      emailAccounts    EmailAccount[]
+//      externalMessages ExternalMessage[]
+// 3. Ejecutar:
+//      npx prisma migrate dev --name add_encrypted_email_models
+//      npx prisma generate
+// =============================================================================
+
+enum EmailProvider {
+  GOOGLE
+  MICROSOFT
+}
+
+model EmailAccount {
+  id                 String   @id @default(uuid())
+  userId             String
+  provider           EmailProvider
+  // Correo de la cuenta cifrado en reposo (PII).
+  accountEmailCipher String?
+  // Id inmutable que devuelve el proveedor (no es PII, se usa para deduplicar).
+  externalAccountId  String?
+  // Cursor/página para sincronización incremental (delta/pageToken).
+  syncCursor         String?
+  lastSyncedAt       DateTime?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ExternalMessage[]
+
+  // Una sola cuenta por proveedor por usuario.
+  @@unique([userId, provider])
+  @@index([userId, provider])
+  @@index([externalAccountId])
+}
+
+model ExternalMessage {
+  id String @id @default(uuid())
+
+  // Claves de agregación y control de acceso (texto plano, indexable).
+  userId            String
+  accountId         String
+  provider          EmailProvider
+  externalId        String // id del mensaje en Gmail/Graph
+  threadId          String // id del hilo/conversación
+  conversationIndex String? // orden relativo dentro del hilo (si el proveedor lo expone)
+
+  // Metadatos operativos indexables (no PII directo).
+  receivedAt     DateTime
+  isRead         Boolean @default(false)
+  isImportant    Boolean @default(false)
+  isDraft        Boolean @default(false)
+  hasAttachments Boolean @default(false)
+
+  // Etiquetas/categorías como JSON plano para portabilidad SQLite.
+  labelsJson     String  @default("[]")
+  categoriesJson String  @default("[]")
+
+  // PII y contenido del correo: SIEMPRE cifrados en reposo con AES-256-GCM.
+  senderCipher           String // { name, email }
+  recipientsCipher       String // [{ name?, email }]
+  subjectCipher          String
+  bodyPreviewCipher      String
+  bodyHtmlCipher         String
+  bodyTextCipher         String?
+  headersCipher          String?
+  attachmentsCipher      String? // [{ name, contentType, size, contentId }]
+  rawPayloadCipher       String? // payload crudo del proveedor, si se archiva
+
+  // Campos reservados para el pipeline de IA (Sprint 3).
+  aiSummaryCipher        String?
+  aiPriorityScore        Float?
+  aiPriorityReasonCipher String?
+  sentiment              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // Garantiza que no se duplique un mensaje por cuenta + proveedor + id externo.
+  @@unique([accountId, externalId, provider])
+
+  // Índices orientados a los filtros y ordenamientos del inbox.
+  @@index([userId, receivedAt])
+  @@index([userId, provider, receivedAt])
+  @@index([userId, threadId])
+  @@index([userId, isRead])
+  @@index([userId, isImportant])
+  @@index([userId, aiPriorityScore])
+}
+
+// Modelo User (referencia): agregar las siguientes líneas al modelo existente.
+//
+// model User {
+//   ...campos existentes...
+//   emailAccounts    EmailAccount[]
+//   externalMessages ExternalMessage[]
+// }
