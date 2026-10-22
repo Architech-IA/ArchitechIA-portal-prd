@@ -138,7 +138,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
       setFasesRes(r)
       if (primera && artInicial.current && artInicial.current in TITULO_DE_TAB) { const t = artInicial.current as TabKey; artInicial.current = null; setTabArt(t); setHubAbierto(true); setVista('art:' + t) }
       else if (primera) setVista(r.iniciado && r.estado === 'EN_CURSO' && r.faseActual ? r.faseActual : 'asistente')
-    } catch (e) { if (pidRef.current === id) setError(e instanceof Error ? e.message : 'No se pudieron cargar las fases') }
+    } catch (e) { if (pidRef.current === id) { setError(e instanceof Error ? e.message : 'No se pudieron cargar las fases'); if (primera) setVista('asistente') } }
   }, [])
 
   const cargarMeta = useCallback((id: string) => {
@@ -149,7 +149,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
     if (id === pid) return
     if (hubSucio && !window.confirm('Hay cambios sin guardar en los artefactos de este proyecto. Si cambias de proyecto se pierden. ¿Continuar?')) return
     setHubAbierto(false); setTabArt(null); setHubSucio(false); setMetaArt({}); cargarMeta(id); setFichaResumen(null); setFichaAbierta(false)
-    setPid(id); pidRef.current = id; setFasesRes(null); setVista('asistente'); void cargarFases(id, true); setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null); setCargandoDet(true)
+    setPid(id); pidRef.current = id; setFasesRes(null); setVista(''); void cargarFases(id, true); setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null); setCargandoDet(true)
     void cargarDetalle(id)
     cargarFicha(id)
   }
@@ -381,6 +381,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
                 renderChat={s => (det && det.yo ? <ChatSesion key={s.id} proyectoId={pid} sesion={s} rolInfo={rolDe(s)} yo={det.yo} onCambio={refrescar}
                   onAbrirSesion={id => { if (id) setSid(id); else void cargarDetalle(pid) }} onSesion={setSesionFull} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} /> : null)} /></div> : null
             })()}
+
+            {vista === '' && <div className="flex-1 flex items-center justify-center text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>}
 
             {vista === 'asistente' && <div className="flex-1 min-h-0">
               {det && sesion && det.yo && (
