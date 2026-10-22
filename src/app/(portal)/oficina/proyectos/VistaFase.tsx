@@ -158,14 +158,14 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
       {/* Lo que falta para cerrar la fase (50 %) junto al trabajo de la fase (50 %) */}
       <div className={`grid grid-cols-1 gap-4 items-start lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]`}>
         <section className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', height: 620 }}>
-          <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-white/5 flex-shrink-0">
-            <button onClick={() => { setPanelModo('general'); if (general) onElegirSesion?.(general.id) }} className="text-[11px] px-2.5 py-1 rounded-lg transition-colors" aria-pressed={panelModo === 'general'}
-              style={panelModo === 'general' ? { background: 'rgba(99,102,241,0.22)', color: '#e0e7ff', border: '1px solid rgba(129,140,248,0.5)' } : { background: 'transparent', color: '#9ca3af', border: '1px solid transparent' }}>Asistente de la fase</button>
-            {activa && <button onClick={() => { setPanelModo('fase'); onElegirSesion?.(activa.id) }} className="text-[11px] px-2.5 py-1 rounded-lg transition-colors max-w-[260px] truncate" aria-pressed={panelModo === 'fase'} title={activa.titulo}
-              style={panelModo === 'fase' ? { background: 'rgba(99,102,241,0.22)', color: '#e0e7ff', border: '1px solid rgba(129,140,248,0.5)' } : { background: 'transparent', color: '#9ca3af', border: '1px solid transparent' }}>Sesión · {activa.titulo}</button>}
+          <header className="flex items-center gap-4 px-4 py-2.5 border-b border-white/5 flex-shrink-0" style={{ background: 'linear-gradient(90deg,rgba(249,115,22,0.05),transparent 60%)' }}>
+            <button onClick={() => { setPanelModo('general'); if (general) onElegirSesion?.(general.id) }} className="text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors hover:text-gray-100" aria-pressed={panelModo === 'general'}
+              style={{ color: panelModo === 'general' ? '#e5e7eb' : '#6b7686', borderBottom: panelModo === 'general' && activa ? '2px solid rgba(249,115,22,0.8)' : '2px solid transparent', paddingBottom: 2 }}>Asistente de la fase</button>
+            {activa && <button onClick={() => { setPanelModo('fase'); onElegirSesion?.(activa.id) }} className="text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors hover:text-gray-100 max-w-[280px] truncate" aria-pressed={panelModo === 'fase'} title={activa.titulo}
+              style={{ color: panelModo === 'fase' ? '#e5e7eb' : '#6b7686', borderBottom: panelModo === 'fase' && activa ? '2px solid rgba(249,115,22,0.8)' : '2px solid transparent', paddingBottom: 2 }}>Sesión · {activa.titulo}</button>}
             <span className="flex-1" />
             {panelModo === 'general' && general && onNuevaGeneral && <button disabled={creandoGeneral} onClick={() => void onNuevaGeneral('', fase.clave)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}>{creandoGeneral ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Nueva conversación</button>}
-          </div>
+          </header>
           {panelModo === 'fase' && activa && renderChat ? <div className="flex-1 min-h-0">{renderChat(activa)}</div>
             : general && renderChat ? <div className="flex-1 min-h-0">{renderChat(general)}</div>
             : (
