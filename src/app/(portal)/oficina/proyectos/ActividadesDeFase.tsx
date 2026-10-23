@@ -20,6 +20,8 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
   onAbrirSesion?: (id: string) => void
   onCambio?: () => void
 }) {
+  // Por defecto cada actividad muestra solo su título, quién la hace y su estado; al pulsarla se despliegan el entregable y las acciones
+  const [expandida, setExpandida] = useState<string | null>(null)
   const [cerrando, setCerrando] = useState<string | null>(null)
   const [evidencia, setEvidencia] = useState('')
   const [ocupada, setOcupada] = useState<string | null>(null)
@@ -53,25 +55,32 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
         const destino = destinoTexto(a.destino)
         return (
           <div key={a.clave} className="rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2 cursor-pointer" role="button" tabIndex={0} aria-expanded={expandida === a.clave}
+              onClick={() => setExpandida(x => (x === a.clave ? null : a.clave))} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandida(x => (x === a.clave ? null : a.clave)) } }}>
               {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
                 <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}{a.taskCode ? ' · ' + a.taskCode : ''}</p>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={hecha ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
+                {a.creada ? (porAceptar ? 'Por aceptar' : (ESTADO_TAREA[a.status ?? ''] ?? a.status)) : 'Aún no creada'}</span>
+            </div>
+
+            {expandida === a.clave && (
+              <div className="mt-2 pl-[22px] space-y-1.5" onClick={e => e.stopPropagation()}>
                 {abierta && destino && a.tipo === 'AGENTE' && (
                   <p className="text-[10px] mt-1 text-[#9ca3af]">{porAceptar ? `Falta aceptar el resultado en ${destino}` : `El resultado se deja en ${destino} y una persona lo acepta`}</p>)}
                 {a.entregable && (
                   <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: a.entregable.ok ? '#6ee7b7' : '#fcd34d' }} title="El entregable que produce esta actividad">
                     <Package size={10} /> {a.entregable.titulo}{a.entregable.ok ? ' · cumplido' : ' · pendiente'}</p>)}
-              </div>
-              {investigar && (
-                <button onClick={onInvestigar} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
-                  <Sparkles size={11} /> Investigar la empresa</button>)}
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={hecha ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                {a.creada ? (porAceptar ? 'Por aceptar' : (ESTADO_TAREA[a.status ?? ''] ?? a.status)) : 'Aún no creada'}</span>
-            </div>
 
-            {(abierta || (hecha && a.creada)) && (
+                {investigar && (
+                  <button onClick={onInvestigar} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
+                    <Sparkles size={11} /> Investigar la empresa</button>)}
+
+              </div>)}
+
+            {expandida === a.clave && (abierta || (hecha && a.creada)) && (
               <div className="flex items-center gap-1.5 mt-2 pl-[22px] flex-wrap">
                 {abierta && a.tipo === 'AGENTE' && !investigar && onIniciar && (sesion
                   ? <button onClick={() => onAbrirSesion?.(sesion.id)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}><MessageSquare size={11} /> Abrir la sesión</button>
@@ -84,7 +93,7 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
                   <button disabled={ocup} onClick={() => void enviar(a, 'reabrir')} className="flex items-center gap-1 text-[10px] text-[#7f8a9c] hover:text-gray-200 disabled:opacity-50"><Undo2 size={10} /> Reabrir</button>)}
               </div>)}
 
-            {cerrando === a.clave && (
+            {expandida === a.clave && cerrando === a.clave && (
               <div className="mt-2 pl-[22px] space-y-1.5">
                 <input value={evidencia} onChange={e => setEvidencia(e.target.value)} placeholder={a.entregable ? 'Enlace a la evidencia o al entregable (opcional)' : 'Enlace a la evidencia (opcional)'}
                   className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-400/50" />
