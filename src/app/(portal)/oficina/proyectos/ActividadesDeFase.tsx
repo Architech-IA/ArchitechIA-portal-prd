@@ -54,8 +54,8 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
         const porAceptar = a.status === 'IN_PROGRESS' && !!a.destino && sesiones.some(s => s.faseClave === fase.clave && s.actividadClave === a.clave && s.estado === 'CERRADA') && !sesion
         const destino = destinoTexto(a.destino)
         return (
-          <div key={a.clave} className="rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="flex items-start gap-2 cursor-pointer" role="button" tabIndex={0} aria-expanded={expandida === a.clave}
+          <div key={a.clave} className="rounded-lg px-3 py-2 bg-white/[0.04] hover:bg-white/[0.07] transition-colors">
+            <div className="flex items-start gap-2 cursor-pointer" tabIndex={0} aria-expanded={expandida === a.clave}
               onClick={() => setExpandida(x => (x === a.clave ? null : a.clave))} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandida(x => (x === a.clave ? null : a.clave)) } }}>
               {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
               <div className="min-w-0 flex-1">
