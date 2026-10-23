@@ -53,6 +53,9 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
   const [filtroNat, setFiltroNat] = useState<FiltroNat>('COMERCIAL')
   const [orden, setOrden] = useState<Orden>('actividad')
   const [pid, setPid] = useState<string | null>(null)
+  // La URL refleja el proyecto y la fase abiertos (?p=…&fase=…), para poder compartirla y volver con «atrás»
+  const faseUrl = useRef<string | null>(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('fase'))
+  const tuvoProyecto = useRef(false)
   const [det, setDet] = useState<DetalleProyecto | null>(null)
   const [cargandoDet, setCargandoDet] = useState(false)
   const [sid, setSid] = useState<string | null>(null)
@@ -137,7 +140,10 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
       if (pidRef.current !== id) return
       setFasesRes(r)
       if (primera && artInicial.current && artInicial.current in TITULO_DE_TAB) { const t = artInicial.current as TabKey; artInicial.current = null; setTabArt(t); setHubAbierto(true); setVista('art:' + t) }
-      else if (primera) setVista(r.iniciado && r.estado === 'EN_CURSO' && r.faseActual ? r.faseActual : 'asistente')
+      else if (primera) {
+        const pedida = faseUrl.current; faseUrl.current = null
+        setVista(pedida && (pedida === 'asistente' || (r.fases ?? []).some(x => x.clave === pedida)) ? pedida : r.iniciado && r.estado === 'EN_CURSO' && r.faseActual ? r.faseActual : 'asistente')
+      }
     } catch (e) { if (pidRef.current === id) { setError(e instanceof Error ? e.message : 'No se pudieron cargar las fases'); if (primera) setVista('asistente') } }
   }, [])
 
@@ -160,6 +166,28 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
     void cargarDetalle(id)
     cargarFicha(id)
   }
+  useEffect(() => {
+    if (pid) tuvoProyecto.current = true
+    const u = new URL(window.location.href)
+    if (!pid) {
+      if (tuvoProyecto.current && u.searchParams.has('p')) { ['p', 'fase', 'art'].forEach(k => u.searchParams.delete(k)); window.history.replaceState(null, '', u.toString()) }
+      return
+    }
+    if (vista === '') return
+    const art = vista.startsWith('art:') ? vista.slice(4) : null
+    const nuevo = u.searchParams.get('p') !== pid
+    u.searchParams.set('p', pid)
+    if (art) { u.searchParams.set('art', art); u.searchParams.delete('fase') } else { u.searchParams.set('fase', vista); u.searchParams.delete('art') }
+    if (u.toString() === window.location.href) return
+    if (nuevo) window.history.pushState(null, '', u.toString()); else window.history.replaceState(null, '', u.toString())
+  }, [pid, vista])
+  // «Atrás» desde un proyecto lleva a la galería
+  useEffect(() => {
+    if (!initialProyectoId && pidRef.current) {
+      setHubAbierto(false); setTabArt(null); setHubSucio(false); setFichaAbierta(false); setPanelAbierto(false)
+      setPid(null); pidRef.current = null; setFasesRes(null); setVista(''); setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null)
+    }
+  }, [initialProyectoId])
   // Proyecto recibido por URL (?p=…)
   useEffect(() => {
     if (!initialProyectoId) return
