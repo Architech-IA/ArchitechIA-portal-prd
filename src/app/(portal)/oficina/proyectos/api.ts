@@ -20,7 +20,7 @@ export interface RolSesion { clave: string; titulo: string; tipo: string; objeti
 export interface CierreItem { texto: string; ok: boolean }
 
 export interface SesionRes {
-  faseClave: string | null; rol: string | null; cierre: CierreItem[]
+  faseClave: string | null; actividadClave?: string | null; rol: string | null; cierre: CierreItem[]
   id: string; titulo: string; tipo: string; estado: string; privada: boolean
   creadaPorId: string; creadaPorNombre: string; cierreEstado: string | null
   createdAt: string; updatedAt: string; mensajes: number; mia: boolean

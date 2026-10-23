@@ -9,7 +9,7 @@ import FaseSesiones from './FaseSesiones'
 import ActividadesDeFase from './ActividadesDeFase'
 import NotasDeFase from './NotasDeFase'
 import EntregablesDeFase from './EntregablesDeFase'
-import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type RecursoFase, type SesionRes } from './api'
+import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type FaseActividadVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
 // dónde está lo que produce la fase y la puerta para pasar a la siguiente. Mover fases lo hacen los
@@ -43,9 +43,10 @@ function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derech
     </section>)
 }
 
-export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, onElegirSesion, renderChat, onAbrirPlantillas, proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
+export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoGeneral, sidActiva, onElegirSesion, renderChat, onAbrirPlantillas, proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
   onAbrirFicha?: () => void; onAbrirLead?: () => void; onInvestigarEmpresa?: () => void; onAbrirPlantillas?: (fase: string) => void
   onNuevaGeneral?: (texto: string, fase: string) => Promise<void>; creandoGeneral?: boolean
+  onIniciarActividad?: (a: FaseActividadVista) => Promise<void>
   sidActiva?: string | null; onElegirSesion?: (id: string) => void; renderChat?: (s: SesionRes, slot: HTMLElement | null) => React.ReactNode
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
@@ -232,7 +233,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
           <div className="space-y-4">
             <div>
               <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
-              <ActividadesDeFase fase={fase} onInvestigar={onInvestigarEmpresa} />
+              <ActividadesDeFase fase={fase} proyectoId={proyectoId} sesiones={sesiones} onInvestigar={onInvestigarEmpresa} onIniciar={onIniciarActividad ? a => onIniciarActividad(a) : undefined} onAbrirSesion={id => onElegirSesion?.(id)} onCambio={onCambio} />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>

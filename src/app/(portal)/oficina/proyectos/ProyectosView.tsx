@@ -6,7 +6,7 @@ import {
   ArrowLeft, Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
-import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
+import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseActividadVista, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
 import ChatSesion from './ChatSesion'
 import ResumenProyecto from './ResumenProyecto'
 import PanelContexto from './PanelContexto'
@@ -209,14 +209,20 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 
   // El asistente de la fase: una conversación libre ligada a la fase (sin rol), con el primer mensaje opcional
   const [creandoGeneral, setCreandoGeneral] = useState(false)
-  async function nuevaGeneral(texto: string, fase: string) {
+  async function nuevaGeneral(texto: string, fase: string, actividad?: { clave: string; titulo: string }) {
     if (!pid || creandoGeneral) return
     setCreandoGeneral(true); setError(null)
     try {
-      const s = await post<SesionRes>(`/api/proyectos/${pid}/sesiones`, { tipo: 'LIBRE', privada: false, fase })
+      const s = await post<SesionRes>(`/api/proyectos/${pid}/sesiones`, { tipo: 'LIBRE', privada: false, fase, ...(actividad ? { actividad: actividad.clave, titulo: actividad.titulo } : {}) })
       if (texto.trim()) await post(`/api/proyectos/${pid}/sesiones/${s.id}/mensajes`, { contenido: texto.trim() })
       await cargarDetalle(pid, s.id); void cargarLista()
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo crear la conversación') } finally { setCreandoGeneral(false) }
+  }
+
+  // «Iniciar con IA» en una actividad de la fase: abre una sesión ligada a ella; al cerrarla, la actividad queda hecha
+  async function iniciarActividad(fase: string, a: FaseActividadVista) {
+    const entrega = a.entregable ? ` Esta actividad produce el entregable «${a.entregable.titulo}»: déjalo como propuesta del artefacto correspondiente o como nota de la fase, para que una persona lo revise.` : ''
+    await nuevaGeneral(`Trabajemos esta actividad de la fase: «${a.titulo}».${entrega} Cuando termine, cerraré la sesión para dar la actividad por hecha. Empieza con lo que ya sabes del proyecto y dime qué te falta.`, fase, { clave: a.clave, titulo: a.titulo.slice(0, 80) })
   }
 
   async function iniciarRol(fase: string, rol: string) {
@@ -429,7 +435,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
               const f = fasesRes.fases.find(x => x.clave === vista)
               return f ? <div className="flex-1 min-h-0"><VistaFase onAbrirPlantillas={(fase: string) => { setPlantillasIni({ codigo: fasesRes?.plantilla?.codigo ?? (proyecto?.naturaleza === 'INTERNO' ? 'INICIATIVA_INTERNA' : 'PROYECTO_COMPLETO'), fase }); setEditorPlantillas(true) }} key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)} onInvestigarEmpresa={() => { setFichaAuto(n => n + 1); setFichaAbierta(true) }}
                 sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }}
-                sidActiva={sid} onElegirSesion={id => setSid(id)} onNuevaGeneral={nuevaGeneral} creandoGeneral={creandoGeneral}
+                sidActiva={sid} onElegirSesion={id => setSid(id)} onNuevaGeneral={nuevaGeneral} onIniciarActividad={a => iniciarActividad(f.clave, a)} creandoGeneral={creandoGeneral}
                 renderChat={(s, slot) => (det && det.yo ? <ChatSesion key={s.id} cabeceraEn={slot} proyectoId={pid} sesion={s} rolInfo={rolDe(s)} yo={det.yo} onCambio={refrescar}
                   onAbrirSesion={id => { if (id) setSid(id); else void cargarDetalle(pid) }} onSesion={setSesionFull} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} /> : null)} /></div> : null
             })()}
