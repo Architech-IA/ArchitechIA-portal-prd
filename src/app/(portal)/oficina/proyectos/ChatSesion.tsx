@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Loader2, Send, Paperclip, Lock, Unlock, ListPlus, CheckCircle2, RotateCcw, GitBranch, Copy, ChevronDown, ChevronRight,
   AlertTriangle, Archive, Trash2, X, Brain, User, Sparkles,
@@ -14,7 +15,9 @@ import PlanTareas from './PlanTareas'
 const POLL_RAPIDO = 1500
 const POLL_LENTO = 12000
 
-export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel, rolInfo, acciones }: {
+export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel, rolInfo, acciones, cabeceraEn }: {
+  // Si se pasa (aunque sea null mientras se monta), las acciones de la sesión se dibujan en esa cabecera externa
+  cabeceraEn?: HTMLElement | null
   acciones?: React.ReactNode
   rolInfo?: { fase: string; rol: RolSesion } | null
   proyectoId: string
@@ -26,6 +29,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   onAbrirPanel: (p: 'contexto' | 'memoria' | 'adjuntos') => void
 }) {
   const base = `/api/proyectos/${proyectoId}/sesiones/${sesion.id}`
+  const enCabecera = cabeceraEn !== undefined
   const [full, setFull] = useState<SesionFull | null>(null)
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
   const [cargando, setCargando] = useState(true)
@@ -250,10 +254,9 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   const tipo = (full?.tipo ?? sesion.tipo) as TipoSesion
   const opciones = tipo === 'KICKOFF' && !cerrada && !generando && ultimo?.rol === 'assistant' && ultimo.estado === 'LISTO' ? opcionesNumeradas(ultimo.contenido) : null
 
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Barra de la sesión */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 flex-shrink-0">
+  const barra = (
+      <div className={enCabecera ? 'flex items-center gap-2' : 'flex items-center gap-2 px-4 py-2 border-b border-white/5 flex-shrink-0'}>
+  {!enCabecera && (<>
         {editTitulo !== null ? (
           <input autoFocus value={editTitulo} onChange={e => setEditTitulo(e.target.value)} maxLength={80}
             onBlur={() => { const t = editTitulo.trim(); setEditTitulo(null); if (t && t !== full?.titulo) void cambiar({ titulo: t }) }}
@@ -263,9 +266,10 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
           <button onClick={() => !esBitacora && setEditTitulo(full?.titulo ?? sesion.titulo)} title={esBitacora ? undefined : 'Clic para renombrar'}
             className="min-w-0 text-left text-[13px] font-semibold text-gray-100 truncate hover:text-white">{full?.titulo ?? sesion.titulo}</button>
         )}
+  </>)}
         {acciones}
-        <span className="flex-1" />
-        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide flex-shrink-0" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }}>{ETIQUETA_TIPO[tipo] ?? tipo}</span>
+        {!enCabecera && <span className="flex-1" />}
+        {!enCabecera && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide flex-shrink-0" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }}>{ETIQUETA_TIPO[tipo] ?? tipo}</span>}
         {full && !esBitacora && (
           <button onClick={() => soyDuenio && void cambiar({ privada: !full.privada })} disabled={!soyDuenio}
             title={full.privada ? 'Privada: solo la ves tú. Clic para compartir con el equipo' : soyDuenio ? 'Compartida con el equipo. Clic para hacerla privada' : `Compartida · creada por ${full.creadaPorNombre}`}
@@ -287,10 +291,10 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                 className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
                 {notaOcupada && !notaBorrador ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} Guardar en notas
               </button>)}
-            <button onClick={() => void proponerPrd()} disabled={mensajes.length < 2 || generando || prdOcupado} title="Genera el PRD con esta conversación y lo deja como propuesta en el artefacto PRD (también puedes editarlo a mano desde Artefactos)"
+            {!enCabecera && <button onClick={() => void proponerPrd()} disabled={mensajes.length < 2 || generando || prdOcupado} title="Genera el PRD con esta conversación y lo deja como propuesta en el artefacto PRD (también puedes editarlo a mano desde Artefactos)"
               className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.35)', color: '#fed7aa' }}>
               {prdOcupado ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} {prdOcupado ? 'Generando PRD…' : 'Proponer PRD'}
-            </button>
+            </button>}
             <button onClick={() => void cerrar()} disabled={generando || mensajes.length === 0} title="Cerrar: resumen final y propuesta de memoria"
               className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-300 border border-white/10 hover:bg-white/5 disabled:opacity-40 flex-shrink-0"><CheckCircle2 size={11} /> Cerrar sesión</button>
           </>
@@ -302,6 +306,12 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
           </>
         )}
       </div>
+  )
+  const barraFinal = enCabecera ? (cabeceraEn ? createPortal(barra, cabeceraEn) : null) : barra
+
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      {barraFinal}
 
       {/* Rol de la sesión en su fase: objetivo y lista de cierre */}
       {rolInfo && (() => {

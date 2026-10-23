@@ -46,7 +46,7 @@ function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derech
 export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, onElegirSesion, renderChat, onAbrirPlantillas, proyectoId, fase, data, onCambio, onAbrirPanel, onAbrirArtefacto, sesiones, creandoRol, onIniciarSesion, onAbrirSesion, onAbrirFicha, onAbrirLead, onInvestigarEmpresa }: {
   onAbrirFicha?: () => void; onAbrirLead?: () => void; onInvestigarEmpresa?: () => void; onAbrirPlantillas?: (fase: string) => void
   onNuevaGeneral?: (texto: string, fase: string) => Promise<void>; creandoGeneral?: boolean
-  sidActiva?: string | null; onElegirSesion?: (id: string) => void; renderChat?: (s: SesionRes) => React.ReactNode
+  sidActiva?: string | null; onElegirSesion?: (id: string) => void; renderChat?: (s: SesionRes, slot: HTMLElement | null) => React.ReactNode
   sesiones: SesionRes[]; creandoRol: string | null; onIniciarSesion: (fase: string, rol: string) => void; onAbrirSesion: (id: string) => void
   proyectoId: string; fase: FaseVista; data: FasesRes; onCambio: () => void; onAbrirPanel: (p: 'adjuntos' | 'ejecucion') => void; onAbrirArtefacto?: (t: TabKey) => void
 }) {
@@ -68,6 +68,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
   // El panel del chat tiene dos pestañas: el asistente general del proyecto (cualquier conversación, con los mismos permisos y herramientas que una sesión de la fase)
   // y la sesión de esta fase que se haya elegido. Si ya hay una sesión de la fase abierta, se muestra esa.
   const [faseSid, setFaseSid] = useState<string | null>(null)
+  const [slotChat, setSlotChat] = useState<HTMLElement | null>(null)
   const [panelModo, setPanelModo] = useState<'fase' | 'general'>('general')
   const [primero, setPrimero] = useState('')
   // Las sesiones de rol de esta fase; el asistente de la fase es la conversación libre ligada a ella (sin rol). Cada fase tiene las suyas.
@@ -164,10 +165,11 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
             {activa && <button onClick={() => { setPanelModo('fase'); onElegirSesion?.(activa.id) }} className="text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors hover:text-gray-100 max-w-[280px] truncate" aria-pressed={panelModo === 'fase'} title={activa.titulo}
               style={{ color: panelModo === 'fase' ? '#e5e7eb' : '#6b7686', borderBottom: panelModo === 'fase' && activa ? '2px solid rgba(249,115,22,0.8)' : '2px solid transparent', paddingBottom: 2 }}>Sesión · {activa.titulo}</button>}
             <span className="flex-1" />
+            <div ref={setSlotChat} className="flex items-center gap-2" />
             {panelModo === 'general' && general && onNuevaGeneral && <button disabled={creandoGeneral} onClick={() => void onNuevaGeneral('', fase.clave)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.12)', border: '1px dashed rgba(99,102,241,0.4)' }}>{creandoGeneral ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Nueva conversación</button>}
           </header>
-          {panelModo === 'fase' && activa && renderChat ? <div className="flex-1 min-h-0">{renderChat(activa)}</div>
-            : general && renderChat ? <div className="flex-1 min-h-0">{renderChat(general)}</div>
+          {panelModo === 'fase' && activa && renderChat ? <div className="flex-1 min-h-0">{renderChat(activa, slotChat)}</div>
+            : general && renderChat ? <div className="flex-1 min-h-0">{renderChat(general, slotChat)}</div>
             : (
               <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-3">
                 <p className="text-[13px] text-gray-200 font-medium">Asistente de esta fase</p>
