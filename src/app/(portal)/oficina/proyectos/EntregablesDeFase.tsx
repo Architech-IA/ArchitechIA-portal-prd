@@ -56,10 +56,10 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
       {lista.map(r => {
         // Cada entregable se abre donde se trabaja: la ficha, el lead o el artefacto
         const abrir = r.tipo.startsWith('ficha') ? onAbrirFicha : r.tipo === 'lead_registrado' ? onAbrirLead : r.artefacto && onAbrirArtefacto ? () => onAbrirArtefacto(r.artefacto as TabKey) : undefined
-        // Un entregable automático ya cumplido solo muestra su título (lo manual conserva su evidencia y el botón para desmarcar)
-        const compacto = r.ok && !r.manual
+        // Un entregable automático solo muestra su título (el detalle va en el globo al pasar el cursor, y al pulsarlo se abre donde se trabaja); lo manual conserva su evidencia y sus botones
+        const compacto = !r.manual
         return (
-        <div key={r.clave} onClick={abrir ? ev => { if (!(ev.target as HTMLElement).closest('button,input,a,select,textarea')) abrir() } : undefined}
+        <div key={r.clave} title={compacto ? [r.detalle, r.ayuda].filter(Boolean).join(' · ') : undefined} onClick={abrir ? ev => { if (!(ev.target as HTMLElement).closest('button,input,a,select,textarea')) abrir() } : undefined}
           className={`rounded-lg px-3 py-2 transition-colors ${abrir ? 'cursor-pointer hover:brightness-125' : ''}`} role={abrir ? 'button' : undefined} tabIndex={abrir ? 0 : undefined}
           onKeyDown={abrir ? ev => { if (ev.key === 'Enter' && ev.target === ev.currentTarget) abrir() } : undefined} style={{ background: r.ok ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${r.ok ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.06)'}` }}>
           <div className="flex items-start gap-2">
@@ -67,13 +67,13 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
             <div className="min-w-0 flex-1">
               <p className="text-[12px] text-gray-100 leading-snug">{r.titulo}{!compacto && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full align-middle" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }} title="Formato en el que se espera este entregable">{FORMATO[r.formato] ?? r.formato}</span>}</p>
               {!compacto && <p className="text-[10px] mt-0.5" style={{ color: r.ok ? '#6ee7b7' : cerrada ? '#9ca3af' : '#fcd34d' }}>{r.detalle}{r.manual && r.ok && r.por ? ` · ${r.por}${r.en ? ` · ${fechaCorta(r.en)}` : ''}` : ''}</p>}
-              {(() => { const roles = (fase.sesiones ?? []).filter(x => !!r.artefacto && x.artefactos.includes(r.artefacto as string)); return roles.length > 0 && !r.ok && !cerrada ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Sesiones de la fase que trabajan sobre este artefacto">Se produce en la sesión: {roles.map(x => x.titulo).join(' · ')}</p> : null })()}
-              {!r.ok && !cerrada && r.ayuda && <p className="text-[10px] text-[#7f8a9c] mt-0.5 leading-snug">{r.ayuda}</p>}
+              {(() => { const roles = (fase.sesiones ?? []).filter(x => !!r.artefacto && x.artefactos.includes(r.artefacto as string)); return !compacto && roles.length > 0 && !r.ok && !cerrada ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Sesiones de la fase que trabajan sobre este artefacto">Se produce en la sesión: {roles.map(x => x.titulo).join(' · ')}</p> : null })()}
+              {!compacto && !r.ok && !cerrada && r.ayuda && <p className="text-[10px] text-[#7f8a9c] mt-0.5 leading-snug">{r.ayuda}</p>}
               {(() => { const acts = (fase.actividades?.items ?? []).filter(a => a.entregable?.clave === r.clave); return acts.length > 0 && !cerrada && !compacto ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Actividades de la fase que contribuyen a este entregable">Se trabaja en: {acts.map(a => a.titulo).join(' · ')}</p> : null })()}
               {r.manual && r.ok && r.evidencia && <p className="text-[10px] text-gray-300 mt-0.5 break-words">Evidencia: {/^(https?:\/\/|\/api\/)/.test(r.evidencia) ? <a href={r.evidencia} target="_blank" rel="noreferrer" className="text-indigo-300 underline">{r.evidencia}</a> : r.evidencia}</p>}
             </div>
-            {r.tipo.startsWith('ficha') && onAbrirFicha && <button onClick={onAbrirFicha} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir ficha</button>}
-            {r.artefacto && onAbrirArtefacto && <button onClick={() => onAbrirArtefacto(r.artefacto as TabKey)} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir</button>}
+            {!compacto && r.tipo.startsWith('ficha') && onAbrirFicha && <button onClick={onAbrirFicha} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir ficha</button>}
+            {!compacto && r.artefacto && onAbrirArtefacto && <button onClick={() => onAbrirArtefacto(r.artefacto as TabKey)} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir</button>}
           </div>
           {r.manual && editable && !r.ok && GENERABLES.includes(r.formato) && (
             <div className="flex items-center gap-2 mt-2 pl-6">
