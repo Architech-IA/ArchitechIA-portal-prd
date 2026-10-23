@@ -191,7 +191,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
   // Proyecto recibido por URL (?p=…)
   useEffect(() => {
     if (!initialProyectoId) return
-    if (initialProyectoId !== pidRef.current) { artInicial.current = initialArtefacto ?? null; elegirProyecto(initialProyectoId) }
+    if (initialProyectoId !== pidRef.current) { artInicial.current = initialArtefacto ?? null; setPanelAbierto(false); onAbrirProyecto?.(); elegirProyecto(initialProyectoId) }
     else if (initialArtefacto && initialArtefacto in TITULO_DE_TAB) irArtefacto(initialArtefacto as TabKey)
   }, [initialProyectoId, initialArtefacto]) // eslint-disable-line react-hooks/exhaustive-deps
 
