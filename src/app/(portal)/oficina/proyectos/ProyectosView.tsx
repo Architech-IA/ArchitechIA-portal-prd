@@ -437,7 +437,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
               return f ? <div className="flex-1 min-h-0"><VistaFase onAbrirPlantillas={(fase: string) => { setPlantillasIni({ codigo: fasesRes?.plantilla?.codigo ?? (proyecto?.naturaleza === 'INTERNO' ? 'INICIATIVA_INTERNA' : 'PROYECTO_COMPLETO'), fase }); setEditorPlantillas(true) }} key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)} onInvestigarEmpresa={() => { setFichaAuto(n => n + 1); setFichaAbierta(true) }}
                 sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }}
                 sidActiva={sid} onElegirSesion={id => setSid(id)} onNuevaGeneral={nuevaGeneral} onIniciarActividad={a => iniciarActividad(f.clave, a)} creandoGeneral={creandoGeneral}
-                renderChat={(s, slot) => (det && det.yo ? <ChatSesion key={s.id} cabeceraEn={slot} proyectoId={pid} sesion={s} rolInfo={rolDe(s)} yo={det.yo} onCambio={refrescar}
+                renderChat={(s, slot) => (det && det.yo ? <ChatSesion key={s.id} cabeceraEn={slot} actividades={s.faseClave ? fasesRes?.fases?.find(x => x.clave === s.faseClave)?.actividades.items : undefined} proyectoId={pid} sesion={s} rolInfo={rolDe(s)} yo={det.yo} onCambio={refrescar}
                   onAbrirSesion={id => { if (id) setSid(id); else void cargarDetalle(pid) }} onSesion={setSesionFull} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} /> : null)} /></div> : null
             })()}
 

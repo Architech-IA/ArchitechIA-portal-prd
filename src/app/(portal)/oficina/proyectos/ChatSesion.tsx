@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Loader2, Send, Paperclip, Lock, Unlock, ListPlus, CheckCircle2, RotateCcw, GitBranch, Copy, ChevronDown, ChevronRight,
-  AlertTriangle, Archive, Trash2, X, Brain, User, Sparkles,
+  AlertTriangle, Archive, Trash2, X, Brain, User, Sparkles, Bot, Zap,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
-import type { RolSesion } from './api'
+import type { RolSesion, FaseActividadVista } from './api'
+import { destinoTexto } from './ActividadesDeFase'
 import { api, post, put, patch, del, fechaHora, kb, pctCache, type Mensaje, type SesionFull, type SesionRes, type Adjunto } from './api'
 import { Md, opcionesNumeradas } from './Md'
 import PlanTareas from './PlanTareas'
@@ -15,7 +16,9 @@ import PlanTareas from './PlanTareas'
 const POLL_RAPIDO = 1500
 const POLL_LENTO = 12000
 
-export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel, rolInfo, acciones, cabeceraEn }: {
+export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSesion, onSesion, onAbrirPanel, rolInfo, acciones, cabeceraEn, actividades }: {
+  // Actividades de la fase de esta sesión: se ofrecen al escribir /tasks
+  actividades?: FaseActividadVista[]
   // Si se pasa (aunque sea null mientras se monta), las acciones de la sesión se dibujan en esa cabecera externa
   cabeceraEn?: HTMLElement | null
   acciones?: React.ReactNode
@@ -35,6 +38,30 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [input, setInput] = useState('')
+  // /tasks: menú de actividades de la fase; las elegidas viajan con el mensaje sin reemplazar lo escrito
+  const [menu, setMenu] = useState<{ q: string; ini: number; fin: number } | null>(null)
+  const [selMenu, setSelMenu] = useState(0)
+  const [lanzar, setLanzar] = useState<FaseActividadVista[]>([])
+  const opcionesMenu = (actividades ?? []).filter(a => a.creada && a.status !== 'CANCELLED' && (!menu?.q || a.titulo.toLowerCase().includes(menu.q.toLowerCase())))
+  function detectarMenu(valor: string, pos: number) {
+    const antes = valor.slice(0, pos)
+    const m = antes.match(/(^|\s)\/tasks(?:\s+(\S*))?$/)
+    if (!m || !actividades?.length) { setMenu(null); return }
+    setMenu({ q: m[2] ?? '', ini: antes.length - m[0].length + m[1].length, fin: pos }); setSelMenu(0)
+  }
+  function elegirActividad(a: FaseActividadVista) {
+    if (!menu) return
+    const resto = input.slice(menu.fin)
+    const antes = input.slice(0, menu.ini)
+    const nuevo = (antes + (antes && resto && !antes.endsWith(' ') && !resto.startsWith(' ') ? ' ' : '') + resto)
+    setInput(nuevo); setLanzar(prev => (prev.some(x => x.clave === a.clave) ? prev : [...prev, a])); setMenu(null)
+    setTimeout(() => { inputRef.current?.focus(); inputRef.current?.setSelectionRange(antes.length, antes.length) }, 0)
+  }
+  const textoActividad = (a: FaseActividadVista) => {
+    if (a.tipo !== 'AGENTE') return `Ayúdame a preparar esta actividad de la fase, que hace una persona: «${a.titulo}». Dame un borrador o una guía para llevarla a cabo.`
+    const donde = a.destino === 'nota' ? 'Cuando tengas el resultado, guárdalo como nota de la fase con tu herramienta de notas; yo la confirmo.' : a.destino === 'prd' ? 'El resultado va en el PRD: cuando esté listo genero la propuesta con «Proponer PRD» y yo la acepto.' : a.destino ? `El resultado va en el artefacto «${a.destino}»: redáctalo completo para que yo lo lleve ahí.` : ''
+    return `Trabajemos esta actividad de la fase: «${a.titulo}».${a.entregable ? ` Produce el entregable «${a.entregable.titulo}». ${donde}` : ''} Empieza con lo que ya sabes del proyecto y dime qué te falta.`
+  }
   const [enviando, setEnviando] = useState(false)
   const [adjuntos, setAdjuntos] = useState<Adjunto[]>([])
   const [subiendo, setSubiendo] = useState(false)
@@ -112,12 +139,14 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   const bloqueado = cerrada || enviando || generando
 
   async function enviar(texto?: string) {
-    const contenido = (texto ?? input).trim()
+    const escrito = (texto ?? input).trim()
+    const contenido = [escrito, ...(texto === undefined ? lanzar.map(textoActividad) : [])].filter(Boolean).join('\n\n')
     if (!contenido || bloqueado) return
+    const ligada = texto === undefined ? [...lanzar].reverse().find(a => a.tipo === 'AGENTE') : undefined
     setEnviando(true); setError(null); setAviso(null)
     try {
-      const r = await post<{ mensajes: Mensaje[] }>(`${base}/mensajes`, { contenido, adjuntoIds: adjuntos.map(a => a.id) })
-      merge(r.mensajes); setInput(''); setAdjuntos([]); onCambio()
+      const r = await post<{ mensajes: Mensaje[] }>(`${base}/mensajes`, { contenido, adjuntoIds: adjuntos.map(a => a.id), ...(ligada ? { actividad: ligada.clave } : {}) })
+      merge(r.mensajes); setInput(''); setAdjuntos([]); setLanzar([]); setMenu(null); onCambio()
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo enviar') } finally { setEnviando(false); inputRef.current?.focus() }
   }
 
@@ -483,18 +512,57 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                 <button onClick={() => setAdjuntos(prev => prev.filter(x => x.id !== a.id))} className="text-[#7f8a9c] hover:text-gray-200"><X size={10} /></button>
               </span>))}
           </div>)}
+        {lanzar.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-1.5">
+            {lanzar.map(a => (
+              <span key={a.clave} className="text-[11px] px-2 py-1 rounded-lg flex items-center gap-1.5 text-indigo-200" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)' }} title={a.titulo}>
+                <Zap size={11} /> <span className="max-w-[260px] truncate">{a.titulo}</span>
+                <button onClick={() => setLanzar(prev => prev.filter(x => x.clave !== a.clave))} aria-label="Quitar la actividad" className="text-indigo-300/70 hover:text-gray-100"><X size={10} /></button>
+              </span>))}
+          </div>)}
+        <div className="relative">
+          {menu && (
+            <div role="listbox" aria-label="Actividades de la fase" className="absolute left-0 right-0 bottom-full mb-2 rounded-xl overflow-hidden z-20" style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+              <div className="px-3 py-2 text-[10px] uppercase tracking-wide text-[#7f8a9c] border-b border-white/5 flex justify-between"><span>Actividades de la fase</span><span>{opcionesMenu.length}</span></div>
+              {opcionesMenu.length === 0 && <p className="px-3 py-3 text-[11px] text-[#7f8a9c]">{actividades?.some(a => a.creada) ? 'Ninguna actividad coincide.' : 'Las actividades se crean al entrar a la fase.'}</p>}
+              {opcionesMenu.map((a, i) => {
+                const est = a.status === 'DONE' ? 'Hecha' : a.status === 'IN_PROGRESS' ? 'En curso' : a.status === 'BLOCKED' ? 'Bloqueada' : 'En cola'
+                const destino = destinoTexto(a.destino)
+                return (
+                  <div key={a.clave} role="option" aria-selected={i === selMenu} onMouseDown={e => { e.preventDefault(); elegirActividad(a) }} onMouseEnter={() => setSelMenu(i)}
+                    className="flex items-start gap-2.5 px-3 py-2 cursor-pointer border-b border-white/5 last:border-b-0" style={{ background: i === selMenu ? 'rgba(255,255,255,0.07)' : 'transparent' }}>
+                    {a.tipo === 'AGENTE' ? <Bot size={14} className="text-indigo-300 mt-0.5 flex-shrink-0" /> : <User size={14} className="text-amber-300 mt-0.5 flex-shrink-0" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] text-gray-100 leading-snug">{a.titulo}</p>
+                      <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona · preparar con IA'}{destino && a.tipo === 'AGENTE' ? ` · el resultado va a ${destino}` : ''}</p>
+                    </div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={a.status === 'DONE' ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>{est}</span>
+                  </div>)
+              })}
+              <div className="px-3 py-1.5 text-[10px] text-[#6b7686] border-t border-white/5" style={{ background: 'rgba(255,255,255,0.03)' }}>↑↓ elegir · Enter inserta · Esc cierra · se agrega al mensaje, no reemplaza lo escrito</div>
+            </div>)}
+        </div>
         <div className="flex items-end gap-2">
           <input ref={fileRef} type="file" className="hidden" accept=".pdf,.docx,.pptx,.xlsx,.txt,.md,.csv,.json,.html,.xml" onChange={e => { const f = e.target.files?.[0]; if (f) void subir(f) }} />
           <button onClick={() => fileRef.current?.click()} disabled={cerrada || subiendo} title="Adjuntar documento al proyecto (PDF, Word, PowerPoint, Excel, texto)"
             className="px-2.5 py-2 rounded-xl flex-shrink-0 disabled:opacity-40 text-gray-400 hover:text-gray-200" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
             {subiendo ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
           </button>
-          <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} rows={Math.min(6, Math.max(1, input.split('\n').length))}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar() } }}
+          <textarea ref={inputRef} value={input} onChange={e => { setInput(e.target.value); detectarMenu(e.target.value, e.target.selectionStart ?? e.target.value.length) }} rows={Math.min(6, Math.max(1, input.split('\n').length))}
+            onClick={e => detectarMenu(input, (e.target as HTMLTextAreaElement).selectionStart ?? input.length)}
+            onKeyDown={e => {
+              if (menu) {
+                if (e.key === 'ArrowDown') { e.preventDefault(); setSelMenu(i => (opcionesMenu.length ? (i + 1) % opcionesMenu.length : 0)); return }
+                if (e.key === 'ArrowUp') { e.preventDefault(); setSelMenu(i => (opcionesMenu.length ? (i - 1 + opcionesMenu.length) % opcionesMenu.length : 0)); return }
+                if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); if (opcionesMenu[selMenu]) elegirActividad(opcionesMenu[selMenu]); return }
+                if (e.key === 'Escape') { e.preventDefault(); setMenu(null); return }
+              }
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void enviar() }
+            }}
             disabled={cerrada}
             placeholder={cerrada ? 'Sesión cerrada: reábrela para seguir' : generando ? 'La IA está respondiendo…' : esBitacora ? 'Pregunta sobre las novedades del proyecto…' : 'Escribe aquí (Enter envía, Shift+Enter salto de línea)'}
             className="flex-1 rounded-xl px-3 py-2 text-[12px] text-gray-100 outline-none resize-none border border-white/10 focus:border-indigo-500/50 placeholder-gray-600 disabled:opacity-50" style={{ background: 'rgba(255,255,255,0.05)' }} />
-          <button onClick={() => void enviar()} disabled={!input.trim() || bloqueado} className="px-3 py-2.5 rounded-xl flex-shrink-0 disabled:opacity-40 text-white" style={{ background: 'rgba(99,102,241,0.8)' }}>
+          <button onClick={() => void enviar()} disabled={(!input.trim() && lanzar.length === 0) || bloqueado} className="px-3 py-2.5 rounded-xl flex-shrink-0 disabled:opacity-40 text-white" style={{ background: 'rgba(99,102,241,0.8)' }}>
             {enviando ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
           </button>
         </div>
