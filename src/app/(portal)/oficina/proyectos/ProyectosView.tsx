@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
+  ArrowLeft, Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -144,6 +144,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
   const cargarMeta = useCallback((id: string) => {
     api<ArtefactoMeta[]>(`/api/soluciones/${id}/artefactos`).then(a => { if (pidRef.current === id) setMetaArt(Object.fromEntries((Array.isArray(a) ? a : []).map(m => [m.clave, m]))) }).catch(() => { /* la barra queda sin puntos */ })
   }, [])
+
+  // Vuelve a la galería de proyectos
+  function volverAGaleria() {
+    if (hubSucio && !window.confirm('Hay cambios sin guardar en los artefactos de este proyecto. Si sales se pierden. ¿Continuar?')) return
+    setHubAbierto(false); setTabArt(null); setHubSucio(false); setFichaAbierta(false); setPanelAbierto(false)
+    setPid(null); pidRef.current = null; setFasesRes(null); setVista(''); setDet(null); setSid(null); setSesionFull(null); setNueva(false); setError(null)
+  }
 
   function elegirProyecto(id: string) {
     if (id === pid) return
@@ -292,6 +299,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
             {/* Cabecera + sesiones */}
             <div className="flex-shrink-0 border-b border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
               <div className="flex items-center gap-2 px-4 pt-2.5">
+                <button onClick={volverAGaleria} title="Volver a todos los proyectos" aria-label="Volver a todos los proyectos" className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 text-[#9ca3af] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <ArrowLeft size={13} /></button>
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 {(() => {
                   const f = vista !== 'asistente' && !tabVista ? fasesRes?.fases?.find(x => x.clave === vista) : null
