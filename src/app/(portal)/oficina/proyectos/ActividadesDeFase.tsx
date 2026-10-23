@@ -7,6 +7,10 @@ import { post, type FaseVista, type FaseActividadVista, type SesionRes } from '.
 // Las actividades de la fase: el trabajo que se hace como tareas del Backlog. Van bajo los entregables.
 // Cada una puede producir un entregable: se cierra aquí (con la evidencia) o al cerrar la sesión de IA que la trabajó.
 
+// Dónde deja su resultado la actividad: la nota de la fase o un artefacto
+const NOMBRE_DESTINO: Record<string, string> = { nota: 'la nota de la fase', prd: 'el PRD', disenoTecnico: 'el diseño técnico', planEjecucion: 'el plan de ejecución' }
+export const destinoTexto = (d?: string | null) => (d ? NOMBRE_DESTINO[d] ?? `el artefacto «${d}»` : null)
+
 const ESTADO_TAREA: Record<string, string> = { BACKLOG: 'En cola', IN_PROGRESS: 'En curso', DONE: 'Hecha', FAILED: 'Fallida', BLOCKED: 'Bloqueada', CANCELLED: 'Cancelada' }
 
 export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvestigar, onIniciar, onAbrirSesion, onCambio }: {
@@ -45,6 +49,8 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
         const abierta = a.creada && !hecha && a.status !== 'CANCELLED'
         const sesion = sesiones.find(s => s.faseClave === fase.clave && s.actividadClave === a.clave && s.estado === 'ACTIVA')
         const ocup = ocupada === a.clave
+        const porAceptar = a.status === 'IN_PROGRESS' && !!a.destino && sesiones.some(s => s.faseClave === fase.clave && s.actividadClave === a.clave && s.estado === 'CERRADA') && !sesion
+        const destino = destinoTexto(a.destino)
         return (
           <div key={a.clave} className="rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
             <div className="flex items-start gap-2">
@@ -52,6 +58,8 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
                 <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}{a.taskCode ? ' · ' + a.taskCode : ''}</p>
+                {abierta && destino && a.tipo === 'AGENTE' && (
+                  <p className="text-[10px] mt-1 text-[#9ca3af]">{porAceptar ? `Falta aceptar el resultado en ${destino}` : `El resultado se deja en ${destino} y una persona lo acepta`}</p>)}
                 {a.entregable && (
                   <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: a.entregable.ok ? '#6ee7b7' : '#fcd34d' }} title="El entregable que produce esta actividad">
                     <Package size={10} /> {a.entregable.titulo}{a.entregable.ok ? ' · cumplido' : ' · pendiente'}</p>)}
@@ -60,7 +68,7 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
                 <button onClick={onInvestigar} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
                   <Sparkles size={11} /> Investigar la empresa</button>)}
               <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={hecha ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                {a.creada ? (ESTADO_TAREA[a.status ?? ''] ?? a.status) : 'Aún no creada'}</span>
+                {a.creada ? (porAceptar ? 'Por aceptar' : (ESTADO_TAREA[a.status ?? ''] ?? a.status)) : 'Aún no creada'}</span>
             </div>
 
             {(abierta || (hecha && a.creada)) && (

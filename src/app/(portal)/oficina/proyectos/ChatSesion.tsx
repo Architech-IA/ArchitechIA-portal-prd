@@ -291,7 +291,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                 className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
                 {notaOcupada && !notaBorrador ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} Guardar en notas
               </button>)}
-            {!enCabecera && <button onClick={() => void proponerPrd()} disabled={mensajes.length < 2 || generando || prdOcupado} title="Genera el PRD con esta conversación y lo deja como propuesta en el artefacto PRD (también puedes editarlo a mano desde Artefactos)"
+            {(!enCabecera || !!sesion.actividadClave) && <button onClick={() => void proponerPrd()} disabled={mensajes.length < 2 || generando || prdOcupado} title="Genera el PRD con esta conversación y lo deja como propuesta en el artefacto PRD (también puedes editarlo a mano desde Artefactos)"
               className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.35)', color: '#fed7aa' }}>
               {prdOcupado ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} {prdOcupado ? 'Generando PRD…' : 'Proponer PRD'}
             </button>}
