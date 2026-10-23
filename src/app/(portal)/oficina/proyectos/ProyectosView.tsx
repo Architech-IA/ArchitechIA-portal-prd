@@ -293,6 +293,18 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
             <div className="flex-shrink-0 border-b border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
               <div className="flex items-center gap-2 px-4 pt-2.5">
                 <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
+                {(() => {
+                  const f = vista !== 'asistente' && !tabVista ? fasesRes?.fases?.find(x => x.clave === vista) : null
+                  if (!f) return null
+                  const est = !fasesRes?.iniciado ? 'Sin iniciar' : f.estado === 'HECHA' ? 'Hecha' : f.estado === 'ACTUAL' ? 'Fase actual' : f.estado === 'CERRADA' ? 'Cerrada: oportunidad perdida' : 'Pendiente'
+                  const col = f.estado === 'HECHA' ? '#6ee7b7' : f.estado === 'ACTUAL' ? '#a5b4fc' : f.estado === 'CERRADA' ? '#fca5a5' : '#9ca3af'
+                  return (
+                    <>
+                      <span title={f.objetivo} className="text-[12px] font-semibold text-gray-300 flex-shrink-0">{f.numero}. {f.nombre}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.07)', color: '#c7d2fe' }}>{ETIQUETA_BLOQUE[f.bloque] ?? f.bloque}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.07)', color: col }}>{est}</span>
+                    </>)
+                })()}
                 <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
                   style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
                   <MessageSquare size={12} /></button>

@@ -131,13 +131,6 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
 
   return (
     <div className="h-full overflow-y-auto p-5 space-y-4">
-      <div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <h2 title={fase.objetivo} className="text-[16px] font-bold text-gray-100">{fase.numero}. {fase.nombre}</h2>
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.07)', color: '#c7d2fe' }}>{ETIQUETA_BLOQUE[fase.bloque] ?? fase.bloque}</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.07)', color: colorEstado }}>{estadoFase}</span>
-        </div>
-      </div>
 
       {!data.iniciado && (
         <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.3)' }}>
