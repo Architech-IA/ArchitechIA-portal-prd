@@ -130,7 +130,7 @@ export default function VistaFase({ onNuevaGeneral, creandoGeneral, sidActiva, o
   }
 
   return (
-    <div className="h-full overflow-y-auto p-5 space-y-4">
+    <div className="h-full overflow-y-auto p-5 pt-[9px] space-y-4">
 
       {!data.iniciado && (
         <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.3)' }}>
