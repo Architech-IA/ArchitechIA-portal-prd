@@ -298,11 +298,14 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
                   if (!f) return null
                   const est = !fasesRes?.iniciado ? 'Sin iniciar' : f.estado === 'HECHA' ? 'Hecha' : f.estado === 'ACTUAL' ? 'Fase actual' : f.estado === 'CERRADA' ? 'Cerrada: oportunidad perdida' : 'Pendiente'
                   const col = f.estado === 'HECHA' ? '#6ee7b7' : f.estado === 'ACTUAL' ? '#a5b4fc' : f.estado === 'CERRADA' ? '#fca5a5' : '#9ca3af'
+                  const [tono, bg, bd] = f.bloque === 'PREVENTA' ? ['#fdba74', 'rgba(249,115,22,0.12)', 'rgba(249,115,22,0.3)'] : f.bloque === 'DEFINICION' ? ['#a5b4fc', 'rgba(99,102,241,0.12)', 'rgba(99,102,241,0.3)'] : ['#6ee7b7', 'rgba(16,185,129,0.12)', 'rgba(16,185,129,0.3)']
                   return (
                     <>
-                      <span title={f.objetivo} className="text-[12px] font-semibold text-gray-300 flex-shrink-0">{f.numero}. {f.nombre}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.07)', color: '#c7d2fe' }}>{ETIQUETA_BLOQUE[f.bloque] ?? f.bloque}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.07)', color: col }}>{est}</span>
+                      <span aria-hidden className="text-gray-600 flex-shrink-0">/</span>
+                      <span title={f.objetivo} className="text-[13px] font-semibold flex-shrink-0" style={{ color: '#fdba74' }}>{f.numero}. {f.nombre}</span>
+                      <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-md flex-shrink-0" style={{ background: bg, color: tono, border: '1px solid ' + bd }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: tono }} />{ETIQUETA_BLOQUE[f.bloque] ?? f.bloque}</span>
+                      {f.estado !== 'ACTUAL' && <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)', color: col }}>{est}</span>}
                     </>)
                 })()}
                 <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
