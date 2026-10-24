@@ -12,6 +12,7 @@ import { destinoTexto } from './ActividadesDeFase'
 import { api, post, put, patch, del, fechaHora, kb, pctCache, type Mensaje, type SesionFull, type SesionRes, type Adjunto } from './api'
 import { Md, opcionesNumeradas } from './Md'
 import PlanTareas from './PlanTareas'
+import ConfirmacionIA, { type AccionIA } from './ConfirmacionIA'
 
 const POLL_RAPIDO = 1500
 const POLL_LENTO = 12000
@@ -172,13 +173,29 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
     try { const s = await patch<SesionFull>(base, data); setFull(prev => (prev ? { ...prev, ...s } : prev)); onSesion({ ...(full as SesionFull), ...s }); onCambio() } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo actualizar') }
   }
   // Lo que la IA dejó pendiente de confirmación desde esta sesión (notas tras consultar la web, tareas de backlog)
-  interface AccionIA { id: string; tipo: 'NOTA' | 'TAREAS' | 'PLAN' | 'EJECUCION_RED' | 'DESPLIEGUE' | 'CRITERIO' | 'FICHA'; titulo: string; payload: { cliente?: Record<string, string>; contactos?: { principal?: Record<string, string> }; fuentes?: string; motivo?: string; comando?: string; nota?: string; migrar?: boolean; entorno?: string; rama?: string; revertir?: boolean; base?: string; semilla?: boolean; texto?: string; fase?: string; tareas?: { title: string; priority?: string }[]; epicas?: { nombre: string; inicio?: string | null; fin?: string | null }[]; sprints?: { nombre: string; epica?: string | null; tareas?: string[]; inicio?: string | null; fin?: string | null }[] }; motivo: string | null }
   const [accionesIA, setAccionesIA] = useState<AccionIA[]>([])
   const [accionOcupada, setAccionOcupada] = useState<string | null>(null)
   const cargarAcciones = useCallback(() => {
     api<AccionIA[]>(`/api/proyectos/${proyectoId}/acciones-ia?sesionId=${sesion.id}`).then(l => setAccionesIA(Array.isArray(l) ? l : [])).catch(() => setAccionesIA([]))
   }, [proyectoId, sesion.id])
   useEffect(() => { if (!generando) cargarAcciones() }, [generando, mensajes.length, cargarAcciones])
+  // Tipos para los que el proyecto dejó de pedir confirmación: se aplican solos cuando llegan
+  const [autoTipos, setAutoTipos] = useState<string[]>([])
+  useEffect(() => { api<string[]>(`/api/proyectos/${proyectoId}/auto-acciones`).then(l => setAutoTipos(Array.isArray(l) ? l : [])).catch(() => setAutoTipos([])) }, [proyectoId])
+  const autoHechas = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (accionOcupada) return
+    const a = accionesIA.find(x => autoTipos.includes(x.tipo) && !autoHechas.current.has(x.id))
+    if (a) { autoHechas.current.add(a.id); void decidirAccion(a, 'aplicar') }
+  }, [accionesIA, autoTipos, accionOcupada]) // eslint-disable-line react-hooks/exhaustive-deps
+  async function resolverAccion(a: AccionIA, accion: 'aplicar' | 'rechazar', op?: { siempre?: boolean; razon?: string }) {
+    if (op?.siempre) {
+      try { const l = await post<string[]>(`/api/proyectos/${proyectoId}/auto-acciones`, { tipo: a.tipo, activo: true }); setAutoTipos(Array.isArray(l) ? l : []) }
+      catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar la preferencia') }
+    }
+    await decidirAccion(a, accion)
+    if (accion === 'rechazar' && op?.razon) await enviar(`No lo apliques así: ${op.razon}`)
+  }
   async function decidirAccion(a: AccionIA, accion: 'aplicar' | 'rechazar') {
     setAccionOcupada(a.id); setError(null)
     try { await post(`/api/proyectos/${proyectoId}/acciones-ia/${a.id}/decidir`, { accion }); cargarAcciones(); onCambio() }
@@ -477,39 +494,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
       {/* Compositor */}
       <div className="px-4 pb-3 pt-2 border-t border-white/5 flex-shrink-0">
         {error && <p className="text-[11px] text-red-400 mb-1.5 flex items-start gap-1.5"><AlertTriangle size={12} className="flex-shrink-0 mt-0.5" /><span className="flex-1">{error}</span><button onClick={() => setError(null)}><X size={11} /></button></p>}
-        {accionesIA.length > 0 && (
-          <div className="mb-2 space-y-1.5">
-            {accionesIA.map(a => (
-              <div key={a.id} className="rounded-lg px-3 py-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px dashed rgba(217,119,6,0.55)' }}>
-                <p className="text-[12px] text-amber-200 font-medium flex items-center gap-1.5"><Sparkles size={12} className="flex-shrink-0" />{a.tipo === 'NOTA' ? 'La IA quiere agregar una nota' : a.tipo === 'PLAN' ? 'La IA propone épicas y sprints' : a.tipo === 'CRITERIO' ? 'La IA propone marcar un criterio de la puerta' : a.tipo === 'FICHA' ? 'La IA propone completar la ficha del cliente' : a.tipo === 'EJECUCION_RED' ? 'La IA pide ejecutar un comando CON internet' : a.tipo === 'DESPLIEGUE' ? (a.payload.revertir ? 'La IA propone volver a la versión anterior de producción' : a.payload.entorno === 'pruebas' ? 'La IA propone levantar una copia de pruebas' : 'La IA propone desplegar a producción') : 'La IA propone tareas para el backlog'} · {a.titulo}</p>
-                {a.motivo && <p className="text-[10px] text-[#9ca3af] mt-0.5">{a.motivo}</p>}
-                {a.tipo === 'NOTA' && <p className="text-[11px] text-gray-300 mt-1 whitespace-pre-line line-clamp-5">{a.payload.texto}</p>}
-                {a.tipo === 'FICHA' && (() => {
-                  const campos: [string, string | undefined][] = [['Razón social', a.payload.cliente?.razonSocial], ['NIT', a.payload.cliente?.nit], ['Sector', a.payload.cliente?.sector], ['Ciudad', a.payload.cliente?.ciudad], ['País', a.payload.cliente?.pais], ['Sitio web', a.payload.cliente?.sitioWeb], ['Tamaño', a.payload.cliente?.tamano], ['Contacto', a.payload.contactos?.principal?.nombre], ['Cargo', a.payload.contactos?.principal?.cargo], ['Correo', a.payload.contactos?.principal?.correo], ['Teléfono', a.payload.contactos?.principal?.telefono]]
-                  return (<>
-                    <ul className="text-[11px] text-gray-300 mt-1 list-disc pl-5">{campos.filter(([, v]) => !!v).map(([k, v]) => <li key={k}><span className="text-[#9ca3af]">{k}:</span> {v}</li>)}</ul>
-                    {a.payload.fuentes && <p className="text-[10px] text-[#7f8a9c] mt-1 line-clamp-3">Fuentes: {a.payload.fuentes}</p>}
-                  </>)
-                })()}
-                {a.tipo === 'CRITERIO' && <p className="text-[11px] text-gray-300 mt-1 leading-snug"><b className="font-semibold">{a.payload.texto}</b>{a.payload.motivo ? <><br />{a.payload.motivo}</> : null}</p>}
-                {a.tipo === 'EJECUCION_RED' && <p className="text-[11px] text-gray-300 mt-1 font-mono break-all rounded px-2 py-1 bg-black/30">{a.payload.comando}</p>}
-                {a.tipo === 'DESPLIEGUE' && (<>
-                  <p className="text-[11px] text-gray-300 mt-1 whitespace-pre-line">{a.payload.nota}</p>
-                  <p className="text-[10px] text-amber-300 mt-1">{a.payload.revertir ? 'Se vuelve a la versión que había antes del último despliegue; si algo falla, la actual sigue en pie.' : a.payload.entorno === 'pruebas' ? `Copia aparte en otra URL, construida desde la rama «${a.payload.rama ?? 'main'}» (debe estar subida). Con su propia base de datos ${a.payload.base === 'conservar' ? '(se conserva la del entorno anterior)' : 'nueva y vacía'}${a.payload.semilla !== false && a.payload.base !== 'conservar' ? ', el seed del repositorio si existe' : ''} y solo las variables de prueba; se retira sola a las 72 h. Producción no se toca.` : 'Se despliega solo lo que ya está fusionado en main; si algo falla, la versión anterior sigue en pie.'}{a.payload.migrar ? ' INCLUYE migraciones de la base de datos del proyecto.' : ''}</p>
-                </>)}
-                {a.tipo === 'PLAN' && (
-                  <ul className="text-[11px] text-gray-300 mt-1 list-disc pl-5">
-                    {(a.payload.epicas ?? []).map((e, i) => <li key={'e' + i}>Épica: {e.nombre}{e.inicio ? ` (${e.inicio}${e.fin ? ' → ' + e.fin : ''})` : ''}</li>)}
-                    {(a.payload.sprints ?? []).map((s, i) => <li key={'s' + i}>Sprint: {s.nombre}{s.epica ? ` · épica «${s.epica}»` : ''}{s.tareas?.length ? ` · ${s.tareas.length} tarea(s)` : ''}{s.inicio ? ` · ${s.inicio}${s.fin ? ' → ' + s.fin : ''}` : ''}</li>)}
-                  </ul>)}
-                {a.tipo === 'TAREAS' && <ul className="text-[11px] text-gray-300 mt-1 list-disc pl-5">{(a.payload.tareas ?? []).slice(0, 8).map((t, i) => <li key={i}>{t.title}</li>)}</ul>}
-                <div className="flex items-center gap-2 mt-2">
-                  <button disabled={accionOcupada === a.id} onClick={() => void decidirAccion(a, 'aplicar')} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg text-white disabled:opacity-40" style={{ background: 'rgba(16,185,129,0.7)' }}>{accionOcupada === a.id ? <Loader2 size={11} className="animate-spin" /> : null}{a.tipo === 'NOTA' ? 'Agregar nota' : a.tipo === 'PLAN' ? 'Crear el plan' : a.tipo === 'CRITERIO' ? 'Marcar criterio' : a.tipo === 'FICHA' ? 'Guardar en la ficha' : a.tipo === 'EJECUCION_RED' ? 'Ejecutar con internet' : a.tipo === 'DESPLIEGUE' ? (a.payload.revertir ? 'Volver a la anterior' : a.payload.entorno === 'pruebas' ? 'Levantar pruebas' : 'Desplegar') : 'Crear tareas'}</button>
-                  <button disabled={accionOcupada === a.id} onClick={() => void decidirAccion(a, 'rechazar')} className="text-[11px] px-2.5 py-1 rounded-lg text-gray-300 border border-white/10 disabled:opacity-40">Rechazar</button>
-                  <span className="text-[10px] text-[#7f8a9c]">{a.tipo === 'EJECUCION_RED' || a.tipo === 'DESPLIEGUE' || a.tipo === 'CRITERIO' ? 'Solo un administrador puede confirmar.' : 'Solo la persona asignada puede confirmar.'}</span>
-                </div>
-              </div>))}
-          </div>)}
+        <ConfirmacionIA acciones={accionesIA.filter(x => !autoTipos.includes(x.tipo))} restantes={accionesIA.filter(x => !autoTipos.includes(x.tipo)).length} ocupada={accionOcupada} onDecidir={resolverAccion} />
         {aviso && <p className="text-[11px] text-amber-300 mb-1.5 flex items-start gap-1.5"><span className="flex-1">{aviso}</span><button onClick={() => setAviso(null)}><X size={11} /></button></p>}
         {adjuntos.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-1.5">
