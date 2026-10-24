@@ -55,6 +55,7 @@ export default function ConfirmacionIA({ acciones, ocupada, onDecidir, restantes
 }) {
   const a = acciones[0]
   const caja = useRef<HTMLDivElement>(null)
+  const campo = useRef<HTMLInputElement>(null)
   // El panel y su fondo oscuro se dibujan sobre todo el portal (portal de React); el panel se ancla justo encima del campo de texto
   const ancla = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ l: number; w: number; b: number } | null>(null)
@@ -81,11 +82,11 @@ export default function ConfirmacionIA({ acciones, ocupada, onDecidir, restantes
   }
   const teclas = (e: React.KeyboardEvent) => {
     if ((e.target as HTMLElement).tagName === 'INPUT') return
-    if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => (s + 1) % opciones.length) }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(s => (s - 1 + opciones.length) % opciones.length) }
+    if (e.key === 'ArrowDown') { e.preventDefault(); const n = (sel + 1) % opciones.length; setSel(n); if (n === ultima) setTimeout(() => campo.current?.focus(), 0) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); const n = (sel - 1 + opciones.length) % opciones.length; setSel(n); if (n === ultima) setTimeout(() => campo.current?.focus(), 0) }
     else if (e.key === 'Enter') { e.preventDefault(); decidir(sel) }
     else if (e.key === 'Escape') { e.preventDefault(); void onDecidir(a, 'rechazar') }
-    else if (/^[1-9]$/.test(e.key) && Number(e.key) <= opciones.length) { e.preventDefault(); const i = Number(e.key) - 1; setSel(i); if (i !== ultima) decidir(i) }
+    else if (/^[1-9]$/.test(e.key) && Number(e.key) <= opciones.length) { e.preventDefault(); const i = Number(e.key) - 1; setSel(i); if (i !== ultima) decidir(i); else campo.current?.focus() }
   }
   const filas = detalle(a)
 
@@ -109,17 +110,17 @@ export default function ConfirmacionIA({ acciones, ocupada, onDecidir, restantes
         {SOLO_ADMIN.includes(a.tipo) && <p className="text-[10px] text-[#7f8a9c]">Solo un administrador puede confirmar.</p>}
       </div>
       {opciones.map((t, i) => (
-        <div key={t} role="button" tabIndex={-1} onClick={() => { setSel(i); if (i !== ultima) decidir(i) }} onMouseEnter={() => setSel(i)}
+        <div key={t} role="button" tabIndex={-1} onClick={() => { setSel(i); if (i !== ultima) decidir(i); else campo.current?.focus() }} onMouseEnter={() => setSel(i)}
           className="flex items-center gap-2.5 px-3.5 py-1.5 text-[12px] cursor-pointer border-t border-white/5" style={{ background: i === sel ? 'rgba(255,255,255,0.06)' : 'transparent', color: i === sel ? '#fcd34d' : '#d1d5db' }}>
           <span className="w-3 text-center">{i === sel ? '›' : ''}</span>
           <span className="font-mono text-[11px] w-3 text-[#7f8a9c]">{i + 1}</span>
           <span>{t}</span>
           {ocup && i === sel && <Loader2 size={11} className="animate-spin ml-auto" />}
         </div>))}
-      {sel === ultima && (
+      {(
         <div className="px-3.5 pb-2.5 pl-[52px]">
-          <input value={razon} onChange={e => setRazon(e.target.value)} placeholder="Qué debe cambiar la IA (opcional) y Enter" aria-label="Qué debe cambiar la IA"
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); decidir(ultima) } if (e.key === 'Escape') { e.preventDefault(); caja.current?.focus() } }}
+          <input ref={campo} value={razon} onFocus={() => setSel(ultima)} onChange={e => setRazon(e.target.value)} placeholder="Qué debe cambiar la IA (opcional) y Enter" aria-label="Qué debe cambiar la IA"
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); decidir(ultima) } if (e.key === 'ArrowUp') { e.preventDefault(); setSel(ultima - 1); caja.current?.focus() } if (e.key === 'Escape') { e.preventDefault(); caja.current?.focus() } }}
             className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-amber-400/50" />
         </div>)}
       <div className="px-3.5 py-1.5 text-[10px] text-[#6b7686] border-t border-white/5" style={{ background: 'rgba(255,255,255,0.03)' }}>↑↓ elegir · Enter confirma · {opciones.length > 2 ? '1–' + (opciones.length - 1) + ' atajos · ' : ''}Esc rechaza</div>
