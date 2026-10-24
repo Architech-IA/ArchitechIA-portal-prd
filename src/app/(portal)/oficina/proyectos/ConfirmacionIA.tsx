@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ShieldQuestion, Loader2 } from 'lucide-react'
 
 // Lo que la IA propone y espera que una persona confirme. Se muestra sobre el campo del chat, al estilo de los permisos de Claude Code:
@@ -54,11 +55,22 @@ export default function ConfirmacionIA({ acciones, ocupada, onDecidir, restantes
 }) {
   const a = acciones[0]
   const caja = useRef<HTMLDivElement>(null)
+  // El panel y su fondo oscuro se dibujan sobre todo el portal (portal de React); el panel se ancla justo encima del campo de texto
+  const ancla = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ l: number; w: number; b: number } | null>(null)
   const [sel, setSel] = useState(0)
   const [razon, setRazon] = useState('')
   const opciones = a ? [SI[a.tipo] ?? 'Sí', ...(AUTO_PERMITIDAS.includes(a.tipo) ? [`Sí, y no preguntar de nuevo para esto en este proyecto`] : []), 'No, y decirle a la IA qué cambiar'] : []
   const ultima = opciones.length - 1
   useEffect(() => { setSel(0); setRazon(''); if (a) caja.current?.focus() }, [a?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!a) return
+    const f = () => { const r = ancla.current?.getBoundingClientRect(); if (r) setPos({ l: r.left, w: r.width, b: window.innerHeight - r.top + 8 }) }
+    f()
+    window.addEventListener('resize', f); window.addEventListener('scroll', f, true)
+    const t = setInterval(f, 300)
+    return () => { window.removeEventListener('resize', f); window.removeEventListener('scroll', f, true); clearInterval(t) }
+  }, [a?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!a) return null
   const ocup = ocupada === a.id
 
@@ -77,9 +89,9 @@ export default function ConfirmacionIA({ acciones, ocupada, onDecidir, restantes
   }
   const filas = detalle(a)
 
-  return (
-    <div ref={caja} tabIndex={-1} onKeyDown={teclas} role="dialog" aria-label="La IA necesita tu confirmación" className="mb-2 rounded-xl overflow-hidden outline-none"
-      style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(217,119,6,0.55)' }}>
+  const panel = (
+    <div ref={caja} tabIndex={-1} onKeyDown={teclas} role="dialog" aria-modal="true" aria-label="La IA necesita tu confirmación" className="rounded-xl overflow-y-auto outline-none"
+      style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(217,119,6,0.55)', boxShadow: '0 8px 48px rgba(0,0,0,0.6)', position: 'fixed', left: pos?.l ?? 0, width: pos?.w ?? 0, bottom: pos?.b ?? 0, maxHeight: `calc(100vh - ${(pos?.b ?? 0) + 16}px)`, zIndex: 61 }}>
       <div className="flex items-center gap-2 px-3.5 py-2.5 text-[12px] text-amber-200 border-b border-white/5">
         <ShieldQuestion size={15} className="flex-shrink-0" />
         <span className="font-medium">La IA necesita tu confirmación</span>
@@ -112,5 +124,16 @@ export default function ConfirmacionIA({ acciones, ocupada, onDecidir, restantes
         </div>)}
       <div className="px-3.5 py-1.5 text-[10px] text-[#6b7686] border-t border-white/5" style={{ background: 'rgba(255,255,255,0.03)' }}>↑↓ elegir · Enter confirma · {opciones.length > 2 ? '1–' + (opciones.length - 1) + ' atajos · ' : ''}Esc rechaza</div>
     </div>
+  )
+
+  return (
+    <>
+      <div ref={ancla} />
+      {pos && typeof document !== 'undefined' && createPortal(
+        <>
+          <div aria-hidden style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.62)', backdropFilter: 'blur(2px)', zIndex: 60 }} />
+          {panel}
+        </>, document.body)}
+    </>
   )
 }
