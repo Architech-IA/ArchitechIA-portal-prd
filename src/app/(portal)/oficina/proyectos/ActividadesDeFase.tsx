@@ -8,7 +8,7 @@ import { post, type FaseVista, type FaseActividadVista, type SesionRes } from '.
 // Cada una puede producir un entregable: se cierra aquí (con la evidencia) o al cerrar la sesión de IA que la trabajó.
 
 // Dónde deja su resultado la actividad: la nota de la fase o un artefacto
-const NOMBRE_DESTINO: Record<string, string> = { nota: 'la nota de la fase', prd: 'el PRD', disenoTecnico: 'el diseño técnico', planEjecucion: 'el plan de ejecución' }
+const NOMBRE_DESTINO: Record<string, string> = { nota: 'la nota de la fase', ficha: 'la ficha del cliente', prd: 'el PRD', disenoTecnico: 'el diseño técnico', planEjecucion: 'el plan de ejecución' }
 export const destinoTexto = (d?: string | null) => (d ? NOMBRE_DESTINO[d] ?? `el artefacto «${d}»` : null)
 
 const ESTADO_TAREA: Record<string, string> = { BACKLOG: 'En cola', IN_PROGRESS: 'En curso', DONE: 'Hecha', FAILED: 'Fallida', BLOCKED: 'Bloqueada', CANCELLED: 'Cancelada' }

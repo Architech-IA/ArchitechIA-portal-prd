@@ -221,7 +221,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 
   // «Iniciar con IA» en una actividad de la fase: abre una sesión ligada a ella; al cerrarla, la actividad queda hecha
   async function iniciarActividad(fase: string, a: FaseActividadVista) {
-    const donde = a.destino === 'nota' ? 'Cuando tengas el resultado, guárdalo como nota de la fase con tu herramienta de notas; yo la confirmo.' : a.destino === 'prd' ? 'El resultado va en el PRD: cuando esté listo genero la propuesta con «Proponer PRD» y yo la acepto.' : a.destino ? `El resultado va en el artefacto «${a.destino}»: redáctalo completo para que yo lo lleve ahí.` : ''
+    const donde = a.destino === 'ficha' ? 'El resultado va en la ficha del cliente: usa tu herramienta proponer_ficha_cliente (no una nota); yo confirmo los datos.' : a.destino === 'nota' ? 'Cuando tengas el resultado, guárdalo como nota de la fase con tu herramienta de notas; yo la confirmo.' : a.destino === 'prd' ? 'El resultado va en el PRD: cuando esté listo genero la propuesta con «Proponer PRD» y yo la acepto.' : a.destino ? `El resultado va en el artefacto «${a.destino}»: redáctalo completo para que yo lo lleve ahí.` : ''
     const entrega = a.entregable ? ` Esta actividad produce el entregable «${a.entregable.titulo}». ${donde}` : ''
     await nuevaGeneral(`Trabajemos esta actividad de la fase: «${a.titulo}».${entrega} Cuando termine, cerraré la sesión para dar la actividad por hecha. Empieza con lo que ya sabes del proyecto y dime qué te falta.`, fase, { clave: a.clave, titulo: a.titulo.slice(0, 80) })
   }

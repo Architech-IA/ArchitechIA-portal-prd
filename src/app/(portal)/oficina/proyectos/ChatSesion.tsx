@@ -59,7 +59,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   }
   const textoActividad = (a: FaseActividadVista) => {
     if (a.tipo !== 'AGENTE') return `Ayúdame a preparar esta actividad de la fase, que hace una persona: «${a.titulo}». Dame un borrador o una guía para llevarla a cabo.`
-    const donde = a.destino === 'nota' ? 'Cuando tengas el resultado, guárdalo como nota de la fase con tu herramienta de notas; yo la confirmo.' : a.destino === 'prd' ? 'El resultado va en el PRD: cuando esté listo genero la propuesta con «Proponer PRD» y yo la acepto.' : a.destino ? `El resultado va en el artefacto «${a.destino}»: redáctalo completo para que yo lo lleve ahí.` : ''
+    const donde = a.destino === 'ficha' ? 'El resultado va en la ficha del cliente: usa tu herramienta proponer_ficha_cliente (no una nota); yo confirmo los datos.' : a.destino === 'nota' ? 'Cuando tengas el resultado, guárdalo como nota de la fase con tu herramienta de notas; yo la confirmo.' : a.destino === 'prd' ? 'El resultado va en el PRD: cuando esté listo genero la propuesta con «Proponer PRD» y yo la acepto.' : a.destino ? `El resultado va en el artefacto «${a.destino}»: redáctalo completo para que yo lo lleve ahí.` : ''
     return `Trabajemos esta actividad de la fase: «${a.titulo}».${a.entregable ? ` Produce el entregable «${a.entregable.titulo}». ${donde}` : ''} Empieza con lo que ya sabes del proyecto y dime qué te falta.`
   }
   const [enviando, setEnviando] = useState(false)
