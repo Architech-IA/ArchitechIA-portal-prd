@@ -108,7 +108,7 @@ export default function DocumentosView() {
   const tiposCliente = TIPOS.filter(t => (docs ?? []).some(d => d.clienteNombre === cliente && d.tipo === t))
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1200px]">
+    <div className="p-4 md:p-6 space-y-4 w-full max-w-[1400px]">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[200px]">
           {cliente ? <button onClick={() => setCliente(null)} className="flex items-center gap-1 text-[12px] text-indigo-300 mb-1"><ArrowLeft size={12} /> Todos los clientes</button> : null}
@@ -231,7 +231,7 @@ export function DetallePagina({ id }: { id: string }) {
   const inline = !!d && /pdf|png|jpe?g|gif|webp/i.test(`${d.mime ?? ''}${d.archivoNombre ?? ''}`) && esArchivo
   const srcDoc = d?.contenido ? `<!doctype html><meta charset="utf-8"><style>body{font:14px/1.6 system-ui;color:#1b2330;padding:20px;max-width:760px;margin:auto}table{border-collapse:collapse}td,th{border:1px solid #ccd;padding:4px 8px}</style>${aHtml(d.contenido)}` : ''
   return (
-    <div className="p-4 md:p-6 space-y-3 max-w-[1400px]">
+    <div className="p-4 md:p-6 space-y-3 w-full max-w-[1800px]">
       <style>{ESTILO_LISTAS}</style>
       <nav className="flex items-center gap-1.5 text-[12px] text-[#7f8a9c]" aria-label="Ruta">
         <Link href="/documentos" className="hover:text-gray-200 flex items-center gap-1"><ArrowLeft size={12} /> Documentos</Link>

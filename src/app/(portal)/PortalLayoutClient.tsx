@@ -116,7 +116,7 @@ export default function PortalLayoutClient({
     if (pathname === '/traceability') return 'Trazabilidad';
     if (pathname === '/oficina') return 'Oficina Virtual';
     if (pathname === '/hub') return 'HUB';
-    if (pathname === '/documentos') return 'Documentos';
+    if (pathname === '/documentos' || pathname.startsWith('/documentos/')) return 'Documentos';
     if (pathname === '/catalogo-demos') return 'Catálogo de demos';
     if (pathname === '/hub/team') return 'Equipo';
     if (pathname === '/hub/business') return 'Business';
