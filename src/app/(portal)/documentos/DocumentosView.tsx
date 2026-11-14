@@ -1,5 +1,7 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Upload, X, LayoutGrid, List, Search, Download, ExternalLink, Loader2, ArrowLeft } from 'lucide-react'
 import { aHtml } from '../oficina/proyectos/PanelRico'
@@ -69,7 +71,7 @@ export default function DocumentosView() {
   const [q, setQ] = useState('')
   const [ftipo, setFtipo] = useState('')
   const [cliente, setCliente] = useState<string | null>(null)
-  const [abierto, setAbierto] = useState<string | null>(null)
+  const router = useRouter()
   const [subiendo, setSubiendo] = useState<{ grupo?: string; titulo?: string; tipo?: string; cliente?: string; solucionId?: string } | null>(null)
 
   const cargar = useCallback(async () => {
@@ -84,7 +86,8 @@ export default function DocumentosView() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search)
     if (p.get('cliente')) setCliente(p.get('cliente'))
-    if (p.get('doc')) setAbierto(p.get('doc'))
+    if (p.get('doc')) router.replace(`/documentos/${encodeURIComponent(p.get('doc') as string)}`)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const filtrados = useMemo(() => {
@@ -98,7 +101,7 @@ export default function DocumentosView() {
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'))
   }, [filtrados])
 
-  const abrirDoc = (id: string) => setAbierto(id)
+  const abrirDoc = (id: string) => router.push(`/documentos/${encodeURIComponent(id)}`)
   const btn = 'flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg text-gray-100'
 
   const docsCliente = cliente ? filtrados.filter(d => d.clienteNombre === cliente) : []
@@ -194,47 +197,57 @@ export default function DocumentosView() {
             <div className="flex flex-wrap gap-4 text-[11px] text-[#7f8a9c]">{Object.entries(COLOR_ESTADO).map(([e, c]) => <span key={e}><i className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: c }} />{e}</span>)}</div></div>
           : <div style={caja} className="overflow-x-auto"><table className="w-full"><tbody>{docsCliente.map(d => <Fila key={d.id} d={d} onClick={() => abrirDoc(d.id)} />)}</tbody></table></div>)}
 
-      {abierto && <Detalle id={abierto} onCerrar={() => setAbierto(null)} onCambio={() => void cargar()} onNuevaVersion={s => { setAbierto(null); setSubiendo(s) }} />}
       {subiendo && <Subir inicial={subiendo} ops={ops} clientesExistentes={[...new Set((docs ?? []).map(d => d.clienteNombre))]} onCerrar={() => setSubiendo(null)} onListo={() => { setSubiendo(null); void cargar() }} />}
     </div>
   )
 }
 
-function Detalle({ id, onCerrar, onCambio, onNuevaVersion }: { id: string; onCerrar: () => void; onCambio: () => void; onNuevaVersion: (s: { grupo: string; titulo: string; tipo: string; cliente: string; solucionId?: string }) => void }) {
+export function DetallePagina({ id }: { id: string }) {
+  const router = useRouter()
   const [d, setD] = useState<DocumentoDetalle | null>(null)
+  const [ops, setOps] = useState<Opciones>({ clientes: [], proyectos: [] })
+  const [clientes, setClientes] = useState<string[]>([])
+  const [subiendo, setSubiendo] = useState<{ grupo?: string; titulo?: string; tipo?: string; cliente?: string; solucionId?: string } | null>(null)
   const [error, setError] = useState('')
   const [valor, setValor] = useState('')
   const cargar = useCallback(async () => {
-    try { const r = await fetch(`/api/repositorio-docs/${id}`, { cache: 'no-store' }); if (!r.ok) throw new Error('No se pudo abrir el documento'); setD(await r.json()) } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
+    try { const r = await fetch(`/api/repositorio-docs/${id}`, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status === 404 ? 'Ese documento no existe.' : 'No se pudo abrir el documento'); setD(await r.json()) } catch (e) { setError(e instanceof Error ? e.message : 'Error') }
   }, [id])
   useEffect(() => { void cargar() }, [cargar])
-  useEffect(() => { const t = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar() }; window.addEventListener('keydown', t); return () => window.removeEventListener('keydown', t) }, [onCerrar])
+  useEffect(() => {
+    void fetch('/api/repositorio-docs', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => { if (j) { setOps(j.opciones); setClientes([...new Set((j.documentos as DocumentoFila[]).map(x => x.clienteNombre))]) } }).catch(() => {})
+  }, [])
 
   async function estado(nuevo: string) {
     setError('')
-    const v = valor.trim() ? Number(valor.replace(/[^\d.]/g, '')) : undefined
+    const v = valor.trim() ? Number(valor.replace(/[^d.]/g, '')) : undefined
     const r = await fetch(`/api/repositorio-docs/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: nuevo, valorFinal: v }) })
     if (!r.ok) { setError((await r.json().catch(() => ({}))).error || 'No se pudo cambiar'); return }
-    setValor(''); await cargar(); onCambio()
+    setValor(''); await cargar()
   }
 
+  const volver = d ? `/documentos?cliente=${encodeURIComponent(d.clienteNombre)}` : '/documentos'
   const esArchivo = !!d && !d.tieneContenido
   const inline = !!d && /pdf|png|jpe?g|gif|webp/i.test(`${d.mime ?? ''}${d.archivoNombre ?? ''}`) && esArchivo
   const srcDoc = d?.contenido ? `<!doctype html><meta charset="utf-8"><style>body{font:14px/1.6 system-ui;color:#1b2330;padding:20px;max-width:760px;margin:auto}table{border-collapse:collapse}td,th{border:1px solid #ccd;padding:4px 8px}</style>${aHtml(d.contenido)}` : ''
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3" style={{ background: 'rgba(0,0,0,0.65)' }} onClick={e => { if (e.target === e.currentTarget) onCerrar() }}>
-      <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col md:flex-row" style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18 }}>
+    <div className="p-4 md:p-6 space-y-3 max-w-[1400px]">
       <style>{ESTILO_LISTAS}</style>
-        <div className="flex-1 min-h-[260px] md:min-h-0 p-3 overflow-auto" style={{ background: 'rgba(255,255,255,0.03)' }}>
-          {!d && !error && <div className="h-full flex items-center justify-center"><Loader2 className="animate-spin text-[#7f8a9c]" size={18} /></div>}
-          {d && d.tieneContenido && <iframe title="Vista previa" sandbox="" srcDoc={srcDoc} className="w-full h-[70vh] rounded-lg bg-white" />}
-          {d && inline && (/pdf/i.test(`${d.mime ?? ''}${d.archivoNombre ?? ''}`) ? <iframe title="Vista previa" src={`/api/repositorio-docs/${d.id}/archivo?inline=1`} className="w-full h-[70vh] rounded-lg bg-white" /> : /* eslint-disable-next-line @next/next/no-img-element */ <img alt={d.titulo} src={`/api/repositorio-docs/${d.id}/archivo?inline=1`} className="max-w-full mx-auto rounded-lg" />)}
-          {d && esArchivo && !inline && <div className="h-full flex flex-col items-center justify-center gap-3 text-center text-[#7f8a9c] py-10"><Icono d={d} /><p className="text-[13px]">Este formato no tiene vista previa en el portal.</p><a href={`/api/repositorio-docs/${d.id}/archivo`} className="text-[12px] text-indigo-300 underline">Descargar {d.archivoNombre}</a></div>}
-          {error && <p className="text-[12px] text-red-300">{error}</p>}
+      <nav className="flex items-center gap-1.5 text-[12px] text-[#7f8a9c]" aria-label="Ruta">
+        <Link href="/documentos" className="hover:text-gray-200 flex items-center gap-1"><ArrowLeft size={12} /> Documentos</Link>
+        {d && <><span>/</span><Link href={volver} className="hover:text-gray-200">{d.clienteNombre}</Link></>}
+      </nav>
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
+        <div className="flex-1 min-w-0 w-full p-3" style={caja}>
+          {!d && !error && <div className="h-[60vh] flex items-center justify-center"><Loader2 className="animate-spin text-[#7f8a9c]" size={18} /></div>}
+          {d && d.tieneContenido && <iframe title="Vista previa" sandbox="" srcDoc={srcDoc} className="w-full rounded-lg bg-white" style={{ height: 'calc(100vh - 170px)', minHeight: 420 }} />}
+          {d && inline && (/pdf/i.test(`${d.mime ?? ''}${d.archivoNombre ?? ''}`) ? <iframe title="Vista previa" src={`/api/repositorio-docs/${d.id}/archivo?inline=1`} className="w-full rounded-lg bg-white" style={{ height: 'calc(100vh - 170px)', minHeight: 420 }} /> : /* eslint-disable-next-line @next/next/no-img-element */ <img alt={d.titulo} src={`/api/repositorio-docs/${d.id}/archivo?inline=1`} className="max-w-full mx-auto rounded-lg" />)}
+          {d && esArchivo && !inline && <div className="h-[40vh] flex flex-col items-center justify-center gap-3 text-center text-[#7f8a9c]"><Icono d={d} /><p className="text-[13px]">Este formato no tiene vista previa en el portal.</p><a href={`/api/repositorio-docs/${d.id}/archivo`} className="text-[12px] text-indigo-300 underline">Descargar {d.archivoNombre}</a></div>}
+          {error && !d && <p className="text-[13px] text-red-300 p-4">{error} <Link href="/documentos" className="underline">Volver a Documentos</Link></p>}
         </div>
         {d && (
-          <div className="w-full md:w-[300px] flex-shrink-0 p-4 overflow-y-auto border-t md:border-t-0 md:border-l border-white/10 space-y-3">
-            <div className="flex items-start gap-2"><div className="flex-1 min-w-0"><p className="text-[15px] font-bold text-gray-100">{d.titulo}</p><p className="text-[12px] text-[#7f8a9c]">{d.tipo} · versión {d.version}</p></div><button onClick={onCerrar} aria-label="Cerrar" className="text-[#94a3b8]"><X size={16} /></button></div>
+          <aside className="w-full lg:w-[320px] flex-shrink-0 p-4 space-y-3" style={caja}>
+            <div><p className="text-[15px] font-bold text-gray-100">{d.titulo}</p><p className="text-[12px] text-[#7f8a9c]">{d.tipo} · versión {d.version}</p></div>
             <dl className="grid gap-x-2 gap-y-1 text-[12px]" style={{ gridTemplateColumns: '84px 1fr' }}>
               <dt className="text-[#7f8a9c]">Estado</dt><dd><Chip estado={d.estado} /></dd>
               <dt className="text-[#7f8a9c]">Cliente</dt><dd className="text-gray-200">{d.clienteNombre}</dd>
@@ -248,7 +261,7 @@ function Detalle({ id, onCerrar, onCambio, onNuevaVersion }: { id: string; onCer
             <div className="flex flex-wrap gap-1.5">
               {esArchivo && inline && <a href={`/api/repositorio-docs/${d.id}/archivo?inline=1`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[12px] px-2.5 py-1.5 rounded-lg text-white" style={{ background: 'rgba(99,102,241,0.75)' }}><ExternalLink size={12} /> Abrir</a>}
               <a href={`/api/repositorio-docs/${d.id}/archivo${d.tieneContenido ? '?formato=md' : ''}`} className="flex items-center gap-1 text-[12px] px-2.5 py-1.5 rounded-lg text-gray-100" style={campo}><Download size={12} /> Descargar</a>
-              <button onClick={() => onNuevaVersion({ grupo: d.grupo, titulo: d.titulo, tipo: d.tipo, cliente: d.clienteNombre, solucionId: d.solucionId ?? undefined })} className="text-[12px] px-2.5 py-1.5 rounded-lg text-gray-100" style={campo}>Subir versión nueva</button>
+              <button onClick={() => setSubiendo({ grupo: d.grupo, titulo: d.titulo, tipo: d.tipo, cliente: d.clienteNombre, solucionId: d.solucionId ?? undefined })} className="text-[12px] px-2.5 py-1.5 rounded-lg text-gray-100" style={campo}>Subir versión nueva</button>
               {d.tieneContenido && d.solucionId && <a href={`/oficina?view=proyectos&p=${encodeURIComponent(d.solucionId)}`} className="text-[12px] px-2.5 py-1.5 rounded-lg text-gray-100" style={campo}>Editar en el proyecto</a>}
             </div>
             {esSoloLectura(d.estado) && <p className="text-[11px] text-amber-300">Copia congelada: no se edita. Para corregirla, crea una versión nueva.</p>}
@@ -258,8 +271,9 @@ function Detalle({ id, onCerrar, onCambio, onNuevaVersion }: { id: string; onCer
               <p className="text-[10px] text-[#7f8a9c]">El valor se guarda al cambiar el estado.</p></div>
             {error && <p className="text-[12px] text-red-300">{error}</p>}
             <div><p className="text-[11px] text-[#7f8a9c] mb-1">Historial</p><ul className="space-y-1">{d.historial.map((h, i) => <li key={i} className="text-[12px] text-gray-300 pl-3 border-l border-white/15">{h.evento}<span className="block text-[10px] text-[#7f8a9c]">{h.usuarioNombre ?? ''} · {fecha(h.createdAt)}</span></li>)}</ul></div>
-          </div>)}
+          </aside>)}
       </div>
+      {subiendo && <Subir inicial={subiendo} ops={ops} clientesExistentes={clientes} onCerrar={() => setSubiendo(null)} onListo={() => { setSubiendo(null); router.push(volver) }} />}
     </div>
   )
 }
