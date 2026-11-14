@@ -11,7 +11,9 @@ import { TIPOS, ESTADOS, PLURAL, esSoloLectura, formatoIcono, type DocumentoFila
 const COLOR_TIPO: Record<string, string> = { Propuesta: '#6c8cff', 'Presentación': '#a98bff', Contrato: '#3ccf9e', Acta: '#f0a35c', Factura: '#f59e6b', Informe: '#4cc4de', Otro: '#94a3b8' }
 const COLOR_ESTADO: Record<string, string> = { Borrador: '#94a3b8', Enviado: '#6c8cff', 'En negociación': '#f0a35c', Firmado: '#3ccf9e', Rechazado: '#f27b72', Reemplazado: '#64748b' }
 const caja = { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 } as const
-const campo = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8 } as const
+const campo = { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, colorScheme: 'dark' } as const
+// Las listas desplegables nativas ignoran el fondo transparente: se les da fondo oscuro propio.
+const ESTILO_LISTAS = 'select option{background:#0f172a;color:#e5e7eb}'
 const fecha = (s: string | null) => (s ? new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')
 const tam = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 1024 ? `${Math.round(n / 1024)} KB` : n ? `${n} B` : '')
 const fechaDoc = (d: DocumentoFila) => d.enviadoEn ?? d.createdAt
@@ -222,6 +224,7 @@ function Detalle({ id, onCerrar, onCambio, onNuevaVersion }: { id: string; onCer
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3" style={{ background: 'rgba(0,0,0,0.65)' }} onClick={e => { if (e.target === e.currentTarget) onCerrar() }}>
       <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col md:flex-row" style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18 }}>
+      <style>{ESTILO_LISTAS}</style>
         <div className="flex-1 min-h-[260px] md:min-h-0 p-3 overflow-auto" style={{ background: 'rgba(255,255,255,0.03)' }}>
           {!d && !error && <div className="h-full flex items-center justify-center"><Loader2 className="animate-spin text-[#7f8a9c]" size={18} /></div>}
           {d && d.tieneContenido && <iframe title="Vista previa" sandbox="" srcDoc={srcDoc} className="w-full h-[70vh] rounded-lg bg-white" />}
@@ -295,9 +298,10 @@ function Subir({ inicial, ops, clientesExistentes, onCerrar, onListo }: { inicia
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3" style={{ background: 'rgba(0,0,0,0.65)' }} onClick={e => { if (e.target === e.currentTarget) onCerrar() }}>
       <div className="w-full max-w-md p-5 space-y-3 max-h-[92vh] overflow-y-auto" style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16 }}>
+        <style>{ESTILO_LISTAS}</style>
         <div className="flex items-center"><h2 className="flex-1 text-[15px] font-bold text-gray-100">{inicial.grupo ? 'Subir versión nueva' : 'Subir documento'}</h2><button onClick={onCerrar} aria-label="Cerrar" className="text-[#94a3b8]"><X size={16} /></button></div>
         {inicial.grupo && <p className="text-[11px] text-[#7f8a9c]">La versión anterior pasará a «Reemplazado» y seguirá visible.</p>}
-        <label className="block text-[12px] text-[#7f8a9c]">Archivo (máx. 15 MB)<input type="file" onChange={e => { const x = e.target.files?.[0] ?? null; setFile(x); if (x && !titulo) setTitulo(x.name.replace(/\.[^.]+$/, '')) }} className="block mt-1 text-[12px] text-gray-200" /></label>
+        <label className="block text-[12px] text-[#7f8a9c]">Archivo (máx. 15 MB)<input type="file" onChange={e => { const x = e.target.files?.[0] ?? null; setFile(x); if (x && !titulo) setTitulo(x.name.replace(/\.[^.]+$/, '')) }} className="block w-full mt-1 text-[12px] text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-indigo-500/80 file:text-white file:text-[12px] file:font-semibold file:cursor-pointer" /></label>
         <label className="block text-[12px] text-[#7f8a9c]">Título<input value={titulo} onChange={e => setTitulo(e.target.value)} className={inp} style={campo} /></label>
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-[12px] text-[#7f8a9c]">Tipo<select value={tipo} onChange={e => setTipo(e.target.value)} className={inp} style={campo}>{TIPOS.map(t => <option key={t} value={t}>{t}</option>)}</select></label>
