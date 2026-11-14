@@ -17,6 +17,7 @@ import PanelAuto from './PanelAuto'
 import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
+import DocumentoEditor from './DocumentoEditor'
 import GaleriaProyectos from './GaleriaProyectos'
 import PlantillasFases from './PlantillasFases'
 import FichaCliente from './FichaCliente'
@@ -101,6 +102,11 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
   const [metaArt, setMetaArt] = useState<Record<string, ArtefactoMeta>>({})
   const [hubSucio, setHubSucio] = useState(false)
   const artInicial = useRef<string | null>(initialArtefacto ?? null)
+  const [docAbierto, setDocAbierto] = useState<{ fase: string; clave: string; titulo: string } | null>(null)
+  useEffect(() => {
+    const h = (e: Event) => { const d = (e as CustomEvent).detail as { proyectoId: string; fase: string; clave: string; titulo: string }; if (d && d.proyectoId === pidRef.current) { setDocAbierto({ fase: d.fase, clave: d.clave, titulo: d.titulo }); setVista('doc:' + d.fase + ':' + d.clave) } }
+    window.addEventListener('abrir-documento', h); return () => window.removeEventListener('abrir-documento', h)
+  }, [])
   const tabVista = vista.startsWith('art:') ? (vista.slice(4) as TabKey) : null
   const nPropuestas = Object.values(metaArt).reduce((n, m) => n + (m.propuestas || 0), 0)
   const irArtefacto = useCallback((t: TabKey) => { setTabArt(t); setHubAbierto(true); setVista('art:' + t); setPanel('artefactos'); setPanelAbierto(true) }, [])
@@ -333,10 +339,10 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
           <>
             {/* Cabecera + sesiones */}
             <div className="flex-shrink-0 border-b border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
-              <div className="flex items-center gap-2 px-4 pt-2.5">
-                <button onClick={volverAGaleria} title="Volver a todos los proyectos" aria-label="Volver a todos los proyectos" className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 text-[#9ca3af] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  <ArrowLeft size={13} /></button>
-                <h2 className="text-[13px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
+              <div className="flex items-center gap-2 px-4 h-[30px]">
+                <button onClick={volverAGaleria} title="Volver a todos los proyectos" aria-label="Volver a todos los proyectos" className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 text-[#9ca3af] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <ArrowLeft size={11} /></button>
+                <h2 className="text-[12px] font-bold text-gray-100 truncate">{proyecto?.nombre ?? det?.proyecto.nombre ?? '…'}</h2>
                 {(() => {
                   const f = vista !== 'asistente' && !tabVista ? fasesRes?.fases?.find(x => x.clave === vista) : null
                   if (!f) return null
@@ -346,15 +352,15 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
                   return (
                     <>
                       <span aria-hidden className="text-gray-600 flex-shrink-0">/</span>
-                      <span title={f.objetivo} className="text-[13px] font-semibold flex-shrink-0" style={{ color: '#fdba74' }}>{f.numero}. {f.nombre}</span>
-                      <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-md flex-shrink-0" style={{ background: bg, color: tono, border: '1px solid ' + bd }}>
+                      <span title={f.objetivo} className="text-[12px] font-semibold flex-shrink-0" style={{ color: '#fdba74' }}>{f.numero}. {f.nombre}</span>
+                      <span className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] px-1.5 py-px rounded-md flex-shrink-0" style={{ background: bg, color: tono, border: '1px solid ' + bd }}>
                         <span className="w-1.5 h-1.5 rounded-full" style={{ background: tono }} />{ETIQUETA_BLOQUE[f.bloque] ?? f.bloque}</span>
-                      {f.estado !== 'ACTUAL' && <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)', color: col }}>{est}</span>}
+                      {f.estado !== 'ACTUAL' && <span className="text-[9px] px-1.5 py-px rounded-full flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)', color: col }}>{est}</span>}
                     </>)
                 })()}
-                <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0 transition-colors"
+                <button onClick={() => setVista('asistente')} title="Asistente: las sesiones de IA del proyecto" aria-label="Asistente" aria-pressed={vista === 'asistente'} className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 transition-colors"
                   style={vista === 'asistente' ? { background: 'rgba(99,102,241,0.25)', border: '1px solid rgba(99,102,241,0.5)', color: '#fff' } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#9ca3af' }}>
-                  <MessageSquare size={12} /></button>
+                  <MessageSquare size={10} /></button>
                 <span className="flex-1" />
               </div>
               {/* Una pestaña por fase: el asistente (sesiones de IA) y las 12 fases del proyecto */}
@@ -432,7 +438,9 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
                 onMeta={m => setMetaArt(m)} onSucio={setHubSucio} />
             </div>}
 
-            {vista !== 'asistente' && !tabVista && fasesRes?.fases && (() => {
+            {docAbierto && vista.startsWith('doc:') && <div className="flex-1 min-h-0 flex flex-col"><DocumentoEditor key={vista} pagina proyectoId={pid} fase={docAbierto.fase} clave={docAbierto.clave} titulo={docAbierto.titulo} editable sesionId={sid ?? undefined} onCerrar={() => { setVista(docAbierto.fase); setDocAbierto(null); refrescar() }} onCambio={refrescar} /></div>}
+
+            {vista !== 'asistente' && !tabVista && !vista.startsWith('doc:') && fasesRes?.fases && (() => {
               const f = fasesRes.fases.find(x => x.clave === vista)
               return f ? <div className="flex-1 min-h-0"><VistaFase onAbrirPlantillas={(fase: string) => { setPlantillasIni({ codigo: fasesRes?.plantilla?.codigo ?? (proyecto?.naturaleza === 'INTERNO' ? 'INICIATIVA_INTERNA' : 'PROYECTO_COMPLETO'), fase }); setEditorPlantillas(true) }} key={`${pid}-${f.clave}`} proyectoId={pid} fase={f} data={fasesRes} onCambio={refrescar} onAbrirPanel={p => { setPanel(p); setPanelAbierto(true) }} onAbrirArtefacto={irArtefacto} onAbrirFicha={() => setFichaAbierta(true)} onAbrirLead={() => setLeadAbierto(true)} onInvestigarEmpresa={() => { setFichaAuto(n => n + 1); setFichaAbierta(true) }}
                 sesiones={det?.sesiones ?? []} creandoRol={creandoRol} onIniciarSesion={(fa, ro) => void iniciarRol(fa, ro)} onAbrirSesion={id => { setSid(id); setVista('asistente') }}

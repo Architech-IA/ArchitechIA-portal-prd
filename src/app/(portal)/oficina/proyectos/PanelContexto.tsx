@@ -10,6 +10,7 @@ const COLOR: Record<string, { punto: string; txt: string; label: string }> = {
   omitida: { punto: '#f87171', txt: 'text-red-300', label: 'Omitida' },
   vacia: { punto: '#4b5563', txt: 'text-[#7f8a9c]', label: 'Vacía' },
   excluida: { punto: '#4b5563', txt: 'text-[#7f8a9c]', label: 'Excluida' },
+  fuera_de_fase: { punto: '#4b5563', txt: 'text-[#7f8a9c]', label: 'Fuera de esta fase' },
 }
 
 // «Contexto exacto»: muestra qué fuentes recibiría la IA AHORA en esta sesión (leídas vivas de la

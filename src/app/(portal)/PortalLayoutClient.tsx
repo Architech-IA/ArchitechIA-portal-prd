@@ -4,13 +4,15 @@ import TopBar from "@/components/TopBar";
 import SidebarUser from "@/components/SidebarUser";
 import SidebarUsage from "@/components/SidebarUsage";
 import GlobalSearch from "@/components/GlobalSearch";
+import OrquestadorPanel from "@/components/OrquestadorPanel";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { usePageTitleOverride } from "@/lib/pageTitleContext";
 import { PageActionsProvider, usePageActions } from "@/lib/pageActionsContext";
 
-type NavItem = { href: string; label: string; icon: string };
+// soon: módulo sin datos todavía; se muestra con distintivo "En construcción"
+type NavItem = { href: string; label: string; icon: string; soon?: boolean };
 type NavSection = { id: string; label: string; superAdmin?: boolean; items: NavItem[] };
 
 // Accesos sueltos (sin header), como Home/Inbox/People de la referencia
@@ -18,6 +20,7 @@ const topLinks: NavItem[] = [
   { href: '/',           label: 'Dashboard',  icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
   { href: '/leads',      label: 'Leads',      icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
   { href: '/meetings',   label: 'Calendar',   icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+  { href: '/inbox',      label: 'Correo',     icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
 ];
 
 // Secciones colapsables (como Automations / Sales de la referencia)
@@ -28,12 +31,14 @@ const sections: NavSection[] = [
       { href: '/workflows', label: 'Workflows', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
       { href: '/oficina', label: 'Oficina',   icon: 'M2 20h20M5 20V8l7-5 7 5v12M9 20v-5h6v5' },
       { href: '/hub',      label: 'HUB',       icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+      { href: '/documentos', label: 'Documentos', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+      { href: '/catalogo-demos', label: 'Demos', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
     ],
   },
   {
     id: 'comercial', label: 'Comercial',
     items: [
-      { href: '/finanzas',  label: 'Finance',   icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { href: '/finanzas',  label: 'Finance',   soon: true, icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     ],
   },
   {
@@ -111,6 +116,8 @@ export default function PortalLayoutClient({
     if (pathname === '/traceability') return 'Trazabilidad';
     if (pathname === '/oficina') return 'Oficina Virtual';
     if (pathname === '/hub') return 'HUB';
+    if (pathname === '/documentos') return 'Documentos';
+    if (pathname === '/catalogo-demos') return 'Catálogo de demos';
     if (pathname === '/hub/team') return 'Equipo';
     if (pathname === '/hub/business') return 'Business';
     if (pathname === '/hub/finance') return 'Finance';
@@ -221,7 +228,7 @@ export default function PortalLayoutClient({
     return (
       <a
         href={item.href}
-        title={isCollapsed ? item.label : undefined}
+        title={isCollapsed ? (item.soon ? `${item.label} (en construcción)` : item.label) : undefined}
         className="flex items-center rounded-xl transition-all relative"
         style={{
           fontSize: '12px',
@@ -255,6 +262,9 @@ export default function PortalLayoutClient({
           </svg>
         </span>
         {!isCollapsed && item.label}
+        {!isCollapsed && item.soon && (
+          <span className="ml-auto rounded-full flex-shrink-0" style={{ fontSize: '9px', padding: '1px 6px', color: '#fbbf24', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}>En construcción</span>
+        )}
         {!isCollapsed && active && (
           <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#FF5A00', boxShadow: '0 0 6px rgba(255,90,0,0.8)' }} />
         )}
@@ -455,6 +465,7 @@ export default function PortalLayoutClient({
           {children}
         </main>
         <GlobalSearch />
+        <OrquestadorPanel />
       </div>
     </div>
   </PageActionsProvider>

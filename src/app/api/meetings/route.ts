@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   const sessionUserId = (session?.user as { id?: string })?.id;
 
   const body = await request.json();
-  const { title, description, type, date, endDate, location, link, attendees, status, notes, actaFile, actaFileName, userId } = body;
+  const { title, description, type, date, endDate, location, link, attendees, status, notes, actaFile, actaFileName, userId, hub } = body;
 
   // Usar userId de la sesión del servidor; si no hay sesión, caer al body (compatibilidad)
   const resolvedUserId = sessionUserId || userId;
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       attendees: attendees || null, status: status || 'SCHEDULED',
       notes: notes || null, actaFile: actaFile || null,
       actaFileName: actaFileName || null,
+      hub: typeof hub === 'string' && hub ? hub : null,
       userId: resolvedUserId,
     },
     include: { user: { select: { id: true, name: true, email: true } } },

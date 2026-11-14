@@ -1,25 +1,30 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 
 // Mismo editor con pestañas del hub de Leads (guarda un JSON { tabs } en hub.notas)
 const TabbedNotes = dynamic(() => import('@/components/TabbedNotes'), { ssr: false });
-import { getDateStrUTC5, getTimeStrUTC5 } from '@/lib/timezone';
+import { getDateStrUTC5, toDatetimeLocalInput } from '@/lib/timezone';
+import AgenteReunion, { type Destino } from './AgenteReunion';
+import { AGENDA_DAILY } from '@/lib/agendador/plantillas';
+import DatosClave, { DATOS_VACIOS, DAILY_LINK, EQUIPO, TIPOS, listaAsistentes, type DatosReunion } from './DatosClave';
 
-// Hub de la reunion: popup grande para PREPARAR (agenda), TOMAR NOTAS,
-// registrar DECISIONES y dar seguimiento a ACCIONES de una reunion. Es
-// distinto del popup de "Crear/Editar evento", que solo agenda (titulo,
-// fecha, tipo, asistentes, link).
+// Popup de la reunión (único): sirve para CREAR una reunión y para trabajarla
+// después. A la izquierda, pestañas (agenda, contenido, pendientes, archivos);
+// a la derecha, la información clave, que se edita ahí mismo.
 
 export interface HubMeeting {
   id: string;
   title: string;
+  description?: string | null;
   type: string;
   status: string;
   link: string | null;
   location: string | null;
+  attendees?: string | null;
+  notes?: string | null;
   hub: string | null;
   actaFile: string | null;
   actaFileName: string | null;
@@ -29,6 +34,22 @@ export interface HubMeeting {
   user?: { name: string } | null;
 }
 
+type UsuarioHub = { id: string; name: string; email: string; role: string };
+type ClienteHub = { id: string; nombre: string; contacto: string; email: string };
+
+function datosDe(m: HubMeeting): DatosReunion {
+  return {
+    title: m.title, description: m.description || '', type: m.type,
+    date: toDatetimeLocalInput(m.date), endDate: m.endDate ? toDatetimeLocalInput(m.endDate) : '',
+    location: m.location || '', link: m.link || '', attendees: m.attendees || '', status: m.status,
+  };
+}
+
+// Plantillas rápidas para crear (rellenan tipo, ubicación, enlace, asistentes y agenda base)
+const PLANTILLAS_REUNION = [
+  { label: 'Daily Intern - ArchitechIA', type: 'INTERNAL_DAILY', location: 'Virtual', link: DAILY_LINK, equipo: true },
+];
+
 interface Item { id: string; texto: string }
 interface HubData { objetivo: string; puntos: Item[]; notas: string; decisiones: Item[] }
 interface Accion {
@@ -37,7 +58,7 @@ interface Accion {
 }
 
 const EMPTY_HUB: HubData = { objetivo: '', puntos: [], notas: '', decisiones: [] };
-const PLANTILLA_DAILY = ['Qué hice desde la última daily', 'Qué haré hoy', 'Bloqueos e impedimentos'];
+const PLANTILLA_DAILY = AGENDA_DAILY;
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 // Las pestañas viven en hub.notas como JSON { tabs: [...] } (formato de TabbedNotes).
@@ -102,22 +123,36 @@ const ESTADO_ACCION: Record<Accion['estado'], { label: string; cls: string }> = 
 
 type TabKey = 'agenda' | 'notas' | 'decisiones' | 'acciones' | 'archivos';
 
-export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto, onClose, onEdit, onToggleStatus, onHubSaved, onActaChanged }: {
+export default function MeetingHub({ meeting, crear, users, clientes, onClose, onToggleStatus, onHubSaved, onActaChanged, onMeetingUpdated }: {
   meeting: HubMeeting;
-  asistentes: string[];
-  typeLabel: string;
-  fechaTexto: string;
+  // Modo crear: la reunión aún no existe. onCrear devuelve el mensaje de error, o null si salió bien.
+  crear?: { dia: string; onCrear: (datos: DatosReunion, hub: string) => Promise<string | null> };
+  users: UsuarioHub[];
+  clientes: ClienteHub[];
   onClose: () => void;
-  onEdit: () => void;
   onToggleStatus: () => void;
   onHubSaved: (id: string, hub: string) => void;
   onActaChanged: (updated: { id: string; actaFile: string | null; actaFileName: string | null }) => void;
+  onMeetingUpdated: (m: Record<string, unknown> & { id: string }) => void;
 }) {
+  const esNuevo = !!crear;
   const [tab, setTab] = useState<TabKey>('agenda');
   const [hub, setHub] = useState<HubData>(() => parseHub(meeting.hub));
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const lastSaved = useRef<string>(JSON.stringify(parseHub(meeting.hub)));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Datos clave (título, tipo, fecha, ubicación, enlace, asistentes, estado)
+  const [datos, setDatos] = useState<DatosReunion>(() => esNuevo
+    ? { ...DATOS_VACIOS, date: `${crear!.dia}T09:00`, link: DAILY_LINK, location: '' }
+    : datosDe(meeting));
+  const lastDatos = useRef<DatosReunion>(esNuevo ? { ...DATOS_VACIOS } : datosDe(meeting));
+  const [errorDatos, setErrorDatos] = useState('');
+  const [errorCrear, setErrorCrear] = useState('');
+  const [creando, setCreando] = useState(false);
+  const [menuEstado, setMenuEstado] = useState(false);
+  const [agente, setAgente] = useState<Destino | null>(null);
+  const asistentes = useMemo(() => listaAsistentes(datos.attendees).map(a => users.find(u => u.email === a)?.name ?? a), [datos.attendees, users]);
+  const typeLabel = TIPOS.find(t => t.value === datos.type)?.label || datos.type;
   const [acciones, setAcciones] = useState<Accion[]>([]);
   const [cargandoAcc, setCargandoAcc] = useState(true);
   const [nuevaAccion, setNuevaAccion] = useState('');
@@ -135,6 +170,7 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
   const soloLectura = meeting.status === 'COMPLETED';
 
   async function guardarHub(data: HubData) {
+    if (esNuevo) return; // al crear, la agenda se guarda junto con la reunión
     const json = JSON.stringify(data);
     if (json === lastSaved.current) return;
     setSaveState('saving');
@@ -158,7 +194,55 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hub]);
 
+  // Datos clave: qué cambió desde lo último guardado
+  function cambiosDatos(d: DatosReunion): Partial<DatosReunion> {
+    const c: Partial<DatosReunion> = {};
+    (Object.keys(d) as (keyof DatosReunion)[]).forEach(k => { if (d[k] !== lastDatos.current[k]) c[k] = d[k]; });
+    return c;
+  }
+  function errorDeDatos(d: DatosReunion): string {
+    if (!d.title.trim()) return 'El título es obligatorio';
+    if (!d.date) return 'La fecha es obligatoria';
+    return '';
+  }
+
+  async function guardarDatos(d: DatosReunion) {
+    const c = cambiosDatos(d);
+    if (Object.keys(c).length === 0) return;
+    setSaveState('saving');
+    try {
+      const res = await fetch(`/api/meetings/${meeting.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c),
+      });
+      if (!res.ok) throw new Error();
+      lastDatos.current = { ...lastDatos.current, ...c };
+      onMeetingUpdated(await res.json());
+      setSaveState('saved');
+    } catch { setSaveState('error'); }
+  }
+
+  // Autoguardado de los datos clave (solo en reuniones ya creadas)
   useEffect(() => {
+    if (esNuevo) return;
+    if (Object.keys(cambiosDatos(datos)).length === 0) { setErrorDatos(''); return; }
+    const e = errorDeDatos(datos);
+    setErrorDatos(e);
+    if (e) return;
+    const t = setTimeout(() => { void guardarDatos(datos); }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datos]);
+
+  // Si el estado cambia desde fuera (Completar / Reabrir), se refleja en los datos
+  useEffect(() => {
+    if (esNuevo) return;
+    setDatos(d => (d.status === meeting.status ? d : { ...d, status: meeting.status }));
+    lastDatos.current = { ...lastDatos.current, status: meeting.status };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meeting.status]);
+
+  useEffect(() => {
+    if (esNuevo) { setCargandoAcc(false); return; }
     let cancelled = false;
     fetch(`/api/meetings/${meeting.id}/actions`).then(r => r.json())
       .then(d => { if (!cancelled) setAcciones(Array.isArray(d) ? d : []); })
@@ -167,22 +251,42 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
     return () => { cancelled = true; };
   }, [meeting.id]);
 
-  async function cerrar() {
+  // Guarda lo pendiente (agenda/notas y datos clave) antes de cerrar o cambiar de estado
+  async function guardarPendiente() {
     if (timer.current) clearTimeout(timer.current);
     await guardarHub(hub);
+    if (!errorDeDatos(datos)) await guardarDatos(datos);
+  }
+
+  async function cerrar() {
+    if (esNuevo) {
+      const sucio = !!datos.title.trim() || !!datos.description.trim() || hub.puntos.some(p => p.texto.trim()) || textoNotas(hub.notas).length > 0;
+      if (sucio && !window.confirm('¿Descartar la reunión sin crearla?')) return;
+      onClose();
+      return;
+    }
+    await guardarPendiente();
     onClose();
   }
 
-  async function editarDatos() {
-    if (timer.current) clearTimeout(timer.current);
-    await guardarHub(hub);
-    onEdit();
+  async function completarOReabrir() {
+    await guardarPendiente();
+    onToggleStatus();
   }
 
-  async function completarOReabrir() {
-    if (timer.current) clearTimeout(timer.current);
-    await guardarHub(hub);
-    onToggleStatus();
+  async function crearReunion() {
+    const e = errorDeDatos(datos);
+    if (e) { setErrorCrear(e); return; }
+    setErrorCrear(''); setCreando(true);
+    const err = await crear!.onCrear(datos, JSON.stringify(hub));
+    setCreando(false);
+    if (err) setErrorCrear(err);
+  }
+
+  // Plantilla rápida (solo al crear)
+  function aplicarPlantilla(p: typeof PLANTILLAS_REUNION[number]) {
+    setDatos(d => ({ ...d, title: p.label, type: p.type, location: p.location, link: p.link, attendees: p.equipo ? EQUIPO.join(', ') : d.attendees }));
+    setHub(h => (h.puntos.length === 0 && p.type === 'INTERNAL_DAILY' ? { ...h, puntos: PLANTILLA_DAILY.map(t => ({ id: uid(), texto: t })) } : h));
   }
 
   // ---- Agenda / decisiones (listas simples) ----
@@ -220,6 +324,41 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
   async function borrarAccion(id: string) {
     setAcciones(prev => prev.filter(a => a.id !== id));
     await fetch(`/api/meetings/${meeting.id}/actions/${id}`, { method: 'DELETE' }).catch(() => {});
+  }
+
+  // ---- Agente Documentador ----
+  const botonAgente = (destino: Destino, texto: string) => (
+    <button type="button" onClick={() => setAgente(destino)}
+      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-full cursor-pointer border border-orange-400/25 bg-orange-400/[0.08] text-orange-400 transition-all duration-150 hover:bg-orange-400/20 hover:border-orange-400/60 hover:text-orange-300 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/50">
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+      {texto}
+    </button>
+  );
+  const estadoParaAgente = () => ({ datos: { ...datos, typeLabel } as Record<string, string>, hub: JSON.stringify(hub) });
+  function aplicarAgenda(objetivo: string, puntos: string[], modo: 'reemplazar' | 'anadir') {
+    if (objetivo) setDatos(d => ({ ...d, description: objetivo }));
+    const nuevos = puntos.map(t => ({ id: uid(), texto: t }));
+    setHub(h => ({ ...h, puntos: modo === 'anadir' ? [...h.puntos, ...nuevos] : nuevos }));
+  }
+  function aplicarContenido(titulo: string, html: string) {
+    setHub(h => {
+      let tabs: { id: string; name: string; content: string }[] = [];
+      try { const v = JSON.parse(h.notas); if (v && Array.isArray(v.tabs)) tabs = v.tabs; } catch {}
+      if (tabs.length === 0 && h.notas.trim()) tabs = [{ id: uid(), name: 'General', content: h.notas }];
+      return { ...h, notas: JSON.stringify({ tabs: [...tabs, { id: uid(), name: titulo, content: html }] }) };
+    });
+    setTab('notas');
+  }
+  async function crearAcciones(lista: { texto: string; responsable: string; fechaLimite: string }[]) {
+    for (const a of lista) {
+      try {
+        const res = await fetch(`/api/meetings/${meeting.id}/actions`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto: a.texto, responsable: a.responsable || null, fechaLimite: a.fechaLimite || null }),
+        });
+        if (res.ok) { const nueva: Accion = await res.json(); setAcciones(prev => [...prev, nueva]); }
+      } catch { setErrorAcc('No se pudieron crear todas las acciones.'); }
+    }
   }
 
   // ---- Archivos (acta) ----
@@ -333,7 +472,6 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
 
   // ── Datos del widget lateral (visible en todas las pestañas) ──
   const hoyStr = getDateStrUTC5(new Date());
-  const fechaCorta = (iso: string) => getDateStrUTC5(iso).split('-').reverse().join('/');
   const diaNum = (d: string) => Math.floor(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 86400000);
   const relativo = (iso: string) => {
     const diff = diaNum(getDateStrUTC5(iso)) - diaNum(hoyStr);
@@ -361,75 +499,120 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
     { key: 'archivos', label: 'Archivos', badge: meeting.actaFile ? 1 : undefined },
   ];
 
-  const estadoGuardado = saveState === 'saving' ? 'Guardando…' : saveState === 'saved' ? 'Guardado' : saveState === 'error' ? 'Error al guardar' : soloLectura ? 'Solo lectura' : 'Autoguardado activo';
+  const estadoGuardado = errorDatos ? `${errorDatos}: no se guardan los cambios de los datos` : saveState === 'saving' ? 'Guardando…' : saveState === 'saved' ? 'Guardado' : saveState === 'error' ? 'Error al guardar' : soloLectura ? 'Solo lectura' : 'Autoguardado activo';
   const btnBase = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border';
 
   if (typeof document === 'undefined') return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(20px) saturate(160%)', WebkitBackdropFilter: 'blur(20px) saturate(160%)' }}
-      onClick={() => { void cerrar(); }}>
-      <div onClick={e => e.stopPropagation()}
+      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(20px) saturate(160%)', WebkitBackdropFilter: 'blur(20px) saturate(160%)' }}>
+      <div
         className="w-full max-w-6xl h-[88vh] rounded-2xl flex flex-col overflow-hidden relative"
         style={{
-          background: 'linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(14,10,28,0.52) 42%, rgba(14,10,28,0.50) 100%)',
-          backdropFilter: 'blur(48px) saturate(200%)', WebkitBackdropFilter: 'blur(48px) saturate(200%)',
+          background: 'rgba(8,9,22,0.98)',
           border: '1px solid rgba(255,255,255,0.12)',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 40px 80px rgba(0,0,0,0.65), 0 0 60px rgba(249,115,22,0.07)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 40px 80px rgba(0,0,0,0.65)',
         }}>
         {/* brillo especular del borde superior */}
         <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'linear-gradient(90deg, transparent, rgba(253,186,116,0.55) 50%, transparent)' }} />
 
-        {/* Encabezado */}
+        {/* Encabezado: el título se edita aquí mismo */}
         <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-4" style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.16) 0%, rgba(249,115,22,0.04) 55%, rgba(255,255,255,0.02) 100%)', borderBottom: '1px solid rgba(251,146,60,0.20)' }}>
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-white truncate">{meeting.title}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {fechaTexto} · {typeLabel}{meeting.location ? ` · ${meeting.location}` : ''}
-              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-[11px] ${soloLectura ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                {soloLectura ? 'Completada' : meeting.status === 'CANCELLED' ? 'Cancelada' : 'Programada'}
-              </span>
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+            <input type="text" value={datos.title} onChange={e => { setDatos(d => ({ ...d, title: e.target.value })); setErrorCrear(''); }}
+              placeholder={esNuevo ? 'Título de la reunión' : 'Sin título'} aria-label="Título de la reunión" autoFocus={esNuevo}
+              className="min-w-0 flex-1 bg-transparent text-lg font-bold text-white placeholder-white/30 truncate focus:outline-none border-b border-dashed border-transparent hover:border-white/20 focus:border-orange-500/60 transition-colors" />
+            {!esNuevo && (
+              <div className="relative flex-shrink-0">
+                <button type="button" onClick={() => setMenuEstado(v => !v)} aria-label="Estado de la reunión" title="Estado de la reunión"
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[0.08] ${soloLectura ? 'text-yellow-300' : 'text-gray-400 hover:text-white'}`}>
+                  {soloLectura ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                  )}
+                </button>
+                {menuEstado && createPortal(
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(3,4,12,0.7)', backdropFilter: 'blur(6px)' }} onMouseDown={e => { if (e.target === e.currentTarget) setMenuEstado(false); }}>
+                    <div className="w-full max-w-sm rounded-2xl p-5 space-y-3" style={{ background: 'rgba(8,9,22,0.98)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 40px 80px rgba(0,0,0,0.65)' }}>
+                      <p className="text-[11px] font-semibold text-white">Estado de la reunión</p>
+                      <p className="text-[11px] text-[#7f8a9c] leading-snug">
+                        {soloLectura ? 'Completada: la agenda y las notas están en solo lectura. Los pendientes y los archivos siguen editables.' : 'Mientras no esté completada, la agenda y las notas se pueden editar.'}
+                      </p>
+                      {[{ v: 'SCHEDULED', t: 'Programada' }, { v: 'COMPLETED', t: 'Completada' }, { v: 'CANCELLED', t: 'Cancelada' }].map(o => (
+                        <button key={o.v} type="button" disabled={datos.status === o.v}
+                          onClick={() => { void guardarPendiente(); setDatos(d => ({ ...d, status: o.v })); setMenuEstado(false); }}
+                          className={`w-full px-2.5 py-1.5 text-xs text-left rounded-lg transition-colors ${datos.status === o.v ? 'bg-orange-600/20 text-orange-300 cursor-default' : 'text-gray-300 hover:bg-white/10'}`}>
+                          {o.t}{datos.status === o.v ? ' (actual)' : o.v === 'SCHEDULED' && soloLectura ? ' (reabrir para editar)' : ''}
+                        </button>
+                      ))}
+                      <div className="flex justify-end pt-1">
+                        <button type="button" onClick={() => setMenuEstado(false)} className="px-3 py-1.5 text-xs text-gray-300 rounded-lg border border-white/10 hover:bg-white/[0.06]">Cerrar</button>
+                      </div>
+                    </div>
+                  </div>,
+                  document.body
+                )}
+              </div>
+            )}
+            </div>
+            {esNuevo && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[11px] text-[#7f8a9c]">Plantillas</span>
+                {PLANTILLAS_REUNION.map(p => (
+                  <button key={p.label} type="button" onClick={() => aplicarPlantilla(p)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] leading-4 font-medium rounded-full transition-colors hover:bg-orange-500/20"
+                    style={{ background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.25)', color: '#fb923c' }}>
+                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {meeting.link && (
-              <a href={meeting.link} target="_blank" rel="noreferrer"
+            {datos.link && !esNuevo && (
+              <a href={datos.link} target="_blank" rel="noreferrer"
                 className={`${btnBase} text-orange-300 border-orange-600/40 bg-orange-900/20 hover:bg-orange-900/40`}>Unirse</a>
             )}
-            <button type="button" onClick={() => { void editarDatos(); }} className={`${btnBase} text-gray-300 border-white/10 hover:bg-white/[0.06]`}>Editar datos</button>
-            <button type="button" onClick={() => { void cerrar(); }} title="Cerrar"
+            <button type="button" onClick={() => { void cerrar(); }} title="Cerrar" aria-label="Cerrar"
               className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.08]">✕</button>
           </div>
         </div>
 
-        {/* Pestañas */}
+        {/* Pestañas (Pendientes y Archivos se activan al crear la reunión) */}
         <div className="px-6 flex items-center gap-1 border-b border-white/10">
-          {TABS.map(t => (
-            <button key={t.key} type="button" onClick={() => setTab(t.key)}
-              className={`px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${tab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-[#7f8a9c] hover:text-gray-300'}`}>
-              {t.label}
-              {t.badge ? <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-300">{t.badge}</span> : null}
-            </button>
-          ))}
+          {TABS.map(t => {
+            const apagada = esNuevo && (t.key === 'acciones' || t.key === 'archivos');
+            return (
+              <button key={t.key} type="button" disabled={apagada} onClick={() => setTab(t.key)}
+                title={apagada ? 'Se activa al crear la reunión' : undefined}
+                className={`px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${apagada ? 'border-transparent text-[#7f8a9c] opacity-40 cursor-not-allowed' : tab === t.key ? 'border-orange-500 text-orange-400' : 'border-transparent text-[#7f8a9c] hover:text-gray-300'}`}>
+                {t.label}
+                {t.badge ? <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-white/10 text-gray-300">{t.badge}</span> : null}
+              </button>
+            );
+          })}
         </div>
 
-        {soloLectura && (tab === 'agenda' || tab === 'notas') && (
-          <div className="mx-6 mt-3 text-xs text-yellow-300/90 bg-yellow-900/10 border border-yellow-700/40 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
-            <span>Reunión completada: la agenda y las notas están en solo lectura. Los pendientes y los archivos siguen editables.</span>
-            <button type="button" onClick={() => { void completarOReabrir(); }} className="text-orange-300 hover:text-orange-200 font-semibold whitespace-nowrap">Reabrir para editar</button>
-          </div>
-        )}
 
         {/* Contenido + widget lateral (el widget es transversal: se ve en todas las pestañas) */}
-        <div className="flex-1 min-h-0 flex">
-        <div className="flex-1 min-w-0 overflow-y-auto px-6 py-5">
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-y-auto md:overflow-visible">
+        <div className="md:flex-1 min-w-0 md:overflow-y-auto px-6 py-5 shrink-0 md:shrink">
           {tab === 'agenda' && (
             <div className="space-y-5 max-w-3xl">
+              {!soloLectura && <div className="flex justify-end -mb-2">{botonAgente('agenda', 'Agente Documentador')}</div>}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Objetivo</label>
+                <AutoArea value={datos.description} disabled={soloLectura} placeholder="Para qué es la reunión, en una frase."
+                  onChange={v => setDatos(d => ({ ...d, description: v }))} />
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold text-gray-400">Puntos a tratar</label>
-                  {!soloLectura && meeting.type === 'INTERNAL_DAILY' && hub.puntos.length === 0 && (
+                  {!soloLectura && datos.type === 'INTERNAL_DAILY' && hub.puntos.length === 0 && (
                     <button type="button" onClick={() => setItems('puntos', () => PLANTILLA_DAILY.map(t => ({ id: uid(), texto: t })))}
                       className="text-[11px] text-orange-400 hover:text-orange-300">Usar plantilla Daily</button>
                   )}
@@ -453,17 +636,28 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
                     className="mt-2 text-xs text-[#7f8a9c] hover:text-orange-400">+ Agregar punto</button>
                 )}
               </div>
+              {esNuevo && <p className="text-[11px] text-[#7f8a9c]">Puedes preparar la agenda antes de crear la reunión. Pendientes y Archivos se activan al crearla.</p>}
             </div>
           )}
 
           {tab === 'notas' && (
-            <div className="h-full min-h-[460px] flex flex-col" {...(soloLectura ? { inert: true } : {})}>
-              <TabbedNotes value={hub.notas} onChange={v => setHub(h => ({ ...h, notas: v }))} />
+            <div className="h-full min-h-[460px] flex flex-col gap-3">
+              {!esNuevo && !!meeting.notes?.trim() && textoNotas(hub.notas).length === 0 && (
+                <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <p className="text-[11px] text-[#7f8a9c] mb-1">Notas guardadas con el formulario anterior (solo lectura)</p>
+                  <p className="text-xs text-gray-300 whitespace-pre-wrap">{meeting.notes}</p>
+                </div>
+              )}
+              {!soloLectura && <div className="flex justify-end">{botonAgente('contenido', 'Resumir con el Agente Documentador')}</div>}
+              <div className="flex-1 min-h-0 flex flex-col" {...(soloLectura ? { inert: true } : {})}>
+                <TabbedNotes value={hub.notas} onChange={v => setHub(h => ({ ...h, notas: v }))} />
+              </div>
             </div>
           )}
 
           {tab === 'acciones' && (
             <div className="max-w-4xl">
+              <div className="flex justify-end mb-2">{botonAgente('pendientes', 'Extraer pendientes con el Agente Documentador')}</div>
               <div className="flex gap-2 mb-4">
                 <input value={nuevaAccion} onChange={e => setNuevaAccion(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void agregarAccion(); } }}
@@ -539,37 +733,15 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
           )}
         </div>
 
-        <aside className="hidden md:flex w-72 shrink-0 flex-col gap-5 border-l border-white/10 overflow-y-auto px-4 py-5" style={{ background: 'rgba(249,115,22,0.035)' }}>
-          {/* Información clave */}
+        <aside className="flex w-full md:w-[22.5rem] shrink-0 flex-col gap-5 border-t md:border-t-0 md:border-l border-white/10 md:overflow-y-auto px-4 py-5" style={{ background: 'rgba(255,255,255,0.02)' }}>
+          {/* Información clave (editable) */}
           <section>
-            <h4 className="text-[11px] uppercase tracking-wider text-[#7f8a9c] font-semibold mb-2">Información clave</h4>
-            <dl className="space-y-1.5 text-xs">
-              <div className="flex justify-between gap-3"><dt className="text-[#7f8a9c]">Tipo</dt><dd className="text-gray-200 text-right">{typeLabel}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-[#7f8a9c]">Estado</dt>
-                <dd><span className={`px-1.5 py-0.5 rounded-full text-[11px] ${soloLectura ? 'bg-green-500/20 text-green-400' : meeting.status === 'CANCELLED' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                  {soloLectura ? 'Completada' : meeting.status === 'CANCELLED' ? 'Cancelada' : 'Programada'}</span></dd></div>
-              <div className="flex justify-between gap-3 items-center"><dt className="text-[#7f8a9c]">Lugar</dt>
-                <dd className="text-gray-200 text-right truncate flex items-center justify-end gap-1.5">
-                  {meeting.location || '—'}
-                  {meeting.link && (
-                    <a href={meeting.link} target="_blank" rel="noreferrer" title="Abrir enlace de la reunión" aria-label="Abrir enlace de la reunión"
-                      className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-orange-300 border border-orange-600/40 bg-orange-900/20 hover:bg-orange-900/40 hover:text-orange-200 transition-colors">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    </a>
-                  )}
-                </dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-[#7f8a9c]">Asistentes</dt><dd className="text-gray-200">{meeting.type === 'INTERNAL_DAILY' ? 'ArchitechIA' : asistentes.length}</dd></div>
-              <div className="flex justify-between gap-3 text-[11px]"><dt className="text-[#7f8a9c]">Fecha</dt>
-                <dd className="text-gray-200 text-right">{fechaCorta(meeting.date)} {getTimeStrUTC5(meeting.date)}{meeting.endDate ? `-${getTimeStrUTC5(meeting.endDate)}` : ''}</dd></div>
-            </dl>
-            {meeting.type !== 'INTERNAL_DAILY' && asistentes.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {asistentes.map(a => <span key={a} className="text-[11px] text-gray-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">{a}</span>)}
-              </div>
-            )}
+            <h4 className="text-[11px] uppercase tracking-wider text-orange-400 font-semibold mb-3">Información clave</h4>
+            <DatosClave datos={datos} users={users} clientes={clientes}
+              onChange={patch => { setDatos(d => ({ ...d, ...patch })); setErrorCrear(''); }} />
           </section>
 
-          {/* Pendientes */}
+          {!esNuevo && (
           <section>
             <h4 className="text-[11px] uppercase tracking-wider text-[#7f8a9c] font-semibold mb-2 flex items-center gap-2">
               Pendientes
@@ -615,21 +787,38 @@ export default function MeetingHub({ meeting, asistentes, typeLabel, fechaTexto,
               <button type="button" onClick={() => setTab('acciones')} className="mt-1.5 text-[11px] text-orange-300 hover:text-orange-200">Ver las {accPend.length} pendientes →</button>
             )}
           </section>
+          )}
         </aside>
         </div>
 
         {/* Pie */}
-        <div className="px-6 py-3 flex items-center justify-between gap-3" style={{ background: 'rgba(249,115,22,0.04)', borderTop: '1px solid rgba(251,146,60,0.18)' }}>
-          <span className={`text-[11px] ${saveState === 'error' ? 'text-red-400' : saveState === 'saving' ? 'text-orange-400' : 'text-[#7f8a9c]'}`}>{estadoGuardado}</span>
+        <div className="px-6 py-3 flex items-center justify-between gap-3" style={{ background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {esNuevo ? (
+            <span className={`text-[11px] ${errorCrear ? 'text-red-400' : 'text-[#7f8a9c]'}`}>{errorCrear || 'Obligatorios: título, tipo y fecha'}</span>
+          ) : (
+            <span className={`text-[11px] ${errorDatos || saveState === 'error' ? 'text-red-400' : saveState === 'saving' ? 'text-orange-400' : 'text-[#7f8a9c]'}`}>{estadoGuardado}</span>
+          )}
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => { void cerrar(); }} className={`${btnBase} text-gray-300 border-white/10 hover:bg-white/[0.06]`}>Cerrar</button>
-            <button type="button" onClick={() => { void completarOReabrir(); }}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold text-white ${soloLectura ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'}`}>
-              {soloLectura ? 'Reabrir reunión' : 'Completar reunión'}
-            </button>
+            <button type="button" onClick={() => { void cerrar(); }} className={`${btnBase} text-gray-300 border-white/10 hover:bg-white/[0.06]`}>{esNuevo ? 'Cancelar' : 'Cerrar'}</button>
+            {esNuevo ? (
+              <button type="button" onClick={() => { void crearReunion(); }} disabled={creando}
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-orange-600 hover:bg-orange-500 disabled:opacity-60">
+                {creando ? 'Creando…' : 'Crear reunión'}
+              </button>
+            ) : (
+              <button type="button" onClick={() => { void completarOReabrir(); }}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold text-white ${soloLectura ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'}`}>
+                {soloLectura ? 'Reabrir reunión' : 'Completar reunión'}
+              </button>
+            )}
           </div>
         </div>
       </div>
+      {agente && (
+        <AgenteReunion destino={agente} meetingId={esNuevo ? undefined : meeting.id} obtener={estadoParaAgente}
+          existentes={{ puntos: hub.puntos.filter(p => p.texto.trim()).length }}
+          onAplicarAgenda={aplicarAgenda} onAplicarContenido={aplicarContenido} onCrearAcciones={crearAcciones} onCerrar={() => setAgente(null)} />
+      )}
     </div>,
     document.body,
   );

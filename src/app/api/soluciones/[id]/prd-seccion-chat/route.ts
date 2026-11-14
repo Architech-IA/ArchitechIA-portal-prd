@@ -376,9 +376,10 @@ Reglas del debate:
 2. Generá el contenido final revisado (solo ${campoLabel}) cuando el usuario esté de acuerdo con una mejora, pida aplicar los cambios, o diga que ya está bien como está (en ese último caso, devolvé el mismo contenido, sin inventar cambios).
 3. Nunca hagas más de 3 intervenciones de debate antes de ofrecer una versión final (aunque el usuario no esté de acuerdo con nada, en la 3ra ofrecé tu mejor version igual).
 4. Cada vez que uses tipo "pregunta" (tu turno de debate, sea objeción o pregunta), proponé también EXACTAMENTE 5 respuestas/posturas posibles para que el usuario elija con un clic, ademas de poder escribir la propia.
-5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
+5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas formas EXACTAS:
    - Para seguir debatiendo: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}
-   - Para la versión final: {"tipo": "contenido", "valor": "string"}  (SOLO ${campoLabel}, un string plano, no un objeto)` : esMejora ? `Sos un editor senior que MEJORA una sola sección de ${docLabel} para ArchiTechIA, siguiendo lo que la persona te diga.
+   - Para la versión final: {"tipo": "contenido", "valor": "string"}  (SOLO ${campoLabel}, un string plano, no un objeto)
+   - Solo si la persona te hace una PREGUNTA (sobre el documento, el proyecto o tu trabajo) en lugar de pedir algo: {"tipo": "respuesta", "mensaje": "string"} — respondé con lo que sabés del contexto y del contenido actual, sin inventar; si no lo sabés, decilo. No cambia nada del contenido; después la persona decide cómo seguir. Un pedido de cambio NO es una pregunta.` : esMejora ? `Sos un editor senior que MEJORA una sola sección de ${docLabel} para ArchiTechIA, siguiendo lo que la persona te diga.
 
 Sección: "${info.label}"
 Forma del valor (respetá la estructura; IGNORÁ los rangos de cantidad de ítems o de extensión que aparezcan acá, porque la cantidad la define el pedido de la persona): ${seccionKey === 'requisitos' ? 'un array de objetos {"tipo": "historia" | "caso_uso", "texto": string, "criterioAceptacion": string, "prioridad": "MUST" | "SHOULD" | "COULD" | "WONT"}' : info.schema}
@@ -397,9 +398,10 @@ Reglas:
 3. Si el pedido es claro, devolvé directamente el contenido corregido (sin preguntar). Preguntá solo si el pedido es ambiguo o necesitás un dato que falta, y nunca más de una pregunta seguida.
 4. Si pide omitir algo, sacalo de verdad. Si pide más detalle, agregalo solo con lo que se desprende del contexto.
 5. El campo "cambios" describe en 1 o 2 frases cortas qué modificaste, para que la persona lo verifique.
-6. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
+6. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas formas EXACTAS:
    - Contenido corregido: {"tipo": "contenido", "valor": <el valor con la misma forma indicada arriba>, "cambios": "string"}
-   - Solo si hace falta aclarar: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}  (exactamente 5 opciones)` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de ${docLabel} para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
+   - Solo si hace falta aclarar: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}  (exactamente 5 opciones)
+   - Solo si la persona te hace una PREGUNTA (sobre el documento, el proyecto o tu trabajo) en lugar de pedir algo: {"tipo": "respuesta", "mensaje": "string"} — respondé con lo que sabés del contexto y del contenido actual, sin inventar; si no lo sabés, decilo. No cambia nada del contenido; después la persona decide cómo seguir. Un pedido de cambio NO es una pregunta.` : `Sos un analista de producto experto que ayuda a completar UNA sola sección de ${docLabel} para ArchiTechIA, una consultora de IA, mediante una breve entrevista conversacional — no generás de una sola vez sin preguntar si falta información clave y específica que nadie más podría inferir.
 
 Sección a trabajar: "${info.label}"
 El valor final que vas a generar debe ser: ${info.schema}
@@ -415,9 +417,10 @@ Reglas de la entrevista:
 2. Cada pregunta debe ser UNA sola, concreta y breve (nunca una lista de preguntas en el mismo turno), y tiene que buscar un dato específico que el contexto NO responde y que cambiaría el contenido (no preguntes algo ya respondido en el contexto o antes en esta conversación).
 3. A partir de la segunda respuesta del usuario en adelante, y hasta un máximo de 3 preguntas en total, podés generar el contenido final si ya tenés lo suficiente. Generá también si el usuario pide generar ya, dice que no sabe / no tiene esa información, o ya le hiciste 3 preguntas — haciendo tu mejor inferencia razonable para lo que falte (sin inventar cifras o nombres muy específicos que no estén en el contexto).
 4. Cada vez que preguntes, proponé también EXACTAMENTE 5 respuestas posibles distintas entre sí, concretas y directamente utilizables tal cual (no genéricas como "otra opción"), para que la persona pueda elegir una con un clic en vez de escribir. El usuario siempre puede además escribir su propia respuesta libremente, así que las 5 opciones son sugerencias, no las únicas respuestas válidas.
-5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas dos formas EXACTAS:
+5. Devolvé SIEMPRE y SOLO un objeto JSON (sin markdown, sin texto alrededor), con una de estas formas EXACTAS:
    - Para preguntar: {"tipo": "pregunta", "mensaje": "string", "opciones": ["string", "string", "string", "string", "string"]}  (exactamente 5 opciones)
-   - Para el contenido final: {"tipo": "contenido", "valor": <el valor con la forma indicada arriba>}`
+   - Para el contenido final: {"tipo": "contenido", "valor": <el valor con la forma indicada arriba>}
+   - Solo si la persona te hace una PREGUNTA (sobre el documento, el proyecto o tu trabajo) en lugar de pedir algo: {"tipo": "respuesta", "mensaje": "string"} — respondé con lo que sabés del contexto y del contenido actual, sin inventar; si no lo sabés, decilo. No cambia nada del contenido; después la persona decide cómo seguir. Un pedido de cambio NO es una pregunta.`
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },
@@ -456,7 +459,7 @@ Reglas de la entrevista:
     const data = await upstream.json()
     const content = data?.choices?.[0]?.message?.content ?? ''
     const parsed = extractJsonObject(content) as { tipo?: string; mensaje?: string; opciones?: unknown; valor?: unknown } | null
-    if (!parsed || (parsed.tipo !== 'pregunta' && parsed.tipo !== 'contenido')) {
+    if (!parsed || (parsed.tipo !== 'pregunta' && parsed.tipo !== 'contenido' && parsed.tipo !== 'respuesta')) {
       return NextResponse.json({ error: 'No se pudo interpretar la respuesta del modelo.' }, { status: 502 })
     }
     // Antes esto se devolvía tal cual y el frontend lo aplicaba al PRD sin
@@ -464,6 +467,11 @@ Reglas de la entrevista:
     // los pedidos, campos vacíos, o (en requisitos) todo con la misma
     // prioridad, quedaba aplicado en silencio. Ahora se valida la forma real
     // de "valor" antes de aceptarlo.
+    if (parsed.tipo === 'respuesta') {
+      const m = typeof parsed.mensaje === 'string' ? parsed.mensaje.trim().slice(0, 4000) : ''
+      if (!m) return NextResponse.json({ error: 'La IA no respondió la pregunta. Probá de nuevo.' }, { status: 502 })
+      return NextResponse.json({ tipo: 'respuesta', mensaje: m })
+    }
     if (parsed.tipo === 'contenido') {
       const problema = validarValorContenido(seccionKey, parsed.valor, esMejora)
       if (problema) {

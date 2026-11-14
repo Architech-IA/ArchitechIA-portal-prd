@@ -23,6 +23,9 @@ model User {
   microsoftRefreshToken String?
   microsoftTokenExpiry  DateTime?
   microsoftAccountEmail String?
+  microsoftDeltaLink    String?
+  microsoftLastSyncAt   DateTime?
+  externalMessages      ExternalMessage[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -279,6 +282,7 @@ enum Role {
   ARQUITECTO_SOLUCIONES
   PARTNER
   COLLABORATOR
+  REVISOR
 }
 
 enum ProjectRole {
@@ -703,6 +707,7 @@ model BacklogItem {
   // JSON — permite inyectar su criterioAceptacion en el dispatch y, mas adelante,
   // verificar el resultado contra ese criterio real (MASD-0003-0007 / MASD-0004-0004).
   prdRequisitoId  String?
+  ejecutor        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   activities   TaskActivity[]
@@ -1244,4 +1249,138 @@ model ProyectoSuscripcion {
   updatedAt       DateTime  @default(now()) @updatedAt
 
   @@index([solucionId, activa])
+}
+
+// ── Correo centralizado (sql 020) ──
+model CorreoCategoria {
+  id        String   @id
+  nombre    String   @unique
+  color     String   @default("gray")
+  orden     Int      @default(0)
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  mensajes ExternalMessage[]
+  reglas   CorreoRegla[]
+}
+
+model ExternalMessage {
+  id                String    @id @default(cuid())
+  userId            String
+  externalId        String
+  provider          String    @default("MICROSOFT")
+  subject           String?
+  sender            String?
+  senderName        String?
+  recipientsTo      String?
+  recipientsCc      String?
+  bodyPreview       String?
+  bodyHtml          String?
+  receivedAt        DateTime?
+  sentAt            DateTime?
+  isRead            Boolean   @default(false)
+  isDraft           Boolean   @default(false)
+  importance        String    @default("normal")
+  conversationId    String?
+  internetMessageId String?
+  raw               String?
+  deletedAt         DateTime?
+  hasAttachments    Boolean   @default(false)
+  adjuntos          String?
+  categoriaId       String?
+  categoriaOrigen   String?
+  confianza         String?
+  motivo            String?
+  clienteId         String?
+  revisado          Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now()) @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoria CorreoCategoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  acciones  CorreoAccion[]
+
+  @@unique([userId, externalId, provider])
+  @@index([userId, receivedAt])
+  @@index([userId, conversationId])
+  @@index([categoriaId])
+}
+
+model CorreoRegla {
+  id          String   @id @default(cuid())
+  tipo        String
+  patron      String
+  categoriaId String
+  clienteId   String?
+  origen      String   @default("MANUAL")
+  aciertos    Int      @default(0)
+  activa      Boolean  @default(true)
+  creadaPor   String?
+  createdAt   DateTime @default(now())
+
+  categoria CorreoCategoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  @@unique([tipo, patron])
+}
+
+model CorreoAccion {
+  id        String   @id @default(cuid())
+  mensajeId String
+  userId    String
+  accion    String
+  antes     String?
+  despues   String?
+  revertida Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  mensaje ExternalMessage @relation(fields: [mensajeId], references: [id], onDelete: Cascade)
+
+  @@index([mensajeId])
+}
+
+model DocumentadorPropuesta {
+  id            String   @id @default(cuid())
+  chatId        String
+  transcripcion String
+  acta          String
+  candidatas    String
+  estado        String   @default("PENDIENTE")
+  meetingId     String?
+  createdAt     DateTime @default(now())
+
+  @@index([chatId])
+}
+
+model AgendadorPropuesta {
+  id        String   @id @default(uuid())
+  canal     String
+  userId    String
+  datos     String
+  estado    String   @default("PENDIENTE")
+  createdAt DateTime @default(now())
+}
+
+model AgenteHilo {
+  id         String   @id @default(uuid())
+  userId     String
+  tipo       String
+  estado     String   @default("EN_CURSO")
+  pedido     String
+  resultado  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+  traspasos  AgenteTraspaso[]
+}
+
+model AgenteTraspaso {
+  id        String     @id @default(uuid())
+  hiloId    String
+  hilo      AgenteHilo @relation(fields: [hiloId], references: [id], onDelete: Cascade)
+  de        String
+  a         String
+  tipo      String
+  ronda     Int        @default(0)
+  contenido String
+  createdAt DateTime   @default(now())
+  @@index([hiloId, createdAt])
 }

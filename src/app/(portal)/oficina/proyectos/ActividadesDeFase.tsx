@@ -2,19 +2,21 @@
 
 import { useState } from 'react'
 import { Bot, User, Sparkles, Play, MessageSquare, Check, Loader2, Undo2, Package } from 'lucide-react'
+import EntregablesDeFase from './EntregablesDeFase'
 import { post, type FaseVista, type FaseActividadVista, type SesionRes } from './api'
 
 // Las actividades de la fase: el trabajo que se hace como tareas del Backlog. Van bajo los entregables.
 // Cada una puede producir un entregable: se cierra aquí (con la evidencia) o al cerrar la sesión de IA que la trabajó.
 
 // Dónde deja su resultado la actividad: la nota de la fase o un artefacto
-const NOMBRE_DESTINO: Record<string, string> = { nota: 'la nota de la fase', ficha: 'la ficha del cliente', prd: 'el PRD', disenoTecnico: 'el diseño técnico', planEjecucion: 'el plan de ejecución' }
+const NOMBRE_DESTINO: Record<string, string> = { nota: 'la nota de la fase', ficha: 'la ficha del cliente', prd: 'el PRD', documento: 'el documento del entregable', disenoTecnico: 'el diseño técnico', planEjecucion: 'el plan de ejecución' }
 export const destinoTexto = (d?: string | null) => (d ? NOMBRE_DESTINO[d] ?? `el artefacto «${d}»` : null)
 
 const ESTADO_TAREA: Record<string, string> = { BACKLOG: 'En cola', IN_PROGRESS: 'En curso', DONE: 'Hecha', FAILED: 'Fallida', BLOCKED: 'Bloqueada', CANCELLED: 'Cancelada' }
 
-export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvestigar, onIniciar, onAbrirSesion, onCambio }: {
+export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvestigar, onIniciar, onAbrirSesion, onCambio, editable = false, onAbrirArtefacto, onAbrirFicha, onAbrirLead }: {
   fase: FaseVista; proyectoId: string; sesiones: SesionRes[]
+  editable?: boolean; onAbrirFicha?: () => void; onAbrirLead?: () => void; onAbrirArtefacto?: React.ComponentProps<typeof EntregablesDeFase>['onAbrirArtefacto']
   onInvestigar?: () => void
   onIniciar?: (a: FaseActividadVista) => Promise<void> | void
   onAbrirSesion?: (id: string) => void
@@ -61,6 +63,9 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] text-gray-200 leading-snug">{a.titulo}</p>
                 <p className="text-[10px] text-[#7f8a9c] mt-0.5">{a.tipo === 'AGENTE' ? 'Agente' : 'Persona'} · {a.area}{a.taskCode ? ' · ' + a.taskCode : ''}</p>
+                {a.entregable && (
+                  <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: a.entregable.ok ? '#6ee7b7' : '#fcd34d' }} title="El entregable es el resultado formal de esta actividad">
+                    <Package size={10} className="flex-shrink-0" /> <span className="truncate">Entregable: {a.entregable.titulo}</span></p>)}
               </div>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={hecha ? { background: 'rgba(16,185,129,0.15)', color: '#6ee7b7' } : a.status === 'FAILED' ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' } : { background: 'rgba(255,255,255,0.07)', color: '#9ca3af' }}>
                 {a.creada ? (porAceptar ? 'Por aceptar' : (ESTADO_TAREA[a.status ?? ''] ?? a.status)) : 'Aún no creada'}</span>
@@ -70,9 +75,8 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
               <div className="mt-2 pl-[22px] space-y-1.5" onClick={e => e.stopPropagation()}>
                 {abierta && destino && a.tipo === 'AGENTE' && (
                   <p className="text-[10px] mt-1 text-[#9ca3af]">{porAceptar ? `Falta aceptar el resultado en ${destino}` : `El resultado se deja en ${destino} y una persona lo acepta`}</p>)}
-                {a.entregable && (
-                  <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: a.entregable.ok ? '#6ee7b7' : '#fcd34d' }} title="El entregable que produce esta actividad">
-                    <Package size={10} /> {a.entregable.titulo}{a.entregable.ok ? ' · cumplido' : ' · pendiente'}</p>)}
+
+                {a.entregable && <EntregablesDeFase key={a.entregable.clave} proyectoId={proyectoId} fase={fase} editable={editable} solo={a.entregable.clave} embebido onCambio={() => onCambio?.()} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} sesiones={sesiones} />}
 
                 {investigar && (
                   <button onClick={onInvestigar} title="La IA propone razón social, NIT, sector, ciudad y país para que los confirmes" className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
@@ -95,10 +99,10 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
 
             {expandida === a.clave && cerrando === a.clave && (
               <div className="mt-2 pl-[22px] space-y-1.5">
-                <input value={evidencia} onChange={e => setEvidencia(e.target.value)} placeholder={a.entregable ? 'Enlace a la evidencia o al entregable (opcional)' : 'Enlace a la evidencia (opcional)'}
+                <input value={evidencia} onChange={e => setEvidencia(e.target.value)} placeholder={a.entregable?.manual ? 'Enlace (https://…) al entregable: obligatorio para darlo por cumplido' : a.entregable ? 'Enlace a la evidencia o al entregable (opcional)' : 'Enlace a la evidencia (opcional)'}
                   className="w-full rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-400/50" />
                 <div className="flex items-center gap-1.5">
-                  <button disabled={ocup} onClick={() => void enviar(a, 'completar', evidencia)} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg text-white disabled:opacity-50" style={{ background: 'rgba(16,185,129,0.8)' }}>
+                  <button disabled={ocup || (!!a.entregable?.manual && !a.entregable.ok && !/^https?:\/\//.test(evidencia.trim()))} onClick={() => void enviar(a, 'completar', evidencia)} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg text-white disabled:opacity-50" style={{ background: 'rgba(16,185,129,0.8)' }}>
                     {ocup ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Confirmar</button>
                   <button disabled={ocup} onClick={() => setCerrando(null)} className="text-[11px] px-2 py-1 text-[#9ca3af] hover:text-gray-200">Cancelar</button>
                 </div>

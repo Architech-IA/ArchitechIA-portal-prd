@@ -1,26 +1,32 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Check, Circle, Loader2, ExternalLink, Sparkles, Download, FileText } from 'lucide-react'
+import { Check, Circle, Loader2, ExternalLink, Sparkles, Download, FileText, Upload, Eye, X } from 'lucide-react'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import { api, post, type ArchivoEntregable, type FaseVista, type RequeridoFase, type SesionRes } from './api'
-import { FORMATO } from './formatos'
+import { FORMATO, EXTENSION } from './formatos'
 
 const fechaCorta = (v: string) => { const d = new Date(v); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' }) }
 
 /** Lo mínimo que debe existir para cerrar la fase. Se comprueba solo con lo que hay en el sistema; lo que no se puede comprobar lo marca una persona con su evidencia. */
 // Formatos que la IA puede producir como archivo (los demás los sube o los enlaza una persona)
-const GENERABLES = ['texto', 'pdf', 'hoja']
+const GENERABLES = ['texto', 'pdf', 'hoja', 'md', 'html', 'txt', 'csv']
+// Los que se pueden leer dentro del portal; el resto se descarga
+const VISIBLES = ['md', 'txt', 'csv', 'html']
+const extDe = (nombre: string) => (nombre.split('.').pop() ?? '').toLowerCase()
 const ESTADO_ARCHIVO: Record<string, string> = { BORRADOR: 'Borrador por revisar', ACEPTADO: 'Aceptado como evidencia', RECHAZADO: 'Rechazado' }
 
-export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio, onAbrirArtefacto, onAbrirFicha, onAbrirLead, sesiones = [] }: {
+export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio, onAbrirArtefacto, onAbrirFicha, onAbrirLead, sesiones = [], solo, embebido = false }: {
   onAbrirLead?: () => void; sesiones?: SesionRes[]
+  /** Solo este entregable (el de una actividad); con `embebido` va dentro de la actividad: sin título repetido y sin los botones de marcar, que son los de la actividad */
+  solo?: string; embebido?: boolean
   proyectoId: string; fase: FaseVista; editable: boolean; onCambio: () => void; onAbrirArtefacto?: (t: TabKey) => void; onAbrirFicha?: () => void
 }) {
   const [evid, setEvid] = useState<Record<string, string>>({})
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [error, setError] = useState('')
-  const lista: RequeridoFase[] = fase.requeridos ?? []
+  const [vista, setVista] = useState<{ nombre: string; ext: string; texto: string; url: string } | null>(null)
+  const lista: RequeridoFase[] = (fase.requeridos ?? []).filter(r => !solo || r.clave === solo)
   const [archivos, setArchivos] = useState<ArchivoEntregable[]>([])
   const cargarArchivos = useCallback(() => {
     api<ArchivoEntregable[]>(`/api/proyectos/${proyectoId}/entregables/archivos?fase=${fase.clave}`).then(l => setArchivos(Array.isArray(l) ? l : [])).catch(() => setArchivos([]))
@@ -35,6 +41,25 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
     try { await post(`/api/proyectos/${proyectoId}/sesiones/${sesionDeFase.id}/entregables/${r.clave}/generar`); cargarArchivos() }
     catch (er) { setError(er instanceof Error ? er.message : 'No se pudo generar') } finally { setOcupado(null) }
   }
+  async function subirArchivo(r: RequeridoFase, f: File) {
+    const ext = EXTENSION[r.formato]
+    if (extDe(f.name) !== ext) { setError(`Este entregable espera un archivo .${ext} y el tuyo es .${extDe(f.name) || '(sin extensión)'}. Elige otro archivo o cambia el formato del entregable en la plantilla.`); return }
+    setOcupado('sub-' + r.clave); setError('')
+    try {
+      const fd = new FormData(); fd.append('file', f)
+      await api(`/api/proyectos/${proyectoId}/entregables/${fase.clave}/${r.clave}/archivo`, { method: 'POST', body: fd })
+      cargarArchivos(); onCambio()
+    } catch (er) { setError(er instanceof Error ? er.message : 'No se pudo subir el archivo') } finally { setOcupado(null) }
+  }
+  async function verArchivo(x: ArchivoEntregable) {
+    const url = `/api/proyectos/${proyectoId}/entregables/archivos/${x.id}/descargar`
+    setOcupado('ver-' + x.id); setError('')
+    try {
+      const res = await fetch(url, { credentials: 'include' })
+      if (!res.ok) throw new Error('No se pudo abrir el archivo')
+      setVista({ nombre: x.nombre, ext: extDe(x.nombre), texto: await res.text(), url })
+    } catch (er) { setError(er instanceof Error ? er.message : 'No se pudo abrir el archivo') } finally { setOcupado(null) }
+  }
   async function decidirArchivo(x: ArchivoEntregable, accion: 'aceptar' | 'rechazar') {
     setOcupado('arch-' + x.id); setError('')
     try { await post(`/api/proyectos/${proyectoId}/entregables/archivos/${x.id}/decidir`, { accion }); cargarArchivos(); if (accion === 'aceptar') onCambio() }
@@ -42,7 +67,7 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
   }
   // Fases que se cerraron antes de que existiera esta exigencia: se muestran como referencia, sin alarmar.
   const cerrada = fase.estado === 'HECHA'
-  if (!lista.length) return <p className="text-[11px] text-[#7f8a9c]">Esta fase no define entregables obligatorios.</p>
+  if (!lista.length) return embebido ? null : <p className="text-[11px] text-[#7f8a9c]">Esta fase no define entregables obligatorios.</p>
 
   async function marcar(r: RequeridoFase, ok: boolean) {
     setOcupado(r.clave); setError('')
@@ -57,7 +82,7 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
         // Cada entregable se abre donde se trabaja: la ficha, el lead o el artefacto
         const abrir = r.tipo.startsWith('ficha') ? onAbrirFicha : r.tipo === 'lead_registrado' ? onAbrirLead : r.artefacto && onAbrirArtefacto ? () => onAbrirArtefacto(r.artefacto as TabKey) : undefined
         // Un entregable automático solo muestra su título (el detalle va en el globo al pasar el cursor, y al pulsarlo se abre donde se trabaja); lo manual conserva su evidencia y sus botones
-        const compacto = !r.manual
+        const compacto = !embebido && !r.manual && r.tipo !== 'documento_fase'
         return (
         <div key={r.clave} title={compacto ? [r.detalle, r.ayuda].filter(Boolean).join(' · ') : undefined} onClick={abrir ? ev => { if (!(ev.target as HTMLElement).closest('button,input,a,select,textarea')) abrir() } : undefined}
           className={`rounded-lg px-3 py-2 transition-colors ${abrir ? 'cursor-pointer hover:brightness-125' : ''}`} role={abrir ? 'button' : undefined} tabIndex={abrir ? 0 : undefined}
@@ -65,16 +90,30 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
           <div className="flex items-start gap-2">
             {r.ok ? <Check size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" /> : <Circle size={14} className="text-[#6b7280] mt-0.5 flex-shrink-0" />}
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] text-gray-100 leading-snug">{r.titulo}{!compacto && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full align-middle" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }} title="Formato en el que se espera este entregable">{FORMATO[r.formato] ?? r.formato}</span>}</p>
+              {!embebido && <p className="text-[12px] text-gray-100 leading-snug">{r.titulo}{!compacto && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full align-middle" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }} title="Formato en el que se espera este entregable">{FORMATO[r.formato] ?? r.formato}</span>}</p>}
               {!compacto && <p className="text-[10px] mt-0.5" style={{ color: r.ok ? '#6ee7b7' : cerrada ? '#9ca3af' : '#fcd34d' }}>{r.detalle}{r.manual && r.ok && r.por ? ` · ${r.por}${r.en ? ` · ${fechaCorta(r.en)}` : ''}` : ''}</p>}
               {(() => { const roles = (fase.sesiones ?? []).filter(x => !!r.artefacto && x.artefactos.includes(r.artefacto as string)); return !compacto && roles.length > 0 && !r.ok && !cerrada ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Sesiones de la fase que trabajan sobre este artefacto">Se produce en la sesión: {roles.map(x => x.titulo).join(' · ')}</p> : null })()}
               {!compacto && !r.ok && !cerrada && r.ayuda && <p className="text-[10px] text-[#7f8a9c] mt-0.5 leading-snug">{r.ayuda}</p>}
-              {(() => { const acts = (fase.actividades?.items ?? []).filter(a => a.entregable?.clave === r.clave); return acts.length > 0 && !cerrada && !compacto ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Actividades de la fase que contribuyen a este entregable">Se trabaja en: {acts.map(a => a.titulo).join(' · ')}</p> : null })()}
+              {(() => { const acts = (fase.actividades?.items ?? []).filter(a => a.entregable?.clave === r.clave); return acts.length > 0 && !cerrada && !compacto && !embebido ? <p className="text-[10px] text-indigo-300/80 mt-0.5 leading-snug" title="Actividades de la fase que contribuyen a este entregable">Se trabaja en: {acts.map(a => a.titulo).join(' · ')}</p> : null })()}
               {r.manual && r.ok && r.evidencia && <p className="text-[10px] text-gray-300 mt-0.5 break-words">Evidencia: {/^(https?:\/\/|\/api\/)/.test(r.evidencia) ? <a href={r.evidencia} target="_blank" rel="noreferrer" className="text-indigo-300 underline">{r.evidencia}</a> : r.evidencia}</p>}
             </div>
             {!compacto && r.tipo.startsWith('ficha') && onAbrirFicha && <button onClick={onAbrirFicha} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir ficha</button>}
             {!compacto && r.artefacto && onAbrirArtefacto && <button onClick={() => onAbrirArtefacto(r.artefacto as TabKey)} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><ExternalLink size={10} /> Abrir</button>}
           </div>
+          {r.tipo === 'documento_fase' && (
+            <div className="flex flex-wrap items-center gap-2 mt-2 pl-6">
+              <button onClick={() => window.dispatchEvent(new CustomEvent('abrir-documento', { detail: { proyectoId, fase: fase.clave, clave: r.clave, titulo: r.titulo } }))} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
+                <FileText size={11} /> {editable && !cerrada ? (r.ok ? 'Abrir y editar el documento' : 'Escribir el documento') : 'Ver el documento'}</button>
+            </div>)}
+          {r.manual && editable && !cerrada && EXTENSION[r.formato] && (
+            <div className="flex flex-wrap items-center gap-2 mt-2 pl-6">
+              <label title={`Solo se acepta un archivo .${EXTENSION[r.formato]}. Al subirlo, el entregable y su actividad quedan listos`}
+                className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg flex-shrink-0 cursor-pointer text-gray-200" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', opacity: ocupado === 'sub-' + r.clave ? 0.5 : 1 }}>
+                {ocupado === 'sub-' + r.clave ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />} {r.ok ? 'Reemplazar archivo' : `Subir archivo .${EXTENSION[r.formato]}`}
+                <input type="file" accept={`.${EXTENSION[r.formato]}`} className="hidden" disabled={ocupado === 'sub-' + r.clave}
+                  onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void subirArchivo(r, f) }} />
+              </label>
+            </div>)}
           {r.manual && editable && !r.ok && GENERABLES.includes(r.formato) && (
             <div className="flex items-center gap-2 mt-2 pl-6">
               <button disabled={ocupado === 'gen-' + r.clave} onClick={() => void generar(r)} title="La IA redacta este entregable con la conversación de la sesión y el contexto del proyecto; tú lo revisas antes de aceptarlo"
@@ -89,13 +128,14 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
                 <p className="text-[11px] text-gray-200 truncate">{x.nombre} <span className="text-[#7f8a9c]">· {ESTADO_ARCHIVO[x.estado] ?? x.estado}</span></p>
                 {x.resumen && <p className="text-[10px] text-[#7f8a9c] truncate">{x.resumen}</p>}
               </div>
+              {VISIBLES.includes(extDe(x.nombre)) && <button disabled={ocupado === 'ver-' + x.id} onClick={() => void verArchivo(x)} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0 disabled:opacity-50"><Eye size={10} /> Ver</button>}
               <a href={`/api/proyectos/${proyectoId}/entregables/archivos/${x.id}/descargar`} className="flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 flex-shrink-0"><Download size={10} /> Descargar</a>
               {x.estado === 'BORRADOR' && editable && !r.ok && (<>
                 <button disabled={ocupado === 'arch-' + x.id} onClick={() => void decidirArchivo(x, 'aceptar')} title="Lo revisaste y sirve como evidencia del entregable" className="text-[10px] px-2 py-1 rounded-lg text-white disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(16,185,129,0.7)' }}>Aceptar</button>
                 <button disabled={ocupado === 'arch-' + x.id} onClick={() => void decidirArchivo(x, 'rechazar')} className="text-[10px] px-2 py-1 rounded-lg text-gray-300 border border-white/10 disabled:opacity-40 flex-shrink-0">Rechazar</button>
               </>)}
             </div>))}
-          {r.manual && editable && (
+          {r.manual && editable && !embebido && (
             <div className="flex items-center gap-2 mt-2 pl-6">
               {!r.ok && <input value={evid[r.clave] ?? r.evidencia ?? ''} onChange={e => setEvid(p => ({ ...p, [r.clave]: e.target.value }))} placeholder={`Enlace (https://…) a: ${FORMATO[r.formato] ?? r.formato}`} maxLength={500}
                 className="flex-1 min-w-0 rounded-md px-2 py-1 text-[11px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-indigo-500/50" />}
@@ -106,6 +146,21 @@ export default function EntregablesDeFase({ proyectoId, fase, editable, onCambio
         </div>)
       })}
       {error && <p className="text-[11px] text-red-300">{error}</p>}
+      {vista && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }} onClick={() => setVista(null)}>
+          <div className="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl overflow-hidden" style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(255,255,255,0.12)' }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+              <FileText size={14} className="text-amber-300" /><span className="text-[13px] font-semibold text-gray-100 flex-1 truncate">{vista.nombre}</span>
+              <a href={vista.url} className="flex items-center gap-1 text-[11px] text-indigo-300 hover:text-indigo-200"><Download size={11} /> Descargar</a>
+              <button onClick={() => setVista(null)} aria-label="Cerrar" className="text-[#94a3b8] hover:text-white"><X size={15} /></button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              {vista.ext === 'html'
+                ? <iframe title={vista.nombre} sandbox="" srcDoc={vista.texto} className="w-full bg-white" style={{ height: '70vh', border: 0 }} />
+                : <pre className="p-4 text-[12px] text-gray-200 whitespace-pre-wrap break-words" style={{ fontFamily: vista.ext === 'md' ? 'inherit' : 'var(--font-mono, monospace)' }}>{vista.texto}</pre>}
+            </div>
+          </div>
+        </div>)}
     </div>
   )
 }

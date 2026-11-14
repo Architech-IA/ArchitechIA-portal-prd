@@ -8,9 +8,9 @@
 // proveedor, y el header x-opencode-session es obligatorio (un id estable
 // por conversacion/recurso alcanza).
 const OPENCODE_URL = 'https://opencode.ai/zen/go/v1/chat/completions'
-const MODEL = 'qwen3.7-max'
+const MODEL = 'qwen3.8-max'
 
-type Opts = { maxTokens?: number; timeoutMs?: number; tools?: unknown[] }
+type Opts = { maxTokens?: number; timeoutMs?: number; tools?: unknown[]; model?: string }
 
 export interface ToolCall { id: string; type?: string; function: { name: string; arguments: string } }
 
@@ -68,7 +68,7 @@ async function pedirAlModeloDetalle(system: string, mensajes: Turno[], sessionId
         'x-opencode-session': sessionId,
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: opts.model ?? MODEL,
         messages: [{ role: 'system', content: system }, ...mensajes],
         max_tokens: opts.maxTokens ?? 4096,
         ...(opts.tools && opts.tools.length > 0 ? { tools: opts.tools } : {}),

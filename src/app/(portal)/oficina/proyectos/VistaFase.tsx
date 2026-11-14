@@ -7,8 +7,6 @@ import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import FaseSesiones from './FaseSesiones'
 import ActividadesDeFase from './ActividadesDeFase'
-import NotasDeFase from './NotasDeFase'
-import EntregablesDeFase from './EntregablesDeFase'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type FaseActividadVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
@@ -18,10 +16,6 @@ import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type FaseAc
 const APROBADOR: Record<string, string> = {
   COMERCIAL: 'Responsable comercial', LIDER_PREVENTA: 'Líder de preventa', LIDER_TECNICO: 'Líder técnico',
   DIRECCION: 'Dirección', LIDER_PROYECTO: 'Líder de proyecto', CLIENTE: 'El cliente', DUENO: 'Dueño de la iniciativa',
-}
-const ACCION: Record<string, string> = {
-  INICIO: 'Inició el motor de fases', AVANCE: 'Avanzó de fase', RETROCESO: 'Volvió a una fase anterior', SINCRONIZADO: 'Fase ajustada por el lead',
-  VENTA_CONFIRMADA: 'Venta confirmada: pasa a ejecución', VENTA_PERDIDA: 'Oportunidad perdida', COMPLETADO: 'Proyecto completado',
 }
 const NIVEL: Record<string, { color: string; fondo: string }> = {
   ok: { color: '#6ee7b7', fondo: 'rgba(16,185,129,0.14)' }, medio: { color: '#fcd34d', fondo: 'rgba(245,158,11,0.14)' },
@@ -97,7 +91,6 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
   const ultima = fase.numero === fases.length
   const siguiente = fases[fase.numero]
   const opcionesVolver = fases.slice(0, Math.max(0, idxActual)).filter(f => !(fases[idxActual]?.bloque === 'EJECUCION' && f.bloque === 'PREVENTA')).reverse()
-  const historial = (data.historial ?? []).filter(h => h.fase === fase.clave)
 
   const accion = async (ruta: string, cuerpo: Record<string, unknown>) => {
     setOcupado(true); setError(null)
@@ -155,7 +148,7 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
         <section className="rounded-xl overflow-hidden flex flex-col" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', height: 620 }}>
           <header className="flex items-center gap-4 px-4 py-2.5 border-b border-white/5 flex-shrink-0" style={{ background: 'linear-gradient(90deg,rgba(249,115,22,0.05),transparent 60%)' }}>
             <button onClick={() => { setPanelModo('general'); if (general) onElegirSesion?.(general.id) }} className="text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors hover:text-gray-100" aria-pressed={panelModo === 'general'}
-              style={{ color: panelModo === 'general' ? '#e5e7eb' : '#6b7686', borderBottom: panelModo === 'general' && activa ? '2px solid rgba(249,115,22,0.8)' : '2px solid transparent', paddingBottom: 2 }}>Asistente de la fase</button>
+              style={{ color: panelModo === 'general' ? '#e5e7eb' : '#6b7686', borderBottom: panelModo === 'general' && activa ? '2px solid rgba(249,115,22,0.8)' : '2px solid transparent', paddingBottom: 2 }}>Asistente</button>
             {activa && <button onClick={() => { setPanelModo('fase'); onElegirSesion?.(activa.id) }} className="text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors hover:text-gray-100 max-w-[280px] truncate" aria-pressed={panelModo === 'fase'} title={activa.titulo}
               style={{ color: panelModo === 'fase' ? '#e5e7eb' : '#6b7686', borderBottom: panelModo === 'fase' && activa ? '2px solid rgba(249,115,22,0.8)' : '2px solid transparent', paddingBottom: 2 }}>Sesión · {activa.titulo}</button>}
             <span className="flex-1" />
@@ -175,13 +168,10 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
               </div>)}
         </section>
       <div className="space-y-4">
-        <Seccion titulo="Entregables" derecha={botonConfig}>
+        {esResultado && (<Seccion titulo="Cierre de la venta">
           <div className="space-y-4">
             <div>
-              <EntregablesDeFase key={fase.clave} proyectoId={proyectoId} fase={fase} editable={puede} onCambio={onCambio} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} sesiones={sesiones} />
-            </div>
-            <div className={esResultado || (puede && opcionesVolver.length > 0) || (!data.puedeAprobar && actual) ? 'border-t border-white/5 pt-3' : ''}>
-              {esResultado && <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Criterios de la puerta · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>}
+              {esResultado && <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Criterios de aprobación · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>}
                 <div className="space-y-2">
                   {esResultado && fase.puerta.criterios.map((c, i) => (
                     <label key={i} className={`flex items-start gap-2 text-[12px] ${puede ? 'cursor-pointer' : 'cursor-default'}`}>
@@ -228,12 +218,12 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
 
             </div>
           </div>
-        </Seccion>
+        </Seccion>)}
         <Seccion titulo="Trabajo de la fase" derecha={botonConfig}>
           <div className="space-y-4">
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades</p>
-              <ActividadesDeFase fase={fase} proyectoId={proyectoId} sesiones={sesiones} onInvestigar={onInvestigarEmpresa} onIniciar={onIniciarActividad ? a => onIniciarActividad(a) : undefined} onAbrirSesion={id => onElegirSesion?.(id)} onCambio={onCambio} />
+              <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Actividades · {(fase.requeridos ?? []).filter(r => r.ok).length} de {(fase.requeridos ?? []).length} entregables cumplidos</p>
+              <ActividadesDeFase editable={puede} onAbrirArtefacto={onAbrirArtefacto} onAbrirFicha={onAbrirFicha} onAbrirLead={onAbrirLead} fase={fase} proyectoId={proyectoId} sesiones={sesiones} onInvestigar={onInvestigarEmpresa} onIniciar={onIniciarActividad ? a => onIniciarActividad(a) : undefined} onAbrirSesion={id => onElegirSesion?.(id)} onCambio={onCambio} />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-1.5">Sesiones con la IA</p>
@@ -244,12 +234,8 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
       </div>
       </div>
 
-      <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-1 gap-4 items-start">
         <div className="space-y-4">
-          <Seccion titulo="Notas de la fase">
-            <NotasDeFase key={`${proyectoId}-${fase.clave}`} proyectoId={proyectoId} clave={fase.clave} esPreventa={fase.bloque === 'PREVENTA'} soloLectura={!!data.iniciado && fase.estado === 'PENDIENTE'} />
-          </Seccion>
-
           {fase.recursos.some(r => r.tipo !== 'LEAD_HUB' && r.tipo !== 'BACKLOG') && <Seccion titulo="Dónde está lo de esta fase">
             <div className="space-y-1.5">
               {fase.recursos.filter(r => r.tipo !== 'LEAD_HUB' && r.tipo !== 'BACKLOG').map(r => {
@@ -279,17 +265,6 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
           </Seccion>}
         </div>
 
-        <div className="space-y-4">
-          {historial.length > 0 && (
-            <Seccion titulo="Historial de esta fase">
-              <div className="space-y-1">
-                {historial.map((h, i) => (
-                  <div key={i} className="text-[11px] text-[#9ca3af] rounded px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <span className="text-gray-300">{ACCION[h.accion] ?? h.accion}</span> · {h.usuarioNombre ?? 'Sistema'} · {hace(h.createdAt)}{h.nota ? <> — <i>{h.nota}</i></> : null}
-                  </div>))}
-              </div>
-            </Seccion>)}
-        </div>
       </div>
       {/* Aprobar la fase: barra transversal bajo los cuatro paneles */}
       {puede && !esResultado && (
@@ -302,6 +277,17 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
           <button disabled={ocupado} onClick={() => setAprobarAbierto(true)}
             className="btn-aprobar w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed">
             {ocupado ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />} {ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</button>
+          {opcionesVolver.length > 0 && (modo !== 'volver'
+            ? <button onClick={() => { setModo('volver'); setVolverA(opcionesVolver[0]?.clave ?? '') }} className="flex items-center gap-1 text-[11px] text-[#7f8a9c] hover:text-gray-200"><Undo2 size={11} /> Volver a una fase anterior</button>
+            : (<div className="space-y-1.5">
+              <select value={volverA} onChange={e => setVolverA(e.target.value)} className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none">
+                {opcionesVolver.map(o => <option key={o.clave} value={o.clave}>{o.numero}. {o.nombre}</option>)}</select>
+              <input value={texto} onChange={e => setTexto(e.target.value)} placeholder="Motivo (obligatorio)" className="w-full rounded-md px-2 py-1.5 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none" />
+              <div className="flex gap-2">
+                <button disabled={ocupado || !texto.trim() || !volverA} onClick={() => void accion('retroceder', { fase: volverA, motivo: texto })} className="flex-1 py-2 rounded-lg text-[12px] text-white disabled:opacity-40" style={{ background: '#d97706' }}>Volver a esa fase</button>
+                <button onClick={() => { setModo('ninguno'); setTexto('') }} className="px-3 py-2 rounded-lg text-[12px] text-gray-400 border border-white/10">Cancelar</button>
+              </div>
+            </div>))}
         </div>)}
 
       {aprobarAbierto && (
@@ -312,7 +298,7 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
               <h2 style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', margin: 0, letterSpacing: '-0.01em' }}>{ultima ? 'Cerrar el proyecto' : `Aprobar y pasar a ${siguiente?.nombre}`}</h2>
               <button onClick={() => !ocupado && setAprobarAbierto(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
             </div>
-            <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-2">Criterios de la puerta · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c] mb-2">Criterios de aprobación · aprueba: {APROBADOR[fase.puerta.aprobador] ?? fase.puerta.aprobador} ({marcados}/{fase.puerta.criterios.length})</p>
             <div className="space-y-2 mb-3">
               {fase.puerta.criterios.map((c, i) => (
                 <label key={i} className="flex items-start gap-2 text-[13px] cursor-pointer">
@@ -320,7 +306,7 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
                   <span className={c.ok ? 'text-gray-200' : 'text-gray-400'}>{c.texto}{c.ok && c.por && <span className="text-[10px] text-[#7f8a9c]"> — {c.por}{c.en ? `, ${hace(c.en)}` : ''}</span>}</span>
                 </label>))}
             </div>
-            {fase.puerta.entregablesOk === false && <p className="text-[11px] text-amber-300 mb-3">Faltan entregables por cumplir: míralos en el panel «Entregables».</p>}
+            {fase.puerta.entregablesOk === false && <p className="text-[11px] text-amber-300 mb-3">Faltan entregables por cumplir: míralos en «Trabajo de la fase»: cada actividad trae su entregable.</p>}
             <label className="block text-[11px] text-[#9ca3af] mb-1">Comentarios (opcional)</label>
             <textarea value={nota} onChange={e => setNota(e.target.value)} rows={3} placeholder="Algo que quieras dejar escrito sobre esta aprobación…" className="w-full rounded-lg px-3 py-2 text-[12px] text-gray-200 bg-black/30 border border-white/10 outline-none focus:border-orange-400/50" />
             {data.esSuperadmin && !fase.puerta.cumplida && (

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const PUBLIC_PATHS = ['/cliente', '/api/publico', '/login', '/api/auth', '/api/public-summary', '/api/vps', '/api/vps2', '/api/github', '/api/council/triggers/whatsapp', '/api/orion/chat', '/api/metrics'];
+const PUBLIC_PATHS = ['/cliente', '/demos', '/api/publico', '/login', '/api/auth', '/api/public-summary', '/api/vps', '/api/vps2', '/api/github', '/api/council/triggers/whatsapp', '/api/orion/chat', '/api/metrics', '/api/telegram/documentador', '/api/telegram/agendador', '/api/telegram/presales', '/api/telegram/backlog'];
 
 const SUPERADMIN_ONLY = ['/traceability', '/graph', '/reportes'];
 
@@ -39,6 +39,14 @@ export async function proxy(request: NextRequest) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Rol REVISOR: solo lectura. La API la atiende Rust (que ya lo aplica); esto cubre lo que sirve Next directamente.
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+    const t = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    if (t?.role === 'REVISOR') {
+      return NextResponse.json({ error: 'El rol Revisor es de solo lectura.' }, { status: 403 });
+    }
   }
 
   // Rutas exclusivas SUPERADMIN

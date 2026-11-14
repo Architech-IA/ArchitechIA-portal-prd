@@ -42,13 +42,19 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   // /tasks: menú de actividades de la fase; las elegidas viajan con el mensaje sin reemplazar lo escrito
   const [menu, setMenu] = useState<{ q: string; ini: number; fin: number } | null>(null)
   const [selMenu, setSelMenu] = useState(0)
+  // Menú de comandos: se abre al escribir «/» y reúne /tasks, /backlog, /note y /close
+  const [cmdMenu, setCmdMenu] = useState<{ q: string; ini: number; fin: number } | null>(null)
+  const [selCmd, setSelCmd] = useState(0)
   const [lanzar, setLanzar] = useState<FaseActividadVista[]>([])
   const opcionesMenu = (actividades ?? []).filter(a => a.creada && a.status !== 'CANCELLED' && (!menu?.q || a.titulo.toLowerCase().includes(menu.q.toLowerCase())))
   function detectarMenu(valor: string, pos: number) {
     const antes = valor.slice(0, pos)
     const m = antes.match(/(^|\s)\/tasks(?:\s+(\S*))?$/)
-    if (!m || !actividades?.length) { setMenu(null); return }
-    setMenu({ q: m[2] ?? '', ini: antes.length - m[0].length + m[1].length, fin: pos }); setSelMenu(0)
+    if (m && actividades?.length) { setCmdMenu(null); setMenu({ q: m[2] ?? '', ini: antes.length - m[0].length + m[1].length, fin: pos }); setSelMenu(0); return }
+    setMenu(null)
+    const c = antes.match(/(^|\s)\/([a-z]*)$/)
+    if (!c) { setCmdMenu(null); return }
+    setCmdMenu({ q: c[2], ini: antes.length - c[0].length + c[1].length, fin: pos }); setSelCmd(0)
   }
   function elegirActividad(a: FaseActividadVista) {
     if (!menu) return
@@ -60,7 +66,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   }
   const textoActividad = (a: FaseActividadVista) => {
     if (a.tipo !== 'AGENTE') return `Ayúdame a preparar esta actividad de la fase, que hace una persona: «${a.titulo}». Dame un borrador o una guía para llevarla a cabo.`
-    const donde = a.destino === 'ficha' ? 'El resultado va en la ficha del cliente: usa tu herramienta proponer_ficha_cliente (no una nota); yo confirmo los datos.' : a.destino === 'nota' ? 'Cuando tengas el resultado, guárdalo como nota de la fase con tu herramienta de notas; yo la confirmo.' : a.destino === 'prd' ? 'El resultado va en el PRD: cuando esté listo genero la propuesta con «Proponer PRD» y yo la acepto.' : a.destino ? `El resultado va en el artefacto «${a.destino}»: redáctalo completo para que yo lo lleve ahí.` : ''
+    const donde = a.destino === 'ficha' ? 'El resultado va en la ficha del cliente: usa tu herramienta proponer_ficha_cliente (no una nota); yo confirmo los datos.' : a.destino === 'nota' ? 'Cuando tengas el resultado, guárdalo como nota de la fase con tu herramienta de notas; yo la confirmo.' : a.destino === 'documento' && a.entregable ? `El resultado va en el documento «${a.entregable.titulo}» (entregable «${a.entregable.clave}»): redáctalo COMPLETO en Markdown y déjalo con tu herramienta proponer_documento; yo lo reviso y lo acepto.` : a.destino === 'prd' ? 'El resultado va en el PRD: cuando esté listo genero la propuesta con «Proponer PRD» y yo la acepto.' : a.destino ? `El resultado va en el artefacto «${a.destino}»: redáctalo completo para que yo lo lleve ahí.` : ''
     return `Trabajemos esta actividad de la fase: «${a.titulo}».${a.entregable ? ` Produce el entregable «${a.entregable.titulo}». ${donde}` : ''} Empieza con lo que ya sabes del proyecto y dime qué te falta.`
   }
   const [enviando, setEnviando] = useState(false)
@@ -147,7 +153,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
     setEnviando(true); setError(null); setAviso(null)
     try {
       const r = await post<{ mensajes: Mensaje[] }>(`${base}/mensajes`, { contenido, adjuntoIds: adjuntos.map(a => a.id), ...(ligada ? { actividad: ligada.clave } : {}) })
-      merge(r.mensajes); setInput(''); setAdjuntos([]); setLanzar([]); setMenu(null); onCambio()
+      merge(r.mensajes); setInput(''); setAdjuntos([]); setLanzar([]); setMenu(null); setCmdMenu(null); onCambio()
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo enviar') } finally { setEnviando(false); inputRef.current?.focus() }
   }
 
@@ -298,6 +304,24 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
   const fuentesDe = (m: Mensaje) => (m.metadata?.contexto ?? []).filter(f => f.estado === 'incluida' || f.estado === 'recortada')
   const alternar = (id: string) => setAbiertos(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const tipo = (full?.tipo ?? sesion.tipo) as TipoSesion
+  const hayConv = mensajes.length >= 2 && !generando
+  const comandos = [
+    { c: 'tasks', d: 'Elegir actividades de la fase para trabajarlas', ok: !!actividades?.length && !cerrada },
+    { c: 'backlog', d: 'Proponer tareas de backlog con esta conversación', ok: hayConv && !esBitacora && !cerrada },
+    { c: 'note', d: 'Redactar una nota para «Notas de la fase»', ok: hayConv && !!sesion.faseClave && !esBitacora && !cerrada && !notaOcupada },
+    { c: 'close', d: 'Cerrar la sesión con resumen y propuesta de memoria', ok: !generando && mensajes.length > 0 && !esBitacora && !cerrada },
+  ]
+  const cmdOpciones = comandos.filter(x => !cmdMenu?.q || x.c.startsWith(cmdMenu.q))
+  function ejecutarComando(x: { c: string; ok: boolean }) {
+    if (!cmdMenu || !x.ok) return
+    const antes = input.slice(0, cmdMenu.ini), resto = input.slice(cmdMenu.fin)
+    setCmdMenu(null)
+    if (x.c === 'tasks') { const nuevo = antes + '/tasks ' + resto; setInput(nuevo); detectarMenu(nuevo, antes.length + 7); setTimeout(() => inputRef.current?.focus(), 0); return }
+    setInput((antes + resto).trim())
+    if (x.c === 'backlog') setPlan(true)
+    else if (x.c === 'note') void proponerNota()
+    else if (x.c === 'close') void cerrar()
+  }
   const opciones = tipo === 'KICKOFF' && !cerrada && !generando && ultimo?.rol === 'assistant' && ultimo.estado === 'LISTO' ? opcionesNumeradas(ultimo.contenido) : null
 
   const barra = (
@@ -323,26 +347,15 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
         )}
         {!esBitacora && !cerrada && (
           <>
-            <button onClick={() => setPlan(true)} disabled={mensajes.length < 2 || generando} title="El coordinador propone tareas de backlog a partir de esta conversación"
-              className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
-              <ListPlus size={11} /> Convertir en tareas
-            </button>
             {tipo === 'DESARROLLO' && (
               <button onClick={() => { setDevAbierto(true); void cargarDev() }} title="Qué cambió la IA en su rama: archivos, commits y diff; subir o descartar la rama"
                 className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
                 <GitBranch size={11} /> Desarrollo
               </button>)}
-            {sesion.faseClave && (
-              <button onClick={() => void proponerNota()} disabled={mensajes.length < 2 || generando || notaOcupada} title="La IA redacta una nota con lo acordado en esta conversación; tú la revisas antes de agregarla a las notas de la fase"
-                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-200 disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                {notaOcupada && !notaBorrador ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} Guardar en notas
-              </button>)}
-            {(!enCabecera || !!sesion.actividadClave) && <button onClick={() => void proponerPrd()} disabled={mensajes.length < 2 || generando || prdOcupado} title="Genera el PRD con esta conversación y lo deja como propuesta en el artefacto PRD (también puedes editarlo a mano desde Artefactos)"
+            {!enCabecera && <button onClick={() => void proponerPrd()} disabled={mensajes.length < 2 || generando || prdOcupado} title="Genera el PRD con esta conversación y lo deja como propuesta en el artefacto PRD (también puedes editarlo a mano desde Artefactos)"
               className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg disabled:opacity-40 flex-shrink-0" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.35)', color: '#fed7aa' }}>
               {prdOcupado ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />} {prdOcupado ? 'Generando PRD…' : 'Proponer PRD'}
             </button>}
-            <button onClick={() => void cerrar()} disabled={generando || mensajes.length === 0} title="Cerrar: resumen final y propuesta de memoria"
-              className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-300 border border-white/10 hover:bg-white/5 disabled:opacity-40 flex-shrink-0"><CheckCircle2 size={11} /> Cerrar sesión</button>
           </>
         )}
         {!esBitacora && soyDuenio && (
@@ -463,6 +476,10 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                         <button onClick={() => alternar(m.id)} className="flex items-center gap-0.5 hover:text-gray-300">
                           {abiertos.has(m.id) ? <ChevronDown size={10} /> : <ChevronRight size={10} />} Fuentes usadas ({fuentes.length})
                         </button>)}
+                      {[...(m.metadata?.herramientas ?? []), ...(m.metadata?.progreso ?? [])].filter(h => h.nombre === 'proponer_documento').map(h => /"entregable"s*:s*"([^"]+)"/.exec(h.args ?? '')?.[1]).filter((c, i, l): c is string => !!c && l.indexOf(c) === i).map(c => {
+                        const t = actividades?.find(a => a.entregable?.clave === c)?.entregable?.titulo ?? c
+                        return <button key={c} onClick={() => sesion.faseClave && window.dispatchEvent(new CustomEvent('abrir-documento', { detail: { proyectoId, fase: sesion.faseClave, clave: c, titulo: t } }))} className="flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>Ver la propuesta: {t}</button>
+                      })}
                       <button onClick={() => void navigator.clipboard?.writeText(m.contenido)} title="Copiar" className="hover:text-gray-300"><Copy size={10} /></button>
                       {!cerrada && !esBitacora && <button onClick={() => void bifurcar(m)} title="Bifurcar la conversación desde aquí" className="hover:text-gray-300 flex items-center gap-0.5"><GitBranch size={10} /> Bifurcar</button>}
                       {esUlt && !cerrada && !esBitacora && <button onClick={() => void reintentar(m)} title="Regenerar respuesta" className="hover:text-gray-300 flex items-center gap-0.5"><RotateCcw size={10} /> Regenerar</button>}
@@ -474,7 +491,7 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
                       <div key={f.clave} className="flex items-center gap-2">
                         <span className={f.estado === 'incluida' ? 'text-emerald-400' : f.estado === 'recortada' ? 'text-amber-400' : 'text-[#7f8a9c]'}>●</span>
                         <span className="flex-1 truncate">{f.etiqueta}{f.nota ? <span className="text-[#7f8a9c]"> · {f.nota}</span> : null}</span>
-                        <span className="text-[#7f8a9c]">{f.estado === 'incluida' || f.estado === 'recortada' ? `${f.chars.toLocaleString('es-CO')} car.` : f.estado}</span>
+                        <span className="text-[#7f8a9c]">{f.estado === 'incluida' || f.estado === 'recortada' ? `${f.chars.toLocaleString('es-CO')} car.` : f.estado === 'fuera_de_fase' ? 'fuera de esta fase' : f.estado}</span>
                       </div>))}
                     {(m.metadata?.herramientas?.length ?? 0) > 0 && (
                       <div className="pt-1 text-[#7f8a9c]">Lecturas extra: {m.metadata!.herramientas!.map((h, i) => <span key={i} className="mr-2" title={h.args}>{h.nombre.replace(/_/g, ' ')} ({h.chars.toLocaleString('es-CO')} car.)</span>)}</div>)}
@@ -513,6 +530,17 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
               </span>))}
           </div>)}
         <div className="relative">
+          {cmdMenu && cmdOpciones.length > 0 && (
+            <div role="listbox" aria-label="Comandos" className="absolute left-0 right-0 bottom-full mb-2 rounded-xl overflow-hidden z-20" style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+              <div className="px-3 py-2 text-[10px] uppercase tracking-wide text-[#7f8a9c] border-b border-white/5">Comandos</div>
+              {cmdOpciones.map((x, i) => (
+                <div key={x.c} role="option" aria-selected={i === selCmd} onMouseDown={e => { e.preventDefault(); ejecutarComando(x) }} onMouseEnter={() => setSelCmd(i)}
+                  className="flex items-baseline gap-3 px-3 py-2 cursor-pointer border-b border-white/5 last:border-b-0" style={{ background: i === selCmd ? 'rgba(255,255,255,0.07)' : 'transparent', opacity: x.ok ? 1 : 0.4 }}>
+                  <span className="text-[12px] font-semibold text-indigo-200">/{x.c}</span>
+                  <span className="text-[11px] text-[#9ca3af]">{x.d}{x.ok ? '' : ' · no disponible ahora'}</span>
+                </div>))}
+              <div className="px-3 py-1.5 text-[10px] text-[#6b7686] border-t border-white/5" style={{ background: 'rgba(255,255,255,0.03)' }}>↑↓ elegir · Enter ejecuta · Esc cierra</div>
+            </div>)}
           {menu && (
             <div role="listbox" aria-label="Actividades de la fase" className="absolute left-0 right-0 bottom-full mb-2 rounded-xl overflow-hidden z-20" style={{ background: 'rgba(15,23,42,0.97)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
               <div className="px-3 py-2 text-[10px] uppercase tracking-wide text-[#7f8a9c] border-b border-white/5 flex justify-between"><span>Actividades de la fase</span><span>{opcionesMenu.length}</span></div>
@@ -543,6 +571,12 @@ export default function ChatSesion({ proyectoId, sesion, yo, onCambio, onAbrirSe
           <textarea ref={inputRef} value={input} onChange={e => { setInput(e.target.value); detectarMenu(e.target.value, e.target.selectionStart ?? e.target.value.length) }} rows={Math.min(6, Math.max(1, input.split('\n').length))}
             onClick={e => detectarMenu(input, (e.target as HTMLTextAreaElement).selectionStart ?? input.length)}
             onKeyDown={e => {
+              if (cmdMenu && cmdOpciones.length) {
+                if (e.key === 'ArrowDown') { e.preventDefault(); setSelCmd(i => (i + 1) % cmdOpciones.length); return }
+                if (e.key === 'ArrowUp') { e.preventDefault(); setSelCmd(i => (i - 1 + cmdOpciones.length) % cmdOpciones.length); return }
+                if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); ejecutarComando(cmdOpciones[selCmd] ?? cmdOpciones[0]); return }
+                if (e.key === 'Escape') { e.preventDefault(); setCmdMenu(null); return }
+              }
               if (menu) {
                 if (e.key === 'ArrowDown') { e.preventDefault(); setSelMenu(i => (opcionesMenu.length ? (i + 1) % opcionesMenu.length : 0)); return }
                 if (e.key === 'ArrowUp') { e.preventDefault(); setSelMenu(i => (opcionesMenu.length ? (i - 1 + opcionesMenu.length) % opcionesMenu.length : 0)); return }

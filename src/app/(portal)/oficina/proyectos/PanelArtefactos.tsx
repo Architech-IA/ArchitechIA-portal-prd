@@ -1,9 +1,13 @@
 'use client'
 
-import { Building2, BarChart3 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Building2, BarChart3, FileText } from 'lucide-react'
+import { api } from './api'
 import TipoProyecto from './TipoProyecto'
 import { CLAVE_DE_TAB, PUNTO_ESTADO, ETIQUETA_ESTADO, type ArtefactoMeta, type TabKey } from '../../solutions/pilots/[id]/espacio'
 import { TITULO_DE_TAB, ICONO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
+
+interface DocFase { fase: string; clave: string; titulo: string; version: number; chars: number; propuesta: boolean; updatedAt: string }
 
 const GRUPOS: { titulo: string; items: TabKey[] }[] = [
   { titulo: 'Documentos', items: ['prd', 'diseno', 'plan-ejec', 'plan'] },
@@ -19,6 +23,10 @@ export default function PanelArtefactos({ activo, onIr, meta, ficha, onAbrirFich
   proyecto?: { id: string; tipo: string; onCambio: () => void; avisos: number; onResumen: () => void } | null
 }) {
   const completa = !!ficha && ficha.ok === ficha.total
+  const [docs, setDocs] = useState<DocFase[]>([])
+  const pid = proyecto?.id
+  const cargarDocs = useCallback(() => { if (pid) api<DocFase[]>(`/api/proyectos/${pid}/documentos`).then(l => setDocs(Array.isArray(l) ? l : [])).catch(() => setDocs([])) }, [pid])
+  useEffect(() => { cargarDocs() }, [cargarDocs])
   return (
     <div className="p-3 space-y-3" role="tablist" aria-label="Artefactos del proyecto">
       {proyecto && (
@@ -44,6 +52,21 @@ export default function PanelArtefactos({ activo, onIr, meta, ficha, onAbrirFich
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: completa ? '#10b981' : '#f59e0b' }} />{completa ? 'Completa' : `${ficha.ok}/${ficha.total}`}
             </span>
           </button>
+        </div>)}
+      {docs.length > 0 && (
+        <div>
+          <p className="text-[9px] uppercase tracking-wider text-[#6b7280] mb-1">Documentos de la fase</p>
+          <div className="space-y-0.5">
+            {docs.map(d => (
+              <button key={d.fase + d.clave} onClick={() => window.dispatchEvent(new CustomEvent('abrir-documento', { detail: { proyectoId: pid, fase: d.fase, clave: d.clave, titulo: d.titulo } }))} title={`Abrir «${d.titulo}»`} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-[12px] transition-colors" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#cbd5e1' }}>
+                <FileText size={13} className="flex-shrink-0 opacity-80" />
+                <span className="flex-1 truncate">{d.titulo}</span>
+                <span className="text-[10px] text-[#7f8a9c] flex-shrink-0 capitalize">{d.fase}</span>
+                {d.propuesta
+                  ? <span className="text-[9px] px-1.5 rounded-full bg-amber-500/25 text-amber-300" title="La IA dejó una propuesta para revisar">Propuesta</span>
+                  : <span className="flex items-center gap-1 text-[10px] text-[#7f8a9c] flex-shrink-0"><span className="w-1.5 h-1.5 rounded-full" style={{ background: '#10b981' }} />v{d.version}</span>}
+              </button>))}
+          </div>
         </div>)}
       {GRUPOS.map(g => (
         <div key={g.titulo}>

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { useSession } from 'next-auth/react';
-import MeetingHub from './MeetingHub';
-import { toDatetimeLocalInput, getDateStrUTC5, getTodayStrUTC5, getTimeStrUTC5, getDateFullUTC5, getDayUTC5, getWeekdayDateUTC5 } from '@/lib/timezone';
+import { useEffect, useState, useMemo } from 'react';
+import MeetingHub from "./MeetingHub";
+import AgendadorPanel from "./AgendadorPanel";
+import type { DatosReunion } from './DatosClave';
+import { getDateStrUTC5, getTodayStrUTC5, getTimeStrUTC5, getDateFullUTC5, getDayUTC5, getWeekdayDateUTC5 } from '@/lib/timezone';
 
 interface Meeting {
   id: string;
@@ -24,12 +25,6 @@ interface Meeting {
   user: { id: string; name: string; email: string };
   createdAt: string;
 }
-
-const EMPTY_FORM = {
-  title: '', description: '', type: 'INTERNAL_DAILY',
-  date: '', endDate: '', location: '', link: '',
-  attendees: '', status: 'SCHEDULED', notes: '', userId: '',
-};
 
 const TYPE_COLORS: Record<string, string> = {
   INTERNAL_DAILY:    'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -76,202 +71,23 @@ function resolveAttendees(attendees: string | null, users: { name: string; email
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-// DatePicker custom
-const MESES_DP = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DIAS_DP = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
-
-function DatePicker({ value, onChange, required: req }: { value: string; onChange: (v: string) => void; required?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const today = new Date();
-  const sel = value ? new Date(value + 'T12:00:00') : null;
-  const [vm, setVm] = useState(sel ? sel.getMonth() : today.getMonth());
-  const [vy, setVy] = useState(sel ? sel.getFullYear() : today.getFullYear());
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  const firstDayMon = (new Date(vy, vm, 1).getDay() + 6) % 7;
-  const daysInMonth = new Date(vy, vm + 1, 0).getDate();
-  const prevM = () => { if (vm === 0) { setVm(11); setVy((y: number) => y-1); } else setVm((m: number) => m-1); };
-  const nextM = () => { if (vm === 11) { setVm(0); setVy((y: number) => y+1); } else setVm((m: number) => m+1); };
-  const pick = (d: number) => {
-    onChange(`${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
-    setOpen(false);
-  };
-  const display = sel ? sel.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-  return (
-    <div className="relative" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
-      <button type="button" onClick={() => setOpen((o: boolean) => !o)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-all" style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}>
-        <svg className="w-4 h-4 flex-shrink-0 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-        <span className={display ? 'text-white' : 'text-[#7f8a9c]'}>{display || 'Seleccionar fecha...'}</span>
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-2 left-0 rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', minWidth: '280px', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-            <button type="button" onClick={prevM} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors" onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.08)'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='transparent'}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
-            </button>
-            <span className="text-sm font-semibold text-white">{MESES_DP[vm]} {vy}</span>
-            <button type="button" onClick={nextM} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-white transition-colors" onMouseEnter={e => (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.08)'} onMouseLeave={e => (e.currentTarget as HTMLElement).style.background='transparent'}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-          <div className="grid grid-cols-7 px-3 pt-3 pb-1">
-            {DIAS_DP.map(d => <div key={d} className="text-center text-xs font-medium py-1" style={{ color: 'rgba(255,255,255,0.25)' }}>{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 px-3 pb-3 gap-y-0.5">
-            {Array.from({ length: firstDayMon }, (_, i) => <div key={'e'+i}/>)}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const d = i+1;
-              const ds = `${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-              const isSel = ds === value;
-              const isTod = ds === todayStr;
-              return (
-                <button key={d} type="button" onClick={() => pick(d)} className="w-full aspect-square flex items-center justify-center text-sm rounded-lg font-medium transition-all" style={{ background: isSel ? '#f97316' : isTod ? 'rgba(251,146,60,0.12)' : 'transparent', color: isSel ? '#fff' : isTod ? '#fb923c' : 'rgba(255,255,255,0.8)', border: isTod && !isSel ? '1px solid rgba(251,146,60,0.3)' : '1px solid transparent' }}
-                  onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.08)'; }}
-                  onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = isTod ? 'rgba(251,146,60,0.12)' : 'transparent'; }}
-                >{d}</button>
-              );
-            })}
-          </div>
-          <div className="px-4 py-2.5 border-t flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            <button type="button" onClick={() => { onChange(''); setOpen(false); }} className="text-xs text-[#7f8a9c] hover:text-red-400 transition-colors">Borrar</button>
-            <button type="button" onClick={() => { onChange(todayStr); setVm(today.getMonth()); setVy(today.getFullYear()); setOpen(false); }} className="text-xs font-medium text-orange-400 hover:text-orange-300 transition-colors">Hoy</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
 const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-// TimePicker custom
-function TimePicker({ hour, minute, onHourChange, onMinuteChange, showLabel = true }: {
-  hour: string; minute: string;
-  onHourChange: (h: string) => void;
-  onMinuteChange: (m: string) => void;
-  showLabel?: boolean;
-}) {
-  const [openH, setOpenH] = useState(false);
-  const [openM, setOpenM] = useState(false);
-  const HOURS = Array.from({length: 24}, (_, i) => String(i).padStart(2, '0'));
-  const MINS = ['00','15','30','45'];
-
-  const DropDown = ({ open, setOpen, value, options, onChange }: {
-    open: boolean; setOpen: (v: boolean) => void;
-    value: string; options: string[]; onChange: (v: string) => void;
-  }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-      if (!open) return;
-      const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-      document.addEventListener('mousedown', handler);
-      return () => document.removeEventListener('mousedown', handler);
-    }, [open, setOpen]);
-    return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => { setOpen(!open); }}
-        className="w-14 flex items-center justify-between gap-1 px-2.5 py-2.5 rounded-xl text-sm font-mono font-semibold transition-all"
-        style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', color: '#fff', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}
-      >
-        {value}
-        <svg className="w-3 h-3 text-[#7f8a9c] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1 left-0 rounded-xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 16px 40px rgba(0,0,0,0.7)', width: '72px', maxHeight: '200px', overflowY: 'auto' }}>
-          {options.map(opt => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => { onChange(opt); setOpen(false); }}
-              className="w-full px-3 py-2 text-sm font-mono text-left transition-colors"
-              style={{ background: opt === value ? 'rgba(249,115,22,0.2)' : 'transparent', color: opt === value ? '#f97316' : 'rgba(255,255,255,0.8)', fontWeight: opt === value ? '700' : '400' }}
-              onMouseEnter={e => { if (opt !== value) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; }}
-              onMouseLeave={e => { if (opt !== value) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-    );
-  };
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <DropDown open={openH} setOpen={setOpenH} value={hour} options={HOURS} onChange={onHourChange} />
-      <span className="text-[#7f8a9c] font-bold text-base select-none">:</span>
-      <DropDown open={openM} setOpen={setOpenM} value={minute} options={MINS} onChange={onMinuteChange} />
-      {showLabel && <span className="text-xs text-[#7f8a9c] ml-1">hrs</span>}
-    </div>
-  );
-}
-
-
-// Generic custom Select
-function Select({ value, onChange, options, placeholder }: {
-  value: string; onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const label = options.find(o => o.value === value)?.label || placeholder || '';
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm text-left transition-all"
-        style={{ background: 'rgba(255,255,255,0.06)', border: open ? '1px solid rgba(251,146,60,0.5)' : '1px solid rgba(255,255,255,0.1)', color: value ? '#fff' : 'rgba(156,163,175,1)', boxShadow: open ? '0 0 0 3px rgba(251,146,60,0.08)' : 'none' }}
-      >
-        <span>{label}</span>
-        <svg className="w-4 h-4 flex-shrink-0 text-[#7f8a9c] transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1 left-0 right-0 rounded-xl overflow-hidden" style={{ background: 'rgba(10,10,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)', boxShadow: '0 16px 40px rgba(0,0,0,0.7)' }}>
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              className="w-full px-3 py-2.5 text-sm text-left transition-colors flex items-center justify-between"
-              style={{ background: opt.value === value ? 'rgba(249,115,22,0.12)' : 'transparent', color: opt.value === value ? '#f97316' : 'rgba(255,255,255,0.85)', fontWeight: opt.value === value ? '600' : '400' }}
-              onMouseEnter={e => { if (opt.value !== value) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; }}
-              onMouseLeave={e => { if (opt.value !== value) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              {opt.label}
-              {opt.value === value && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
+// Reunión vacía que usa el popup en modo crear
+const MEETING_NUEVA = {
+  id: '', title: '', type: 'INTERNAL_DAILY', status: 'SCHEDULED', link: null, location: null, hub: null,
+  actaFile: null, actaFileName: null, date: new Date().toISOString(), endDate: null, createdAt: new Date().toISOString(),
+};
 
 export default function MeetingsPage() {
-  const { data: session } = useSession();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
   const [clientes, setClientes] = useState<{ id: string; nombre: string; contacto: string; email: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'calendario' | 'semana' | 'registros'>('calendario');
   const [weekOffset, setWeekOffset] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [editMeeting, setEditMeeting] = useState<Meeting | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState('');
+  // Día con el que se abre el popup en modo crear (null = cerrado)
+  const [nuevoDia, setNuevoDia] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
@@ -279,13 +95,8 @@ export default function MeetingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [filterType, setFilterType] = useState('');
   const [search, setSearch] = useState('');
-  const [actaFileBase64, setActaFileBase64] = useState('');
-  const [actaFileNameState, setActaFileNameState] = useState('');
-  const [externalAttendees, setExternalAttendees] = useState<string[]>([]);
-  const [attendeeInput, setAttendeeInput] = useState('');
-  // Hub de la reunion (popup de trabajo, distinto del popup de agendar)
+  // Popup de la reunión (único: crear y trabajar la reunión)
   const [hubMeetingId, setHubMeetingId] = useState<string | null>(null);
-  const openHubAfterSave = useRef(false);
 
   useEffect(() => {
     Promise.all([
@@ -295,62 +106,24 @@ export default function MeetingsPage() {
     ]).then(([m, u, c]) => { setMeetings(m); setUsers(u); setClientes(Array.isArray(c) ? c : []); setLoading(false); });
   }, []);
 
-  const openNew = () => {
-    openHubAfterSave.current = false;
-    setEditMeeting(null);
-    setFormError('');
+  // dia: fecha elegida (AAAA-MM-DD); si no se pasa, se usa la de hoy
+  const openNew = (dia?: string) => {
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
-    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T09:00`;
-    setForm({ ...EMPTY_FORM, date: today, userId: (session?.user as { id?: string })?.id || users[0]?.id || '', link: 'https://meet.google.com/usz-ysto-pcq' });
-    setExternalAttendees([]);
-    setAttendeeInput('');
-    setActaFileBase64('');
-    setActaFileNameState('');
-    setShowModal(true);
+    setNuevoDia(typeof dia === 'string' && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dia) ? dia : `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`);
   };
 
-  const openEdit = (m: Meeting) => {
-    openHubAfterSave.current = false;
-    setEditMeeting(m);
-    setFormError('');
-    setForm({
-      title: m.title, description: m.description || '', type: m.type,
-      date: toDatetimeLocalInput(m.date),
-      endDate: m.endDate ? toDatetimeLocalInput(m.endDate) : '',
-      location: m.location || '', link: m.link || '', attendees: m.attendees || '',
-      status: m.status, notes: m.notes || '',
-      userId: m.userId,
-    });
-    setExternalAttendees(m.attendees ? m.attendees.split(',').map(a => a.trim()).filter(Boolean) : []);
-    setAttendeeInput('');
-    setActaFileBase64(m.actaFile || '');
-    setActaFileNameState(m.actaFileName || '');
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setFormError('');
+  // Crea la reunión desde el popup; devuelve el mensaje de error, o null si salió bien
+  const crearReunion = async (datos: DatosReunion, hub: string): Promise<string | null> => {
     try {
-      const url = editMeeting ? `/api/meetings/${editMeeting.id}` : '/api/meetings';
-      const method = editMeeting ? 'PUT' : 'POST';
-      const body = form;
-      const payload = { ...body, actaFile: actaFileBase64 || null, actaFileName: actaFileNameState || null };
-      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (res.ok) {
-        const saved = await res.json();
-        setMeetings(prev => editMeeting ? prev.map(m => m.id === saved.id ? saved : m) : [saved, ...prev]);
-        setShowModal(false);
-        if (openHubAfterSave.current) setHubMeetingId(saved.id);
-      } else {
-        const d = await res.json();
-        setFormError(d.error || `Error ${res.status}`);
-      }
-    } catch {
-      setFormError('Error de conexión.');
-    } finally { setSaving(false); openHubAfterSave.current = false; }
+      const res = await fetch('/api/meetings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...datos, hub }) });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); return d.error || `Error ${res.status}`; }
+      const saved = await res.json();
+      setMeetings(prev => [saved, ...prev]);
+      setNuevoDia(null);
+      setHubMeetingId(saved.id);
+      return null;
+    } catch { return 'Error de conexión.'; }
   };
 
   const handleDelete = async () => {
@@ -362,15 +135,6 @@ export default function MeetingsPage() {
       setConfirmDel(null);
     } catch { /* ignore */ }
     setDeleting(false);
-  };
-
-  const handleActaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setActaFileNameState(file.name);
-    const reader = new FileReader();
-    reader.onload = () => setActaFileBase64(reader.result as string);
-    reader.readAsDataURL(file);
   };
 
   const handleStatusToggle = async (meeting: Meeting) => {
@@ -451,7 +215,7 @@ export default function MeetingsPage() {
             )}
           </button>
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
+        <button onClick={() => openNew()} className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
           Nueva Reunión
         </button>
@@ -505,7 +269,7 @@ export default function MeetingsPage() {
                       </div>
                       {d.meetings.length === 0 && (
                         <button
-                          onClick={e => { e.stopPropagation(); setSelectedDay(d.date); openNew(); }}
+                          onClick={e => { e.stopPropagation(); setSelectedDay(d.date); openNew(d.date); }}
                           className="absolute bottom-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[#7f8a9c] hover:text-white hover:bg-orange-600/60"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
@@ -531,7 +295,7 @@ export default function MeetingsPage() {
                       <svg className="w-5 h-5 text-[#7f8a9c]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
                     <p className="text-[#7f8a9c] text-xs text-center">Sin eventos</p>
-                    <button onClick={openNew} className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors">
+                    <button onClick={() => openNew(selectedDay ?? undefined)} className="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       Agregar evento
                     </button>
@@ -583,7 +347,6 @@ export default function MeetingsPage() {
                       </div>
                       <div className="flex gap-2 mt-2">
                         <button onClick={() => setHubMeetingId(m.id)} className="text-xs font-semibold text-orange-400 hover:text-orange-300">Abrir hub</button>
-                        <button onClick={() => openEdit(m)} className="text-xs text-gray-400 hover:text-white">Editar</button>
                         <button onClick={() => handleStatusToggle(m)} className={`text-xs transition-colors ${m.status === 'COMPLETED' ? 'text-[#7f8a9c] hover:text-blue-400' : 'text-green-400 hover:text-green-300'}`}>
                           {m.status === 'COMPLETED' ? 'Reabrir' : 'Completar'}
                         </button>
@@ -633,7 +396,6 @@ export default function MeetingsPage() {
                 )}
                                 <div className="flex gap-2 mt-2">
                                   <button onClick={() => setHubMeetingId(m.id)} className="text-xs font-semibold text-orange-400 hover:text-orange-300">Abrir hub</button>
-                                  <button onClick={() => openEdit(m)} className="text-xs text-[#7f8a9c] hover:text-gray-300">Editar</button>
                                   <button onClick={() => handleStatusToggle(m)} className={`text-xs ${m.status === 'COMPLETED' ? 'text-blue-400 hover:text-blue-300' : 'text-green-400 hover:text-green-300'}`}>
                                     {m.status === 'COMPLETED' ? 'Reabrir' : 'Completar'}
                                   </button>
@@ -874,9 +636,6 @@ export default function MeetingsPage() {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[m.status]}`}>{translateStatus(m.status)}</span>
                           <button onClick={() => setHubMeetingId(m.id)} title="Abrir hub de la reunión" className="px-2 py-1 text-[11px] font-semibold text-orange-400 hover:text-orange-300 transition-colors rounded hover:bg-white/[0.05]">Hub</button>
-                          <button onClick={() => openEdit(m)} title="Editar datos" className="p-1.5 text-[#7f8a9c] hover:text-gray-300 transition-colors rounded hover:bg-white/[0.05]">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                          </button>
                           <button onClick={() => setConfirmDel(m)} className="p-1.5 text-[#7f8a9c] hover:text-red-400 transition-colors rounded hover:bg-red-900/20">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
@@ -892,451 +651,7 @@ export default function MeetingsPage() {
       })() : null}
 
       {/* Modal crear / editar */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4"
-          style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
-          onClick={() => setShowModal(false)}
-        >
-          <style>{`
-            @keyframes liquidModalIn {
-              from { opacity: 0; transform: scale(0.92) translateY(16px); filter: blur(4px); }
-              to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0); }
-            }
-            @keyframes shimmer {
-              0%   { background-position: -200% center; }
-              100% { background-position: 200% center; }
-            }
-          `}</style>
-          {/* Modal container */}
-          <div
-            className="relative w-full max-w-2xl rounded-3xl"
-            style={{
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 48px 120px rgba(0,0,0,0.75), 0 0 60px rgba(251,146,60,0.05)',
-              animation: 'liquidModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
-              overflow: 'visible',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* HEADER — solutions style */}
-            <div
-              className="rounded-t-3xl flex items-center justify-between px-6 py-4"
-              style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.18) 0%, rgba(168,85,247,0.12) 100%)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.2)', border: '1px solid rgba(249,115,22,0.3)' }}>
-                  <svg width="14" height="14" fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-white tracking-wide">{editMeeting ? 'EDITAR EVENTO' : 'NUEVO EVENTO'}</h2>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{TYPE_LABELS[form.type] || 'Completa los datos del evento'}</p>
-                </div>
-              </div>
-              <button onClick={() => setShowModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center transition-all" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)')} onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)')}>
-                <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-            {/* BODY — dark solid, scrollable */}
-            <div className="rounded-b-3xl overflow-y-auto" style={{ background: 'rgba(8,9,22,0.98)', maxHeight: 'calc(100vh - 160px)' }}><div className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Título</label>
-                  <input type="text" required value={form.title} onChange={e => setForm({...form, title: e.target.value})}
-                    className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
-                  {/* Quick-pick suggestions */}
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {[
-                      { label: 'Daily Intern - ArchitechIA', type: 'INTERNAL_DAILY', location: 'Virtual', link: 'https://meet.google.com/usz-ysto-pcq', addTeam: true },
-                    ].map(s => (
-                      <button
-                        key={s.label}
-                        type="button"
-                        onClick={() => {
-                          const teamNames = ['Daniel Martinez', 'Santiago Ortega', 'Freddy Orozco'];
-                          const newAttendees = s.addTeam ? teamNames : externalAttendees;
-                          setForm(f => ({ ...f, title: s.label, type: s.type, location: s.location, link: s.link, attendees: newAttendees.join(', ') }));
-                          if (s.addTeam) setExternalAttendees(teamNames);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg transition-all"
-                        style={{ background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.2)', color: '#fb923c' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(251,146,60,0.15)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(251,146,60,0.4)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(251,146,60,0.08)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(251,146,60,0.2)'; }}
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Tipo</label>
-                  <Select
-                    value={form.type}
-                    onChange={t => setForm({...form, type: t, link: t === 'INTERNAL_DAILY' ? 'https://meet.google.com/usz-ysto-pcq' : (form.type === 'INTERNAL_DAILY' ? '' : form.link)})}
-                    options={[
-                      { value: 'INTERNAL_DAILY', label: 'Reunión Interna - Daily' },
-                      { value: 'INTERNAL_WORKSHOP', label: 'Reunión Interna - Workshop' },
-                      { value: 'COMMERCIAL', label: 'Comercial' },
-                      { value: 'ADVISORY', label: 'Asesoría' },
-                      { value: 'PROVIDER', label: 'Proveedores' },
-                    ]}
-                  />
-                </div>
-              </div>
-              {/* Fecha + Duración en una sola fila */}
-              <div>
-                <div className="flex gap-3 items-start">
-                  <div className="w-40 flex-shrink-0">
-                    <label className="block text-sm text-gray-400 mb-2">Fecha</label>
-                    <DatePicker
-                      required
-                      value={form.date ? form.date.slice(0, 10) : ''}
-                      onChange={v => {
-                        const time = form.date ? form.date.slice(11, 16) : '09:00';
-                        setForm({...form, date: v ? `${v}T${time}` : ''});
-                      }}
-                    />
-                  </div>
-                  <div className="flex-shrink-0 pt-7">
-                    <TimePicker
-                      showLabel={false}
-                      hour={form.date ? form.date.slice(11, 13) : '09'}
-                      minute={form.date ? form.date.slice(14, 16) : '00'}
-                      onHourChange={h => {
-                        const date = form.date ? form.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
-                        const min = form.date ? form.date.slice(14, 16) : '00';
-                        setForm({...form, date: `${date}T${h}:${min}`});
-                      }}
-                      onMinuteChange={m => {
-                        const date = form.date ? form.date.slice(0, 10) : new Date().toISOString().slice(0, 10);
-                        const hour = form.date ? form.date.slice(11, 13) : '09';
-                        setForm({...form, date: `${date}T${hour}:${m}`});
-                      }}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-sm text-gray-400 mb-2">Duración</label>
-                    <Select
-                  value={(() => {
-                    if (!form.endDate || !form.date) return '';
-                    const startMins = parseInt(form.date.slice(11,13)) * 60 + parseInt(form.date.slice(14,16));
-                    const endMins = parseInt(form.endDate.slice(11,13)) * 60 + parseInt(form.endDate.slice(14,16));
-                    const diff = endMins - startMins;
-                    return ['30','60','90','120'].includes(String(diff)) ? String(diff) : 'custom';
-                  })()}
-                  onChange={v => {
-                    if (v === '') { setForm({...form, endDate: ''}); return; }
-                    if (v === 'custom') {
-                      if (!form.endDate && form.date) {
-                        const h = parseInt(form.date.slice(11,13)) + 1;
-                        setForm({...form, endDate: `${form.date.slice(0,10)}T${String(h).padStart(2,'0')}:${form.date.slice(14,16)}`});
-                      }
-                      return;
-                    }
-                    if (!form.date) return;
-                    const startH = parseInt(form.date.slice(11,13));
-                    const startM = parseInt(form.date.slice(14,16));
-                    const total = startH * 60 + startM + parseInt(v);
-                    setForm({...form, endDate: `${form.date.slice(0,10)}T${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`});
-                  }}
-                  placeholder="Sin hora de fin"
-                  options={[
-                    { value: '', label: 'Sin hora de fin' },
-                    { value: '30', label: '30 minutos' },
-                    { value: '60', label: '1 hora' },
-                    { value: '90', label: '1 hora 30 min' },
-                    { value: '120', label: '2 horas' },
-                    { value: 'custom', label: 'Personalizado...' },
-                  ]}
-                />
-                  </div>
-                </div>
-                {form.date && (
-                  <p className="text-xs mt-1.5" style={{ color: 'rgba(251,146,60,0.55)' }}>
-                    {new Date(form.date + ':00-05:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    {form.endDate && ` — hasta las ${form.endDate.slice(11,16)}`}
-                  </p>
-                )}
-                {form.endDate && (() => {
-                  const startMins = parseInt(form.date.slice(11,13)) * 60 + parseInt(form.date.slice(14,16));
-                  const endMins = parseInt(form.endDate.slice(11,13)) * 60 + parseInt(form.endDate.slice(14,16));
-                  const diff = endMins - startMins;
-                  const isCustom = !['30','60','90','120'].includes(String(diff));
-                  return isCustom ? (
-                    <div className="flex gap-3 items-center mt-2">
-                      <div className="flex-1">
-                        <DatePicker
-                          value={form.endDate.slice(0, 10)}
-                          onChange={v => {
-                            const time = form.endDate.slice(11, 16) || '10:00';
-                            setForm({...form, endDate: v ? `${v}T${time}` : ''});
-                          }}
-                        />
-                      </div>
-                      <TimePicker
-                        showLabel={false}
-                        hour={form.endDate.slice(11, 13) || '10'}
-                        minute={form.endDate.slice(14, 16) || '00'}
-                        onHourChange={h => {
-                          const date = form.endDate.slice(0, 10);
-                          const min = form.endDate.slice(14, 16) || '00';
-                          setForm({...form, endDate: `${date}T${h}:${min}`});
-                        }}
-                        onMinuteChange={m => {
-                          const date = form.endDate.slice(0, 10);
-                          const hour = form.endDate.slice(11, 13) || '10';
-                          setForm({...form, endDate: `${date}T${hour}:${m}`});
-                        }}
-                      />
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Ubicación</label>
-                  <Select
-                    value={form.location}
-                    onChange={v => setForm({...form, location: v})}
-                    placeholder="Seleccionar..."
-                    options={[
-                      { value: '', label: 'Seleccionar...' },
-                      { value: 'Presencial', label: 'Presencial' },
-                      { value: 'Virtual', label: 'Virtual' },
-                      { value: 'Otro', label: 'Otro' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Dirección (URL)</label>
-                  <div className="relative group">
-                    <input
-                      type="url"
-                      value={form.link}
-                      onChange={e => setForm({...form, link: e.target.value})}
-                      placeholder="https://meet.google.com/..."
-                      readOnly={form.type === 'INTERNAL_DAILY'}
-                      className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none ${
-                        form.type === 'INTERNAL_DAILY'
-                          ? 'text-gray-400 cursor-not-allowed select-none'
-                          : 'text-white focus:ring-2 focus:ring-orange-500 placeholder-gray-500'
-                      }`}
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-                    />
-                    {form.type === 'INTERNAL_DAILY' && (
-                      <a
-                        href={form.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-orange-400 text-xs font-medium gap-1.5" style={{ background: 'rgba(8,8,26,0.85)' }}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                        Abrir enlace
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-sm text-gray-400">Asistentes</label>
-                  <div className="flex items-center gap-1.5">
-                    {form.type === 'COMMERCIAL' && (
-                      <div className="relative">
-                        <select
-                          value=""
-                          onChange={e => {
-                            const cliente = clientes.find(c => c.id === e.target.value);
-                            if (!cliente) return;
-                            const label = cliente.contacto ? `${cliente.nombre} — ${cliente.contacto}` : cliente.nombre;
-                            if (externalAttendees.includes(label)) return;
-                            const updated = [...externalAttendees, label];
-                            setExternalAttendees(updated);
-                            setForm({...form, attendees: updated.join(', ')});
-                          }}
-                          className="appearance-none flex items-center gap-1.5 pl-2.5 pr-6 py-1 text-xs bg-blue-600/15 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-600/25 transition-colors cursor-pointer"
-                        >
-                          <option value="" disabled>Cliente...</option>
-                          {clientes.map(c => (
-                            <option key={c.id} value={c.id} style={{ background: '#0f172a', color: '#e2e8f0' }}>{c.nombre}</option>
-                          ))}
-                        </select>
-                        <svg className="w-3 h-3 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const teamNames = ['Daniel Martinez', 'Santiago Ortega', 'Freddy Orozco'];
-                        const toAdd = teamNames.filter(n => !externalAttendees.includes(n));
-                        if (toAdd.length === 0) return;
-                        const updated = [...externalAttendees, ...toAdd];
-                        setExternalAttendees(updated);
-                        setForm({...form, attendees: updated.join(', ')});
-                      }}
-                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-orange-600/15 border border-orange-500/30 text-orange-400 rounded-lg hover:bg-orange-600/25 transition-colors"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      Equipo ArchitechIA
-                    </button>
-                  </div>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={attendeeInput}
-                    onChange={e => setAttendeeInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && attendeeInput.trim()) {
-                        e.preventDefault();
-                        const name = attendeeInput.trim();
-                        if (!externalAttendees.includes(name)) {
-                          const updated = [...externalAttendees, name];
-                          setExternalAttendees(updated);
-                          setForm({...form, attendees: updated.join(', ')});
-                        }
-                        setAttendeeInput('');
-                      }
-                      if (e.key === 'Backspace' && !attendeeInput && externalAttendees.length > 0) {
-                        const updated = externalAttendees.slice(0, -1);
-                        setExternalAttendees(updated);
-                        setForm({...form, attendees: updated.join(', ')});
-                      }
-                    }}
-                    placeholder="Nombre o email y presiona Enter..."
-                    className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm placeholder-gray-500 transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
-                  {attendeeInput.trim() && (() => {
-                    const q = attendeeInput.trim().toLowerCase();
-                    const suggestions = users.filter(u =>
-                      u.role !== 'ADMIN' &&
-                      !externalAttendees.includes(u.email) &&
-                      !externalAttendees.includes(u.name) &&
-                      (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
-                    ).slice(0, 5);
-                    if (suggestions.length === 0) return null;
-                    return (
-                      <div className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden" style={{ background: 'rgba(10,10,28,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(16px)' }}>
-                        {suggestions.map(u => (
-                          <button
-                            key={u.id}
-                            type="button"
-                            onClick={() => {
-                              const updated = [...externalAttendees, u.email];
-                              setExternalAttendees(updated);
-                              setForm({...form, attendees: updated.join(', ')});
-                              setAttendeeInput('');
-                            }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-700 flex items-center gap-3 transition-colors"
-                          >
-                            <span className="w-7 h-7 rounded-full bg-orange-900/30 text-orange-400 flex items-center justify-center text-xs font-semibold flex-shrink-0">
-                              {u.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                            </span>
-                            <div className="min-w-0">
-                              <p className="text-sm text-white truncate">{u.name}</p>
-                              <p className="text-xs text-[#7f8a9c] truncate">{u.email}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                  {externalAttendees.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {externalAttendees.map((a, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-600/20 border border-orange-500/30 rounded-full text-xs text-orange-300">
-                          {a}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = externalAttendees.filter((_, j) => j !== i);
-                              setExternalAttendees(updated);
-                              setForm({...form, attendees: updated.join(', ')});
-                            }}
-                            className="ml-0.5 text-orange-400 hover:text-white"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {form.type !== 'INTERNAL_DAILY' && (
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Descripción</label>
-                  <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={2}
-                    className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
-                </div>
-              )}
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Acta / Notas de reunión</label>
-                <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={4}
-                  placeholder="Puntos tratados, acuerdos, tareas pendientes..."
-                  className="w-full px-3 py-2 text-white rounded-xl focus:ring-2 focus:ring-orange-500/60 focus:outline-none text-sm placeholder-gray-500 transition-all duration-200" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }} />
-                <div className="mt-2 flex items-center gap-3">
-                  <label className="px-3 py-1.5 text-gray-400 rounded-lg cursor-pointer text-xs flex items-center gap-1.5" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                    {actaFileNameState ? actaFileNameState : 'Adjuntar documento (PDF, DOCX, etc.)'}
-                    <input type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" onChange={handleActaUpload} className="hidden" />
-                  </label>
-                  {actaFileBase64 && (
-                    <button onClick={() => { setActaFileBase64(''); setActaFileNameState(''); }}
-                      className="text-xs text-red-400 hover:text-red-300 px-2 py-1">Quitar archivo</button>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Estado</label>
-                <Select
-                  value={form.status}
-                  onChange={v => setForm({...form, status: v})}
-                  options={[
-                    { value: 'SCHEDULED', label: 'Programada' },
-                    { value: 'COMPLETED', label: 'Completada' },
-                    { value: 'CANCELLED', label: 'Cancelada' },
-                  ]}
-                />
-              </div>
-              {formError && (
-                <div className="px-3 py-2 rounded-xl text-red-300 text-sm flex items-center gap-2" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', backdropFilter: 'blur(8px)' }}>
-                  <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
-                  {formError}
-                </div>
-              )}
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="px-5 py-2 rounded-xl text-gray-300 text-sm font-medium transition-all duration-200"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.1)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.18)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.borderColor='rgba(255,255,255,0.1)'; }}
-                >Cancelar</button>
-                {!editMeeting && (
-                  <button type="submit" disabled={saving} onClick={() => { openHubAfterSave.current = true; }}
-                    className="px-5 py-2 rounded-xl text-sm font-semibold text-orange-300 transition-all duration-200 disabled:opacity-60"
-                    style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(251,146,60,0.35)' }}
-                  >Crear y abrir hub</button>
-                )}
-                <button type="submit" disabled={saving}
-                  className="px-5 py-2 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-200"
-                  style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.95), rgba(234,88,12,0.95))', border: '1px solid rgba(251,146,60,0.4)', boxShadow: '0 0 20px rgba(249,115,22,0.25), 0 0 0 1px rgba(255,255,255,0.08) inset', backdropFilter: 'blur(8px)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 0 30px rgba(249,115,22,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow='0 0 20px rgba(249,115,22,0.25), 0 0 0 1px rgba(255,255,255,0.08) inset'; }}
-                >
-                  {saving && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                  {editMeeting ? 'Guardar Cambios' : 'Crear Evento'}
-                </button>
-              </div>
-            </form>
-            </div></div>
-          </div>
-        </div>
-      )}
-
-
-      {/* Hub de la reunión (popup de trabajo: agenda, notas, decisiones, acciones, archivos) */}
+      {/* Popup de la reunión: abrir y trabajar una existente */}
       {hubMeetingId && (() => {
         const hm = meetings.find(m => m.id === hubMeetingId);
         if (!hm) return null;
@@ -1344,17 +659,32 @@ export default function MeetingsPage() {
           <MeetingHub
             key={hm.id}
             meeting={hm}
-            asistentes={hm.attendees ? resolveAttendees(hm.attendees, users).split(',').map(a => a.trim()).filter(Boolean) : []}
-            typeLabel={TYPE_LABELS[hm.type] || hm.type}
-            fechaTexto={`${getDateFullUTC5(hm.date)} · ${getTimeStrUTC5(hm.date)}${hm.endDate ? ` — ${getTimeStrUTC5(hm.endDate)}` : ''}`}
+            users={users}
+            clientes={clientes}
             onClose={() => setHubMeetingId(null)}
-            onEdit={() => { openEdit(hm); openHubAfterSave.current = true; setHubMeetingId(null); }}
             onToggleStatus={() => { void handleStatusToggle(hm); }}
             onHubSaved={(id, hub) => setMeetings(prev => prev.map(m => m.id === id ? { ...m, hub } : m))}
             onActaChanged={u => setMeetings(prev => prev.map(m => m.id === u.id ? { ...m, actaFile: u.actaFile, actaFileName: u.actaFileName } : m))}
+            onMeetingUpdated={u => setMeetings(prev => prev.map(m => m.id === u.id ? ({ ...m, ...u } as Meeting) : m))}
           />
         );
       })()}
+
+      {/* Popup de la reunión en modo crear */}
+      {nuevoDia && (
+        <MeetingHub
+          key="nuevo"
+          meeting={MEETING_NUEVA}
+          crear={{ dia: nuevoDia, onCrear: crearReunion }}
+          users={users}
+          clientes={clientes}
+          onClose={() => setNuevoDia(null)}
+          onToggleStatus={() => {}}
+          onHubSaved={() => {}}
+          onActaChanged={() => {}}
+          onMeetingUpdated={() => {}}
+        />
+      )}
 
       {/* Modal eliminar */}
       {confirmDel && (
@@ -1379,6 +709,7 @@ export default function MeetingsPage() {
           </div>
         </div>
       )}
+      <AgendadorPanel onCambio={() => { fetch("/api/meetings").then(r => r.json()).then(setMeetings); }} />
     </div>
   );
 }
