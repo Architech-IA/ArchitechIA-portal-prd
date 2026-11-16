@@ -15,6 +15,42 @@ interface Metricas {
   top_procs?: { name: string; cpu: number; mem: number }[];
 }
 interface Contenedor { name: string; status: string }
+interface Muestra { ts: string; cpu: number; ram: number; disk: number; conn_est: number }
+type Rango = '24h' | '7d';
+
+// Promedia las muestras en cubos para no dibujar miles de puntos.
+function reducir(v: number[], max = 120) {
+  if (v.length <= max) return v;
+  const paso = v.length / max;
+  return Array.from({ length: max }, (_, i) => {
+    const t = v.slice(Math.floor(i * paso), Math.max(Math.floor(i * paso) + 1, Math.floor((i + 1) * paso)));
+    return t.reduce((a, b) => a + b, 0) / t.length;
+  });
+}
+
+function Historial({ nombre, datos, unidad, tono }: { nombre: string; datos: number[]; unidad: string; tono: string }) {
+  const W = 200, H = 44;
+  const v = reducir(datos);
+  const min = Math.min(...v), max = Math.max(...v);
+  const piso = Math.max(max - min, 10);
+  const lo = min - (piso - (max - min)) / 2;
+  const pts = v.map((y, i) => [(i / Math.max(v.length - 1, 1)) * W, H - 3 - ((y - lo) / piso) * (H - 6)]);
+  const linea = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const prom = datos.reduce((a, b) => a + b, 0) / datos.length;
+  const f = (n: number) => (unidad === '%' ? n.toFixed(0) : String(Math.round(n))) + unidad;
+  return (
+    <div style={{ ...caja, padding: '10px 12px' }}>
+      <div className="flex items-baseline justify-between mb-1.5">
+        <span style={{ fontSize: 11, color: '#7f8a9c', letterSpacing: '.04em', textTransform: 'uppercase' }}>{nombre}</span>
+        <span style={{ fontSize: 11, color: '#94a3b8' }}>prom <b style={{ color: '#e2e8f0', fontWeight: 600 }}>{f(prom)}</b> · pico <b style={{ color: tono, fontWeight: 600 }}>{f(max)}</b></span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 44, display: 'block' }} role="img" aria-label={`Historial de ${nombre}`}>
+        <path d={`${linea} L${W} ${H} L0 ${H} Z`} fill={tono} opacity={0.14} />
+        <path d={linea} fill="none" stroke={tono} strokeWidth={1.6} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
 
 const ACCESOS = [
   { href: '/hub/operations', label: 'Operaciones', Icono: Activity },
@@ -37,6 +73,8 @@ export default function PanelKvm2() {
   const [m, setM] = useState<Metricas | null>(null);
   const [cont, setCont] = useState<Contenedor[] | null>(null);
   const [error, setError] = useState(false);
+  const [hist, setHist] = useState<Muestra[]>([]);
+  const [rango, setRango] = useState<Rango>('24h');
 
   useEffect(() => {
     let vivo = true;
@@ -45,9 +83,15 @@ export default function PanelKvm2() {
       fetch('/api/vps/docker', { cache: 'no-store' }).then(r => r.json()).then(d => { if (vivo && !d.error) setCont(d.docker ?? []); }).catch(() => {});
     };
     cargar();
+    const cargarHist = () => fetch('/api/vps/history', { cache: 'no-store' }).then(r => r.json()).then(d => { if (vivo && Array.isArray(d.snapshots)) setHist(d.snapshots); }).catch(() => {});
+    cargarHist();
     const t = setInterval(cargar, 30000);
-    return () => { vivo = false; clearInterval(t); };
+    const th = setInterval(cargarHist, 300000);
+    return () => { vivo = false; clearInterval(t); clearInterval(th); };
   }, []);
+
+  const desde = Date.now() - (rango === '24h' ? 24 : 168) * 3600 * 1000;
+  const ventana = hist.filter(h => new Date(h.ts).getTime() >= desde);
 
   const activos = cont ? cont.filter(c => /^up/i.test(c.status)).length : null;
   const alertas: string[] = [];
@@ -100,6 +144,24 @@ export default function PanelKvm2() {
           <b style={{ display: 'block', fontSize: 22, fontWeight: 600, lineHeight: 1.15, color: '#34d399' }}>{activos ?? '—'}</b>
           <div style={{ fontSize: 11, color: '#7f8a9c', marginTop: 8 }}>{cont && activos !== null ? `${cont.length - activos} detenidos` : ' '}</div>
         </div>
+      </div>
+
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-1.5">
+          <p className="text-[11px] text-[#7f8a9c]" style={{ letterSpacing: '.04em', textTransform: 'uppercase' }}>Historial</p>
+          <span className="flex-1" />
+          {(['24h', '7d'] as Rango[]).map(r => (
+            <button key={r} onClick={() => setRango(r)} className="px-2 py-0.5 text-[11px] rounded-md transition-colors" style={rango === r ? { background: 'rgba(249,115,22,0.18)', color: '#ff9a5c', border: '1px solid rgba(249,115,22,0.35)' } : { color: '#94a3b8', border: '1px solid rgba(255,255,255,0.08)' }}>{r === '24h' ? '24 h' : '7 d'}</button>
+          ))}
+        </div>
+        {ventana.length > 1 ? (
+          <div className="grid gap-2.5" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))' }}>
+            <Historial nombre="CPU" datos={ventana.map(h => h.cpu)} unidad="%" tono="#f97316" />
+            <Historial nombre="RAM" datos={ventana.map(h => h.ram)} unidad="%" tono="#38bdf8" />
+            <Historial nombre="Disco" datos={ventana.map(h => h.disk)} unidad="%" tono="#a78bfa" />
+            <Historial nombre="Conexiones TCP" datos={ventana.map(h => h.conn_est)} unidad="" tono="#34d399" />
+          </div>
+        ) : <p className="text-[12px] text-[#7f8a9c]" style={caja}><span className="block px-2.5 py-3">Sin historial disponible todavía.</span></p>}
       </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
