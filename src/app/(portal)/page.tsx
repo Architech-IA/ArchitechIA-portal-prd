@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PersonalDashboard from '@/components/PersonalDashboard';
+import PanelKvm2 from '@/components/PanelKvm2';
 import { SkeletonKPI, SkeletonCard } from '@/components/SkeletonCard';
 
 interface DashboardData {
@@ -96,7 +97,7 @@ export default function Home() {
   const [chartTab, setChartTab] = useState<'ingresos' | 'leads' | 'proyectos'>('ingresos');
   const [showSettings, setShowSettings] = useState(false);
 
-  const defaultWidgets = { kpis: true, jornada: true, meta: true, embudo: true, alertas: true, fuentes: true, actividad: true };
+  const defaultWidgets = { kpis: true, jornada: true, meta: true, embudo: true, alertas: true, fuentes: true, actividad: true, kvm2: true };
   const [widgets, setWidgets] = useState(defaultWidgets);
 
   useEffect(() => {
@@ -171,9 +172,6 @@ export default function Home() {
             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
               {greeting}, <span className="gradient-text">{firstName}</span>
             </h1>
-            <p className="text-sm text-[#7f8a9c] mt-1.5">
-              {now.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
           </div>
           <div className="flex items-center gap-2 mt-1">
             {alertas > 0 && (
@@ -212,6 +210,7 @@ export default function Home() {
               { key: 'alertas',   label: 'Alertas Inteligentes' },
               { key: 'fuentes',   label: 'Fuentes de Leads' },
               { key: 'actividad', label: 'Actividad Reciente' },
+              { key: 'kvm2',      label: 'Servidor KVM2' },
             ] as { key: keyof typeof widgets; label: string }[]).map(({ key, label }) => (
               <button
                 key={key}
@@ -231,6 +230,8 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {widgets.kvm2 !== false && <PanelKvm2 />}
 
       {/* KPIs principales */}
       {widgets.kpis && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

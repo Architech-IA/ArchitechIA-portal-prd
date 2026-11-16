@@ -49,6 +49,18 @@ function NotifIcon({ tipo }: { tipo: string }) {
   );
 }
 
+// Fecha y hora de Colombia (UTC-5) con el formato 16/11/2026 - 16:34 (UTC-5), sin depender de la zona del navegador.
+function formatoColombia(d: Date) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d).map(x => [x.type, x.value]));
+  return `${p.day}/${p.month}/${p.year} - ${p.hour}:${p.minute} (UTC-5)`;
+}
+function RelojColombia() {
+  const [txt, setTxt] = useState('');
+  useEffect(() => { const f = () => setTxt(formatoColombia(new Date())); f(); const t = setInterval(f, 15000); return () => clearInterval(t); }, []);
+  if (!txt) return null;
+  return <span className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg text-xs tabular-nums whitespace-nowrap" style={{ color: '#cbd5e1', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>{txt}</span>;
+}
+
 const glassBtn: React.CSSProperties = {
   width: '32px',
   height: '32px',
@@ -174,6 +186,8 @@ export default function TopBar({
           </>
         )}
       </div>
+
+      <RelojColombia />
 
       {/* Busqueda global */}
       <button

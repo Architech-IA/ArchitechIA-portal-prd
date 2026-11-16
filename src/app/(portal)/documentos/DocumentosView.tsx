@@ -109,14 +109,12 @@ export default function DocumentosView() {
 
   return (
     <div className="p-4 md:p-6 space-y-4 w-full max-w-[1400px]">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-[200px]">
-          {cliente ? <button onClick={() => setCliente(null)} className="flex items-center gap-1 text-[12px] text-indigo-300 mb-1"><ArrowLeft size={12} /> Todos los clientes</button> : null}
-          <h1 className="text-[20px] font-bold text-gray-100">{cliente ?? 'Documentos'}</h1>
-          <p className="text-[12px] text-[#7f8a9c]">{cliente ? `${(docs ?? []).filter(d => d.clienteNombre === cliente).length} documentos` : 'Todo lo enviado, firmado y archivado'}</p>
-        </div>
-        <button onClick={() => setSubiendo({ cliente: cliente ?? undefined })} className={`${btn} font-semibold`} style={{ background: 'rgba(99,102,241,0.75)' }}><Upload size={13} /> Subir documento</button>
-      </div>
+      {cliente && (
+        <div>
+          <button onClick={() => setCliente(null)} className="flex items-center gap-1 text-[12px] text-indigo-300 mb-1"><ArrowLeft size={12} /> Todos los clientes</button>
+          <h1 className="text-[20px] font-bold text-gray-100">{cliente}</h1>
+          <p className="text-[12px] text-[#7f8a9c]">{(docs ?? []).filter(d => d.clienteNombre === cliente).length} documentos</p>
+        </div>)}
 
       <div className="flex flex-wrap items-center gap-2">
         {!cliente && (
@@ -134,6 +132,7 @@ export default function DocumentosView() {
           <button onClick={() => setModo('iconos')} title="Iconos" className="px-2.5 py-1.5" style={{ background: modo === 'iconos' ? 'rgba(99,102,241,0.75)' : 'transparent', color: '#e5e7eb' }}><LayoutGrid size={14} /></button>
           <button onClick={() => setModo('lista')} title="Lista" className="px-2.5 py-1.5" style={{ background: modo === 'lista' ? 'rgba(99,102,241,0.75)' : 'transparent', color: '#e5e7eb' }}><List size={14} /></button>
         </div>}
+        <button onClick={() => setSubiendo({ cliente: cliente ?? undefined })} title="Subir documento" aria-label="Subir documento" className="flex items-center justify-center px-2.5 py-1.5 rounded-lg text-white" style={{ background: 'rgba(99,102,241,0.75)' }}><Upload size={15} /></button>
       </div>
 
       {error && <p className="text-[12px] text-red-300">{error}</p>}
