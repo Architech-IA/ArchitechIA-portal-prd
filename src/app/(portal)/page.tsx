@@ -281,7 +281,7 @@ export default function Home() {
               { label: 'En Progreso', value: data.backlogStats.enProgreso, color: 'text-orange-400' },
               { label: 'Completados', value: data.backlogStats.completados, color: 'text-green-400' },
             ].map(k => (
-              <div key={k.label} className="bg-gray-800 rounded-lg p-3 text-center">
+              <div key={k.label} className="bg-white/[0.05] border border-white/[0.08] rounded-[10px] p-3 text-center">
                 <p className="text-xs text-[#7f8a9c]">{k.label}</p>
                 <p className={`text-xl font-bold ${k.color}`}>{k.value}</p>
               </div>
@@ -311,7 +311,7 @@ export default function Home() {
               <div>
                 <p className="text-xs text-[#7f8a9c] mb-2">Leads por contactar</p>
                 {data.myDay.leadsContactar.map(l => (
-                  <a key={l.id} href={`/leads`} className="flex items-center justify-between px-3 py-2 bg-gray-800 rounded-lg mb-1 hover:bg-gray-700 transition-colors text-xs">
+                  <a key={l.id} href={`/leads`} className="flex items-center justify-between px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-[10px] mb-1.5 hover:bg-white/[0.09] transition-colors text-xs">
                     <span className="text-white truncate">{l.companyName}</span>
                     <span className="text-[#7f8a9c] ml-2">{Math.floor((Date.now() - new Date(l.updatedAt).getTime()) / 86400000)}d</span>
                   </a>
@@ -322,7 +322,7 @@ export default function Home() {
               <div>
                 <p className="text-xs text-[#7f8a9c] mb-2">Propuestas en seguimiento</p>
                 {data.myDay.propuestasPendientes.map(p => (
-                  <a key={p.id} href={`/proposals/${p.id}`} className="flex items-center justify-between px-3 py-2 bg-gray-800 rounded-lg mb-1 hover:bg-gray-700 transition-colors text-xs">
+                  <a key={p.id} href={`/proposals/${p.id}`} className="flex items-center justify-between px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-[10px] mb-1.5 hover:bg-white/[0.09] transition-colors text-xs">
                     <span className="text-white truncate">{p.title}</span>
                     <span className={`ml-2 ${p.status === 'DRAFT' ? 'text-gray-400' : p.status === 'SENT' ? 'text-orange-400' : 'text-yellow-400'}`}>
                       ${p.amount.toLocaleString()}
@@ -340,7 +340,7 @@ export default function Home() {
                   Leads estancados (+7 días)
                 </p>
                 {data.staleLeads!.slice(0, 5).map(l => (
-                  <a key={l.id} href={`/leads`} className="flex items-center justify-between px-3 py-2 bg-red-900/10 border border-red-900/20 rounded-lg mb-1 hover:bg-red-900/20 transition-colors text-xs">
+                  <a key={l.id} href={`/leads`} className="flex items-center justify-between px-3 py-2 bg-red-900/10 border border-red-900/20 rounded-[10px] mb-1.5 hover:bg-red-900/20 transition-colors text-xs">
                     <span className="text-white truncate">{l.companyName}</span>
                     <span className="text-red-400 ml-2">{Math.floor((Date.now() - new Date(l.updatedAt).getTime()) / 86400000)}d</span>
                   </a>
@@ -374,7 +374,7 @@ export default function Home() {
               {new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
             </p>
           </div>
-          <div className="relative h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div className="relative h-2 bg-white/[0.06] rounded-full overflow-hidden">
             <div
               className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
               style={{
@@ -420,7 +420,7 @@ export default function Home() {
                     </div>
                   </div>
                   {/* Funnel bar centered */}
-                  <div className="relative h-3 bg-gray-800/50 rounded-full overflow-hidden">
+                  <div className="relative h-3 bg-white/[0.06] rounded-full overflow-hidden">
                     <div
                       className={`absolute left-0 top-0 h-full rounded-full ${colors[i]} transition-all duration-700 ease-out`}
                       style={{ width: `${funnelWidth}%` }}
@@ -587,7 +587,7 @@ export default function Home() {
                       <span className="text-gray-300">{item.source}</span>
                       <span className="text-orange-400">{item._count} ({pct}%)</span>
                     </div>
-                    <div className="w-full bg-gray-800 rounded-full h-1.5">
+                    <div className="w-full bg-white/[0.06] rounded-full h-1.5">
                       <div className="bg-orange-500 h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
@@ -612,7 +612,7 @@ export default function Home() {
                       <span className="text-sm text-gray-400">{translateStatus(item.status)}</span>
                       <span className="font-semibold text-orange-400">{item._count}</span>
                     </div>
-                    <div className="w-full bg-gray-800 rounded-full h-1">
+                    <div className="w-full bg-white/[0.06] rounded-full h-1">
                       <div className="bg-orange-500 h-1 rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
@@ -637,7 +637,7 @@ export default function Home() {
                       <span className="text-sm text-gray-400">{translateStatus(item.status)}</span>
                       <span className="font-semibold text-orange-400">{item._count}</span>
                     </div>
-                    <div className="w-full bg-gray-800 rounded-full h-1">
+                    <div className="w-full bg-white/[0.06] rounded-full h-1">
                       <div className="bg-orange-500 h-1 rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
