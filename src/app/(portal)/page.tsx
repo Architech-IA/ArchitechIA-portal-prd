@@ -231,8 +231,6 @@ export default function Home() {
         </div>
       )}
 
-      {widgets.kvm2 !== false && <PanelKvm2 />}
-
       {/* KPIs principales */}
       {widgets.kpis && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -269,6 +267,9 @@ export default function Home() {
           </a>
         ))}
       </div>}
+
+      {/* Servidor KVM2 (debajo de las tarjetas de métricas) */}
+      {widgets.kvm2 !== false && <PanelKvm2 />}
 
       {/* Backlog + Sprint */}
       {widgets.jornada && data?.backlogStats && (

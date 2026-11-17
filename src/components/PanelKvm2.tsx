@@ -39,7 +39,7 @@ function Historial({ nombre, datos, unidad, tono }: { nombre: string; datos: num
   const prom = datos.reduce((a, b) => a + b, 0) / datos.length;
   const f = (n: number) => (unidad === '%' ? n.toFixed(0) : String(Math.round(n))) + unidad;
   return (
-    <div style={{ ...caja, padding: '10px 12px' }}>
+    <div className="kvm-h" style={{ ...caja, padding: '10px 12px' }}>
       <div className="flex items-baseline justify-between mb-1.5">
         <span style={{ fontSize: 11, color: '#7f8a9c', letterSpacing: '.04em', textTransform: 'uppercase' }}>{nombre}</span>
         <span style={{ fontSize: 11, color: '#94a3b8' }}>prom <b style={{ color: '#e2e8f0', fontWeight: 600 }}>{f(prom)}</b> · pico <b style={{ color: tono, fontWeight: 600 }}>{f(max)}</b></span>
@@ -62,6 +62,13 @@ const ACCESOS = [
 ];
 
 const caja: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10 };
+const ESTILO_HOVER = `
+.kvm-h{transition:background .18s,border-color .18s,transform .18s,box-shadow .18s}
+.kvm-h:hover{background:rgba(255,255,255,0.09)!important;border-color:rgba(249,115,22,0.45)!important;transform:translateY(-2px);box-shadow:0 6px 18px -6px rgba(249,115,22,0.35)}
+.kvm-fila{transition:background .15s}
+.kvm-fila:hover{background:rgba(255,255,255,0.07)}
+@media (prefers-reduced-motion:reduce){.kvm-h{transition:none}.kvm-h:hover{transform:none}}
+`;
 const color = (pct: number, aviso: number, critico: number) => (pct >= critico ? '#f87171' : pct >= aviso ? '#fbbf24' : '#34d399');
 
 function tiempoActivo(s: number) {
@@ -111,7 +118,7 @@ export default function PanelKvm2() {
   ] : [];
 
   const medidor = (nombre: string, pct: number, aviso: number, critico: number) => (
-    <div style={{ ...caja, padding: '10px 12px', textAlign: 'center' }}>
+    <div className="kvm-h" style={{ ...caja, padding: '10px 12px', textAlign: 'center' }}>
       <span style={{ fontSize: 11, color: '#7f8a9c', letterSpacing: '.04em', textTransform: 'uppercase' }}>{nombre}</span>
       <b style={{ display: 'block', fontSize: 22, fontWeight: 600, lineHeight: 1.15, color: color(pct, aviso, critico) }}>{Math.round(pct)}%</b>
       <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.08)', marginTop: 8, overflow: 'hidden' }}>
@@ -122,6 +129,7 @@ export default function PanelKvm2() {
 
   return (
     <div className="card p-5">
+      <style>{ESTILO_HOVER}</style>
       <div className="flex flex-wrap items-center gap-2.5 mb-4">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#f973161f', border: '1px solid #f9731633' }}>
           <Server size={14} style={{ color: '#f97316' }} />
@@ -139,7 +147,7 @@ export default function PanelKvm2() {
         {medidor('CPU', m?.cpu.percent ?? 0, 70, 85)}
         {medidor('RAM', m?.ram.percent ?? 0, 70, 85)}
         {medidor('Disco', m?.disk.percent ?? 0, 70, 80)}
-        <div style={{ ...caja, padding: '10px 12px', textAlign: 'center' }}>
+        <div className="kvm-h" style={{ ...caja, padding: '10px 12px', textAlign: 'center' }}>
           <span style={{ fontSize: 11, color: '#7f8a9c', letterSpacing: '.04em', textTransform: 'uppercase' }}>Contenedores</span>
           <b style={{ display: 'block', fontSize: 22, fontWeight: 600, lineHeight: 1.15, color: '#34d399' }}>{activos ?? '—'}</b>
           <div style={{ fontSize: 11, color: '#7f8a9c', marginTop: 8 }}>{cont && activos !== null ? `${cont.length - activos} detenidos` : ' '}</div>
@@ -169,7 +177,7 @@ export default function PanelKvm2() {
           <p className="text-[11px] text-[#7f8a9c] mb-1.5" style={{ letterSpacing: '.04em', textTransform: 'uppercase' }}>Accesos rápidos</p>
           <div className="grid grid-cols-2 gap-1.5">
             {ACCESOS.map(({ href, label, Icono }) => (
-              <Link key={href} href={href} className="flex items-center gap-2 px-2.5 py-2 text-[12px] text-gray-100 hover:bg-white/[0.09] transition-colors" style={caja}>
+              <Link key={href} href={href} className="kvm-h flex items-center gap-2 px-2.5 py-2 text-[12px] text-gray-100" style={caja}>
                 <Icono size={15} style={{ color: '#ff7a2f', flexShrink: 0 }} /><span className="truncate">{label}</span>
               </Link>
             ))}
@@ -179,7 +187,7 @@ export default function PanelKvm2() {
           <p className="text-[11px] text-[#7f8a9c] mb-1.5" style={{ letterSpacing: '.04em', textTransform: 'uppercase' }}>Vistas rápidas</p>
           <div style={caja}>
             {m ? filas.map(([k, v], i) => (
-              <div key={k} className="flex items-center justify-between gap-3 px-2.5 py-1.5 text-[12px]" style={i ? { borderTop: '1px solid rgba(255,255,255,0.06)' } : undefined}>
+              <div key={k} className="kvm-fila flex items-center justify-between gap-3 px-2.5 py-1.5 text-[12px]" style={i ? { borderTop: '1px solid rgba(255,255,255,0.06)' } : undefined}>
                 <span className="text-[#94a3b8]">{k}</span><span className="text-gray-100 text-right truncate">{v}</span>
               </div>
             )) : <p className="px-2.5 py-3 text-[12px] text-[#7f8a9c]">{error ? 'No se pudieron leer las métricas.' : 'Cargando…'}</p>}
