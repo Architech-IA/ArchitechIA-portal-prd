@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PersonalDashboard from '@/components/PersonalDashboard';
 import PanelKvm2 from '@/components/PanelKvm2';
+import KpiDetalle, { type KpiInfo, type KpiClave } from '@/components/KpiDetalle';
 import { SkeletonKPI, SkeletonCard } from '@/components/SkeletonCard';
 
 interface DashboardData {
@@ -96,6 +97,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [chartTab, setChartTab] = useState<'ingresos' | 'leads' | 'proyectos'>('ingresos');
   const [showSettings, setShowSettings] = useState(false);
+  const [kpiAbierto, setKpiAbierto] = useState<KpiInfo | null>(null);
+  const [minis, setMinis] = useState<Record<string, number[]> | null>(null);
+  const cerrarKpi = useCallback(() => setKpiAbierto(null), []);
+  useEffect(() => {
+    fetch('/api/dashboard/serie?kpi=resumen', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) setMinis(d); }).catch(() => {});
+  }, []);
 
   const defaultWidgets = { kpis: true, jornada: true, meta: true, embudo: true, alertas: true, fuentes: true, actividad: true, kvm2: true };
   const [widgets, setWidgets] = useState(defaultWidgets);
@@ -234,20 +241,21 @@ export default function Home() {
       {/* KPIs principales */}
       {widgets.kpis && <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Leads',     value: data?.counts.leads ?? 0,        sub: `$${(data?.totalEstimatedValue ?? 0).toLocaleString()} en pipeline`, color: '#3B82F6', link: '/leads',     icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', spark: [3,5,4,6,5,7, data?.counts.leads ?? 6] },
-          { label: 'Propuestas',      value: data?.counts.proposals ?? 0,    sub: 'En seguimiento activo',                                              color: '#8B5CF6', link: '/proposals', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',  spark: [2,3,2,4,3,4, data?.counts.proposals ?? 3] },
-          { label: 'Tasa Conversión', value: `${data?.conversionRate ?? 0}%`, sub: `${data?.leadsGanados ?? 0} leads ganados`,                         color: '#22C55E', link: '/leads',     icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',                                                                                                        spark: [1,3,2,4,3,5, data?.conversionRate ?? 4] },
-          { label: 'Proyectos',       value: data?.counts.projects ?? 0,     sub: 'En desarrollo y completados',                                        color: '#FF5A00', link: '/projects',  icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z',                                                          spark: [4,6,5,7,6,8, data?.counts.projects ?? 6] },
+          { label: 'Total Leads',     value: data?.counts.leads ?? 0,        sub: `$${(data?.totalEstimatedValue ?? 0).toLocaleString()} en pipeline`, color: '#3B82F6', link: '/leads',     icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', clave: 'leads', spark: minis?.leads ?? [] },
+          { label: 'Propuestas',      value: data?.counts.proposals ?? 0,    sub: 'En seguimiento activo',                                              color: '#8B5CF6', link: '/proposals', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',  clave: 'proposals', spark: minis?.proposals ?? [] },
+          { label: 'Tasa Conversión', value: `${data?.conversionRate ?? 0}%`, sub: `${data?.leadsGanados ?? 0} leads ganados`,                         color: '#22C55E', link: '/leads',     icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',                                                                                                        clave: 'conversion', spark: minis?.conversion ?? [] },
+          { label: 'Proyectos',       value: data?.counts.projects ?? 0,     sub: 'En desarrollo y completados',                                        color: '#FF5A00', link: '/oficina',  icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z',                                                          clave: 'projects', spark: minis?.projects ?? [] },
         ].map((k) => (
-          <a key={k.label} href={k.link}
+          <div key={k.label}
             className="group relative rounded-2xl p-4 border border-white/[0.06] overflow-hidden transition-all duration-200"
             style={{ background: 'var(--bg-card)' }}
           >
+            <a href={k.link} aria-label={k.label} className="absolute inset-0 z-0 rounded-2xl" />
             <div
               className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"
               style={{ background: `radial-gradient(circle at top left, ${k.color}18 0%, transparent 60%)` }}
             />
-            <div className="relative">
+            <div className="relative pointer-events-none">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border"
                   style={{ background: `${k.color}18`, borderColor: `${k.color}33` }}>
@@ -255,7 +263,12 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={k.icon} />
                   </svg>
                 </div>
-                <Sparkline data={k.spark} color={k.color} />
+                <button type="button" title="Ver detalle" aria-label={`Ver detalle de ${k.label}`}
+                  onClick={() => setKpiAbierto({ clave: k.clave as KpiClave, label: k.label, color: k.color, link: k.link, valor: String(k.value), icon: k.icon })}
+                  className="pointer-events-auto relative z-10 rounded-lg p-1 -m-1 cursor-pointer transition-all duration-200 hover:bg-white/10 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40"
+                  style={{ minWidth: 80, minHeight: 28 }}>
+                  <Sparkline data={k.spark} color={k.color} />
+                </button>
               </div>
               <p className="text-xl md:text-2xl font-bold text-white tracking-tight tabular-nums">{k.value}</p>
               <p className="text-[11px] text-[#7f8a9c] mt-0.5">{k.label}</p>
@@ -264,9 +277,11 @@ export default function Home() {
                 <ArrowUpRight size={9} className="flex-shrink-0" />
               </div>
             </div>
-          </a>
+          </div>
         ))}
       </div>}
+
+      {kpiAbierto && <KpiDetalle kpi={kpiAbierto} onClose={cerrarKpi} />}
 
       {/* Servidor KVM2 (debajo de las tarjetas de métricas) */}
       {widgets.kvm2 !== false && <PanelKvm2 />}
