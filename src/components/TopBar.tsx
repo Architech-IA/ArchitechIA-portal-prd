@@ -49,10 +49,10 @@ function NotifIcon({ tipo }: { tipo: string }) {
   );
 }
 
-// Fecha y hora de Colombia (UTC-5) con el formato 16/11/2026 - 16:34 (UTC-5), sin depender de la zona del navegador.
+// Fecha y hora de Colombia (UTC-5) con el formato 16/11/2026 - 16:34 (24 h), sin depender de la zona del navegador.
 function formatoColombia(d: Date) {
   const p = Object.fromEntries(new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d).map(x => [x.type, x.value]));
-  return `${p.day}/${p.month}/${p.year} - ${p.hour}:${p.minute} (UTC-5)`;
+  return `${p.day}/${p.month}/${p.year} - ${p.hour}:${p.minute}`;
 }
 function RelojColombia() {
   const [txt, setTxt] = useState('');
