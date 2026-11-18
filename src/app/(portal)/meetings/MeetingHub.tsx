@@ -794,7 +794,7 @@ export default function MeetingHub({ meeting, crear, users, clientes, onClose, o
         {/* Pie */}
         <div className="px-6 py-3 flex items-center justify-between gap-3" style={{ background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           {esNuevo ? (
-            <span className={`text-[11px] ${errorCrear ? 'text-red-400' : 'text-[#7f8a9c]'}`}>{errorCrear || 'Obligatorios: título, tipo y fecha'}</span>
+            <span className={`text-[11px] ${errorCrear ? 'text-red-400' : 'text-[#7f8a9c]'}`}>{errorCrear}</span>
           ) : (
             <span className={`text-[11px] ${errorDatos || saveState === 'error' ? 'text-red-400' : saveState === 'saving' ? 'text-orange-400' : 'text-[#7f8a9c]'}`}>{estadoGuardado}</span>
           )}
