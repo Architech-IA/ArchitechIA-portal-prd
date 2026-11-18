@@ -2147,8 +2147,8 @@ function Dashboard({ data, cpuHist, ramHist, rxHist, txHist, diskHist, swapHist,
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 const VPS_LIST = [
-  { key: 'vps1' as const, label: 'KVM 2', ip: '177.7.46.87',  location: 'Hostinger - Principal',  specs: '8 vCPU - 16 GB RAM - 100 GB NVMe', color: ORANGE },
-  { key: 'vps2' as const, label: 'KVM 1', ip: '2.25.201.131', location: 'Hostinger - Secundaria', specs: '4 vCPU - 8 GB RAM - 100 GB NVMe',  color: '#60a5fa' },
+  { key: 'vps1' as const, label: 'KVM 2', ip: '177.7.46.87',  location: 'Hostinger - Reserva',  specs: '2 vCPU - 8 GB RAM - 100 GB NVMe', color: ORANGE },
+  { key: 'vps2' as const, label: 'KVM 4', ip: '2.24.86.72', location: 'Hostinger - Principal', specs: '4 vCPU - 16 GB RAM - 200 GB NVMe',  color: '#60a5fa' },
 ];
 
 type DockerContainer = {
@@ -2435,6 +2435,7 @@ function ServerMiniCard({ vps, metrics, metricsLoading, docker, onSelect }: {
   onSelect: () => void;
 }) {
   const upCount = docker.filter(c => c.status.startsWith('Up')).length;
+  const sinResp = !metricsLoading && !metrics;
   return (
     <div onClick={onSelect} role="button" tabIndex={0}
       style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '20px', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -2444,7 +2445,7 @@ function ServerMiniCard({ vps, metrics, metricsLoading, docker, onSelect }: {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399' }} />
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: sinResp ? '#fbbf24' : '#34d399', boxShadow: sinResp ? '0 0 6px #fbbf24' : '0 0 6px #34d399' }} />
             <span style={{ fontSize: '16px', fontWeight: 800, color: '#f1f5f9' }}>{vps.label}</span>
           </div>
           <span style={{ fontSize: '11px', color: vps.color, fontFamily: 'monospace', fontWeight: 600 }}>{vps.ip}</span>
@@ -2482,6 +2483,8 @@ function ServerMiniCard({ vps, metrics, metricsLoading, docker, onSelect }: {
           })}
         </div>
       )}
+
+      {sinResp && <div style={{ fontSize: '12px', color: '#fbbf24', padding: '10px 12px', borderRadius: '8px', background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.2)' }}>Sin respuesta del servidor. Puede estar limitado o apagado; se reintenta cada 30 s.</div>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '16px', color: vps.color, fontSize: '11px', fontWeight: 600 }}>
         Ver dashboard completo
@@ -2725,7 +2728,7 @@ function OverviewAgentsGrid({ agents1, agents2 }: { agents1: AgentDef[]; agents2
   const EXCLUDE = new Set(['metrics_agent.py', 'base_agent.py']);
   const all: AgentWithServer[] = [
     ...agents1.filter(a => !EXCLUDE.has(a.file)).map(a => ({ ...a, server: 'KVM2', serverColor: ORANGE })),
-    ...agents2.filter(a => !EXCLUDE.has(a.file)).map(a => ({ ...a, server: 'KVM1', serverColor: '#60a5fa' })),
+    ...agents2.filter(a => !EXCLUDE.has(a.file)).map(a => ({ ...a, server: 'KVM4', serverColor: '#60a5fa' })),
   ];
   const [selected, setSelected] = useState<AgentWithServer | null>(null);
   if (all.length === 0) return null;
@@ -2774,10 +2777,10 @@ function RightPanel({ m1, m2, events }: {
     if (m1.disk > 80)  alerts.push({ server: 'KVM2', msg: `Disco ${m1.disk.toFixed(0)}%`, color: '#fbbf24' });
   }
   if (m2) {
-    if (m2.cpu > 85)   alerts.push({ server: 'KVM1', msg: `CPU ${m2.cpu.toFixed(0)}%`, color: '#f87171' });
-    else if (m2.cpu > 70) alerts.push({ server: 'KVM1', msg: `CPU ${m2.cpu.toFixed(0)}%`, color: '#fbbf24' });
-    if (m2.ram > 85)   alerts.push({ server: 'KVM1', msg: `RAM ${m2.ram.toFixed(0)}%`, color: '#f87171' });
-    if (m2.disk > 80)  alerts.push({ server: 'KVM1', msg: `Disco ${m2.disk.toFixed(0)}%`, color: '#fbbf24' });
+    if (m2.cpu > 85)   alerts.push({ server: 'KVM4', msg: `CPU ${m2.cpu.toFixed(0)}%`, color: '#f87171' });
+    else if (m2.cpu > 70) alerts.push({ server: 'KVM4', msg: `CPU ${m2.cpu.toFixed(0)}%`, color: '#fbbf24' });
+    if (m2.ram > 85)   alerts.push({ server: 'KVM4', msg: `RAM ${m2.ram.toFixed(0)}%`, color: '#f87171' });
+    if (m2.disk > 80)  alerts.push({ server: 'KVM4', msg: `Disco ${m2.disk.toFixed(0)}%`, color: '#fbbf24' });
   }
 
   return (
@@ -2786,8 +2789,8 @@ function RightPanel({ m1, m2, events }: {
       <div style={{ marginBottom: '24px' }}>
         <p style={{ margin: '0 0 12px', fontSize: '11px', fontWeight: 700, color: '#7f8a9c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Estado Servidores</p>
         {([
+          { label: 'KVM4', ip: '2.24.86.72', color: '#60a5fa', m: m2 },
           { label: 'KVM2', ip: '177.7.46.87', color: ORANGE, m: m1 },
-          { label: 'KVM1', ip: '2.25.201.131', color: '#60a5fa', m: m2 },
         ] as { label: string; ip: string; color: string; m: { cpu: number; ram: number; disk: number } | null }[]).map(s => (
           <div key={s.label} style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: s.m ? '9px' : 0 }}>
@@ -2918,8 +2921,8 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
             addEvent(`KVM2 online · CPU ${nm.cpu.toFixed(0)}% · RAM ${nm.ram.toFixed(0)}%`, 'info');
           }
           prevM1.current = nm;
-        }
-      }).catch(() => {});
+        } else { setM1(null); setMl1(false); }
+      }).catch(() => { setM1(null); setMl1(false); });
 
     fetch('/api/vps2/stats', { cache: 'no-store' })
       .then(r => r.json())
@@ -2929,17 +2932,17 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
           setM2(nm); setMl2(false);
           const prev = prevM2.current;
           if (prev) {
-            if (nm.cpu > 85 && prev.cpu <= 85) addEvent('KVM1: CPU supera 85%', 'crit');
-            else if (nm.cpu > 70 && prev.cpu <= 70) addEvent('KVM1: CPU supera 70%', 'warn');
-            if (nm.cpu <= 70 && prev.cpu > 70) addEvent('KVM1: CPU volvió a normal', 'info');
-            if (nm.ram > 85 && prev.ram <= 85) addEvent('KVM1: RAM supera 85%', 'crit');
-            if (nm.disk > 80 && prev.disk <= 80) addEvent('KVM1: Disco supera 80%', 'warn');
+            if (nm.cpu > 85 && prev.cpu <= 85) addEvent('KVM4: CPU supera 85%', 'crit');
+            else if (nm.cpu > 70 && prev.cpu <= 70) addEvent('KVM4: CPU supera 70%', 'warn');
+            if (nm.cpu <= 70 && prev.cpu > 70) addEvent('KVM4: CPU volvió a normal', 'info');
+            if (nm.ram > 85 && prev.ram <= 85) addEvent('KVM4: RAM supera 85%', 'crit');
+            if (nm.disk > 80 && prev.disk <= 80) addEvent('KVM4: Disco supera 80%', 'warn');
           } else {
-            addEvent(`KVM1 online · CPU ${nm.cpu.toFixed(0)}% · RAM ${nm.ram.toFixed(0)}%`, 'info');
+            addEvent(`KVM4 online · CPU ${nm.cpu.toFixed(0)}% · RAM ${nm.ram.toFixed(0)}%`, 'info');
           }
           prevM2.current = nm;
-        }
-      }).catch(() => {});
+        } else { setM2(null); setMl2(false); }
+      }).catch(() => { setM2(null); setMl2(false); });
   }, [addEvent]);
 
   useEffect(() => {
@@ -3015,8 +3018,8 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
             </button>
           ))}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '1px' }}>
+            {m2 && <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>KVM4 <span style={{ color: statusColor(m2.cpu), fontWeight: 700 }}>{m2.cpu.toFixed(0)}%</span> CPU</span>}
             {m1 && <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>KVM2 <span style={{ color: statusColor(m1.cpu), fontWeight: 700 }}>{m1.cpu.toFixed(0)}%</span> CPU</span>}
-            {m2 && <span style={{ fontSize: '11px', color: '#7f8a9c', fontVariantNumeric: 'tabular-nums' }}>KVM1 <span style={{ color: statusColor(m2.cpu), fontWeight: 700 }}>{m2.cpu.toFixed(0)}%</span> CPU</span>}
           </div>
         </div>
 
@@ -3027,8 +3030,8 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
           {activeTab === 'overview' && (
             <div>
               <div style={{ display: 'flex', gap: '14px', marginBottom: '20px' }}>
-                <ServerMiniCard vps={VPS_LIST[0]} metrics={m1} metricsLoading={ml1} docker={docker1} onSelect={() => onSelect('vps1')} />
                 <ServerMiniCard vps={VPS_LIST[1]} metrics={m2} metricsLoading={ml2} docker={docker2} onSelect={() => onSelect('vps2')} />
+                <ServerMiniCard vps={VPS_LIST[0]} metrics={m1} metricsLoading={ml1} docker={docker1} onSelect={() => onSelect('vps1')} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' }}>
@@ -3069,8 +3072,8 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 6px #60a5fa' }} />
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>KVM 1</span>
-                    <span style={{ fontSize: '11px', color: '#60a5fa', fontFamily: 'monospace' }}>2.25.201.131</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#f1f5f9' }}>KVM 4</span>
+                    <span style={{ fontSize: '11px', color: '#60a5fa', fontFamily: 'monospace' }}>2.24.86.72</span>
                   </div>
                   <AgentsPanel agents={agents2} />
                   <AgentSkillsPanel agentSkills={agentSkills2} />
@@ -3085,8 +3088,8 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
           {/* ── SERVICES ── */}
           {activeTab === 'services' && (
             <div>
+              <ServerServicePanel vpsLabel="KVM 4 · 2.24.86.72" containers={docker2} skills={skills2} agentSkills={agentSkills2} agents={agents2} loading={dockerLoading2} error={dockerError2} />
               <ServerServicePanel vpsLabel="KVM 2 · 177.7.46.87" containers={docker1} skills={skills1} agentSkills={agentSkills1} agents={agents1} loading={dockerLoading1} error={dockerError1} />
-              <ServerServicePanel vpsLabel="KVM 1 · 2.25.201.131" containers={docker2} skills={skills2} agentSkills={agentSkills2} agents={agents2} loading={dockerLoading2} error={dockerError2} />
             </div>
           )}
 
@@ -3126,7 +3129,7 @@ function VpsSelector({ onSelect }: { onSelect: (v: 'vps1' | 'vps2') => void }) {
 
 export default function OperationsPage() {
   const [selectedVps, setSelectedVps] = useState<'vps1' | 'vps2' | null>(null);
-  const [activeVps,  setActiveVps] = useState<'vps1' | 'vps2'>('vps1');
+  const [activeVps,  setActiveVps] = useState<'vps1' | 'vps2'>('vps2');
   const [data,       setData]      = useState<VpsMetrics | null>(null);
   const [error,      setError]     = useState<string | null>(null);
   const [loading,    setLoading]   = useState(true);
@@ -3193,7 +3196,7 @@ export default function OperationsPage() {
 
   useEffect(() => {
     // Antes solo corría una vez con [] — si se cambiaba de servidor (KVM2 ↔
-    // KVM1) el historial 1D/7D se quedaba mostrando siempre el del primero.
+    // KVM4) el historial 1D/7D se quedaba mostrando siempre el del primero.
     fetch(activeVps === 'vps1' ? '/api/vps/history' : '/api/vps2/history', { cache: 'no-store' })
       .then(r => r.json())
       .then(d => { if (Array.isArray(d.snapshots)) setHistSnapshots(d.snapshots); })
@@ -3280,8 +3283,8 @@ function PageHeader({ loading, lastFetch, nextIn, latencyMs, onRefresh, activeVp
 }) {
   const freshness = lastFetch ? Math.max(0, 30 - nextIn) : null;
   const VPS_TABS: { key: 'vps1' | 'vps2'; label: string; sub: string }[] = [
+    { key: 'vps2', label: 'KVM 4', sub: '2.24.86.72' },
     { key: 'vps1', label: 'KVM 2', sub: '177.7.46.87' },
-    { key: 'vps2', label: 'KVM 1', sub: '2.25.201.131' },
   ];
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>

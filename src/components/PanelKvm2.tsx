@@ -1,6 +1,6 @@
 'use client';
-// Panel del Dashboard: vista rápida del servidor KVM2 y accesos rápidos del portal.
-// Lee /api/vps/stats y /api/vps/docker (los mismos que usa Hub › Operations); no ejecuta nada en el servidor.
+// Paneles del Dashboard: vista rápida de los DOS servidores. KVM4 (principal, /api/vps2/*) y KVM2 (reserva, /api/vps/*).
+// Leen los mismos endpoints que Hub › Operations; no ejecutan nada en el servidor.
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Server, Activity, Boxes, FileText, Briefcase, ClipboardList, Mail } from 'lucide-react';
@@ -76,7 +76,7 @@ function tiempoActivo(s: number) {
   return d > 0 ? `${d} d ${h} h` : `${h} h ${Math.floor((s % 3600) / 60)} min`;
 }
 
-export default function PanelKvm2() {
+function PanelServidor({ nombre, ip, api, compacto = false }: { nombre: string; ip: string; api: string; compacto?: boolean }) {
   const [m, setM] = useState<Metricas | null>(null);
   const [cont, setCont] = useState<Contenedor[] | null>(null);
   const [error, setError] = useState(false);
@@ -86,16 +86,16 @@ export default function PanelKvm2() {
   useEffect(() => {
     let vivo = true;
     const cargar = () => {
-      fetch('/api/vps/stats', { cache: 'no-store' }).then(r => r.json()).then(d => { if (!vivo) return; if (d.error || !d.cpu) setError(true); else { setM(d); setError(false); } }).catch(() => { if (vivo) setError(true); });
-      fetch('/api/vps/docker', { cache: 'no-store' }).then(r => r.json()).then(d => { if (vivo && !d.error) setCont(d.docker ?? []); }).catch(() => {});
+      fetch(`${api}/stats`, { cache: 'no-store' }).then(r => r.json()).then(d => { if (!vivo) return; if (d.error || !d.cpu) { setError(true); setM(null); } else { setM(d); setError(false); } }).catch(() => { if (vivo) { setError(true); setM(null); } });
+      fetch(`${api}/docker`, { cache: 'no-store' }).then(r => r.json()).then(d => { if (vivo && !d.error) setCont(d.docker ?? []); }).catch(() => {});
     };
     cargar();
-    const cargarHist = () => fetch('/api/vps/history', { cache: 'no-store' }).then(r => r.json()).then(d => { if (vivo && Array.isArray(d.snapshots)) setHist(d.snapshots); }).catch(() => {});
+    const cargarHist = () => compacto ? undefined : fetch(`${api}/history`, { cache: 'no-store' }).then(r => r.json()).then(d => { if (vivo && Array.isArray(d.snapshots)) setHist(d.snapshots); }).catch(() => {});
     cargarHist();
     const t = setInterval(cargar, 30000);
     const th = setInterval(cargarHist, 300000);
     return () => { vivo = false; clearInterval(t); clearInterval(th); };
-  }, []);
+  }, [api, compacto]);
 
   const desde = Date.now() - (rango === '24h' ? 24 : 168) * 3600 * 1000;
   const ventana = hist.filter(h => new Date(h.ts).getTime() >= desde);
@@ -134,11 +134,11 @@ export default function PanelKvm2() {
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#f973161f', border: '1px solid #f9731633' }}>
           <Server size={14} style={{ color: '#f97316' }} />
         </div>
-        <h3 className="text-sm font-semibold text-white leading-none">Servidor KVM2</h3>
-        <span className="text-[11px] text-[#7f8a9c]" style={{ fontFamily: 'var(--font-mono, monospace)' }}>177.7.46.87</span>
+        <h3 className="text-sm font-semibold text-white leading-none">{nombre}</h3>
+        <span className="text-[11px] text-[#7f8a9c]" style={{ fontFamily: 'var(--font-mono, monospace)' }}>{ip}</span>
         <span className="flex-1" />
         {error && !m
-          ? <span className="text-[11px]" style={{ color: '#f87171' }}>Sin conexión con el servidor</span>
+          ? <span className="text-[11px]" style={{ color: '#fbbf24' }}>● sin respuesta</span>
           : m ? <span className="text-[11px]" style={{ color: '#34d399' }}>● en línea</span>
             : <span className="text-[11px] text-[#7f8a9c]">Cargando…</span>}
       </div>
@@ -154,7 +154,7 @@ export default function PanelKvm2() {
         </div>
       </div>
 
-      <div className="mb-4">
+      {!compacto && <div className="mb-4">
         <div className="flex items-center gap-2 mb-1.5">
           <p className="text-[11px] text-[#7f8a9c]" style={{ letterSpacing: '.04em', textTransform: 'uppercase' }}>Historial</p>
           <span className="flex-1" />
@@ -170,10 +170,10 @@ export default function PanelKvm2() {
             <Historial nombre="Conexiones TCP" datos={ventana.map(h => h.conn_est)} unidad="" tono="#34d399" />
           </div>
         ) : <p className="text-[12px] text-[#7f8a9c]" style={caja}><span className="block px-2.5 py-3">Sin historial disponible todavía.</span></p>}
-      </div>
+      </div>}
 
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
-        <div>
+        {!compacto && <div>
           <p className="text-[11px] text-[#7f8a9c] mb-1.5" style={{ letterSpacing: '.04em', textTransform: 'uppercase' }}>Accesos rápidos</p>
           <div className="grid grid-cols-2 gap-1.5">
             {ACCESOS.map(({ href, label, Icono }) => (
@@ -182,7 +182,7 @@ export default function PanelKvm2() {
               </Link>
             ))}
           </div>
-        </div>
+        </div>}
         <div>
           <p className="text-[11px] text-[#7f8a9c] mb-1.5" style={{ letterSpacing: '.04em', textTransform: 'uppercase' }}>Vistas rápidas</p>
           <div style={caja}>
@@ -190,10 +190,20 @@ export default function PanelKvm2() {
               <div key={k} className="kvm-fila flex items-center justify-between gap-3 px-2.5 py-1.5 text-[12px]" style={i ? { borderTop: '1px solid rgba(255,255,255,0.06)' } : undefined}>
                 <span className="text-[#94a3b8]">{k}</span><span className="text-gray-100 text-right truncate">{v}</span>
               </div>
-            )) : <p className="px-2.5 py-3 text-[12px] text-[#7f8a9c]">{error ? 'No se pudieron leer las métricas.' : 'Cargando…'}</p>}
+            )) : <p className="px-2.5 py-3 text-[12px] text-[#7f8a9c]">{error ? 'Sin respuesta del servidor. Puede estar limitado o apagado; se reintenta cada 30 s.' : 'Cargando…'}</p>}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Dashboard: el servidor principal (KVM4) arriba y el de reserva (KVM2) debajo, en versión compacta.
+export default function PanelKvm2() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <PanelServidor nombre="Servidor KVM4" ip="2.24.86.72" api="/api/vps2" />
+      <PanelServidor nombre="Servidor KVM2 (reserva)" ip="177.7.46.87" api="/api/vps" compacto />
     </div>
   );
 }
