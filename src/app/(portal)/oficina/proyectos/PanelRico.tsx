@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Printer, Save, Loader2, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import PanelIADoc from './PanelIADoc'
-import { RichTextField, RichToolbar } from '../../solutions/pilots/[id]/EditorRico'
+import { RichTextField } from '../../solutions/pilots/[id]/EditorRico'
 import { sanitizarHtml } from '../../solutions/pilots/[id]/sanitizar'
 
 // El mismo editor, la misma barra y la misma hoja del PRD, para los documentos de las fases.
@@ -77,7 +77,7 @@ hr{border:0;border-top:1px solid #cbd5e1;margin:1.4em 0}a{color:#2563eb;text-dec
 table{border-collapse:collapse;width:100%;margin:.9em 0}th,td{border:1px solid #cbd5e1;padding:6px 10px;vertical-align:top;text-align:left}th{background:#f1f5f9;font-weight:700}`
 
 /** Imprime solo el documento (no todo el portal) para guardarlo como PDF con el formato que se ve. */
-function imprimir(titulo: string, html: string) {
+export function imprimir(titulo: string, html: string) {
   const w = window.open('', '_blank')
   if (!w) return
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(titulo)}</title><style>body{font-family:'Segoe UI',Calibri,Arial,sans-serif;color:#1f2937;line-height:1.7;max-width:820px;margin:32px auto;padding:0 24px}${CSS_HOJA}</style></head><body>${sanitizarHtml(html)}</body></html>`)
@@ -85,13 +85,15 @@ function imprimir(titulo: string, html: string) {
   setTimeout(() => w.print(), 300)
 }
 
-export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, soloLectura, puedeEditar, sucio, guardando, onGuardar, titulo, leyenda }: {
+export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, soloLectura, puedeEditar, sucio, guardando, onGuardar, titulo, leyenda, pedirIa }: {
   proyectoId: string; fase: string; clave: string; valor: string; onCambio: (html: string) => void; soloLectura: boolean; puedeEditar: boolean; sucio: boolean; guardando: boolean
-  onGuardar: () => void; titulo: string; leyenda?: string
+  onGuardar: () => void; titulo: string; leyenda?: string; pedirIa?: number
 }) {
   const hoja = useRef<HTMLDivElement>(null)
   const [marcas, setMarcas] = useState<{ i: number; titulo: string; nivel: number; top: number }[]>([])
   const [ia, setIa] = useState<{ tipo: 'seccion' | 'documento'; i?: number; titulo: string; n?: number } | null>(null)
+  // La cabecera del editor pide abrir el Agente Documentador sobre todo el documento (cada pedido sube el contador).
+  useEffect(() => { if (pedirIa) setIa({ tipo: 'documento', titulo }) }, [pedirIa]) // eslint-disable-line react-hooks/exhaustive-deps
   const editable = () => hoja.current?.querySelector('.doc-rico') as HTMLElement | null
 
   // los destellos de IA se colocan junto a cada título de sección (## y ###) y siguen al texto mientras se edita
@@ -166,31 +168,7 @@ export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, so
 .doc-rico hr{border:0;border-top:1px solid #cbd5e1;margin:1.4em 0}.doc-rico a{color:#2563eb;text-decoration:underline}
 .doc-rico table{border-collapse:collapse;width:100%;margin:.9em 0}.doc-rico th,.doc-rico td{border:1px solid #cbd5e1;padding:6px 10px;vertical-align:top;text-align:left}.doc-rico th{background:#f1f5f9;font-weight:700}`}</style>
       <div className="rounded-2xl p-4 space-y-4 mx-auto max-w-[1180px]" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 8px 40px rgba(0,0,0,0.35)' }}>
-        <div className="flex items-center justify-between gap-2 flex-wrap print:hidden">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className={`text-[11px] flex items-center gap-1 ${sucio ? 'text-orange-400' : 'text-gray-600'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${sucio ? 'bg-orange-400' : 'bg-gray-600'}`} />
-              {sucio ? 'Cambios sin guardar' : 'Guardado'}
-            </span>
-            {leyenda && <span className="text-[11px] text-amber-300">{leyenda}</span>}
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {!soloLectura && <RichToolbar />}
-            <button type="button" onClick={() => imprimir(titulo, valor)} title="Imprimir / Exportar a PDF" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-xs font-medium transition-colors">
-              <Printer size={12} /> Imprimir / PDF
-            </button>
-            {puedeEditar && (
-              <>
-                <button type="button" onClick={() => setIa({ tipo: 'documento', titulo })} title="Trabajar el documento completo con el Agente Documentador: generar con preguntas o mejorarlo" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-cyan-300 text-xs font-medium transition-colors">
-                  <Sparkles size={12} /> Agente Documentador
-                </button>
-                <button type="button" onClick={onGuardar} disabled={!sucio || guardando} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:bg-cyan-800 disabled:opacity-60 text-white text-xs font-semibold transition-colors">
-                  {guardando ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                  {guardando ? 'Guardando...' : 'Guardar cambios'}
-                </button>
-              </>)}
-          </div>
-        </div>
+        {leyenda && <p className="text-[11px] text-amber-300 print:hidden">{leyenda}</p>}
         <div ref={hoja} className="relative bg-white rounded-sm shadow-2xl mx-auto max-w-[840px]" style={{ fontFamily: 'var(--font-archivo)' }}>
           {puedeEditar && !soloLectura && marcas.map(m => (
             <button key={m.i} type="button" onClick={() => setIa({ tipo: 'seccion', i: m.i, titulo: m.titulo, n: m.i + 1 })} title={`Trabajar «${m.titulo}» con el Agente Documentador`} aria-label={`Trabajar «${m.titulo}» con el Agente Documentador`}

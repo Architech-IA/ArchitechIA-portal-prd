@@ -1,8 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Send, X, Save, History, Sparkles, Download, Loader2, Check, RotateCcw, ChevronDown, ExternalLink, ArrowLeft } from 'lucide-react'
-import PanelRico, { aHtml } from './PanelRico'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePageTitleOverride } from '@/lib/pageTitleContext'
+import { Send, X, Save, History, Sparkles, Download, Loader2, Check, RotateCcw, ExternalLink, Printer } from 'lucide-react'
+import PanelRico, { aHtml, imprimir } from './PanelRico'
+import { RichToolbar } from '../../solutions/pilots/[id]/EditorRico'
 import { api, post, put, hace } from './api'
 import { TIPOS, CANALES } from '@/lib/documentos/tipos'
 
@@ -64,6 +66,16 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
     if (sucio && !window.confirm('Hay cambios sin guardar. ¿Cerrar y descartarlos?')) return
     onCerrar()
   }
+  // En la vista de página, la barra superior muestra una flecha de volver que hace lo mismo que «Volver al proyecto».
+  const { setBack } = usePageTitleOverride()
+  const cerrarRef = useRef(cerrar)
+  cerrarRef.current = cerrar
+  const [pedirIa, setPedirIa] = useState(0) // orden de abrir el Agente Documentador (la atiende PanelRico)
+  useEffect(() => {
+    if (!pagina) return
+    setBack(() => cerrarRef.current())
+    return () => setBack(null)
+  }, [pagina, setBack])
 
 
   async function decidir(accion: 'aceptar' | 'rechazar') {
@@ -120,18 +132,23 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
           {doc && <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }}>{doc.existe ? `Versión ${doc.version}` : 'Sin guardar'}</span>}
           {sucio && <span className="text-[10px] text-amber-300 flex-shrink-0">Cambios sin guardar</span>}
           <span className="flex-1" />
+          {editable && !(verProp && !!doc?.propuesta) && <RichToolbar />}
+          <span className="flex-1" />
+          {editable && !(verProp && !!doc?.propuesta) && <button onClick={() => void guardar()} disabled={!sucio || guardando} aria-label="Guardar cambios" title={guardando ? 'Guardando…' : 'Guardar cambios'} className={`${btn} text-white`} style={{ background: 'rgba(8,145,178,0.85)' }}>{guardando ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}</button>}
           {editable && doc?.existe && doc.contenido.trim() && <button onClick={() => { if (sucio) { setError('Guarda los cambios antes de marcarla como enviada: se registra la última versión guardada.'); return } setEnvio(true) }} title="Congela una copia en Documentos como enviada al cliente" className={`${btn} text-white`} style={{ background: 'rgba(16,185,129,0.65)' }}><Send size={11} /> Marcar como enviada</button>}
-          <button onClick={() => void abrirVersiones()} className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><History size={11} /> Versiones</button>
+          <button onClick={() => void abrirVersiones()} aria-label="Historial de versiones" title="Versiones" className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><History size={13} /></button>
           <div className="relative">
-            <button onClick={() => setMenuDesc(o => !o)} className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><Download size={11} /> Descargar como <ChevronDown size={10} /></button>
+            <button onClick={() => setMenuDesc(o => !o)} aria-label="Descargar como" aria-haspopup="menu" aria-expanded={menuDesc} title="Descargar como" className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><Download size={13} /></button>
             {menuDesc && (
               <div className="absolute right-0 top-full mt-1.5 z-30 w-44 rounded-xl overflow-hidden" style={{ background: 'rgba(15,23,42,0.98)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                 {[['docx', 'Word (.docx)'], ['pdf', 'PDF (.pdf)'], ['html', 'HTML (.html)'], ['md', 'Markdown (.md)']].map(([f, t]) => (
                   <button key={f} onClick={() => descargar(f)} className="w-full text-left px-3 py-2 text-[12px] text-gray-100 hover:bg-white/5 border-b border-white/5 last:border-b-0">{t}</button>))}
+                <button onClick={() => { setMenuDesc(false); imprimir(titulo, valorHtml) }} className="w-full text-left px-3 py-2 text-[12px] text-gray-100 hover:bg-white/5 flex items-center gap-2"><Printer size={12} /> Imprimir / PDF</button>
               </div>)}
           </div>
+          {editable && !(verProp && !!doc?.propuesta) && <button onClick={() => setPedirIa(n => n + 1)} title="Trabajar el documento completo con el Agente Documentador: generar con preguntas o mejorarlo" className={`${btn} text-cyan-300`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><Sparkles size={12} /> Agente</button>}
           {!pagina && <button onClick={abrirPestaña} title="Abrir el documento a pantalla completa dentro del proyecto" className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><ExternalLink size={11} /> Abrir completo</button>}
-          {pagina ? <button onClick={cerrar} className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><ArrowLeft size={11} /> Volver al proyecto</button> : <button onClick={cerrar} aria-label="Cerrar" title="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={14} /></button>}
+          {pagina ? null : <button onClick={cerrar} aria-label="Cerrar" title="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={14} /></button>}
         </div>
 
         {doc?.propuesta && (
@@ -163,7 +180,7 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
         {!doc && !error && <div className="flex-1 flex items-center justify-center text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>}
         {doc && (
           <div className="flex-1 min-h-0 flex">
-            <div className="flex-1 min-w-0 min-h-0 flex flex-col"><PanelRico proyectoId={proyectoId} fase={fase} clave={clave} valor={valorHtml} onCambio={setTexto} soloLectura={!editable || (verProp && !!doc.propuesta)} puedeEditar={editable && !(verProp && !!doc.propuesta)} sucio={sucio} guardando={guardando} onGuardar={() => void guardar()} titulo={titulo} leyenda={verProp && doc.propuesta ? 'Estás viendo la propuesta de la IA (solo lectura)' : undefined} /></div>
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col"><PanelRico proyectoId={proyectoId} fase={fase} clave={clave} valor={valorHtml} onCambio={setTexto} soloLectura={!editable || (verProp && !!doc.propuesta)} puedeEditar={editable && !(verProp && !!doc.propuesta)} sucio={sucio} guardando={guardando} onGuardar={() => void guardar()} pedirIa={pedirIa} titulo={titulo} leyenda={verProp && doc.propuesta ? 'Estás viendo la propuesta de la IA (solo lectura)' : undefined} /></div>
             {panelVer && (
               <div className="w-64 flex-shrink-0 border-l border-white/10 overflow-y-auto p-3 space-y-1.5">
                 <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c]">Historial de versiones</p>

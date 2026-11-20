@@ -52,7 +52,7 @@ const COLOR_TIPO: Record<string, string> = { KICKOFF: '#f59e0b', PLANIFICACION: 
 
 // Oficina Virtual > Proyectos. Proyecto = Solución. Cada proyecto tiene sesiones (conversaciones con
 // la IA) TODAS persistentes, con contexto vivo y exacto, memoria propia, adjuntos y automatizaciones.
-export default function ProyectosView({ initialProyectoId, initialArtefacto, abrirPlantillas, onAbrirProyecto, onVolverGaleria }: { initialProyectoId?: string | null; initialArtefacto?: string | null; abrirPlantillas?: boolean; onAbrirProyecto?: () => void; onVolverGaleria?: () => void }) {
+export default function ProyectosView({ initialProyectoId, initialArtefacto, abrirPlantillas, onAbrirProyecto, onVolverGaleria, onDocTopbar }: { initialProyectoId?: string | null; initialArtefacto?: string | null; abrirPlantillas?: boolean; onAbrirProyecto?: () => void; onVolverGaleria?: () => void; onDocTopbar?: (titulo: string | null) => void }) {
   const [lista, setLista] = useState<ProyectoLista[]>([])
   const [cargandoLista, setCargandoLista] = useState(true)
   const [filtro, setFiltro] = useState('')
@@ -281,6 +281,13 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
     { k: 'operacion', icono: LifeBuoy, txt: 'Operación' },
   ]
 
+  // Editando un documento, el proyecto y su fase pasan a la barra superior y la cabecera del proyecto se oculta.
+  const enDoc = !!docAbierto && vista.startsWith('doc:')
+  const faseDoc = enDoc ? fasesRes?.fases?.find(f => f.clave === docAbierto?.fase) : undefined
+  const nombreDoc = proyecto?.nombre ?? det?.proyecto.nombre ?? ''
+  const tituloDoc = enDoc && nombreDoc ? `${nombreDoc}${faseDoc ? ` · ${faseDoc.numero}. ${faseDoc.nombre}` : ''}` : null
+  useEffect(() => { onDocTopbar?.(tituloDoc); return () => onDocTopbar?.(null) }, [tituloDoc]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="px-hover flex h-full min-h-0 w-full">
       {editorPlantillas && <PlantillasFases inicial={plantillasIni ?? undefined} onCerrar={() => { setEditorPlantillas(false); setPlantillasIni(null) }} onCambio={refrescar} />}
@@ -347,8 +354,8 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
 
         {pid && (
           <>
-            {/* Cabecera + sesiones */}
-            <div className="flex-shrink-0 border-b border-white/5" style={{ background: 'rgba(255,255,255,0.02)' }}>
+            {/* Cabecera + sesiones (se oculta en el editor de documentos: allí la muestra la barra superior) */}
+            <div className={`flex-shrink-0 border-b border-white/5${enDoc ? ' hidden' : ''}`} style={{ background: 'rgba(255,255,255,0.02)' }}>
               <div className="flex items-center gap-2 px-4 h-[30px]">
                 <button onClick={volverAGaleria} title="Volver a todos los proyectos" aria-label="Volver a todos los proyectos" className="flex items-center justify-center w-5 h-5 rounded-md flex-shrink-0 text-[#9ca3af] hover:text-white transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <ArrowLeft size={11} /></button>

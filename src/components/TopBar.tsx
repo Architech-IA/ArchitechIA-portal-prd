@@ -1,5 +1,6 @@
 'use client';
 import { usePageActions } from '@/lib/pageActionsContext';
+import { usePageTitleOverride } from '@/lib/pageTitleContext';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -87,6 +88,7 @@ export default function TopBar({
 }) {
   const router = useRouter();
   const { actions: pageActions } = usePageActions();
+  const { onBack } = usePageTitleOverride();
   const pathname = usePathname();
   const { data: session } = useSession();
 
@@ -157,6 +159,19 @@ export default function TopBar({
       }}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
+        {title && onBack && (
+          <button
+            onClick={onBack}
+            aria-label="Volver al proyecto"
+            title="Volver al proyecto"
+            className="flex items-center justify-center flex-shrink-0 rounded-md transition-colors hover:text-white"
+            style={{ width: 24, height: 24, color: '#9ca3af', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
         {title && (
           titleHref ? (
             <button

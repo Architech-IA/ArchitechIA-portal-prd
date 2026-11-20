@@ -191,6 +191,7 @@ function OficinaPageInner() {
   }, [searchParams, areas])
   // El encabezado dice dónde estás ("Oficina Virtual · Backlog").
   const { setTitle } = usePageTitleOverride()
+  const [tituloDoc, setTituloDoc] = useState<string | null>(null) // proyecto y fase mientras se edita un documento
   // Pestaña del backlog (?view=backlog&tab=sprint…). Sprint, Épicas, Solution y Sala de Control se abren aquí dentro.
   const tabParam = searchParams.get('tab')
   const tabBacklog = (TABS_BACKLOG as readonly string[]).includes(tabParam ?? '') ? (tabParam as (typeof TABS_BACKLOG)[number]) : null
@@ -206,10 +207,11 @@ function OficinaPageInner() {
     : sideView === 'backlog' && tabBacklog ? `Backlog · ${ETIQUETA_TAB[tabBacklog]}`
     : sideView === 'solutions' && tabSol ? `Solutions · ${tabSol === 'pilots' && idSolucion ? 'Detalle' : ETIQUETA_SOL[tabSol]}`
     : ETIQUETA_VISTA[sideView]
+  const tituloBarra = sideView === 'proyectos' && tituloDoc ? tituloDoc : etiquetaVista ? `Oficina Virtual · ${etiquetaVista}` : null
   useEffect(() => {
-    setTitle(etiquetaVista ? `Oficina Virtual · ${etiquetaVista}` : null)
+    setTitle(tituloBarra)
     return () => setTitle(null)
-  }, [etiquetaVista, setTitle])
+  }, [tituloBarra, setTitle])
   const itemVista = (v: (typeof VISTAS)[number], Icono: ComponentType<{ size?: number; className?: string }>) => (
     <button key={v} onClick={() => irAVista(v)} aria-current={sideView === v ? 'page' : undefined}
       className="w-full flex items-center gap-2 px-3 py-1.5 transition-all text-left group hover:bg-white/5"
@@ -797,7 +799,7 @@ function OficinaPageInner() {
         ) : sideView === 'proyectos' ? (
           /* ── PROYECTOS VIEW ── sesiones persistentes por proyecto (= Solución) */
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ProyectosView initialProyectoId={searchParams.get("p")} initialArtefacto={searchParams.get("art")} abrirPlantillas={searchParams.get('plantillas') === '1'} onAbrirProyecto={() => setSidebarOpen(false)} onVolverGaleria={() => setSidebarOpen(true)} />
+            <ProyectosView onDocTopbar={setTituloDoc} initialProyectoId={searchParams.get("p")} initialArtefacto={searchParams.get("art")} abrirPlantillas={searchParams.get('plantillas') === '1'} onAbrirProyecto={() => setSidebarOpen(false)} onVolverGaleria={() => setSidebarOpen(true)} />
           </div>
 
         ) : sideView === 'solutions' ? (
