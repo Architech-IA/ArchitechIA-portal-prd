@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw, ChevronDown, ChevronRight, AlertTriangle, Check, GitPullRequest } from 'lucide-react'
 import { api, post, hace } from './api'
+import SeccionPruebas from './SeccionPruebas'
 
 // Catálogo de artefactos (MASD-0026-0001): cada documento del proyecto es una instancia de un TIPO con su ficha
 // (quién lo produce y aprueba, de qué deriva, dónde vive y cuándo queda obsoleto). Muestra el estado real de cada uno
@@ -160,6 +161,8 @@ export default function PanelCatalogo({ proyectoId }: { proyectoId: string }) {
             </ul>
           </section>)
       })}
+
+      <SeccionPruebas proyectoId={proyectoId} />
 
       {datos && visibles.length === 0 && <p className="text-[11px] text-[#7f8a9c] text-center py-4">Ningún artefacto coincide con este filtro.</p>}
     </div>
