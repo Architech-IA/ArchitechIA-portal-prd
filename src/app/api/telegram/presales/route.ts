@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { usuariosPermitidos } from '@/lib/documentador/nucleo';
+import { registrarEntradaTelegram } from '@/lib/gateway/cliente';
 import { transcribir } from '@/lib/documentador/servicio';
 import { clienteTelegram } from '@/lib/documentador/telegram';
 import { orquestar, AYUDA_PRESALES } from '@/lib/orquestador/servicio';
@@ -44,6 +45,7 @@ async function procesar(u: Record<string, any>) { // eslint-disable-line @typesc
   const userId = process.env.PRESALES_USER_ID || process.env.AGENDADOR_USER_ID;
   if (!userId) { await tg.enviar(chat, 'El asistente no está configurado (falta PRESALES_USER_ID).'); return; }
 
+  await registrarEntradaTelegram('presales', m);
   try {
     let texto = '';
     const audio = m.voice || m.audio;

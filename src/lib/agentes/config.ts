@@ -1,7 +1,7 @@
 // Control de agentes: pausar, bloquear acciones y reglas adicionales, con historial. La configuración se lee en cada
 // pedido (con una caché de unos segundos), así que un cambio desde el Directory rige sin desplegar.
 import { prisma } from '@/lib/prisma';
-import { AGENTES_FUNCIONALES, NOMBRE_AGENTE } from '@/lib/orquestador/registro';
+import { agentesFuncionales, nombreAgente } from '@/lib/orquestador/registroDatos';
 import { CONFIG_POR_DEFECTO, evaluar, bloqueReglas, resumenCambio, type ConfigAgente, type Veredicto } from './nucleo';
 
 const TTL_MS = 8_000;
@@ -23,7 +23,7 @@ export async function obtenerConfig(slug: string): Promise<ConfigAgente> {
 }
 
 export async function puedeActuar(slug: string, accion: string): Promise<Veredicto> {
-  return evaluar(NOMBRE_AGENTE[slug] || slug, await obtenerConfig(slug), accion);
+  return evaluar(await nombreAgente(slug), await obtenerConfig(slug), accion);
 }
 
 // Texto para sumar al final del prompt del agente (vacío si no hay reglas adicionales)
@@ -31,8 +31,8 @@ export async function reglasExtra(slug: string): Promise<string> {
   return bloqueReglas(await obtenerConfig(slug));
 }
 
-export function accionesDe(slug: string): string[] {
-  return (AGENTES_FUNCIONALES[slug]?.acciones ?? []).map(a => a.clave);
+export async function accionesDe(slug: string): Promise<string[]> {
+  return ((await agentesFuncionales())[slug]?.acciones ?? []).map(a => a.clave);
 }
 
 export async function guardarConfig(slug: string, nueva: ConfigAgente, porNombre: string, porId: string): Promise<string> {

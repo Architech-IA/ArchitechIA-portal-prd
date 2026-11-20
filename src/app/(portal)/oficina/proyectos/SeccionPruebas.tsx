@@ -32,9 +32,15 @@ export default function SeccionPruebas({ proyectoId }: { proyectoId: string }) {
   async function generar() {
     setGenerando(true); setError(null); setMensaje(null)
     try {
-      const r = await post<{ generadas: number; mensaje?: string }>(`/api/proyectos/${proyectoId}/pruebas-aceptacion/generar`, {})
-      setMensaje(r.generadas ? `${r.generadas} propuesta(s) nuevas para revisar.` : (r.mensaje ?? 'Nada que generar.')); await cargar()
-    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudieron generar') }
+      let total = 0; let aviso: string | undefined
+      for (let vuelta = 0; vuelta < 14; vuelta++) {
+        const r = await post<{ generadas: number; restantes?: number; mensaje?: string }>(`/api/proyectos/${proyectoId}/pruebas-aceptacion/generar`, {})
+        total += r.generadas; aviso = r.mensaje
+        setMensaje(`${total} propuesta(s) generadas…`)
+        if (!r.generadas || !r.restantes) break
+      }
+      setMensaje(total ? `${total} propuesta(s) nuevas para revisar.` : (aviso ?? 'Nada que generar.')); await cargar()
+    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudieron generar'); await cargar() }
     finally { setGenerando(false) }
   }
 
@@ -72,7 +78,7 @@ export default function SeccionPruebas({ proyectoId }: { proyectoId: string }) {
                   </button>
                   {ab && (
                     <div className="px-2.5 pb-2 space-y-1.5">
-                      <pre className="whitespace-pre-wrap break-words text-[10.5px] text-gray-300 font-sans">{p.escenarios}</pre>
+                      <pre className="whitespace-pre-wrap break-words text-[10.5px] text-gray-300 font-sans">{p.escenarios.split(/(\*\*[^*]+\*\*)/g).map((t, i) => /^\*\*[^*]+\*\*$/.test(t) ? <b key={i} className="text-gray-100">{t.slice(2, -2)}</b> : t)}</pre>
                       {p.estado === 'PROPUESTA' && (
                         <div className="flex gap-1.5">
                           <button onClick={() => void decidir(p, 'aprobar')} disabled={decidiendo === p.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10.5px] text-emerald-200 disabled:opacity-50" style={{ border: '1px solid rgba(52,211,153,0.4)' }}><Check size={11} />Aprobar</button>

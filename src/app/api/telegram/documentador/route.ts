@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { usuariosPermitidos, intencionRapida, actaATelegram } from '@/lib/documentador/nucleo';
+import { registrarEntradaTelegram } from '@/lib/gateway/cliente';
 import { clasificarIntencion, proponerActa, guardarPropuesta, descartarPropuesta, responderConsulta, transcribir } from '@/lib/documentador/servicio';
 import { enviar, escribiendo, responderBoton, quitarBotones, descargar } from '@/lib/documentador/telegram';
 
@@ -65,6 +66,7 @@ async function procesar(u: Record<string, any>) { // eslint-disable-line @typesc
     return;
   }
 
+  await registrarEntradaTelegram('documentador', m);
   try {
     const audio = m.voice || m.audio || (m.document?.mime_type?.startsWith('audio/') ? m.document : null);
     if (audio) {

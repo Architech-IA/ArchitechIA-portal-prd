@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { usuariosPermitidos } from '@/lib/documentador/nucleo';
+import { registrarEntradaTelegram } from '@/lib/gateway/cliente';
 import { transcribir } from '@/lib/documentador/servicio';
 import { clienteTelegram } from '@/lib/documentador/telegram';
 import { descartarPropuesta } from '@/lib/agendador/servicio';
@@ -73,6 +74,7 @@ async function procesar(u: Record<string, any>) { // eslint-disable-line @typesc
   }
   if (!userId) { await tg.enviar(chat, 'El backlog no está configurado (falta BACKLOG_USER_ID).'); return; }
 
+  await registrarEntradaTelegram('backlog-manager', m);
   try {
     let texto = '';
     const audio = m.voice || m.audio;

@@ -1,6 +1,7 @@
 // Cliente mínimo de la API de bots de Telegram. Cada agente tiene su propio bot (su propio token):
 // clienteTelegram('VARIABLE_DEL_TOKEN') devuelve las funciones atadas a ese bot.
 import { trocear } from './nucleo';
+import { AGENTE_DE_TOKEN, registrarSalidaTelegram } from '@/lib/gateway/cliente';
 
 export type Boton = { texto: string; dato: string };
 
@@ -15,6 +16,8 @@ export function clienteTelegram(variableToken: string) {
 
   // Texto plano (sin parse_mode, para que ningún carácter rompa el mensaje); los botones van en el último trozo.
   async function enviar(chatId: string | number, texto: string, botones?: Boton[][]): Promise<void> {
+    const agente = AGENTE_DE_TOKEN[variableToken];
+    if (agente) registrarSalidaTelegram(agente, chatId, texto);
     const partes = trocear(texto || '(sin contenido)');
     for (let i = 0; i < partes.length; i++) {
       const ultimo = i === partes.length - 1;

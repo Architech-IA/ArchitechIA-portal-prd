@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { usuariosPermitidos } from '@/lib/documentador/nucleo';
+import { registrarEntradaTelegram } from '@/lib/gateway/cliente';
 import { transcribir } from '@/lib/documentador/servicio';
 import { clienteTelegram } from '@/lib/documentador/telegram';
 import { proponer, aplicarPropuesta, descartarPropuesta, nuevaConversacion } from '@/lib/agendador/servicio';
@@ -72,6 +73,7 @@ async function procesar(u: Record<string, any>) { // eslint-disable-line @typesc
   }
   if (!userId) { await tg.enviar(chat, 'La agenda no está configurada (falta AGENDADOR_USER_ID).'); return; }
 
+  await registrarEntradaTelegram('booking-agent', m);
   try {
     let texto = '';
     const audio = m.voice || m.audio;

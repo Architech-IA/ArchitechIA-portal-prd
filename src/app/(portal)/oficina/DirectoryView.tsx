@@ -1,6 +1,7 @@
 'use client'
 import { useMemo, useState } from 'react'
 import DirectoryTarjetas from './DirectoryTarjetas'
+import DirectoryAgentes from './agentes/DirectoryAgentes'
 import ReactFlow, {
   Background, Controls, Node, Edge, NodeProps, Handle, Position,
   BackgroundVariant,
@@ -187,11 +188,11 @@ function buildGraph(areas: Area[]) {
 }
 
 export default function DirectoryView({ areas }: { areas: Area[] }) {
-  const [vista, setVista] = useState<'tarjetas' | 'organigrama'>('tarjetas')
+  const [vista, setVista] = useState<'tarjetas' | 'organigrama' | 'agentes'>('tarjetas')
   // La consulta de áreas puede traer una fila por agente: se dejan áreas únicas para el organigrama
   const unicas = useMemo(() => [...new Map(areas.map(a => [a.id, a])).values()], [areas])
   const { nodes, edges } = useMemo(() => buildGraph(unicas), [unicas])
-  const pestana = (v: 'tarjetas' | 'organigrama', texto: string) => (
+  const pestana = (v: 'tarjetas' | 'organigrama' | 'agentes', texto: string) => (
     <button onClick={() => setVista(v)} aria-pressed={vista === v}
       className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-colors ${vista === v ? 'bg-purple-500/25 text-purple-200' : 'text-gray-400 hover:text-gray-200'}`}>{texto}</button>
   )
@@ -201,9 +202,9 @@ export default function DirectoryView({ areas }: { areas: Area[] }) {
       <div className="px-5 py-2 border-b border-white/5 flex-shrink-0 flex items-center justify-between gap-3"
            style={{ background: 'rgba(167,139,250,0.05)' }}>
         <div className="text-[11px] font-black tracking-widest uppercase text-purple-400">Directory</div>
-        <div className="flex gap-1">{pestana('tarjetas', 'Tarjetas')}{pestana('organigrama', 'Organigrama')}</div>
+        <div className="flex gap-1">{pestana('tarjetas', 'Tarjetas')}{pestana('organigrama', 'Organigrama')}{pestana('agentes', 'Identidad y gateway')}</div>
       </div>
-      {vista === 'tarjetas' ? <DirectoryTarjetas areas={unicas} /> : (
+      {vista === 'agentes' ? <DirectoryAgentes /> : vista === 'tarjetas' ? <DirectoryTarjetas areas={unicas} /> : (
       <div style={{ flex: 1, background: 'transparent' }}>
         <ReactFlow
           nodes={nodes}
