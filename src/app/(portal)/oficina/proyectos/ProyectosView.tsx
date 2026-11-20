@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  ArrowLeft, Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal,
+  ArrowLeft, Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal, ListChecks,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseActividadVista, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -17,6 +17,7 @@ import PanelAuto from './PanelAuto'
 import PanelEjecucion from './PanelEjecucion'
 import VistaFase from './VistaFase'
 import PanelArtefactos from './PanelArtefactos'
+import PanelCatalogo from './PanelCatalogo'
 import DocumentoEditor from './DocumentoEditor'
 import GaleriaProyectos from './GaleriaProyectos'
 import PlantillasFases from './PlantillasFases'
@@ -34,7 +35,7 @@ const HubSolucion = dynamic(() => import('../../solutions/pilots/[id]/HubSolucio
   loading: () => <div className="flex justify-center py-16 text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>,
 })
 
-type Panel = 'artefactos' | 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion'
+type Panel = 'artefactos' | 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion' | 'catalogo'
 const PRINCIPALES: Panel[] = ['artefactos', 'contexto', 'propuestas']
 type FiltroNat = 'todas' | Naturaleza
 type Orden = 'actividad' | 'fase' | 'nombre'
@@ -269,6 +270,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
     { k: 'buscar', icono: Search, txt: 'Buscar' },
     { k: 'auto', icono: Radio, txt: 'Auto' },
     { k: 'ejecucion', icono: Rocket, txt: 'Ejecución' },
+    { k: 'catalogo', icono: ListChecks, txt: 'Catálogo' },
   ]
 
   return (
@@ -526,6 +528,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
             {panel === 'buscar' && <PanelBuscar proyectoId={pid} onAbrirSesion={id => setSid(id)} onAbrirPanel={p => setPanel(p)} />}
             {panel === 'auto' && <PanelAuto proyectoId={pid} onCambio={refrescar} onAbrirBitacora={() => bitacora && setSid(bitacora.id)} />}
             {panel === 'ejecucion' && <PanelEjecucion proyectoId={pid} />}
+            {panel === 'catalogo' && <PanelCatalogo proyectoId={pid} />}
           </div>
         </div>)}
     </div>
