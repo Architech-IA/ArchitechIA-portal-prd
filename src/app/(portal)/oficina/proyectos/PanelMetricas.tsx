@@ -15,6 +15,7 @@ interface Metricas {
   backlog: Record<string, number>
   propuestasDeCambio: Record<string, number>
   artefactos: { conContenido: number; desactualizados: number }
+  operacion?: { incidentes: { abiertos: number; cerrados: number; criticosAbiertos: number }; solicitudes: { abiertas: number; cerradas: number } }
   fases: Fase[]
   sugerencia: { nivel: string; motivos: string[] }
   sinDato: string[]
@@ -83,6 +84,9 @@ export default function PanelMetricas({ proyectoId }: { proyectoId: string }) {
 
           {Object.keys(m.propuestasDeCambio).length > 0 && (
             <p className="text-[11px] text-[#9aa6b8]">Propuestas de cambio: {Object.entries(m.propuestasDeCambio).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(' · ')}</p>)}
+
+          {m.operacion && (m.operacion.incidentes.abiertos + m.operacion.incidentes.cerrados + m.operacion.solicitudes.abiertas + m.operacion.solicitudes.cerradas) > 0 && (
+            <p className="text-[11px] text-[#9aa6b8]">Operación: <b className="text-gray-200">{m.operacion.incidentes.abiertos}</b> incidente(s) abiertos{m.operacion.incidentes.criticosAbiertos > 0 && <b className="text-red-300"> ({m.operacion.incidentes.criticosAbiertos} críticos o altos)</b>}, {m.operacion.incidentes.cerrados} cerrados · <b className="text-gray-200">{m.operacion.solicitudes.abiertas}</b> solicitud(es) de cambio abiertas, {m.operacion.solicitudes.cerradas} cerradas.</p>)}
 
           {m.fases.length > 0 && (
             <section aria-label="Tiempo por fase">

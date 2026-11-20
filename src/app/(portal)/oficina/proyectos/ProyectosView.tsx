@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import {
-  ArrowLeft, Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal, ListChecks, Gauge, Library, NotebookText,
+  ArrowLeft, Loader2, Search, Plus, Lock, FolderKanban, Layers, Brain, Check, Paperclip, Radio, Rocket, ChevronLeft, ChevronRight, X, MessageSquare, Sparkles, FileText, ChevronDown, SlidersHorizontal, ListChecks, Gauge, Library, NotebookText, LifeBuoy,
 } from 'lucide-react'
 import { ETIQUETA_TIPO, DESCRIPCION_TIPO, type TipoSesion } from '@/lib/proyectos/tipos'
 import { api, post, hace, ETIQUETA_BLOQUE, type Naturaleza, type FaseActividadVista, type FaseLista, type FasesRes, type ProyectoLista, type DetalleProyecto, type SesionFull, type SesionRes } from './api'
@@ -20,6 +20,7 @@ import PanelArtefactos from './PanelArtefactos'
 import PanelCatalogo from './PanelCatalogo'
 import PanelMetricas from './PanelMetricas'
 import PanelFuentes from './PanelFuentes'
+import PanelOperacion from './PanelOperacion'
 import PanelBiblioteca from './PanelBiblioteca'
 import DocumentoEditor from './DocumentoEditor'
 import GaleriaProyectos from './GaleriaProyectos'
@@ -38,7 +39,7 @@ const HubSolucion = dynamic(() => import('../../solutions/pilots/[id]/HubSolucio
   loading: () => <div className="flex justify-center py-16 text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>,
 })
 
-type Panel = 'artefactos' | 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion' | 'catalogo' | 'metricas' | 'biblioteca' | 'fuentes'
+type Panel = 'artefactos' | 'contexto' | 'propuestas' | 'memoria' | 'adjuntos' | 'buscar' | 'auto' | 'ejecucion' | 'catalogo' | 'metricas' | 'biblioteca' | 'fuentes' | 'operacion'
 const PRINCIPALES: Panel[] = ['artefactos', 'contexto', 'propuestas']
 type FiltroNat = 'todas' | Naturaleza
 type Orden = 'actividad' | 'fase' | 'nombre'
@@ -277,6 +278,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
     { k: 'metricas', icono: Gauge, txt: 'Métricas' },
     { k: 'biblioteca', icono: Library, txt: 'Biblioteca' },
     { k: 'fuentes', icono: NotebookText, txt: 'Fuentes' },
+    { k: 'operacion', icono: LifeBuoy, txt: 'Operación' },
   ]
 
   return (
@@ -538,6 +540,7 @@ export default function ProyectosView({ initialProyectoId, initialArtefacto, abr
             {panel === 'metricas' && <PanelMetricas proyectoId={pid} />}
             {panel === 'biblioteca' && <PanelBiblioteca proyectoId={pid} />}
             {panel === 'fuentes' && <PanelFuentes proyectoId={pid} />}
+            {panel === 'operacion' && <PanelOperacion proyectoId={pid} />}
           </div>
         </div>)}
     </div>
