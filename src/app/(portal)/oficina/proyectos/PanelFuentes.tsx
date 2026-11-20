@@ -47,7 +47,9 @@ function Preguntar({ proyectoId }: { proyectoId: string }) {
       {error && <p role="alert" className="text-[11px] text-red-300">{error}</p>}
       {r && (
         <div className="space-y-1.5">
-          <p className={`text-[11.5px] whitespace-pre-wrap ${r.sinRespaldo ? 'text-amber-200' : 'text-gray-200'}`}>{r.respuesta}</p>
+          <p className={`text-[11.5px] whitespace-pre-wrap ${r.sinRespaldo ? 'text-amber-200' : 'text-gray-200'}`}>
+            {r.respuesta.split(/(\*\*[^*]+\*\*)/g).map((t, i) => t.startsWith('**') && t.endsWith('**') && t.length > 4 ? <b key={i} className="text-gray-100">{t.slice(2, -2)}</b> : <span key={i}>{t}</span>)}
+          </p>
           {r.citas.length > 0 && <ul className="text-[10.5px] text-[#7f8a9c] space-y-0.5">{r.citas.map(c => <li key={c.n}>[{c.n}] {c.tipo} · {c.titulo}</li>)}</ul>}
         </div>)}
     </section>

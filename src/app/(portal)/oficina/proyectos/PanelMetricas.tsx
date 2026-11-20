@@ -29,6 +29,7 @@ const NIVEL: Record<string, { txt: string; color: string }> = {
   AUTONOMA: { txt: 'Autónoma', color: '#34d399' },
 }
 const fmt = (n: number) => new Intl.NumberFormat('es-CO').format(n)
+const humano = (clave: string) => { const t = clave.replace(/_/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1) }
 
 export default function PanelMetricas({ proyectoId }: { proyectoId: string }) {
   const [m, setM] = useState<Metricas | null>(null)
@@ -93,7 +94,7 @@ export default function PanelMetricas({ proyectoId }: { proyectoId: string }) {
               <h3 className="text-[10px] uppercase tracking-wider font-semibold text-[#7f8a9c] mb-1.5">Tiempo en cada fase</h3>
               <ul className="space-y-1 text-[11.5px]">
                 {m.fases.map((f, i) => (
-                  <li key={i} className="flex justify-between gap-2 text-gray-300"><span className="truncate">{f.fase}</span><span className="text-[#9aa6b8] tabular-nums flex-shrink-0">{f.dias != null ? `${f.dias} d` : 'en curso'}</span></li>))}
+                  <li key={i} className="flex justify-between gap-2 text-gray-300"><span className="truncate">{humano(f.fase)}{f.accion === 'COMPLETADO' ? ' · cierre del proyecto' : ''}</span><span className="text-[#9aa6b8] tabular-nums flex-shrink-0">{f.accion === 'COMPLETADO' ? '—' : f.dias != null ? `${f.dias} d` : 'en curso'}</span></li>))}
               </ul>
             </section>)}
         </>

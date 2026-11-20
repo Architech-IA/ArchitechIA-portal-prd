@@ -186,7 +186,7 @@ export default function PanelCatalogo({ proyectoId }: { proyectoId: string }) {
                           <div className="rounded-md px-2 py-1.5 space-y-1" style={{ background: 'rgba(0,0,0,0.2)' }}>
                             <p className="text-gray-300">{impacto[t.clave].resumen}</p>
                             {impacto[t.clave].dependientes.length > 0 && (
-                              <ul className="list-disc pl-4">{impacto[t.clave].dependientes.map(d => <li key={d.clave}>{d.nombre} <span className="text-[#6b7686]">(nivel {d.nivel}{d.existe ? `, ${d.estado.toLowerCase().replace('_', ' ')}` : ', aún sin contenido'}{d.desactualizado ? ', desactualizado' : ''})</span></li>)}</ul>)}
+                              <ul className="list-disc pl-4">{impacto[t.clave].dependientes.map(d => <li key={d.clave}>{d.nombre} <span className="text-[#6b7686]">(nivel {d.nivel}{d.existe ? `, ${d.estado.toLowerCase().replace(/_/g, ' ')}` : ', aún sin contenido'}{d.desactualizado ? ', desactualizado' : ''})</span></li>)}</ul>)}
                             {impacto[t.clave].requisitosCambiados.length > 0 && (
                               <div><p className="text-gray-400">Requisitos que cambiaron:</p>
                                 <ul className="list-disc pl-4">{impacto[t.clave].requisitosCambiados.map(r => <li key={r.id}><span className="text-amber-300">{r.motivo.toLowerCase()}</span> · {r.texto}</li>)}</ul></div>)}
