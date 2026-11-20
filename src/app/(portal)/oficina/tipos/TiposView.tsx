@@ -50,7 +50,7 @@ export default function TiposView() {
       <div className="flex items-center gap-3">
         <div>
           <h2 className="text-[15px] font-bold text-gray-100">Tipos de proyecto</h2>
-          <p className="text-[11px] text-[#7f8a9c] max-w-2xl">De cada tipo sale su naturaleza, comercial o interna, y con ella la plantilla de fases (12 fases la comercial, 8 la interna). Los tipos del sistema se renombran y reordenan, pero no se borran ni se desactivan.</p>
+          <p className="text-[11px] text-[#7f8a9c] max-w-2xl">De cada tipo sale su naturaleza, comercial o interna, y con ella la plantilla de fases (14 fases la comercial, 8 la interna). Los tipos del sistema se renombran y reordenan, pero no se borran ni se desactivan.</p>
         </div>
         <span className="flex-1" />
         <button onClick={() => void cargar()} className="flex items-center gap-1.5 text-[11px] text-[#9ca3af] hover:text-gray-100 px-2.5 py-1.5 rounded-lg border border-white/10"><RefreshCw size={12} className={cargando ? 'animate-spin' : ''} /> Actualizar</button>
@@ -61,7 +61,7 @@ export default function TiposView() {
         <label className="text-[11px] text-[#9ca3af]">Nombre del tipo nuevo
           <input value={nuevo.etiqueta} onChange={e => setNuevo({ ...nuevo, etiqueta: e.target.value })} maxLength={40} placeholder="Ej.: Consultoría" className={inputCls + ' block mt-1 w-64'} /></label>
         <label className="text-[11px] text-[#9ca3af]">Naturaleza
-          <select value={nuevo.naturaleza} onChange={e => setNuevo({ ...nuevo, naturaleza: e.target.value })} className={inputCls + ' block mt-1'}><option value="COMERCIAL">Comercial (plantilla de 12 fases)</option><option value="INTERNO">Interna (plantilla de 8 fases)</option></select></label>
+          <select value={nuevo.naturaleza} onChange={e => setNuevo({ ...nuevo, naturaleza: e.target.value })} className={inputCls + ' block mt-1'}><option value="COMERCIAL">Comercial (plantilla de 14 fases)</option><option value="INTERNO">Interna (plantilla de 8 fases)</option></select></label>
         <button type="submit" disabled={ocupado === 'nuevo' || nuevo.etiqueta.trim().length < 3} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium text-white disabled:opacity-40" style={{ background: '#6366f1' }}>
           {ocupado === 'nuevo' ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Crear tipo</button>
       </form>
