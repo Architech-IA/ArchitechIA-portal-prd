@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Plus, ChevronDown, ChevronRight, Sparkles, Check, X, Send, CalendarDays, Trash2 } from 'lucide-react'
+import { Loader2, Plus, ChevronDown, ChevronRight, Sparkles, Check, X, Send, Trash2 } from 'lucide-react'
 import { api, post, hace } from './api'
+import ReunionesProyecto from './ReunionesProyecto'
 
 // Fuentes y memoria del proyecto (MASD-0026-0002 y 0005): reuniones (grabadas o no), notas, actas, documentos, correos e
 // investigaciones. La fuente es evidencia: no se edita, se PROCESA. La IA extrae decisiones, acciones, preguntas, riesgos y
@@ -12,7 +13,6 @@ import { api, post, hace } from './api'
 interface Fuente { id: string; tipo: string; titulo: string; fecha: string | null; visibilidad: string; estado: string; resumen: string | null; creadoPor: string | null; createdAt: string; items: number; pendientes: number; meta: Record<string, string | null>; origen: string | null; purgada: boolean; vencida: boolean }
 interface Item { id: string; tipo: string; texto: string; cita: string | null; minuto: string | null; destinoArtefacto: string | null; responsable: string | null; estado: string; resultado: string | null }
 interface Detalle { fuente: Fuente & { contenido: string }; items: Item[] }
-interface Reunion { id: string; titulo: string; fecha: string | null; tipo: string | null; conContenido: boolean }
 interface Decision { origen: string; texto: string; cita: string | null; minuto: string | null; fuente: string | null; destino: string | null; por: string | null; fecha: string | null }
 interface Respuesta { respuesta: string; citas: { n: number; tipo: string; titulo: string; id: string }[]; sinRespaldo: boolean }
 
@@ -118,8 +118,6 @@ export default function PanelFuentes({ proyectoId }: { proyectoId: string }) {
   const [detalle, setDetalle] = useState<Detalle | null>(null)
   const [procesando, setProcesando] = useState<string | null>(null)
   const [decidiendo, setDecidiendo] = useState<string | null>(null)
-  const [reuniones, setReuniones] = useState<Reunion[] | null>(null)
-  const [trayendo, setTrayendo] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
     setError(null)
@@ -162,19 +160,6 @@ export default function PanelFuentes({ proyectoId }: { proyectoId: string }) {
     finally { setDecidiendo(null) }
   }
 
-  async function verReuniones() {
-    setError(null)
-    try { setReuniones((await api<{ reuniones: Reunion[] }>(`/api/proyectos/${proyectoId}/reuniones-disponibles`)).reuniones) }
-    catch (e) { setError(e instanceof Error ? e.message : 'No se pudieron leer las reuniones') }
-  }
-
-  async function traer(r: Reunion) {
-    setTrayendo(r.id); setError(null)
-    try { await post(`/api/proyectos/${proyectoId}/fuentes/desde-reunion`, { meetingId: r.id }); setReuniones(null); await cargar() }
-    catch (e) { setError(e instanceof Error ? e.message : 'No se pudo traer la reunión') }
-    finally { setTrayendo(null) }
-  }
-
   async function purgar(f: Fuente) {
     if (!window.confirm('Se borrará el texto de esta fuente (por ejemplo una transcripción que ya cumplió su plazo). Lo que se extrajo de ella se conserva. ¿Continuar?')) return
     setError(null)
@@ -194,22 +179,9 @@ export default function PanelFuentes({ proyectoId }: { proyectoId: string }) {
 
       <div className="flex flex-wrap gap-1.5">
         {!nueva && <button onClick={() => setNueva(true)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[11px] text-indigo-100 hover:bg-white/10" style={{ border: '1px solid rgba(99,102,241,0.45)' }}><Plus size={12} />Agregar fuente</button>}
-        <button onClick={() => void verReuniones()} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[11px] text-gray-200 hover:bg-white/10" style={borde}><CalendarDays size={12} />Traer una reunión del calendario</button>
       </div>
 
-      {reuniones && (
-        <div className="rounded-lg p-2 space-y-1" style={caja}>
-          <p className="text-[10.5px] text-[#9aa6b8]">Tus reuniones recientes. Se importan sus notas, el hub y las acciones como un acta.</p>
-          {reuniones.length === 0 && <p className="text-[11px] text-[#7f8a9c]">No hay reuniones disponibles.</p>}
-          <ul className="space-y-1 max-h-[220px] overflow-auto">
-            {reuniones.map(r => (
-              <li key={r.id} className="flex items-center justify-between gap-2 text-[11.5px]">
-                <span className="min-w-0 truncate text-gray-200">{r.titulo}<span className="text-[#7f8a9c]"> · {r.fecha ? hace(r.fecha) : ''}</span></span>
-                <button onClick={() => void traer(r)} disabled={!r.conContenido || trayendo === r.id} title={r.conContenido ? '' : 'Sin notas ni acciones registradas'} className="flex-shrink-0 px-2 py-0.5 rounded text-[10.5px] text-indigo-100 disabled:opacity-40" style={{ border: '1px solid rgba(99,102,241,0.45)' }}>{trayendo === r.id ? '…' : 'Traer'}</button>
-              </li>))}
-          </ul>
-          <button onClick={() => setReuniones(null)} className="text-[10.5px] text-[#7f8a9c] hover:text-gray-300">Cerrar</button>
-        </div>)}
+      <ReunionesProyecto proyectoId={proyectoId} onTraida={cargar} />
 
       {nueva && (
         <div className="rounded-lg p-3 space-y-2" style={caja}>

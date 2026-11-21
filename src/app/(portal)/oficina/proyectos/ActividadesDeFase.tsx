@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Bot, User, Sparkles, Play, MessageSquare, Check, Loader2, Undo2, Package } from 'lucide-react'
+import { Bot, User, Sparkles, Play, MessageSquare, Check, Loader2, Undo2, Package, CalendarDays } from 'lucide-react'
+import AsignarReunion from './AsignarReunion'
 import EntregablesDeFase from './EntregablesDeFase'
 import { post, type FaseVista, type FaseActividadVista, type SesionRes } from './api'
 
@@ -28,6 +29,7 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
   const [evidencia, setEvidencia] = useState('')
   const [ocupada, setOcupada] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reunionDe, setReunionDe] = useState<FaseActividadVista | null>(null)
 
   const items = fase.actividades.items
   if (!items.length) return <p className="text-[11px] text-[#7f8a9c]">Esta fase no define actividades.</p>
@@ -90,6 +92,9 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
                   ? <button onClick={() => onAbrirSesion?.(sesion.id)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-indigo-200" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}><MessageSquare size={11} /> Abrir la sesión</button>
                   : <button disabled={ocup} onClick={() => void iniciar(a)} title="Abre una sesión de IA que trabaja esta actividad; al cerrarla, la actividad queda hecha" className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-white disabled:opacity-50" style={{ background: 'rgba(99,102,241,0.85)' }}>
                     {ocup ? <Loader2 size={11} className="animate-spin" /> : <Play size={11} />} Iniciar con IA</button>)}
+                {abierta && editable && /reunion/i.test(a.entregable?.clave ?? '') && (
+                  <button disabled={ocup} onClick={() => setReunionDe(a)} title="Asigna una reunión del calendario (también pasada) o crea una nueva" className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg disabled:opacity-50" style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#fed7aa', fontWeight: 600 }}>
+                    <CalendarDays size={11} /> Asignar o crear reunión</button>)}
                 {abierta && cerrando !== a.clave && (
                   <button disabled={ocup} onClick={() => { setCerrando(a.clave); setEvidencia(''); setError(null) }} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg text-gray-200 disabled:opacity-50" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
                     <Check size={11} /> Marcar hecha</button>)}
@@ -110,6 +115,7 @@ export default function ActividadesDeFase({ fase, proyectoId, sesiones, onInvest
           </div>)
       })}
       {error && <p className="text-[11px] text-red-300">{error}</p>}
+      {reunionDe && <AsignarReunion proyectoId={proyectoId} faseClave={fase.clave} tituloSugerido={`${(reunionDe.entregable?.titulo ?? 'Reunión').replace(/ agendada$/i, '')} · ${fase.nombre}`.slice(0, 120)} onCerrar={() => setReunionDe(null)} onListo={async t => { await enviar(reunionDe, 'completar', `Reunión: ${t}`) }} />}
     </div>
   )
 }
