@@ -121,7 +121,7 @@ export default function AsignarReunion({ proyectoId, faseClave, tituloSugerido, 
                     <span className="mt-0.5 flex-shrink-0" style={{ width: 14, height: 14, borderRadius: 7, border: '1px solid ' + (sel ? '#fb923c' : 'rgba(255,255,255,0.25)'), background: sel ? '#fb923c' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{sel && <Check size={9} color="#fff" />}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[12px] text-gray-100 leading-snug">{r.titulo}</span>
-                      <span className="block text-[10px] text-[#7f8a9c]">{r.fecha ? `${fechaCorta(r.fecha)} · ${hace(r.fecha)}` : ''} <span style={{ marginLeft: 6, padding: '1px 7px', borderRadius: 6, fontWeight: 700, background: r.grupo === 'Sugerida' ? 'rgba(249,115,22,0.18)' : 'rgba(255,255,255,0.08)', color: r.grupo === 'Sugerida' ? '#fed7aa' : '#94a3b8' }}>{r.grupo}</span></span>
+                      <span className="block text-[10px] text-[#7f8a9c]">{r.fecha ? `${fechaCorta(r.fecha)} · ${hace(r.fecha)}` : ''}</span>
                     </span>
                   </button>)
               })}
