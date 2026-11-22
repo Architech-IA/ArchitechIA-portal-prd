@@ -7,6 +7,7 @@ import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import FaseSesiones from './FaseSesiones'
 import ActividadesDeFase from './ActividadesDeFase'
+import NotasDeFase from './NotasDeFase'
 import { post, hace, ETIQUETA_BLOQUE, type FasesRes, type FaseVista, type FaseActividadVista, type RecursoFase, type SesionRes } from './api'
 
 // Vista de UNA fase del proyecto (una pestaña por fase en Oficina > Proyectos): qué se busca, qué hay que hacer,
@@ -29,6 +30,10 @@ const ICONO: Record<string, typeof Folder> = {
 const artefactoDe = (href: string): TabKey | null => { const m = href.match(/^\/solutions\/pilots\/[^/?]+\?seccion=([\w-]+)/); return m && m[1] in TITULO_DE_TAB ? (m[1] as TabKey) : null }
 const externo = (href: string) => /^\/(leads|proposals|meetings)\b/.test(href)
 
+const ACCION_HISTORIAL: Record<string, string> = {
+  INICIO: 'Inició el motor de fases', AVANCE: 'Avanzó de fase', RETROCESO: 'Volvió a una fase anterior', SINCRONIZADO: 'Fase ajustada por el lead',
+  VENTA_CONFIRMADA: 'Venta confirmada: pasa a ejecución', VENTA_PERDIDA: 'Oportunidad perdida', COMPLETADO: 'Proyecto completado',
+}
 function Seccion({ titulo, derecha, children, llenar }: { titulo: string; derecha?: React.ReactNode; children: React.ReactNode; llenar?: boolean }) {
   return (
     <section className={`rounded-xl ${llenar ? 'h-full flex flex-col' : ''}`} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -263,6 +268,18 @@ export default function VistaFase({ onIniciarActividad, onNuevaGeneral, creandoG
               })}
             </div>
           </Seccion>}
+          {(data.historial ?? []).some(h => h.fase === fase.clave) && (
+            <Seccion titulo="Historial de esta fase">
+              <div className="space-y-1">
+                {(data.historial ?? []).filter(h => h.fase === fase.clave).map((h, i) => (
+                  <div key={i} className="text-[11px] text-[#9ca3af] rounded px-2.5 py-1.5" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <span className="text-gray-300">{ACCION_HISTORIAL[h.accion] ?? h.accion}</span> · {h.usuarioNombre ?? 'Sistema'} · {hace(h.createdAt)}{h.nota ? <> — <i>{h.nota}</i></> : null}
+                  </div>))}
+              </div>
+            </Seccion>)}
+          <Seccion titulo="Notas de la fase">
+            <NotasDeFase key={`${proyectoId}-${fase.clave}`} proyectoId={proyectoId} clave={fase.clave} esPreventa={fase.bloque === 'PREVENTA'} soloLectura={!!data.iniciado && fase.estado === 'PENDIENTE'} />
+          </Seccion>
         </div>
 
       </div>
