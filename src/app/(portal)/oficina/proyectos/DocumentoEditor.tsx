@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageTitleOverride } from '@/lib/pageTitleContext'
-import { Send, X, Save, History, Sparkles, Download, Loader2, Check, RotateCcw, ExternalLink, Printer, Settings } from 'lucide-react'
+import { Send, X, Save, History, Sparkles, Download, Loader2, Check, RotateCcw, ExternalLink, Printer, Settings, RefreshCw } from 'lucide-react'
 import ConfigPlantilla, { TIPOS_PLANTILLA } from './ConfigPlantilla'
 import PanelRico, { aHtml, imprimir } from './PanelRico'
 import { RichToolbar } from '../../solutions/pilots/[id]/EditorRico'
@@ -20,6 +20,7 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
   const base = `/api/proyectos/${proyectoId}/documentos/${fase}/${clave}`
   const [doc, setDoc] = useState<Doc | null>(null)
   const [verConfig, setVerConfig] = useState(false)
+  const [refrescando, setRefrescando] = useState(false)
   const [texto, setTexto] = useState('')
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
@@ -140,6 +141,7 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
           <span className="flex-1" />
           {editable && !(verProp && !!doc?.propuesta) && <button onClick={() => void guardar()} disabled={!sucio || guardando} aria-label="Guardar cambios" title={guardando ? 'Guardando…' : 'Guardar cambios'} className={`${btn} text-white`} style={{ background: 'rgba(8,145,178,0.85)' }}>{guardando ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}</button>}
           {editable && doc?.existe && doc.contenido.trim() && <button onClick={() => { if (sucio) { setError('Guarda los cambios antes de marcarla como enviada: se registra la última versión guardada.'); return } setEnvio(true) }} title="Congela una copia en Documentos como enviada al cliente" className={`${btn} text-white`} style={{ background: 'rgba(16,185,129,0.65)' }}><Send size={11} /> Marcar como enviada</button>}
+          <button onClick={async () => { if (sucio && !window.confirm('Hay cambios sin guardar. ¿Recargar el documento desde el servidor y descartarlos?')) return; setRefrescando(true); setVersiones(null); await cargar(); setRefrescando(false); setAviso('Documento recargado') }} disabled={refrescando} aria-label="Recargar el documento" title="Recargar el documento desde el servidor" className={`${btn} text-gray-200 disabled:opacity-50`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><RefreshCw size={13} className={refrescando ? 'animate-spin' : ''} /></button>
           <button onClick={() => void abrirVersiones()} aria-label="Historial de versiones" title="Versiones" className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><History size={13} /></button>
           <div className="relative">
             <button onClick={() => setMenuDesc(o => !o)} aria-label="Descargar como" aria-haspopup="menu" aria-expanded={menuDesc} title="Descargar como" className={`${btn} text-gray-200`} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}><Download size={13} /></button>
