@@ -85,9 +85,9 @@ export function imprimir(titulo: string, html: string) {
   setTimeout(() => w.print(), 300)
 }
 
-export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, soloLectura, puedeEditar, sucio, guardando, onGuardar, titulo, leyenda, pedirIa }: {
+export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, soloLectura, puedeEditar, sucio, guardando, onGuardar, titulo, leyenda, pedirIa, marca = true }: {
   proyectoId: string; fase: string; clave: string; valor: string; onCambio: (html: string) => void; soloLectura: boolean; puedeEditar: boolean; sucio: boolean; guardando: boolean
-  onGuardar: () => void; titulo: string; leyenda?: string; pedirIa?: number
+  onGuardar: () => void; titulo: string; leyenda?: string; pedirIa?: number; marca?: boolean
 }) {
   const hoja = useRef<HTMLDivElement>(null)
   const [marcas, setMarcas] = useState<{ i: number; titulo: string; nivel: number; top: number }[]>([])
@@ -159,23 +159,36 @@ export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, so
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-4">
       {ia && <PanelIADoc proyectoId={proyectoId} fase={fase} clave={clave} alcance={{ tipo: ia.tipo, titulo: ia.titulo, n: ia.n }} obtener={obtener} aHtml={m => sanitizarHtml(aHtml(m))} onAplicar={aplicar} onCerrar={() => setIa(null)} secciones={marcas.map(m => ({ i: m.i, titulo: m.titulo, nivel: m.nivel }))} onElegirSeccion={(i, t) => setIa({ tipo: 'seccion', i, titulo: t, n: i + 1 })} />}
-      <style>{`.doc-rico h1{font-size:28px;line-height:1.25;font-weight:800;margin:.3em 0 .5em;color:#111827}
-.doc-rico h2{font-size:21px;font-weight:700;margin:1.5em 0 .5em;padding-bottom:.3em;border-bottom:1px solid #e5e7eb;color:#111827}
-.doc-rico h3{font-size:17px;font-weight:700;margin:1.2em 0 .3em;color:#111827}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+.hoja-marca{font-family:'Poppins',var(--font-archivo),sans-serif}
+.doc-rico{color:#1a1a1a;font-family:'Poppins',var(--font-archivo),sans-serif}
+.doc-rico h1{font-size:28px;line-height:1.25;font-weight:700;margin:.3em 0 .6em;color:#1b2845}
+.doc-rico h2{font-size:19px;font-weight:700;margin:1.6em 0 .5em;color:#1b2845;text-transform:uppercase;letter-spacing:.01em}
+.doc-rico h3{font-size:15px;font-weight:700;margin:1.2em 0 .3em;color:#e84b1a;text-transform:uppercase}
 .doc-rico p{margin:.5em 0}.doc-rico ul{list-style:disc;padding-left:1.5rem;margin:.5em 0}.doc-rico ol{list-style:decimal;padding-left:1.5rem;margin:.5em 0}
-.doc-rico blockquote{border-left:3px solid #94a3b8;margin:.8em 0;padding:.1em 1em;color:#475569}
-.doc-rico code{background:#f1f5f9;border-radius:4px;padding:.1em .35em;font-size:.9em}
-.doc-rico hr{border:0;border-top:1px solid #cbd5e1;margin:1.4em 0}.doc-rico a{color:#2563eb;text-decoration:underline}
-.doc-rico table{border-collapse:collapse;width:100%;margin:.9em 0}.doc-rico th,.doc-rico td{border:1px solid #cbd5e1;padding:6px 10px;vertical-align:top;text-align:left}.doc-rico th{background:#f1f5f9;font-weight:700}`}</style>
+.doc-rico li::marker{color:#e84b1a}
+.doc-rico blockquote{border-left:3px solid #e84b1a;margin:.8em 0;padding:.1em 1em;color:#475569}
+.doc-rico code{background:#fdefe8;border-radius:4px;padding:.1em .35em;font-size:.9em}
+.doc-rico hr{border:0;border-top:1px solid #f4c7b3;margin:1.4em 0}.doc-rico a{color:#e84b1a;text-decoration:underline}
+.doc-rico table{border-collapse:collapse;width:100%;margin:.9em 0;font-size:13px}.doc-rico th,.doc-rico td{border:1px solid #f4c7b3;padding:6px 10px;vertical-align:top;text-align:left}.doc-rico th{background:#e84b1a;color:#fff;font-weight:700}.doc-rico tbody tr:nth-child(even) td{background:#fdefe8}
+.hoja-marca .marca-curva{position:absolute;top:0;left:0;width:210px;pointer-events:none;user-select:none}
+.hoja-marca .marca-logo{position:absolute;top:22px;right:44px;width:130px;pointer-events:none;user-select:none}
+.hoja-marca .marca-pie{height:3px;margin:0 64px 22px;background:linear-gradient(90deg,transparent,#f9a67e,transparent)}`}</style>
       <div className="rounded-2xl p-4 space-y-4 mx-auto max-w-[1180px]" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 8px 40px rgba(0,0,0,0.35)' }}>
         {leyenda && <p className="text-[11px] text-amber-300 print:hidden">{leyenda}</p>}
-        <div ref={hoja} className="relative bg-white rounded-sm shadow-2xl mx-auto max-w-[840px]" style={{ fontFamily: 'var(--font-archivo)' }}>
+        <div ref={hoja} className={(marca ? 'hoja-marca ' : '') + 'relative bg-white rounded-sm shadow-2xl mx-auto max-w-[840px] overflow-hidden'} style={marca ? undefined : { fontFamily: 'var(--font-archivo)' }}>
+          {marca && (<>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/marca/curva.png" alt="" className="marca-curva" aria-hidden />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/marca/logo.png" alt="ArchiTechIA" className="marca-logo" /></>)}
           {puedeEditar && !soloLectura && marcas.map(m => (
             <button key={m.i} type="button" onClick={() => setIa({ tipo: 'seccion', i: m.i, titulo: m.titulo, n: m.i + 1 })} title={`Trabajar «${m.titulo}» con el Agente Documentador`} aria-label={`Trabajar «${m.titulo}» con el Agente Documentador`}
               className="absolute print:hidden w-6 h-6 rounded-full bg-cyan-500 hover:bg-cyan-400 text-white flex items-center justify-center shadow transition-colors" style={{ right: 16, top: m.top + 4 }}><Sparkles size={13} /></button>))}
-          <div className="px-10 sm:px-16 py-12">
+          <div className={marca ? 'relative px-10 sm:px-16 pt-28 pb-8' : 'px-10 sm:px-16 py-12'}>
             <RichTextField readOnly={soloLectura} value={valor} onChange={onCambio} placeholder="Escribe aquí el documento." className="doc-rico text-gray-700 text-[14px] leading-relaxed focus:outline-none min-h-[60vh]" />
           </div>
+          {marca && <div className="marca-pie" />}
         </div>
       </div>
     </div>

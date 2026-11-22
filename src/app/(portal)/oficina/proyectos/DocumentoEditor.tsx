@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageTitleOverride } from '@/lib/pageTitleContext'
-import { Send, X, Save, History, Sparkles, Download, Loader2, Check, RotateCcw, ExternalLink, Printer } from 'lucide-react'
+import { Send, X, Save, History, Sparkles, Download, Loader2, Check, RotateCcw, ExternalLink, Printer, Settings } from 'lucide-react'
+import ConfigPlantilla, { TIPOS_PLANTILLA } from './ConfigPlantilla'
 import PanelRico, { aHtml, imprimir } from './PanelRico'
 import { RichToolbar } from '../../solutions/pilots/[id]/EditorRico'
 import { api, post, put, hace } from './api'
@@ -10,7 +11,7 @@ import { TIPOS, CANALES } from '@/lib/documentos/tipos'
 
 // Documento de un entregable que se escribe y se edita en el portal (Markdown). El archivo Word, PDF, HTML o MD sale de este texto cuando alguien lo descarga.
 
-interface Doc { existe: boolean; titulo: string; contenido: string; version: number; propuesta: string | null; propuestaPor: string | null; propuestaEn: string | null; actualizadoPor: string | null; updatedAt: string | null }
+interface Doc { existe: boolean; titulo: string; contenido: string; version: number; propuesta: string | null; propuestaPor: string | null; propuestaEn: string | null; actualizadoPor: string | null; updatedAt: string | null; plantilla?: boolean; tipoPlantilla?: string }
 interface Ver { version: number; porNombre: string | null; nota: string | null; chars: number; createdAt: string }
 
 export default function DocumentoEditor({ proyectoId, fase, clave, titulo, editable, sesionId, onCerrar, onCambio, pagina }: {
@@ -18,6 +19,7 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
 }) {
   const base = `/api/proyectos/${proyectoId}/documentos/${fase}/${clave}`
   const [doc, setDoc] = useState<Doc | null>(null)
+  const [verConfig, setVerConfig] = useState(false)
   const [texto, setTexto] = useState('')
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
@@ -130,6 +132,8 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
         <div className="flex flex-wrap items-center gap-2 px-5 py-3 flex-shrink-0" style={{ background: 'linear-gradient(135deg,rgba(249,115,22,0.12),rgba(234,88,12,0.06),rgba(255,255,255,0.03))', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <h2 className="text-[15px] font-bold text-gray-100 truncate min-w-0">{titulo}</h2>
           {doc && <span className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(99,102,241,0.18)', color: '#a5b4fc' }}>{doc.existe ? `Versión ${doc.version}` : 'Sin guardar'}</span>}
+          {doc && <button onClick={() => setVerConfig(true)} aria-label="Configuración del documento" title={`Plantilla: ${doc.plantilla === false ? 'sin plantilla' : TIPOS_PLANTILLA.find(t => t.v === (doc.tipoPlantilla ?? 'documento'))?.t ?? 'Documento'}`} className="flex-shrink-0 p-1.5 rounded-lg text-gray-300 hover:text-white" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}><Settings size={12} /></button>}
+          {verConfig && doc && <ConfigPlantilla plantilla={doc.plantilla !== false} tipo={doc.tipoPlantilla ?? 'documento'} onCerrar={() => setVerConfig(false)} guardar={async (p, t) => { if (!doc.existe) throw new Error('Guarda el documento una vez antes de configurar su plantilla'); const d = await put<Doc>(`${base}/config`, { plantilla: p, tipo: t }); setDoc(prev => prev ? { ...prev, plantilla: d.plantilla, tipoPlantilla: d.tipoPlantilla } : prev) }} />}
           {sucio && <span className="text-[10px] text-amber-300 flex-shrink-0">Cambios sin guardar</span>}
           <span className="flex-1" />
           {editable && !(verProp && !!doc?.propuesta) && <RichToolbar />}
@@ -180,7 +184,7 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
         {!doc && !error && <div className="flex-1 flex items-center justify-center text-[#7f8a9c]"><Loader2 size={18} className="animate-spin" /></div>}
         {doc && (
           <div className="flex-1 min-h-0 flex">
-            <div className="flex-1 min-w-0 min-h-0 flex flex-col"><PanelRico proyectoId={proyectoId} fase={fase} clave={clave} valor={valorHtml} onCambio={setTexto} soloLectura={!editable || (verProp && !!doc.propuesta)} puedeEditar={editable && !(verProp && !!doc.propuesta)} sucio={sucio} guardando={guardando} onGuardar={() => void guardar()} pedirIa={pedirIa} titulo={titulo} leyenda={verProp && doc.propuesta ? 'Estás viendo la propuesta de la IA (solo lectura)' : undefined} /></div>
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col"><PanelRico marca={doc.plantilla !== false} proyectoId={proyectoId} fase={fase} clave={clave} valor={valorHtml} onCambio={setTexto} soloLectura={!editable || (verProp && !!doc.propuesta)} puedeEditar={editable && !(verProp && !!doc.propuesta)} sucio={sucio} guardando={guardando} onGuardar={() => void guardar()} pedirIa={pedirIa} titulo={titulo} leyenda={verProp && doc.propuesta ? 'Estás viendo la propuesta de la IA (solo lectura)' : undefined} /></div>
             {panelVer && (
               <div className="w-64 flex-shrink-0 border-l border-white/10 overflow-y-auto p-3 space-y-1.5">
                 <p className="text-[10px] uppercase tracking-wide text-[#7f8a9c]">Historial de versiones</p>
