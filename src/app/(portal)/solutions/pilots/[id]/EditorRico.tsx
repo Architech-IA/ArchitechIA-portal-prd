@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Table2 } from 'lucide-react'
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Table2, Baseline } from 'lucide-react'
 import { sanitizarHtml } from './sanitizar'
 
 // Editor de texto enriquecido compartido: lo usan el PRD, el diseño y el plan del hub y los documentos de las fases del proyecto.
@@ -119,6 +119,45 @@ export function tablaCmd(a: AccionTabla) {
   raiz.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
+const COLORES_TEXTO: { c: string; n: string }[] = [
+  { c: '#1a1a1a', n: 'Negro (por defecto)' }, { c: '#1b2845', n: 'Azul marino' }, { c: '#e84b1a', n: 'Naranja ArchiTechIA' }, { c: '#f97316', n: 'Naranja claro' },
+  { c: '#dc2626', n: 'Rojo' }, { c: '#16a34a', n: 'Verde' }, { c: '#2563eb', n: 'Azul' }, { c: '#7c3aed', n: 'Violeta' },
+  { c: '#64748b', n: 'Gris' }, { c: '#0f766e', n: 'Verde azulado' }, { c: '#b45309', n: 'Ámbar' }, { c: '#be185d', n: 'Rosa' },
+]
+
+function MenuColor({ btnCls }: { btnCls: string }) {
+  const [abierto, setAbierto] = useState(false)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [actual, setActual] = useState('#e84b1a')
+  const boton = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!abierto) return
+    const cerrar = () => setAbierto(false)
+    window.addEventListener('scroll', cerrar, true)
+    return () => window.removeEventListener('scroll', cerrar, true)
+  }, [abierto])
+  return (
+    <div className="relative">
+      <button type="button" title="Color del texto" aria-haspopup="menu" aria-expanded={abierto} ref={boton}
+        onMouseDown={e => { e.preventDefault(); const r = boton.current?.getBoundingClientRect(); if (r) setPos({ x: Math.max(8, Math.min(r.left, window.innerWidth - 176)), y: r.bottom + 6 }); setAbierto(o => !o) }} className={btnCls}>
+        <span className="flex flex-col items-center leading-none"><Baseline size={13} /><span style={{ width: 12, height: 2.5, background: actual, borderRadius: 1, marginTop: 1 }} /></span>
+      </button>
+      {abierto && typeof document !== 'undefined' && createPortal(
+        <>
+        <div className="fixed inset-0 z-[998]" onMouseDown={e => { e.preventDefault(); setAbierto(false) }} />
+        <div role="menu" style={{ position: 'fixed', left: pos.x, top: pos.y }} className="z-[999] w-40 rounded-lg border border-gray-700 bg-gray-900 p-2 shadow-xl">
+          <p className="text-[10px] text-gray-500 mb-1.5">Color del texto seleccionado</p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {COLORES_TEXTO.map(k => (
+              <button key={k.c} type="button" title={k.n} aria-label={k.n} onMouseDown={e => { e.preventDefault(); execCmd('foreColor', k.c); setActual(k.c); setAbierto(false) }}
+                className="w-7 h-7 rounded-md border border-white/20 hover:scale-110 transition-transform" style={{ background: k.c }} />
+            ))}
+          </div>
+        </div></>, document.body)}
+    </div>
+  )
+}
+
 function MenuTabla({ btnCls }: { btnCls: string }) {
   const [abierto, setAbierto] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: 0 })
@@ -168,6 +207,7 @@ export function RichToolbar() {
       <button type="button" title="Negrita" onMouseDown={on(() => execCmd('bold'))} className={btnCls}><Bold size={13} /></button>
       <button type="button" title="Cursiva" onMouseDown={on(() => execCmd('italic'))} className={btnCls}><Italic size={13} /></button>
       <button type="button" title="Subrayado" onMouseDown={on(() => execCmd('underline'))} className={btnCls}><Underline size={13} /></button>
+      <MenuColor btnCls={btnCls} />
       <div className="w-px h-4 bg-gray-700 mx-0.5" />
       <button type="button" title="Alinear izquierda" onMouseDown={on(() => execCmd('justifyLeft'))} className={btnCls}><AlignLeft size={13} /></button>
       <button type="button" title="Centrar" onMouseDown={on(() => execCmd('justifyCenter'))} className={btnCls}><AlignCenter size={13} /></button>
