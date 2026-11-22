@@ -171,8 +171,8 @@ export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, so
 .doc-rico code{background:#fdefe8;border-radius:4px;padding:.1em .35em;font-size:.9em}
 .doc-rico hr{border:0;border-top:1px solid #f4c7b3;margin:1.4em 0}.doc-rico a{color:#e84b1a;text-decoration:underline}
 .doc-rico table{border-collapse:collapse;width:100%;margin:.9em 0;font-size:13px}.doc-rico th,.doc-rico td{border:1px solid #f4c7b3;padding:6px 10px;vertical-align:top;text-align:left}.doc-rico th{background:#e84b1a;color:#fff;font-weight:700}.doc-rico tbody tr:nth-child(even) td{background:#fdefe8}
-.hoja-marca .marca-curva{position:absolute;top:0;left:0;width:210px;pointer-events:none;user-select:none}
-.hoja-marca .marca-logo{position:absolute;top:22px;right:44px;width:130px;pointer-events:none;user-select:none}
+.hoja-marca .marca-curva{position:absolute;top:0;left:0;width:31.4%;aspect-ratio:3.3/1;object-fit:fill;opacity:.5;pointer-events:none;user-select:none}
+.hoja-marca .marca-logo{position:absolute;top:27px;right:58px;width:15.5%;pointer-events:none;user-select:none}
 .hoja-marca .marca-pie{height:3px;margin:0 64px 22px;background:linear-gradient(90deg,transparent,#f9a67e,transparent)}`}</style>
       <div className="rounded-2xl p-4 space-y-4 mx-auto max-w-[1180px]" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 8px 40px rgba(0,0,0,0.35)' }}>
         {leyenda && <p className="text-[11px] text-amber-300 print:hidden">{leyenda}</p>}
