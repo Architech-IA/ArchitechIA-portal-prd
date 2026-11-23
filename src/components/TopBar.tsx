@@ -81,10 +81,12 @@ export default function TopBar({
   onMenuClick,
   isMobile,
   title,
+  onPantallaCompleta,
 }: {
   onMenuClick?: () => void;
   isMobile?: boolean;
   title?: string;
+  onPantallaCompleta?: () => void;
 }) {
   const router = useRouter();
   const { actions: pageActions } = usePageActions();
@@ -229,6 +231,28 @@ export default function TopBar({
           K
         </kbd>
       </button>
+
+      {/* Pantalla completa: oculta barra lateral y barra superior */}
+      {onPantallaCompleta && (
+        <button
+          onClick={onPantallaCompleta}
+          title="Pantalla completa (Esc para salir)"
+          aria-label="Activar pantalla completa"
+          style={glassBtn}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)';
+            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
+          }}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: '#7f8a9c' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+          </svg>
+        </button>
+      )}
 
       {/* Notificaciones */}
       <div className="relative" ref={notifRef}>

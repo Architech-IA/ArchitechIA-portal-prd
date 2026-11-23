@@ -116,8 +116,7 @@ export default function AsignarReunion({ proyectoId, faseClave, tituloSugerido, 
               {lista.map(r => {
                 const sel = elegida?.id === r.id
                 return (
-                  <button key={r.id} type="button" onClick={() => setElegida(r)} className="w-full flex items-start gap-2 text-left px-2.5 py-2 rounded-lg transition-colors"
-                    style={{ background: sel ? 'rgba(249,115,22,0.14)' : 'rgba(255,255,255,0.04)', border: '1px solid ' + (sel ? 'rgba(249,115,22,0.5)' : 'rgba(255,255,255,0.06)') }}>
+                  <button key={r.id} type="button" onClick={() => setElegida(r)} className={'w-full flex items-start gap-2 text-left px-2.5 py-2 rounded-lg border transition-colors cursor-pointer ' + (sel ? 'bg-orange-500/15 border-orange-500/50' : 'bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.09] hover:border-orange-400/40')}>
                     <span className="mt-0.5 flex-shrink-0" style={{ width: 14, height: 14, borderRadius: 7, border: '1px solid ' + (sel ? '#fb923c' : 'rgba(255,255,255,0.25)'), background: sel ? '#fb923c' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{sel && <Check size={9} color="#fff" />}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[12px] text-gray-100 leading-snug">{r.titulo}</span>

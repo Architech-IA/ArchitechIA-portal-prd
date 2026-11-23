@@ -21,18 +21,19 @@ interface FilaCartera {
 interface Aprobacion { id: string; nombre: string; faseNombre: string; faseNumero: number; aprobador: string; tipo: 'NORMAL' | 'RESULTADO'; ok: number; total: number; lista: boolean; enFaseDesde: string | null }
 interface Tarea { id: string; taskCode: string | null; title: string; solucionId: string | null; solucion: string | null; desde?: string | null; status?: string; updatedAt?: string }
 interface Atascada { id: string; backlogItemId: string; taskCode: string | null; title: string | null; startedAt: string }
-interface Espera { kind: 'accion' | 'propuesta' | 'entregable' | 'alerta'; id: string; titulo: string; detalle: string; subtipo: string; solucionId: string; solucion: string; desde: string }
-interface SesionViva { id: string; titulo: string; tipo: string; solucionId: string; solucion: string; ultima: string; generando: boolean; ultimoRol: string | null }
+interface Espera { kind: 'accion' | 'propuesta' | 'entregable' | 'alerta' | 'memoria'; id: string; titulo: string; detalle: string; subtipo: string; solucionId: string; solucion: string; desde: string }
+interface SesionViva { id: string; titulo: string; tipo: string; solucionId: string; solucion: string; ultima: string; generando: boolean; ultimoRol: string | null; atascada?: boolean; conError?: boolean; mensajeError?: string | null }
+interface AprobAgente { id: string; agente: string; accion: string; decision: string; canal: string | null; desde: string }
 const ETIQUETA_ESPERA: Record<Espera['kind'], { texto: string; color: string }> = {
   accion: { texto: 'Acción de la IA', color: '#fcd34d' }, propuesta: { texto: 'Propuesta de artefacto', color: '#a5b4fc' },
-  entregable: { texto: 'Archivo por revisar', color: '#6ee7b7' }, alerta: { texto: 'Aviso', color: '#fca5a5' },
+  entregable: { texto: 'Archivo por revisar', color: '#6ee7b7' }, alerta: { texto: 'Aviso', color: '#fca5a5' }, memoria: { texto: 'Memoria del proyecto', color: '#f9a8d4' },
 }
 interface Resumen {
   puedeAprobar: boolean
-  totales: { proyectos: number; enCurso: number; porAprobar: number; sinMotor: number; corriendo: number; problemas: number }
+  totales: { proyectos: number; enCurso: number; porAprobar: number; sinMotor: number; corriendo: number; problemas: number; erroresSesion?: number; aprobacionesAgentes?: number }
   cartera: FilaCartera[]; aprobaciones: Aprobacion[]; leadsSinMotor: LeadSinMotor[]
   ejecucion: { corriendo: Tarea[]; problemas: Tarea[]; antiguos: number; atascadas: Atascada[]; atascadaHoras: number; harness: { ok: boolean; colas: Record<string, number> | null } }
-  esperan: Espera[]; sesiones: SesionViva[]; gastoMes: { sesiones: number; ejecutor: number }
+  esperan: Espera[]; sesiones: SesionViva[]; aprobacionesAgentes?: AprobAgente[]; gastoMes: { sesiones: number; ejecutor: number }
   costo: { ejecuciones: number; conUso: number; tokens: number; entrada: number; salida: number; porProyecto: { id: string; nombre: string; tareas: number; tokens: number }[] }
 }
 
@@ -178,13 +179,15 @@ export default function MotorView() {
         <Cifra valor={t.porAprobar} etiqueta="puertas por aprobar" tono="aviso" />
         <Cifra valor={t.corriendo} etiqueta="tareas corriendo" tono="ok" />
         <Cifra valor={t.problemas} etiqueta="con problemas" tono="mal" />
+        <Cifra valor={t.erroresSesion ?? 0} etiqueta="sesiones con error" tono="mal" />
+        <Cifra valor={t.aprobacionesAgentes ?? 0} etiqueta="aprobaciones de agentes" tono="aviso" />
         <Cifra valor={t.sinMotor} etiqueta="leads sin motor de fases" />
         <Cifra valor={d.gastoMes.sesiones + d.gastoMes.ejecutor} texto={miles(d.gastoMes.sesiones + d.gastoMes.ejecutor)} etiqueta="tokens del mes" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Tarjeta titulo="Esperan a una persona" icono={UserCheck} derecha={<span className="text-[10px] text-[#7f8a9c]">{d.aprobaciones.length} puerta{d.aprobaciones.length === 1 ? '' : 's'} abiertas · {d.esperan.length} pendiente{d.esperan.length === 1 ? '' : 's'}</span>}>
-          {d.aprobaciones.length === 0 && d.esperan.length === 0 && <p className="px-4 py-3 text-[11px] text-[#7f8a9c]">Nada espera a una persona ahora mismo.</p>}
+        <Tarjeta titulo="Esperan a una persona" icono={UserCheck} derecha={<span className="text-[10px] text-[#7f8a9c]">{d.aprobaciones.length} puerta{d.aprobaciones.length === 1 ? '' : 's'} abiertas · {d.esperan.length + (d.aprobacionesAgentes ?? []).length} pendiente{d.esperan.length + (d.aprobacionesAgentes ?? []).length === 1 ? '' : 's'}</span>}>
+          {d.aprobaciones.length === 0 && d.esperan.length === 0 && (d.aprobacionesAgentes ?? []).length === 0 && <p className="px-4 py-3 text-[11px] text-[#7f8a9c]">Nada espera a una persona ahora mismo.</p>}
           <div className="divide-y divide-white/5">
             {d.aprobaciones.map(a => (
               <div key={a.id} className="flex items-center gap-3 px-4 py-2">
@@ -214,6 +217,17 @@ export default function MotorView() {
                   </div>)
               })}
             </div>)}
+          {(d.aprobacionesAgentes ?? []).length > 0 && (
+            <div className="divide-y divide-white/5 border-t border-white/5 max-h-[240px] overflow-y-auto">
+              {(d.aprobacionesAgentes ?? []).map(a => (
+                <div key={a.id} className="flex items-center gap-3 px-4 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] text-gray-100 truncate">{a.decision || a.accion}</p>
+                    <p className="text-[10px] text-[#7f8a9c] truncate"><span style={{ color: '#fcd34d' }}>Agente {a.agente}</span> · {a.canal ? a.canal.toLowerCase() : 'sin canal'} · {hace(a.desde)}</p>
+                  </div>
+                  <NextLink href="/oficina?view=agentes" className="text-[11px] text-indigo-300 hover:text-indigo-200 flex-shrink-0">Revisar</NextLink>
+                </div>))}
+            </div>)}
         </Tarjeta>
 
         <Tarjeta titulo="Agentes y cola" icono={Bot}
@@ -229,12 +243,12 @@ export default function MotorView() {
               <div className="divide-y divide-white/5">
                 {d.sesiones.map(s => {
                   const reciente = Date.now() - new Date(s.ultima).getTime() < 3 * 60_000
-                  const estado = s.generando || reciente ? { t: 'activa', bg: 'rgba(16,185,129,0.18)', c: '#6ee7b7' } : s.ultimoRol === 'assistant' ? { t: 'espera tu respuesta', bg: 'rgba(245,158,11,0.16)', c: '#fcd34d' } : { t: 'en pausa', bg: 'rgba(255,255,255,0.07)', c: '#9ca3af' }
+                  const estado = s.conError ? { t: 'con error', bg: 'rgba(239,68,68,0.18)', c: '#fca5a5' } : s.atascada ? { t: 'atascada', bg: 'rgba(245,158,11,0.16)', c: '#fcd34d' } : s.generando || reciente ? { t: 'activa', bg: 'rgba(16,185,129,0.18)', c: '#6ee7b7' } : s.ultimoRol === 'assistant' ? { t: 'espera tu respuesta', bg: 'rgba(245,158,11,0.16)', c: '#fcd34d' } : { t: 'en pausa', bg: 'rgba(255,255,255,0.07)', c: '#9ca3af' }
                   return (
                     <div key={s.id} className="flex items-center gap-2 px-4 py-1.5">
                       <div className="min-w-0 flex-1">
                         <NextLink href={urlProyecto(s.solucionId)} className="text-[11px] text-gray-200 hover:text-indigo-200 truncate block">{s.titulo}</NextLink>
-                        <p className="text-[10px] text-[#7f8a9c] truncate">{s.solucion} · {hace(s.ultima)}</p>
+                        <p className="text-[10px] text-[#7f8a9c] truncate" title={s.mensajeError ?? undefined}>{s.solucion} · {hace(s.ultima)}{s.conError && s.mensajeError ? ` · ${s.mensajeError}` : ''}</p>
                       </div>
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: estado.bg, color: estado.c }}>{estado.t}</span>
                     </div>)

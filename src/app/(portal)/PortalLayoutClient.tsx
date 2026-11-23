@@ -146,6 +146,7 @@ export default function PortalLayoutClient({
   const isSuperAdmin = serverIsSuperAdmin || clientRole === 'SUPERADMIN';
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pantallaCompleta, setPantallaCompleta] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
@@ -187,6 +188,14 @@ export default function PortalLayoutClient({
   }, []);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  // Esc sale de la pantalla completa (si hay un cuadro abierto, Esc primero lo cierra y el siguiente sale)
+  useEffect(() => {
+    if (!pantallaCompleta) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) setPantallaCompleta(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pantallaCompleta]);
 
   const toggleCollapse = () => {
     setCollapsed(prev => {
@@ -405,7 +414,7 @@ export default function PortalLayoutClient({
   return (
     <PageActionsProvider>
     <div className="flex h-screen" style={{ background: 'transparent' }}>
-      {!isMobile && (
+      {!isMobile && !pantallaCompleta && (
         <aside
           style={{ width: collapsed ? '60px' : '200px', minWidth: collapsed ? '60px' : '200px', background: 'rgba(8,8,26,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRight: '1px solid rgba(255,255,255,0.05)', transition: 'width 0.25s ease, min-width 0.25s ease', overflow: 'hidden' }}
           className="flex flex-col flex-shrink-0"
@@ -418,7 +427,7 @@ export default function PortalLayoutClient({
         <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }} onClick={() => setMobileOpen(false)} />
       )}
 
-      {isMobile && (
+      {isMobile && !pantallaCompleta && (
         <aside
           className="fixed top-0 left-0 h-full z-50 flex flex-col"
           style={{ width: '260px', background: 'rgba(8,8,26,0.97)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRight: '1px solid rgba(255,255,255,0.05)', transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform 0.25s ease' }}
@@ -460,7 +469,22 @@ export default function PortalLayoutClient({
         }} />
       </div>
 
-        <TopBar onMenuClick={() => setMobileOpen(true)} isMobile={isMobile} title={pathname === '/' ? '' : pageTitle} />
+        {!pantallaCompleta && <TopBar onMenuClick={() => setMobileOpen(true)} isMobile={isMobile} title={pathname === '/' ? '' : pageTitle} onPantallaCompleta={() => setPantallaCompleta(true)} />}
+        {pantallaCompleta && (
+          <button
+            onClick={() => setPantallaCompleta(false)}
+            title="Salir de pantalla completa (Esc)"
+            aria-label="Salir de pantalla completa"
+            className="fixed z-[60] flex items-center justify-center rounded-full transition-all"
+            style={{ left: '14px', bottom: '14px', width: '34px', height: '34px', background: 'rgba(15,20,36,0.85)', border: '1px solid rgba(255,255,255,0.18)', color: '#cbd5e1', backdropFilter: 'blur(8px)', opacity: 0.55 }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0.55'; }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 4v4H5M15 4v4h4M9 20v-4H5M15 20v-4h4" />
+            </svg>
+          </button>
+        )}
         <main className="flex-1 overflow-y-auto relative" style={{ zIndex: 1, background: 'transparent' }}>
           {children}
         </main>
