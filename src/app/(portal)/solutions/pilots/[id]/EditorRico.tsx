@@ -145,8 +145,14 @@ function MenuColor({ btnCls }: { btnCls: string }) {
       {abierto && typeof document !== 'undefined' && createPortal(
         <>
         <div className="fixed inset-0 z-[998]" onMouseDown={e => { e.preventDefault(); setAbierto(false) }} />
-        <div role="menu" style={{ position: 'fixed', left: pos.x, top: pos.y }} className="z-[999] w-40 rounded-lg border border-gray-700 bg-gray-900 p-2 shadow-xl">
-          <p className="text-[10px] text-gray-500 mb-1.5">Color del texto seleccionado</p>
+        <div role="menu" style={{ position: 'fixed', left: pos.x, top: pos.y }} className="menu-editor menu-color z-[999] w-40">
+          <style>{`.menu-editor{background:#141a24;border:1px solid rgba(255,255,255,0.14);border-radius:10px;padding:4px 0;box-shadow:0 12px 32px rgba(0,0,0,0.55);backdrop-filter:none}
+.menu-editor button.mi{border:0 !important;background:transparent;box-shadow:none}
+.menu-editor.menu-color{padding:8px}
+.menu-editor button.mi:hover{background:rgba(255,255,255,0.09)}
+.menu-editor .sep{height:1px;margin:4px 0;background:rgba(255,255,255,0.1);border:0}
+.menu-editor .rotulo{padding:4px 12px 2px;font-size:10px;color:#9aa6b8}`}</style>
+          <p className="rotulo !px-0 mb-1.5">Color del texto seleccionado</p>
           <div className="grid grid-cols-4 gap-1.5">
             {COLORES_TEXTO.map(k => (
               <button key={k.c} type="button" title={k.n} aria-label={k.n} onMouseDown={e => { e.preventDefault(); execCmd('foreColor', k.c); setActual(k.c); setAbierto(false) }}
@@ -170,7 +176,7 @@ function MenuTabla({ btnCls }: { btnCls: string }) {
   }, [abierto])
   const item = (txt: string, a: AccionTabla, peligro = false) => (
     <button key={a} type="button" onMouseDown={e => { e.preventDefault(); tablaCmd(a); setAbierto(false) }}
-      className={`w-full text-left px-3 py-1.5 text-[12px] hover:bg-gray-800 ${peligro ? 'text-red-300' : 'text-gray-100'}`}>{txt}</button>
+      className={`mi w-full text-left px-3 py-1.5 text-[12px] ${peligro ? 'text-red-300' : 'text-gray-100'}`}>{txt}</button>
   )
   return (
     <div className="relative">
@@ -178,13 +184,19 @@ function MenuTabla({ btnCls }: { btnCls: string }) {
       {abierto && typeof document !== 'undefined' && createPortal(
         <>
         <div className="fixed inset-0 z-[998]" onMouseDown={e => { e.preventDefault(); setAbierto(false) }} />
-        <div role="menu" style={{ position: 'fixed', left: pos.x, top: pos.y }} className="z-[999] w-52 rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl">
+        <div role="menu" style={{ position: 'fixed', left: pos.x, top: pos.y }} className="menu-editor z-[999] w-52">
+          <style>{`.menu-editor{background:#141a24;border:1px solid rgba(255,255,255,0.14);border-radius:10px;padding:4px 0;box-shadow:0 12px 32px rgba(0,0,0,0.55);backdrop-filter:none}
+.menu-editor button.mi{border:0 !important;background:transparent;box-shadow:none}
+.menu-editor.menu-color{padding:8px}
+.menu-editor button.mi:hover{background:rgba(255,255,255,0.09)}
+.menu-editor .sep{height:1px;margin:4px 0;background:rgba(255,255,255,0.1);border:0}
+.menu-editor .rotulo{padding:4px 12px 2px;font-size:10px;color:#9aa6b8}`}</style>
           {item('Insertar tabla (3 × 3)', 'insertar')}
-          <div className="my-1 border-t border-gray-700" />
-          <p className="px-3 py-0.5 text-[10px] text-gray-500">Con el cursor dentro de una celda</p>
+          <div className="sep" />
+          <p className="rotulo">Con el cursor dentro de una celda</p>
           {item('Fila arriba', 'filaArriba')}{item('Fila abajo', 'filaAbajo')}
           {item('Columna a la izquierda', 'colIzq')}{item('Columna a la derecha', 'colDer')}
-          <div className="my-1 border-t border-gray-700" />
+          <div className="sep" />
           {item('Eliminar fila', 'delFila', true)}{item('Eliminar columna', 'delCol', true)}{item('Eliminar tabla', 'delTabla', true)}
         </div></>, document.body)}
     </div>
