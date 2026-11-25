@@ -7,12 +7,13 @@ import { TITULO_DE_TAB } from '../../solutions/pilots/[id]/ArbolArtefactos'
 import type { TabKey } from '../../solutions/pilots/[id]/espacio'
 import { api, post, put, hace } from './api'
 import { FORMATO } from './formatos'
+import PlantillasDocumento, { TIPO_DOC, type PlantillaDoc } from './PlantillasDocumento'
 
 // Editor de las plantillas de fases: objetivo, aprobador y criterios de la puerta, entregables obligatorios (con su verificación) y roles de sesión.
 // Lo que se guarda se aplica de inmediato a los proyectos nuevos y a los que ya están en marcha.
 
 interface Verifica { rol?: string; tipo: string; clave?: string; aprobado?: boolean; min_requisitos?: number | null; min?: number; hechas_min?: number; sin_fallidas?: boolean; estados?: string[]; nivel?: string }
-interface Requerido { clave: string; titulo: string; ayuda: string; formato: string; verifica: Verifica }
+interface Requerido { clave: string; titulo: string; ayuda: string; estructura?: string; plantillaDoc?: string; formato: string; verifica: Verifica }
 interface Rol { clave: string; titulo: string; tipo: string; objetivo: string; artefactos: string[]; resultado: string; cierre: string[] }
 interface Actividad { clave: string; titulo: string; tipo: string; area: string; backlogType: string; prioridad: string; descripcion: string; entregable?: string }
 interface FaseEd { clave: string; numero: number; bloque: string; nombre: string; leadStatus: string | null; tipoPuerta: string; objetivo: string; aprobador: string; criterios: string[]; entregables: string[]; requeridos: Requerido[]; sesiones: Rol[]; actividades: Actividad[] }
@@ -135,6 +136,10 @@ function Acciones({ i, total, max, minimo, fases, onSubir, onBajar, onDuplicar, 
 
 export default function PlantillasFases({ onCerrar, onCambio, inicial }: { onCerrar: () => void; onCambio: () => void; inicial?: { codigo: string; fase: string } }) {
   const [datos, setDatos] = useState<Datos | null>(null)
+  const [verCatalogo, setVerCatalogo] = useState(false)
+  const [plantillasDoc, setPlantillasDoc] = useState<PlantillaDoc[]>([])
+  const cargarCatalogo = useCallback(() => { api<{ plantillas: PlantillaDoc[] }>('/api/plantillas-documento').then(r => setPlantillasDoc(r.plantillas)).catch(() => {}) }, [])
+  useEffect(() => { cargarCatalogo() }, [cargarCatalogo])
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
   const [codigo, setCodigo] = useState(inicial?.codigo ?? 'PROYECTO_COMPLETO')
@@ -292,6 +297,16 @@ export default function PlantillasFases({ onCerrar, onCambio, inicial }: { onCer
                             <div className="space-y-2">
                             <div><span className={etiqueta}>Qué hay que hacer</span>
                               <input value={r.ayuda} disabled={dis} onChange={e => cambiarReq(i, { ayuda: e.target.value })} placeholder="Ayuda: qué hay que hacer para cumplirlo" className={campo} /></div>
+                            {r.verifica.tipo === 'documento_fase' && (
+                              <div><span className={etiqueta}>Plantilla del documento</span>
+                                <select value={r.plantillaDoc ?? ''} disabled={dis} onChange={e => cambiarReq(i, { plantillaDoc: e.target.value || undefined })} className={campo}>
+                                  <option value="">Sin plantilla (estructura propia o libre)</option>
+                                  {plantillasDoc.filter(p => p.estado === 'ACTIVA' || p.id === r.plantillaDoc).map(p => <option key={p.id} value={p.id}>{TIPO_DOC[p.tipo] ?? p.tipo} · {p.nombre}</option>)}
+                                </select>
+                                <p className="mt-1 text-[11px] text-[#7f8a9c]">Las plantillas se editan en «Plantillas de documentos», arriba. Con plantilla, la IA sigue su estructura y el documento nuevo arranca con ella.</p></div>)}
+                            {r.verifica.tipo === 'documento_fase' && !r.plantillaDoc && (
+                              <div><span className={etiqueta}>Estructura propia (opcional)</span>
+                                <textarea value={r.estructura ?? ''} disabled={dis} onChange={e => cambiarReq(i, { estructura: e.target.value })} rows={8} placeholder="Markdown con los títulos y las tablas que debe tener. La IA lo sigue al redactar y el documento nuevo arranca con él." className={`${campo} font-mono !text-[11px]`} /></div>)}
                             <p className="text-[11px] text-[#7f8a9c]">Se genera a partir de la actividad · Formato: {FORMATO[r.formato] ?? r.formato} · Se comprueba: {VERIF[r.verifica.tipo] ?? r.verifica.tipo}{r.verifica.tipo === 'manual' ? ' (con enlace como evidencia)' : ''}</p>
                             </div>
                           </div>)
@@ -362,6 +377,8 @@ export default function PlantillasFases({ onCerrar, onCambio, inicial }: { onCer
           </div>
           {!editable && datos && <span className="flex items-center gap-1 text-[11px] text-amber-300"><Lock size={11} /> Solo lectura: editar requiere ser administrador</span>}
           <span className="flex-1" />
+          <button onClick={() => setVerCatalogo(true)} title="Catálogo de plantillas de documento por tipo (actas, informes…)" className="px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1.5" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)', color: '#c7d2fe' }}><FileText size={12} /> Plantillas de documentos</button>
+          {verCatalogo && <PlantillasDocumento onCerrar={() => setVerCatalogo(false)} onCambio={cargarCatalogo} />}
           <button onClick={cerrar} title="Cerrar" aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={15} /></button>
         </div>
 

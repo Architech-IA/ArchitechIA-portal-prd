@@ -11,7 +11,7 @@ import { TIPOS, CANALES } from '@/lib/documentos/tipos'
 
 // Documento de un entregable que se escribe y se edita en el portal (Markdown). El archivo Word, PDF, HTML o MD sale de este texto cuando alguien lo descarga.
 
-interface Doc { existe: boolean; titulo: string; contenido: string; version: number; propuesta: string | null; propuestaPor: string | null; propuestaEn: string | null; actualizadoPor: string | null; updatedAt: string | null; plantilla?: boolean; tipoPlantilla?: string }
+interface Doc { estructura?: string | null; existe: boolean; titulo: string; contenido: string; version: number; propuesta: string | null; propuestaPor: string | null; propuestaEn: string | null; actualizadoPor: string | null; updatedAt: string | null; plantilla?: boolean; tipoPlantilla?: string }
 interface Ver { version: number; porNombre: string | null; nota: string | null; chars: number; createdAt: string }
 
 export default function DocumentoEditor({ proyectoId, fase, clave, titulo, editable, sesionId, onCerrar, onCambio, pagina }: {
@@ -44,7 +44,7 @@ export default function DocumentoEditor({ proyectoId, fase, clave, titulo, edita
   }
 
   const cargar = useCallback(async () => {
-    try { const d = await api<Doc>(base); setDoc(d); setTexto(d.contenido); setVerProp(!!d.propuesta && !d.contenido.trim()); setError('') } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo abrir el documento') }
+    try { const d0 = await api<Doc>(base); const d = !d0.existe && d0.estructura && !d0.propuesta ? { ...d0, contenido: d0.estructura } : d0; setDoc(d); setTexto(d.contenido); setVerProp(!!d.propuesta && !d.contenido.trim()); setError('') } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo abrir el documento') }
   }, [base])
   useEffect(() => { void cargar() }, [cargar])
 

@@ -95,6 +95,12 @@ export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, so
   // La cabecera del editor pide abrir el Agente Documentador sobre todo el documento (cada pedido sube el contador).
   useEffect(() => { if (pedirIa) setIa({ tipo: 'documento', titulo }) }, [pedirIa]) // eslint-disable-line react-hooks/exhaustive-deps
   const editable = () => hoja.current?.querySelector('.doc-rico') as HTMLElement | null
+  // Paginación como en Word: hojas A4 (297/210 del ancho de la hoja) separadas por un espacio; cada bloque que cruzaría el fin de hoja salta a la siguiente
+  // con un margen superior temporal (data-pg) que no se guarda. Se recalcula al escribir, al cambiar el ancho y al cargar fuentes o imágenes.
+  const [pag, setPag] = useState({ n: 1, P: 1188 })
+  const paginando = useRef(false)
+  const ultimoAncho = useRef<number | undefined>(undefined)
+  const GAP = 28, MARGEN_SUP = 64, MARGEN_INF = 64
 
   // los destellos de IA se colocan junto a cada título de sección (## y ###) y siguen al texto mientras se edita
   const medir = useCallback(() => {
@@ -105,6 +111,68 @@ export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, so
     const lista = Array.from(ed.querySelectorAll('h2,h3')).map((h, i) => ({ i, titulo: (h.textContent || '').trim(), nivel: Number(h.tagName[1]), top: Math.round(h.getBoundingClientRect().top - base) }))
     setMarcas(prev => (JSON.stringify(prev) === JSON.stringify(lista) ? prev : lista))
   }, [])
+  const paginar = useCallback(() => {
+    const h = hoja.current
+    const ed = h?.querySelector('.doc-rico') as HTMLElement | null
+    if (!h || !ed) return
+    paginando.current = true
+    try {
+      const P = Math.round((h.clientWidth * 297) / 210)
+      const paso = P + GAP
+      h.style.height = ''
+      ed.querySelectorAll('[data-pg]').forEach(n => {
+        const el = n as HTMLElement
+        el.removeAttribute('data-pg')
+        el.style.marginTop = ''
+        if (!(el.getAttribute('style') ?? '').trim()) el.removeAttribute('style')
+      })
+      const bloques: HTMLElement[] = []
+      for (const ch of Array.from(ed.children)) {
+        if (ch.tagName === 'UL' || ch.tagName === 'OL') bloques.push(...(Array.from(ch.children) as HTMLElement[]))
+        else bloques.push(ch as HTMLElement)
+      }
+      const base = () => h.getBoundingClientRect().top
+      for (const b of bloques) {
+        const r = b.getBoundingClientRect()
+        const top = r.top - base()
+        const alto = r.height
+        const k = Math.max(0, Math.floor(top / paso))
+        const limite = k * paso + P - MARGEN_INF
+        const cabe = alto <= P - MARGEN_SUP - MARGEN_INF
+        if ((top + alto > limite && cabe) || top >= limite) {
+          const destino = (k + 1) * paso + MARGEN_SUP
+          const delta = destino - top
+          if (delta > 0) {
+            b.style.marginTop = delta + 'px'
+            b.setAttribute('data-pg', '1')
+            const nt = b.getBoundingClientRect().top - base() // los márgenes se funden: se corrige la diferencia
+            if (Math.abs(nt - destino) > 1) b.style.marginTop = delta + (destino - nt) + 'px'
+          }
+        }
+      }
+      const n = Math.max(1, Math.ceil((h.clientHeight + GAP) / paso))
+      h.style.height = n * paso - GAP + 'px'
+      setPag(prev => (prev.n === n && prev.P === P ? prev : { n, P }))
+    } finally {
+      paginando.current = false
+    }
+    medir()
+  }, [medir])
+  useEffect(() => {
+    const h = hoja.current
+    const ed = h?.querySelector('.doc-rico') as HTMLElement | null
+    if (!h || !ed || typeof ResizeObserver === 'undefined') return
+    let t: ReturnType<typeof setTimeout> | undefined
+    const prog = () => { if (t) clearTimeout(t); t = setTimeout(paginar, 120) }
+    const mo = new MutationObserver(() => { if (!paginando.current) prog() })
+    mo.observe(ed, { childList: true, subtree: true, characterData: true })
+    const ro = new ResizeObserver(() => { const w = h.clientWidth; if (w !== ultimoAncho.current) { ultimoAncho.current = w; prog() } })
+    ro.observe(h)
+    ed.addEventListener('load', prog, true)
+    ;(document as unknown as { fonts?: { ready: Promise<unknown> } }).fonts?.ready.then(prog)
+    prog()
+    return () => { if (t) clearTimeout(t); mo.disconnect(); ro.disconnect(); ed.removeEventListener('load', prog, true) }
+  }, [paginar, valor])
   useEffect(() => {
     medir()
     const ed = hoja.current?.querySelector('.doc-rico') as HTMLElement | null
@@ -174,22 +242,32 @@ export default function PanelRico({ proyectoId, fase, clave, valor, onCambio, so
 .hoja-marca .marca-curva{position:absolute;top:0;left:0;width:31.4%;aspect-ratio:3.3/1;object-fit:fill;opacity:.5;pointer-events:none;user-select:none}
 .hoja-marca .marca-logo{position:absolute;top:14px;right:40px;width:calc(15.5% - 2px);pointer-events:none;user-select:none}
 .hoja-marca .marca-logo-texto{position:absolute;top:15px;right:40px;font-family:'Poppins',sans-serif;font-weight:600;font-size:19px;letter-spacing:-.025em;line-height:1.2;color:#ff6a00;pointer-events:none;user-select:none;white-space:nowrap}
-.hoja-marca .marca-pie{height:3px;margin:0 64px 22px;background:linear-gradient(90deg,transparent,#f9a67e,transparent)}`}</style>
+.hoja-marca .marca-pie{height:3px;margin:0 64px 22px;background:linear-gradient(90deg,transparent,#f9a67e,transparent)}
+.hoja-marca .marca-pie-pag{position:absolute;left:64px;right:64px;height:3px;background:linear-gradient(90deg,transparent,#f9a67e,transparent);pointer-events:none}`}</style>
       <div className="rounded-2xl p-4 space-y-4 mx-auto max-w-[1180px]" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 8px 40px rgba(0,0,0,0.35)' }}>
         {leyenda && <p className="text-[11px] text-amber-300 print:hidden">{leyenda}</p>}
-        <div ref={hoja} className={(marca ? 'hoja-marca ' : '') + 'relative bg-white rounded-sm shadow-2xl mx-auto max-w-[840px] overflow-hidden'} style={marca ? undefined : { fontFamily: 'var(--font-archivo)' }}>
-          {marca && (<>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/marca/curva.png" alt="" className="marca-curva" aria-hidden />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <span className="marca-logo-texto" aria-label="ArchiTechIA">ArchiTechIA</span></>)}
+        <div ref={hoja} className={(marca ? 'hoja-marca ' : '') + 'hoja-pag relative mx-auto max-w-[840px] overflow-hidden'} style={{ ...(marca ? {} : { fontFamily: 'var(--font-archivo)' }), backgroundImage: `linear-gradient(to bottom, #fff 0, #fff ${pag.P}px, transparent ${pag.P}px)`, backgroundSize: `100% ${pag.P + GAP}px`, backgroundRepeat: 'repeat-y' }}>
+          <style>{`@media print{.hoja-pag{background:none !important;height:auto !important}.hoja-pag [data-pg]{margin-top:0 !important}}`}</style>
+          {marca && Array.from({ length: pag.n }, (_, k) => {
+            const y = k * (pag.P + GAP)
+            const extra = k > 0 ? ' print:hidden' : ''
+            return (
+              <div key={k} aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/marca/curva.png" alt="" className={'marca-curva' + extra} style={{ top: y }} />
+                <span className={'marca-logo-texto' + extra} style={{ top: y + 15 }}>ArchiTechIA</span>
+                <div className="marca-pie-pag print:hidden" style={{ top: y + pag.P - 42 }} />
+              </div>
+            )
+          })}
+          {Array.from({ length: pag.n }, (_, k) => (
+            <span key={k} aria-hidden className="absolute z-20 print:hidden pointer-events-none select-none" style={{ top: k * (pag.P + GAP) + pag.P - 24, right: 20, fontSize: 10, color: '#94a3b8' }}>Página {k + 1} de {pag.n}</span>))}
           {puedeEditar && !soloLectura && marcas.map(m => (
             <button key={m.i} type="button" onClick={() => setIa({ tipo: 'seccion', i: m.i, titulo: m.titulo, n: m.i + 1 })} title={`Trabajar «${m.titulo}» con el Agente Documentador`} aria-label={`Trabajar «${m.titulo}» con el Agente Documentador`}
               className="absolute z-10 print:hidden w-6 h-6 rounded-full bg-cyan-500 hover:bg-cyan-400 text-white flex items-center justify-center shadow transition-colors" style={{ right: 16, top: m.top + 4 }}><Sparkles size={13} /></button>))}
           <div className={marca ? 'relative px-10 sm:px-16 pt-[76px] pb-8' : 'px-10 sm:px-16 py-12'}>
             <RichTextField readOnly={soloLectura} value={valor} onChange={onCambio} placeholder="Escribe aquí el documento." className="doc-rico text-gray-700 text-[14px] leading-relaxed focus:outline-none min-h-[60vh]" />
           </div>
-          {marca && <div className="marca-pie" />}
         </div>
       </div>
     </div>

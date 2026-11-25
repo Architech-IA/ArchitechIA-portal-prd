@@ -3,7 +3,7 @@
 
 const QUITAR = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'FORM', 'INPUT', 'BUTTON', 'TEXTAREA', 'SELECT', 'SVG', 'MATH', 'BASE', 'AUDIO', 'VIDEO', 'IMG', 'PICTURE', 'CANVAS'])
 const PERMITIDAS = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'UL', 'OL', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'A', 'SPAN', 'DIV', 'BLOCKQUOTE', 'CODE', 'PRE', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'HR', 'FONT', 'SUB', 'SUP'])
-const ESTILOS = new Set(['color', 'background-color', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-align'])
+const ESTILOS = new Set(['color', 'background-color', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-align', 'width', 'height', 'table-layout'])
 
 function estiloSeguro(css: string): string {
   return css.split(';').map(x => x.trim()).filter(Boolean).filter(decl => {

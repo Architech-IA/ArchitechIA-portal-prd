@@ -25,6 +25,7 @@ export function RichTextField({ value, onChange, placeholder, className, readOnl
   // cero): el campo quedaba con el placeholder aunque el dato si habia
   // llegado, porque el componente se monta por primera vez con ese valor.
   const lastPushed = useRef<string | null>(null)
+  const arrastre = useRef<Arrastre | null>(null)
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -42,8 +43,68 @@ export function RichTextField({ value, onChange, placeholder, className, readOnl
       ref={ref}
       contentEditable={!readOnly}
       suppressContentEditableWarning
+      onMouseMove={e => {
+        const el = ref.current
+        if (readOnly || !el || arrastre.current) return
+        const b = bordeBajoCursor(e, el)
+        el.style.cursor = b ? (b.tipo === 'col' ? 'col-resize' : 'row-resize') : filaBajoCursor(e, el) ? CURSOR_FILA : ''
+      }}
+      onMouseLeave={() => { if (ref.current && !arrastre.current) ref.current.style.cursor = '' }}
+      onMouseDown={e => {
+        const el = ref.current
+        if (readOnly || !el || e.button !== 0) return
+        limpiarColumna()
+        const b = bordeBajoCursor(e, el)
+        if (!b) {
+          const fila0 = filaBajoCursor(e, el)
+          if (!fila0) { iniciarSeleccionColumna(e, el); return }
+          e.preventDefault()
+          el.focus()
+          const tabla = fila0.closest('table') as HTMLTableElement
+          const ini = fila0.rowIndex
+          seleccionarFilas(tabla, ini, ini)
+          const mover = (ev: MouseEvent) => {
+            for (const tr of Array.from(tabla.rows)) {
+              const q = tr.getBoundingClientRect()
+              if (ev.clientY >= q.top && ev.clientY <= q.bottom) { seleccionarFilas(tabla, ini, tr.rowIndex); break }
+            }
+          }
+          const soltar = () => { window.removeEventListener('mousemove', mover); window.removeEventListener('mouseup', soltar) }
+          window.addEventListener('mousemove', mover)
+          window.addEventListener('mouseup', soltar)
+          return
+        }
+        e.preventDefault()
+        const tabla = b.celda.closest('table') as HTMLTableElement
+        if (b.tipo === 'col') {
+          const total = tabla.getBoundingClientRect().width
+          const anchos = Array.from(tabla.rows[0].cells).map(c => (c.getBoundingClientRect().width / total) * 100)
+          tabla.style.tableLayout = 'fixed'
+          aplicarAnchos(tabla, anchos)
+          arrastre.current = { tipo: 'col', tabla, idx: b.idx, x0: e.clientX, anchos, total }
+        } else {
+          const tr = b.celda.parentElement as HTMLTableRowElement
+          arrastre.current = { tipo: 'fila', tr, y0: e.clientY, h0: tr.getBoundingClientRect().height }
+        }
+        const antes = { cursor: document.body.style.cursor, sel: document.body.style.userSelect }
+        document.body.style.cursor = b.tipo === 'col' ? 'col-resize' : 'row-resize'
+        document.body.style.userSelect = 'none'
+        const mover = (ev: MouseEvent) => { if (arrastre.current) moverArrastre(arrastre.current, ev) }
+        const soltar = () => {
+          window.removeEventListener('mousemove', mover)
+          window.removeEventListener('mouseup', soltar)
+          document.body.style.cursor = antes.cursor
+          document.body.style.userSelect = antes.sel
+          arrastre.current = null
+          el.style.cursor = ''
+          el.dispatchEvent(new Event('input', { bubbles: true }))
+        }
+        window.addEventListener('mousemove', mover)
+        window.addEventListener('mouseup', soltar)
+      }}
       onInput={() => {
-        const html = ref.current?.innerHTML ?? ''
+        if (!aplicandoColumna) limpiarColumna()
+        const html = limpiarPaginacion(ref.current?.innerHTML ?? '')
         lastPushed.current = html
         onChange(html)
       }}
@@ -64,10 +125,151 @@ export function RichTextField({ value, onChange, placeholder, className, readOnl
   )
 }
 
+// ── Redimensionar tablas arrastrando los bordes de las celdas ──────────────────────────────────────
+// Columnas: el borde entre dos columnas reparte el ancho entre ambas (el total de la tabla no cambia) y se guarda en % en cada celda.
+// Filas: el borde inferior de la fila cambia su alto mínimo (px). La primera vez que se arrastra, la tabla pasa a table-layout:fixed
+// con los anchos actuales, para que lo que se ve sea lo que se guarda.
+type Arrastre =
+  | { tipo: 'col'; tabla: HTMLTableElement; idx: number; x0: number; anchos: number[]; total: number }
+  | { tipo: 'fila'; tr: HTMLTableRowElement; y0: number; h0: number }
+const MARGEN_BORDE = 4
+// Seleccionar filas: clic en el borde izquierdo de la tabla (o en el margen justo a su izquierda); arrastrar hacia abajo suma filas
+const CURSOR_FILA = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M16 4 L5 9 L9 11 L11 15 Z' fill='white' stroke='black' stroke-width='1.2' stroke-linejoin='round'/></svg>\") 16 4, pointer"
+// Seleccionar una columna: al arrastrar hacia abajo dentro de una celda, solo se marcan las celdas de esa columna (no las vecinas).
+let rangosColumna: Range[] = []
+let aplicandoColumna = false
+function resaltadoColumna(): { set: (n: string, h: unknown) => void; delete: (n: string) => void } | null {
+  const h = (typeof CSS !== 'undefined' ? (CSS as unknown as { highlights?: { set: (n: string, h: unknown) => void; delete: (n: string) => void } }).highlights : undefined)
+  return h ?? null
+}
+function limpiarColumna() {
+  if (rangosColumna.length === 0) return
+  rangosColumna = []
+  resaltadoColumna()?.delete('col-sel')
+}
+function marcarColumna(tabla: HTMLTableElement, col: number, a: number, b: number) {
+  const [i, j] = a <= b ? [a, b] : [b, a]
+  const rangos: Range[] = []
+  for (let r = i; r <= j; r++) {
+    const celda = tabla.rows[r]?.cells[col]
+    if (!celda) continue
+    const rg = document.createRange()
+    rg.selectNodeContents(celda)
+    rangos.push(rg)
+  }
+  rangosColumna = rangos
+  const Resaltado = (window as unknown as { Highlight?: new (...r: Range[]) => unknown }).Highlight
+  if (Resaltado) resaltadoColumna()?.set('col-sel', new Resaltado(...rangos))
+}
+function iniciarSeleccionColumna(e: { target: EventTarget | null }, raiz: HTMLElement) {
+  const celda = (e.target as HTMLElement | null)?.closest?.('td,th') as HTMLTableCellElement | null
+  if (!celda || !raiz.contains(celda)) return
+  if (!document.getElementById('estilo-col-sel')) {
+    const st = document.createElement('style')
+    st.id = 'estilo-col-sel'
+    st.textContent = '::highlight(col-sel){background-color:rgba(59,130,246,0.45);color:inherit}'
+    document.head.appendChild(st)
+  }
+  const tabla = celda.closest('table') as HTMLTableElement
+  const fila0 = (celda.parentElement as HTMLTableRowElement).rowIndex
+  const col = celda.cellIndex
+  let activa = false
+  const noSel = (ev: Event) => ev.preventDefault()
+  const mover = (ev: MouseEvent) => {
+    const t = (document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null)?.closest?.('td,th') as HTMLTableCellElement | null
+    if (!t || t.closest('table') !== tabla) return
+    const fila1 = (t.parentElement as HTMLTableRowElement).rowIndex
+    if (!activa && fila1 === fila0) return
+    if (!activa) { activa = true; document.addEventListener('selectstart', noSel) }
+    window.getSelection()?.removeAllRanges()
+    marcarColumna(tabla, col, fila0, fila1)
+  }
+  const soltar = () => {
+    window.removeEventListener('mousemove', mover)
+    window.removeEventListener('mouseup', soltar)
+    document.removeEventListener('selectstart', noSel)
+  }
+  window.addEventListener('mousemove', mover)
+  window.addEventListener('mouseup', soltar)
+}
+function filaBajoCursor(e: { clientX: number; clientY: number }, raiz: HTMLElement): HTMLTableRowElement | null {
+  for (const t of Array.from(raiz.querySelectorAll('table'))) {
+    const r = t.getBoundingClientRect()
+    if (e.clientX < r.left - 18 || e.clientX > r.left + 8) continue
+    for (const tr of Array.from(t.rows)) {
+      const q = tr.getBoundingClientRect()
+      if (e.clientY >= q.top && e.clientY <= q.bottom) return tr
+    }
+  }
+  return null
+}
+function seleccionarFilas(tabla: HTMLTableElement, a: number, b: number) {
+  const [i, j] = a <= b ? [a, b] : [b, a]
+  const ini = tabla.rows[i].cells[0]
+  const ultima = tabla.rows[j].cells
+  const fin = ultima[ultima.length - 1]
+  const rg = document.createRange()
+  rg.setStart(ini, 0)
+  rg.setEnd(fin, fin.childNodes.length)
+  const sel = window.getSelection()
+  sel?.removeAllRanges()
+  sel?.addRange(rg)
+}
+const ANCHO_MIN = 4
+function bordeBajoCursor(e: { target: EventTarget | null; clientX: number; clientY: number }, raiz: HTMLElement): { tipo: 'col'; celda: HTMLTableCellElement; idx: number } | { tipo: 'fila'; celda: HTMLTableCellElement } | null {
+  const celda = (e.target as HTMLElement | null)?.closest?.('td,th') as HTMLTableCellElement | null
+  if (!celda || !raiz.contains(celda)) return null
+  const r = celda.getBoundingClientRect()
+  if (e.clientX >= r.right - MARGEN_BORDE && celda.nextElementSibling) return { tipo: 'col', celda, idx: celda.cellIndex }
+  if (e.clientX <= r.left + MARGEN_BORDE && celda.previousElementSibling) return { tipo: 'col', celda, idx: celda.cellIndex - 1 }
+  if (e.clientY >= r.bottom - MARGEN_BORDE) return { tipo: 'fila', celda }
+  return null
+}
+function aplicarAnchos(tabla: HTMLTableElement, anchos: number[]) {
+  for (const fila of Array.from(tabla.rows)) {
+    if (fila.cells.length !== anchos.length) continue // filas con celdas combinadas: se dejan como están
+    for (let i = 0; i < anchos.length; i++) fila.cells[i].style.width = anchos[i].toFixed(2) + '%'
+  }
+}
+function moverArrastre(a: Arrastre, ev: MouseEvent) {
+  if (a.tipo === 'col') {
+    const delta = Math.min(Math.max(((ev.clientX - a.x0) / a.total) * 100, ANCHO_MIN - a.anchos[a.idx]), a.anchos[a.idx + 1] - ANCHO_MIN)
+    const nuevos = a.anchos.slice()
+    nuevos[a.idx] = a.anchos[a.idx] + delta
+    nuevos[a.idx + 1] = a.anchos[a.idx + 1] - delta
+    aplicarAnchos(a.tabla, nuevos)
+  } else {
+    a.tr.style.height = Math.max(24, a.h0 + (ev.clientY - a.y0)).toFixed(0) + 'px'
+  }
+}
+
+/** Quita las marcas temporales de paginación (margen superior + data-pg) para que no se guarden en el documento. */
+export function limpiarPaginacion(html: string): string {
+  if (!html.includes('data-pg')) return html
+  const t = document.createElement('template')
+  t.innerHTML = html
+  t.content.querySelectorAll('[data-pg]').forEach(n => {
+    n.removeAttribute('data-pg')
+    const el = n as HTMLElement
+    el.style.removeProperty('margin-top')
+    if (!(el.getAttribute('style') ?? '').trim()) el.removeAttribute('style')
+  })
+  return t.innerHTML
+}
+
 // document.execCommand actua sobre la seleccion activa del documento, sin
 // importar cual RichTextField la contiene — por eso un solo toolbar
 // compartido alcanza, no hace falta uno por campo.
 export function execCmd(cmd: string, value?: string) {
+  if (rangosColumna.length > 0 && rangosColumna.every(r => r.startContainer.isConnected)) {
+    const copia = rangosColumna.slice()
+    const sel = window.getSelection()
+    aplicandoColumna = true
+    try {
+      for (const r of copia) { sel?.removeAllRanges(); sel?.addRange(r); document.execCommand(cmd, false, value) }
+    } finally { aplicandoColumna = false }
+    return
+  }
   document.execCommand(cmd, false, value)
 }
 function celdaActual(): HTMLTableCellElement | null {
@@ -204,6 +406,7 @@ function MenuTabla({ btnCls }: { btnCls: string }) {
 }
 
 function stepFontSize(delta: number) {
+  if (rangosColumna.length > 0) { const sel = window.getSelection(); sel?.removeAllRanges(); sel?.addRange(rangosColumna[0]) }
   const current = Number(document.queryCommandValue('fontSize')) || 3
   execCmd('fontSize', String(Math.min(7, Math.max(1, current + delta))))
 }
